@@ -278,7 +278,9 @@ const appLd = {
     const saved = JSON.parse(localStorage.getItem(KEY) || 'null') as Cfg | null;
     if (saved) {
       $<HTMLInputElement>('#c-name').value = saved.name;
-      $<HTMLSelectElement>('#c-activity').value = saved.activity;
+      const act = $<HTMLSelectElement>('#c-activity');
+      if (saved.activity && ![...act.options].some((o) => o.value === saved.activity)) act.add(new Option(saved.activity, saved.activity));
+      if (saved.activity) act.value = saved.activity;
       $<HTMLInputElement>('#c-bg').value = saved.bg;
       $<HTMLInputElement>('#c-accent').value = saved.accent;
       $<HTMLInputElement>('#c-total').value = String(saved.total);
@@ -289,6 +291,9 @@ const appLd = {
   } catch {
     /* rien */
   }
+  // Nom tapé dans le haut de la page d'accueil (?nom=…)
+  const nomParam = new URLSearchParams(location.search).get('nom');
+  if (nomParam) $<HTMLInputElement>('#c-name').value = nomParam.slice(0, 40);
   render();
 </script>
 

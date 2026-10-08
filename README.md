@@ -66,6 +66,14 @@ rappel des CGV et de la mention « TVA non applicable, art. 293 B du CGI », ret
 reliée au bouton de /espace-client/. Il n'y a pas encore de webhook : après un achat, créer le commerce et
 reporter la formule dans `merchants.subscription_plan` à la main (voir `LOYNA/docs/STRIPE_SETUP.md`).
 
+## Offre de lancement
+
+`LAUNCH_OFFER` dans `src/data/site.ts` (code, date de fin). Tant qu'elle est valable : bandeau en haut des pages
+(`OfferBar`, remplacé par le texte Builder `announcement` s'il est rempli), pastille dans le haut de page,
+mention dans les grilles et code prérempli sur les liens de paiement mensuels (`prefilled_promo_code`), clause
+6.5 des CGV. Après la date, le site retire tout seul ces mentions (au build et dans le navigateur) et Stripe
+refuse le code (expiration du coupon et du code promo).
+
 ## Hébergement OVH
 
 `loynafb.cluster129.hosting.ovh.net` (offre gratuite 100 Mo, PHP), FTP `ftp.cluster129.hosting.ovh.net`,

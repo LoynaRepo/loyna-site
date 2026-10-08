@@ -49,6 +49,16 @@ export interface Plan {
 
 export const SETUP_FEE = 49;
 
+// Offre de lancement (décision d'Ewan du 2026-10-09) : mise en service offerte en mensuel avec un code promo
+// Stripe (coupon loyna_lancement_2026_v2 : -49 € sur la 1re facture, valable sur les liens mensuels).
+// Après la date, le site la masque tout seul (au build et dans le navigateur) et Stripe refuse le code.
+export const LAUNCH_OFFER = {
+  code: 'LANCEMENT2026',
+  until: '2026-12-31T23:59:59+01:00',
+  untilLabel: '31 décembre 2026',
+};
+export const offerActive = (now = new Date()) => now < new Date(LAUNCH_OFFER.until);
+
 export const PLANS: Plan[] = [
   {
     id: 'essentiel',

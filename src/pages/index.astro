@@ -1,7 +1,7 @@
 ---
 import {Picture} from 'astro:assets';
 import Base from '../layouts/Base.astro';
-import HeroVisual from '../components/HeroVisual.astro';
+import Hero from '../components/Hero.astro';
 import Icon from '../components/Icon.astro';
 import PricingCards from '../components/PricingCards.astro';
 import VideoFacade from '../components/VideoFacade.astro';
@@ -64,26 +64,7 @@ const softwareLd = {
   description={SITE.description}
   jsonLd={softwareLd}
 >
-  <section class="hero" data-theme="dark">
-    <div class="container hero-grid">
-      <div class="hero-copy">
-        <p class="eyebrow">Carte de fidélité digitale · Apple Wallet &amp; Google Wallet</p>
-        <h1 set:html={heroTitleHtml} />
-        <p class="lead">{settings.heroSubtitle}</p>
-        <div class="btn-row">
-          <a class="btn btn--gold" href="/creer-ma-carte/">Créer l’aperçu de ma carte <Icon name="arrow-right" size={18} /></a>
-          <a class="btn btn--ghost" href="/tarifs/">Voir les tarifs</a>
-        </div>
-        <p class="hero-alt">Gratuit, sans inscription · ou <a href="#rappel">être rappelé</a></p>
-        <ul class="hero-points">
-          <li><Icon name="smartphone" size={18} /> Sans application</li>
-          <li><Icon name="zap" size={18} /> Prête sous 24&nbsp;h</li>
-          <li><Icon name="credit-card" size={18} /> Dès 29&nbsp;€ HT/mois</li>
-        </ul>
-      </div>
-      <HeroVisual />
-    </div>
-  </section>
+  <Hero titleHtml={heroTitleHtml} subtitle={settings.heroSubtitle} sectors={sectors} />
 
   <section class="strip" aria-label="Compatibilité">
     <div class="container strip-row">
@@ -325,75 +306,6 @@ const softwareLd = {
 </Base>
 
 <style>
-  .hero {
-    padding: clamp(40px, 6vw, 84px) 0 clamp(44px, 6vw, 80px);
-    overflow: hidden;
-    color: #e9e5dc;
-    background:
-      radial-gradient(55% 75% at 78% 40%, rgba(230, 194, 122, 0.24), transparent 70%),
-      radial-gradient(40% 60% at 0% 100%, rgba(201, 150, 63, 0.14), transparent 70%),
-      linear-gradient(180deg, #121216 0%, #17151a 100%);
-  }
-  .hero h1 {
-    color: #faf7f0;
-  }
-  .hero .eyebrow {
-    color: #e6c27a;
-  }
-  .hero .lead {
-    color: #c9c2b4;
-  }
-  .hero .btn--ghost {
-    color: #faf7f0;
-    border-color: rgba(250, 247, 240, 0.28);
-  }
-  .hero .btn--ghost:hover {
-    border-color: #e6c27a;
-    color: #fff;
-  }
-  .hero-alt {
-    margin: 16px 0 0;
-    font-size: 0.95rem;
-    color: #a8a194;
-  }
-  .hero-alt a {
-    color: #e6c27a;
-    font-weight: 700;
-  }
-  .hero :global(.phone) {
-    box-shadow:
-      0 0 0 1px rgba(230, 194, 122, 0.28),
-      0 40px 90px rgba(0, 0, 0, 0.55);
-  }
-  .hero-grid {
-    display: grid;
-    grid-template-columns: 1.05fr 0.95fr;
-    gap: clamp(30px, 5vw, 70px);
-    align-items: center;
-  }
-  .hero-copy .lead {
-    max-width: 560px;
-    margin-bottom: 30px;
-  }
-  .hero-points {
-    list-style: none;
-    padding: 0;
-    margin: 30px 0 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 24px;
-    color: #c9c2b4;
-    font-weight: 600;
-    font-size: 0.97rem;
-  }
-  .hero-points li {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .hero-points :global(svg) {
-    color: #e6c27a;
-  }
   .strip {
     border-block: 1px solid rgba(230, 194, 122, 0.18);
     background: #1a181c;
@@ -544,7 +456,6 @@ const softwareLd = {
     color: var(--ink);
   }
   @media (max-width: 920px) {
-    .hero-grid,
     .split {
       grid-template-columns: 1fr;
     }

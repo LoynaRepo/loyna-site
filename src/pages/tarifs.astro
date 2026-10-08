@@ -5,7 +5,7 @@ import PricingCards from '../components/PricingCards.astro';
 import Icon from '../components/Icon.astro';
 import CtaBand from '../components/CtaBand.astro';
 import CallbackForm from '../components/CallbackForm.astro';
-import {COMPARISON, PLANS, SETUP_FEE, SITE, euro} from '../data/site';
+import {COMPARISON, LAUNCH_OFFER, PLANS, SETUP_FEE, SITE, euro, offerActive} from '../data/site';
 import {getFaq} from '../lib/builder';
 
 const crumbs = [
@@ -129,7 +129,7 @@ const faqLd = {
       <div class="card">
         <span class="icon"><Icon name="rocket" /></span>
         <h2 class="h3">Mise en service : {euro(SETUP_FEE)} HT</h2>
-        <p>Création de votre carte à vos couleurs, de votre QR code d’inscription et de votre espace commerçant. Offerte en paiement annuel.</p>
+        <p>Création de votre carte à vos couleurs, de votre QR code d’inscription et de votre espace commerçant. Offerte en paiement annuel{offerActive() && <span data-offer>, et aussi en mensuel avec le code <strong>{LAUNCH_OFFER.code}</strong> jusqu’au {LAUNCH_OFFER.untilLabel}</span>}.</p>
       </div>
       <div class="card">
         <span class="icon"><Icon name="sparkles" /></span>

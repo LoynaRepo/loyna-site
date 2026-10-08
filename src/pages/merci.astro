@@ -1,9 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
-import {PLANS, SETUP_FEE} from '../data/site';
+import {PLANS, SETUP_FEE, offerActive} from '../data/site';
 // Montant du premier paiement par offre, pour la mesure de conversion (sans donnée personnelle).
-const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.monthly + SETUP_FEE], [`${p.id}-annuel`, p.yearly]]));
+const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.monthly + (offerActive() ? 0 : SETUP_FEE)], [`${p.id}-annuel`, p.yearly]]));
 ---
 
 <Base stickyCta={false} title="Merci pour votre commande" description="Votre abonnement LOYNA est confirmé. Envoyez les éléments de votre carte : elle est prête sous 24 h." noindex>

@@ -1,0 +1,88 @@
+---
+// Bandeau fin au-dessus de l'en-tête : texte libre de Builder (site-settings « announcement ») ou, à défaut,
+// l'offre de lancement tant qu'elle est valable. Masqué automatiquement après la date de l'offre.
+import Icon from './Icon.astro';
+import {LAUNCH_OFFER, SETUP_FEE, euro, offerActive} from '../data/site';
+interface Props {
+  announcement?: string;
+}
+const {announcement = ''} = Astro.props;
+const offer = offerActive();
+const text = announcement.trim();
+---
+
+{
+  (text || offer) && (
+    <div class="offer-bar" data-offer={text ? undefined : ''}>
+      <div class="container ob-row">
+        {text ? (
+          <p>{text}</p>
+        ) : (
+          <p>
+            <Icon name="gift" size={16} />
+            <span class="ob-long">
+              <strong>Offre de lancement</strong> : mise en service ({euro(SETUP_FEE)} HT) offerte avec le code <b class="code">{LAUNCH_OFFER.code}</b>, jusqu’au {LAUNCH_OFFER.untilLabel}
+            </span>
+            <span class="ob-short">
+              Mise en service offerte : <b class="code">{LAUNCH_OFFER.code}</b>
+            </span>
+            <a href="/tarifs/"><span class="ob-long">J’en profite</span> →</a>
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+<style>
+  .offer-bar {
+    background: linear-gradient(90deg, #a87530, #e6c27a 50%, #a87530);
+    color: #17140f;
+    font-size: 0.9rem;
+  }
+  .ob-row p {
+    margin: 0;
+    padding: 8px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px 10px;
+    text-align: center;
+    line-height: 1.35;
+  }
+  .code {
+    padding: 1px 8px;
+    border-radius: 6px;
+    background: rgba(18, 18, 22, 0.88);
+    color: #f0d49a;
+    letter-spacing: 0.06em;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .ob-short {
+    display: none;
+  }
+  @media (max-width: 700px) {
+    .ob-long {
+      display: none;
+    }
+    .ob-short {
+      display: inline;
+      white-space: nowrap;
+    }
+    .ob-row p {
+      flex-wrap: nowrap;
+      font-size: 0.84rem;
+      padding: 7px 0;
+    }
+    .ob-row :global(svg) {
+      display: none;
+    }
+  }
+  .ob-row a {
+    color: #17140f;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+</style>

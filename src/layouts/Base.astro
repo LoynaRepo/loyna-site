@@ -6,8 +6,9 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import StickyCta from '../components/StickyCta.astro';
 import Consent from '../components/Consent.astro';
+import OfferBar from '../components/OfferBar.astro';
 import {getSettings} from '../lib/builder';
-import {SITE} from '../data/site';
+import {LAUNCH_OFFER, SITE, offerActive} from '../data/site';
 
 type Link = {href: string; label: string};
 interface Props {
@@ -30,7 +31,7 @@ const gaId = (settings.ga4Id || SITE.ga4Id || '').trim();
 ---
 
 <!doctype html>
-<html lang="fr-FR">
+<html lang="fr-FR" data-offer-until={offerActive() ? LAUNCH_OFFER.until : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -48,6 +49,7 @@ const gaId = (settings.ga4Id || SITE.ga4Id || '').trim();
   </head>
   <body>
     <a class="skip-link" href="#contenu">Aller au contenu</a>
+    {!props.bare && <OfferBar announcement={settings.announcement || ''} />}
     {!props.bare && <Header />}
     <main id="contenu">
       <slot />
@@ -88,6 +90,17 @@ const gaId = (settings.ga4Id || SITE.ga4Id || '').trim();
     }
     busy(btn);
   });
+  // Offre de lancement expirée alors que la page n'a pas été reconstruite : on retire tout ce qui la mentionne.
+  const until = Date.parse(document.documentElement.dataset.offerUntil || '');
+  if (until && Date.now() > until) {
+    document.querySelectorAll('[data-offer]').forEach((el) => el.remove());
+    document.querySelectorAll<HTMLElement>('[data-offer-off]').forEach((el) => (el.hidden = false));
+    document.querySelectorAll<HTMLAnchorElement>('a[href*="prefilled_promo_code"]').forEach((a) => {
+      const u = new URL(a.href);
+      u.searchParams.delete('prefilled_promo_code');
+      a.href = u.toString();
+    });
+  }
   // Retour arrière depuis Stripe (cache du navigateur) : on rend les boutons à nouveau cliquables.
   window.addEventListener('pageshow', (e) => {
     if (!e.persisted) return;

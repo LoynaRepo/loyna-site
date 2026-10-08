@@ -56,6 +56,7 @@ spécial, un smartphone suffit pour scanner. Données : protégées, chiffrées,
 - Engagement (décision d'Ewan du 2026-10-09) : mensuel = 12 mois minimum réglés mois par mois, puis résiliable à la fin de n'importe quel mois sans frais ; annuel = 12 mois réglés d'avance, reconduit pour 12 mois sauf résiliation avant l'échéance.
 - Entreprise : LOYNA est une activité de KOVA Elec, nom commercial d'Ewan Touquet, entrepreneur individuel (SIREN 932 811 839, siège SIRET 932 811 839 00020, Fabrègues). Les paiements Stripe apparaissent au nom de KOVA ELEC. TVA non applicable, art. 293 B du CGI.
 - SMS Growth : 200 par mois (brochure commerciale), Pro : 500.
+- Offre de lancement (décision d'Ewan du 2026-10-09) : mise en service offerte en mensuel avec le code promo Stripe LANCEMENT2026, jusqu'au 31 décembre 2026 23 h 59 (coupon loyna_lancement_2026_v2, -49 € sur la 1re facture). L'ancien code « LANCEMENT » (coupon limité au produit mise en service) est refusé par Stripe Checkout : à désactiver dans le Dashboard.
 - Paiement en ligne sécurisé par Stripe (carte bancaire). Facture disponible dans l'espace client.
 
 ## Cibles
