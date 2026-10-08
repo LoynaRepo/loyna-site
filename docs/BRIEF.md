@@ -53,6 +53,9 @@ spécial, un smartphone suffit pour scanner. Données : protégées, chiffrées,
   API et webhooks, support prioritaire.
 - Mise en service : 49 € HT une fois, offerte en paiement annuel.
 - Paiement annuel : -15 % (Essentiel 295,80 €, Growth 499,80 €, Pro 805,80 € HT par an).
+- Engagement (décision d'Ewan du 2026-10-09) : mensuel = 12 mois minimum réglés mois par mois, puis résiliable à la fin de n'importe quel mois sans frais ; annuel = 12 mois réglés d'avance, reconduit pour 12 mois sauf résiliation avant l'échéance.
+- Entreprise : LOYNA est une activité de KOVA Elec, nom commercial d'Ewan Touquet, entrepreneur individuel (SIREN 932 811 839, siège SIRET 932 811 839 00020, Fabrègues). Les paiements Stripe apparaissent au nom de KOVA ELEC. TVA non applicable, art. 293 B du CGI.
+- SMS Growth : 200 par mois (brochure commerciale), Pro : 500.
 - Paiement en ligne sécurisé par Stripe (carte bancaire). Facture disponible dans l'espace client.
 
 ## Cibles

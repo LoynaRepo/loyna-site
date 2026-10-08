@@ -29,6 +29,8 @@ RewriteCond %{SERVER_PORT} ^80$
 RewriteRule ^ https://loyna.fr%{REQUEST_URI} [L,R=301]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^(.+[^/])$ https://loyna.fr/$1/ [L,R=301]
+# /sitemap.xml (adresse standard) sert l'index généré par Astro
+RewriteRule ^sitemap\.xml$ /sitemap-index.xml [L]
 
 # --- Compression -------------------------------------------------------------------------------
 <IfModule mod_deflate.c>
@@ -72,7 +74,7 @@ RewriteRule ^(.+[^/])$ https://loyna.fr/$1/ [L,R=301]
     Header always set X-Robots-Tag "noindex, nofollow"
   </If>
   <Else>
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cdn.builder.io; media-src 'self'; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self' https://builder.io https://*.builder.io; upgrade-insecure-requests"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cdn.builder.io https://*.google-analytics.com https://*.googletagmanager.com; media-src 'self'; font-src 'self' data:; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self' https://builder.io https://*.builder.io; upgrade-insecure-requests"
   </Else>
   <Files "contact.php">
     Header always set X-Robots-Tag "noindex, nofollow"

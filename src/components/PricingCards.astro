@@ -35,7 +35,7 @@ const buy = (link: string) => (link ? `${link}?locale=fr` : '');
             <span class="amount">{euro(p.monthly)}</span>
             <span class="per">HT / mois</span>
           </div>
-          <p class="note only-m">+ {euro(SETUP_FEE)} HT de mise en service, une seule fois</p>
+          <p class="note only-m">+ {euro(SETUP_FEE)} HT de mise en service · engagement 12 mois, puis résiliable chaque mois</p>
           <div class="price only-y">
             <span class="amount">{euro(p.yearly)}</span>
             <span class="per">HT / an</span>
@@ -43,10 +43,10 @@ const buy = (link: string) => (link ? `${link}?locale=fr` : '');
           <p class="note only-y">
             soit {euro(Math.round((p.yearly / 12) * 100) / 100)} HT / mois · <strong>mise en service offerte</strong>
           </p>
-          <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-m`} href={buy(p.links.monthly) || fallback(p.id, 'mensuel')} rel="nofollow">
+          <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-m`} href={buy(p.links.monthly) || fallback(p.id, 'mensuel')} rel="nofollow" data-loading={p.links.monthly ? 'Redirection vers le paiement…' : undefined} data-plan={`${p.id}-mensuel`}>
             Choisir {p.name}
           </a>
-          <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-y`} href={buy(p.links.yearly) || fallback(p.id, 'annuel')} rel="nofollow">
+          <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-y`} href={buy(p.links.yearly) || fallback(p.id, 'annuel')} rel="nofollow" data-loading={p.links.yearly ? 'Redirection vers le paiement…' : undefined} data-plan={`${p.id}-annuel`}>
             Choisir {p.name} en annuel
           </a>
           {!compact && (
@@ -64,7 +64,7 @@ const buy = (link: string) => (link ? `${link}?locale=fr` : '');
     }
   </div>
   <p class="fine">
-    Prix en euros hors taxes. {SITE.vatNote} : le prix affiché est le prix payé. Paiement sécurisé par Stripe, factures dans votre espace client.
+    Prix en euros hors taxes. {SITE.vatNote} : le prix affiché est le prix payé. Paiement sécurisé par Stripe au nom de KOVA Elec, l’entreprise qui édite LOYNA ; factures dans votre espace client.
   </p>
 </div>
 

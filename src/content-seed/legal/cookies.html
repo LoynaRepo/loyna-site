@@ -4,13 +4,15 @@
 <h2>En bref</h2>
 <ul>
   <li>Aucun cookie publicitaire.</li>
-  <li>Aucun outil de mesure d'audience.</li>
+  <li data-if="sans-analytics">Aucun outil de mesure d'audience.</li>
+  <li data-if="analytics">Une mesure d'audience (Google Analytics), uniquement si vous l'acceptez.</li>
   <li>Aucun traceur de réseaux sociaux.</li>
-  <li>Un seul stockage local technique, pour conserver le brouillon de votre carte dans le configurateur.</li>
+  <li>Un stockage local technique, pour conserver le brouillon de votre carte dans le configurateur.</li>
 </ul>
-<p>C'est pourquoi le site n'affiche pas de bandeau de consentement : le seul traceur utilisé est strictement nécessaire à un service que vous demandez, et il est donc dispensé de consentement.</p>
+<p data-if="sans-analytics">C'est pourquoi le site n'affiche pas de bandeau de consentement : le seul traceur utilisé est strictement nécessaire à un service que vous demandez, et il est donc dispensé de consentement.</p>
+<p data-if="analytics">La mesure d'audience n'est activée qu'avec votre accord, donné dans le bandeau affiché lors de votre première visite. Refuser est aussi simple qu'accepter, votre choix est conservé 6 mois, et vous pouvez le modifier à tout moment avec le lien « Gérer les cookies » en bas de chaque page.</p>
 
-<h2>Le traceur utilisé sur le site</h2>
+<h2>Les traceurs utilisés sur le site</h2>
 <table>
   <thead>
     <tr>
@@ -27,9 +29,27 @@
       <td>Jusqu'à ce que vous le supprimiez</td>
       <td>Non requis : traceur strictement nécessaire au service demandé</td>
     </tr>
+      <tr data-if="analytics">
+      <td>Stockage local « loyna-consent »</td>
+      <td>Mémoriser votre choix concernant la mesure d'audience</td>
+      <td>6 mois</td>
+      <td>Non requis : traceur strictement nécessaire au respect de votre choix</td>
+    </tr>
+    <tr data-if="analytics">
+      <td>Cookies Google Analytics « _ga » et « _ga_… »</td>
+      <td>Mesure d'audience : compter les visites et les pages consultées, de façon statistique</td>
+      <td>13 mois au plus</td>
+      <td>Requis : déposés seulement si vous cliquez sur « Accepter »</td>
+    </tr>
   </tbody>
 </table>
 <p>Ce brouillon reste dans votre navigateur, sur votre appareil. LOYNA n'y a pas accès tant que vous ne nous le transmettez pas.</p>
+
+<div data-if="analytics">
+<h2>Mesure d'audience avec Google Analytics</h2>
+<p>Si vous l'acceptez, le site utilise Google Analytics 4, fourni par Google Ireland Limited, qui agit pour le compte de LOYNA. Il est configuré sans publicité, sans signaux Google et sans personnalisation des annonces : il sert uniquement à savoir quelles pages sont consultées et comment les visiteurs arrivent sur le site. Les statistiques sont conservées 14 mois au plus. Des données peuvent être traitées aux États-Unis par Google, dans le cadre du Data Privacy Framework (décision d'adéquation de la Commission européenne du 10 juillet 2023).</p>
+<p>Si vous refusez, aucun script de Google n'est chargé. Si vous retirez votre accord, les cookies « _ga » sont effacés.</p>
+</div>
 
 <h2>Paiement sur les pages de Stripe</h2>
 <p>Le paiement de l'abonnement s'effectue sur les pages sécurisées de Stripe, notre prestataire de paiement, et non sur le site loyna.fr. Sur ces pages, Stripe utilise des cookies nécessaires à la sécurité du paiement et à la prévention de la fraude. Ces cookies sont régis par Stripe : pour en savoir plus, consultez la <a href="https://stripe.com/fr/privacy">politique de confidentialité de Stripe</a>.</p>
@@ -38,9 +58,10 @@
 <p>Vous pouvez supprimer à tout moment les données enregistrées par le site depuis les réglages de votre navigateur (rubrique consacrée aux cookies et aux données des sites). Le brouillon de votre carte sera alors effacé.</p>
 
 <h2>Évolution de cette politique</h2>
-<p>Si LOYNA venait à utiliser des traceurs soumis à consentement, par exemple pour mesurer l'audience du site, votre accord vous serait demandé au préalable et cette page serait mise à jour.</p>
+<p data-if="sans-analytics">Si LOYNA venait à utiliser des traceurs soumis à consentement, par exemple pour mesurer l'audience du site, votre accord vous serait demandé au préalable et cette page serait mise à jour.</p>
+<p data-if="analytics">Si LOYNA ajoutait d'autres traceurs soumis à consentement, votre accord vous serait demandé à nouveau et cette page serait mise à jour.</p>
 
 <h2>Contact</h2>
 <p>Pour toute question : <a href="mailto:{{EMAIL}}">{{EMAIL}}</a>. Pour en savoir plus sur vos données, consultez notre <a href="/confidentialite/">politique de confidentialité</a>.</p>
 
-<p><em>Dernière mise à jour : 8 octobre 2026</em></p>
+<p><em>Dernière mise à jour : 9 octobre 2026</em></p>

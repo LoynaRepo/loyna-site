@@ -16,7 +16,7 @@ const contactLd = {
 };
 ---
 
-<Base
+<Base stickyCta={false}
   title="Contact et demande de démo"
   description="Une question sur LOYNA, une démo ou un exemple de carte à votre nom ? Écrivez-nous : nous vous répondons rapidement, depuis Montpellier."
   breadcrumbs={crumbs}
@@ -36,7 +36,7 @@ const contactLd = {
         <input type="hidden" name="offre" id="offre" value="" />
         <input type="hidden" name="t" id="t" value="" />
         <input type="hidden" name="apercu" id="apercu" value="" />
-        <p class="alert" id="form-error" role="alert" hidden></p>
+        <p class="alert" id="form-error" role="alert" tabindex="-1" hidden></p>
         <div class="hp" aria-hidden="true">
           <label for="site-web">Ne pas remplir</label>
           <input id="site-web" name="site_web" type="text" tabindex="-1" autocomplete="off" />
@@ -44,21 +44,25 @@ const contactLd = {
         <div class="row">
           <div class="field">
             <label for="nom">Votre nom *</label>
-            <input id="nom" name="nom" type="text" required maxlength="80" autocomplete="name" />
+            <input id="nom" name="nom" type="text" required maxlength="80" autocomplete="name" aria-describedby="nom-err" />
+            <p class="err" id="nom-err">Indiquez votre nom.</p>
           </div>
           <div class="field">
             <label for="commerce">Votre commerce *</label>
-            <input id="commerce" name="commerce" type="text" required maxlength="100" autocomplete="organization" />
+            <input id="commerce" name="commerce" type="text" required maxlength="100" autocomplete="organization" aria-describedby="commerce-err" />
+            <p class="err" id="commerce-err">Indiquez le nom de votre commerce.</p>
           </div>
         </div>
         <div class="row">
           <div class="field">
             <label for="email">E-mail *</label>
-            <input id="email" name="email" type="email" required maxlength="120" autocomplete="email" />
+            <input id="email" name="email" type="email" required maxlength="120" autocomplete="email" aria-describedby="email-err" />
+            <p class="err" id="email-err">Indiquez une adresse e-mail valide, par exemple nom@domaine.fr.</p>
           </div>
           <div class="field">
             <label for="tel">Téléphone</label>
-            <input id="tel" name="telephone" type="tel" maxlength="30" autocomplete="tel" />
+            <input id="tel" name="telephone" type="tel" maxlength="30" autocomplete="tel" pattern="[0-9+ ().-]{6,30}" aria-describedby="tel-err" />
+            <p class="err" id="tel-err">Ce numéro semble incomplet (chiffres, espaces et + uniquement).</p>
           </div>
         </div>
         <div class="field">
@@ -73,12 +77,13 @@ const contactLd = {
         </div>
         <div class="field">
           <label for="message">Message *</label>
-          <textarea id="message" name="message" rows="5" required maxlength="3000"></textarea>
+          <textarea id="message" name="message" rows="5" required minlength="10" maxlength="3000" aria-describedby="message-err"></textarea>
+          <p class="err" id="message-err">Écrivez votre message (10 caractères au moins).</p>
         </div>
         <p class="legal">
           Vos informations servent uniquement à vous répondre. Elles sont conservées 3 ans au plus après notre dernier échange. Voir notre <a href="/confidentialite/">politique de confidentialité</a>.
         </p>
-        <button type="submit" class="btn btn--primary">Envoyer le message <Icon name="send" size={18} /></button>
+        <button type="submit" class="btn btn--primary" data-loading="Envoi en cours…">Envoyer le message <Icon name="send" size={18} /></button>
       </form>
       <aside class="side">
         <div class="card">
@@ -88,8 +93,13 @@ const contactLd = {
         </div>
         <div class="card">
           <span class="icon"><Icon name="map-pin" /></span>
-          <h2 class="h3">Depuis Montpellier</h2>
-          <p>LOYNA accompagne les commerces indépendants partout en France.</p>
+          <h2 class="h3">Notre adresse</h2>
+          <address>
+            LOYNA, une activité de KOVA Elec<br />
+            {SITE.address.street}<br />
+            {SITE.address.postalCode} {SITE.address.locality}, France
+          </address>
+          <p>Près de Montpellier, LOYNA accompagne les commerces indépendants partout en France, à distance ou sur rendez-vous.</p>
         </div>
         <div class="card">
           <span class="icon"><Icon name="palette" /></span>
@@ -113,6 +123,10 @@ const contactLd = {
     if (!msg.value) msg.value = `Bonjour, je suis intéressé(e) par l'offre ${offre.replace('-', ' ')}.`;
   }
   (document.getElementById('t') as HTMLInputElement).value = String(Date.now());
+  document.getElementById('contact-form')?.addEventListener('submit', (e) => {
+    if ((e.target as HTMLFormElement).checkValidity())
+      (window as unknown as {loynaTrack?: (n: string, p?: object) => void}).loynaTrack?.('generate_lead', {form: 'contact'});
+  });
 
   // Message d'erreur renvoyé par /contact.php (?erreur=…)
   const ERREURS: Record<string, string> = {
@@ -128,6 +142,7 @@ const contactLd = {
     const box = document.getElementById('form-error') as HTMLParagraphElement;
     box.textContent = ERREURS[err];
     box.hidden = false;
+    box.focus();
   }
 
   // Joint l'aperçu de carte préparé dans le configurateur, s'il existe.
@@ -151,6 +166,12 @@ const contactLd = {
     grid-template-columns: 1.4fr 0.8fr;
     gap: clamp(28px, 4vw, 56px);
     align-items: start;
+  }
+  address {
+    font-style: normal;
+    margin: 4px 0 10px;
+    line-height: 1.6;
+    color: var(--ink);
   }
   .alert {
     margin: 0;

@@ -25,13 +25,25 @@ const raw = files[`../content-seed/legal/${slug}.html`] ?? '';
 const s = await getSettings();
 const todo = '<mark class="todo">[à compléter]</mark>';
 const val = (v: string) => (v && v.trim() ? v.trim().replace(/\n/g, '<br>') : todo);
+const telephone = (s.telephone || SITE.legal.telephone || '').trim();
+const siret = (s.siret || SITE.legal.siret || '').trim();
+const link = `<a href="mailto:${SITE.email}">${SITE.email}</a>`;
+const analytics = !!(s.ga4Id || SITE.ga4Id || '').trim();
+const flags: Record<string, boolean> = {telephone: !!telephone, analytics, 'sans-analytics': !analytics};
 const html = raw
   .replace(/<!--[\s\S]*?-->/g, '')
+  // Passages conditionnels (data-if="…") : téléphone renseigné, mesure d'audience activée ou non
+  .replace(/<(li|span|p|div|tr) data-if="([\w-]+)">[\s\S]*?<\/\1>/g, (m, _tag, flag: string) =>
+    flags[flag] ? m.replace(` data-if="${flag}"`, '') : '',
+  )
   .replaceAll('{{NOM_DIRIGEANT}}', val(s.nomDirigeant || SITE.legal.nomDirigeant))
-  .replaceAll('{{SIRET}}', val(s.siret || SITE.legal.siret))
+  .replaceAll('{{NOM_COMMERCIAL}}', val(s.nomCommercial || SITE.legal.nomCommercial))
+  .replaceAll('{{SIRET}}', val(siret))
+  .replaceAll('{{SIREN}}', val(siret.replace(/\D/g, '').slice(0, 9).replace(/(\d{3})(?=\d)/g, '$1 ')))
   .replaceAll('{{ADRESSE}}', val(s.adresse || SITE.legal.adresse))
-  .replaceAll('{{TELEPHONE}}', val(s.telephone || SITE.legal.telephone))
-  .replaceAll('{{EMAIL}}', `<a href="mailto:${SITE.email}">${SITE.email}</a>`);
+  .replaceAll('{{TELEPHONE}}', val(telephone))
+  .replaceAll(`<a href="mailto:{{EMAIL}}">{{EMAIL}}</a>`, link)
+  .replaceAll('{{EMAIL}}', link);
 const crumbs = [
   {name: 'Accueil', url: '/'},
   {name: meta.title, url: `/${slug}/`},

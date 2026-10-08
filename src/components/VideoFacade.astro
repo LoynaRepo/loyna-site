@@ -23,6 +23,9 @@ const {title = 'Découvrez LOYNA en 80 secondes'} = Astro.props;
     btn.addEventListener(
       'click',
       () => {
+        // Cadre de la vidéo avec indicateur de chargement, retiré dès que la lecture démarre.
+        const wrap = document.createElement('div');
+        wrap.className = 'vwrap is-buffering';
         const v = document.createElement('video');
         v.src = btn.dataset.src!;
         v.controls = true;
@@ -30,7 +33,23 @@ const {title = 'Découvrez LOYNA en 80 secondes'} = Astro.props;
         v.playsInline = true;
         v.setAttribute('width', '720');
         v.setAttribute('height', '1280');
-        btn.replaceWith(v);
+        const spin = document.createElement('span');
+        spin.className = 'vspin';
+        spin.setAttribute('role', 'status');
+        spin.innerHTML = '<span class="sr-only">Chargement de la vidéo…</span>';
+        wrap.append(v, spin);
+        btn.replaceWith(wrap);
+        const done = () => wrap.classList.remove('is-buffering');
+        v.addEventListener('playing', done, {once: true});
+        v.addEventListener('pause', done, {once: true});
+        v.addEventListener(
+          'error',
+          () => {
+            done();
+            wrap.insertAdjacentHTML('afterend', `<p class="verr">La vidéo n’a pas pu être chargée. <a href="${btn.dataset.src}">Ouvrir le fichier vidéo</a></p>`);
+          },
+          {once: true},
+        );
         v.focus();
       },
       {once: true},
@@ -46,7 +65,7 @@ const {title = 'Découvrez LOYNA en 80 secondes'} = Astro.props;
     gap: 14px;
   }
   .facade,
-  .video :global(video) {
+  .video :global(.vwrap) {
     width: min(100%, 360px);
     aspect-ratio: 9 / 16;
     border-radius: 30px;
@@ -59,6 +78,36 @@ const {title = 'Découvrez LOYNA en 80 secondes'} = Astro.props;
     padding: 0;
     border: 0;
     cursor: pointer;
+  }
+  .video :global(.vwrap) {
+    position: relative;
+  }
+  .video :global(.vwrap video) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .video :global(.vspin) {
+    display: none;
+  }
+  .video :global(.vwrap.is-buffering .vspin) {
+    display: block;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 46px;
+    height: 46px;
+    margin: -23px 0 0 -23px;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 255, 255, 0.25);
+    border-top-color: #e6c27a;
+    animation: spin 0.8s linear infinite;
+    pointer-events: none;
+  }
+  .video :global(.verr) {
+    color: var(--muted);
+    font-size: 0.92rem;
+    margin: 0;
   }
   .facade :global(img) {
     width: 100%;

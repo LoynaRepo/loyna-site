@@ -2,13 +2,13 @@
 <p>La présente politique explique comment LOYNA traite les données personnelles des visiteurs du site loyna.fr, des personnes qui nous contactent, des professionnels que nous prospectons et des commerçants clients, ainsi que le rôle de LOYNA pour les données des clients de ces commerçants (porteurs de carte). Elle est établie conformément au règlement (UE) 2016/679 du 27 avril 2016 (RGPD) et à la loi n° 78-17 du 6 janvier 1978 modifiée (loi Informatique et Libertés).</p>
 
 <h2>1. Qui est responsable de vos données ?</h2>
-<p>Le responsable de traitement est <strong>{{NOM_DIRIGEANT}}</strong>, entrepreneur individuel (EI) exerçant sous le nom commercial LOYNA, SIRET {{SIRET}}, {{ADRESSE}}.</p>
+<p>Le responsable de traitement est <strong>{{NOM_DIRIGEANT}}</strong>, entrepreneur individuel (EI) exerçant sous le nom commercial {{NOM_COMMERCIAL}} (service LOYNA), SIRET {{SIRET}}, {{ADRESSE}}.</p>
 <p>Pour toute question relative à vos données : <a href="mailto:{{EMAIL}}">{{EMAIL}}</a>.</p>
 
 <h2>2. Les données que nous traitons</h2>
 
 <h3>2.1. Visiteurs du site</h3>
-<p>Le site n'utilise aucun cookie publicitaire et aucun outil de mesure d'audience. Le brouillon du configurateur de carte est enregistré uniquement dans le stockage local de votre navigateur : LOYNA n'y a pas accès tant que vous ne nous le transmettez pas (voir la <a href="/cookies/">politique cookies</a>).</p>
+<p><span data-if="sans-analytics">Le site n'utilise aucun cookie publicitaire et aucun outil de mesure d'audience.</span><span data-if="analytics">Le site n'utilise aucun cookie publicitaire. Avec votre accord seulement, il mesure son audience avec Google Analytics (pages consultées, provenance des visites, type d'appareil), sur la base de votre consentement, que vous pouvez retirer à tout moment.</span> Le brouillon du configurateur de carte est enregistré uniquement dans le stockage local de votre navigateur : LOYNA n'y a pas accès tant que vous ne nous le transmettez pas (voir la <a href="/cookies/">politique cookies</a>).</p>
 <p>Comme pour tout site internet, le serveur de l'hébergeur enregistre des données techniques de connexion (adresse IP, date et heure, page demandée), nécessaires à l'acheminement des pages et à la sécurité du site.</p>
 
 <h3>2.2. Personnes qui nous contactent</h3>
@@ -123,6 +123,7 @@
     <tr><td>OVHcloud</td><td>Hébergement du site et messagerie électronique</td></tr>
     <tr><td>Supabase</td><td>Base de données et serveurs du service, hébergés dans l'Union européenne (région Irlande)</td></tr>
     <tr><td>Stripe</td><td>Paiement et facturation des abonnements</td></tr>
+    <tr data-if="analytics"><td>Google Ireland Limited</td><td>Google Analytics : mesure d'audience du site, uniquement avec votre accord</td></tr>
     <tr><td>Apple</td><td>Apple Wallet : cartes de fidélité et notifications sur iPhone</td></tr>
     <tr><td>Google</td><td>Google Wallet : cartes de fidélité et notifications sur Android</td></tr>
     <tr><td>smsmode</td><td>Envoi des SMS (France)</td></tr>
@@ -165,9 +166,9 @@
 <p>LOYNA ne prend aucune décision fondée exclusivement sur un traitement automatisé produisant des effets juridiques à votre égard ou vous affectant de manière significative.</p>
 
 <h2>9. Cookies</h2>
-<p>Le site n'utilise ni cookie publicitaire, ni outil de mesure d'audience. Le détail figure dans la <a href="/cookies/">politique cookies</a>.</p>
+<p><span data-if="sans-analytics">Le site n'utilise ni cookie publicitaire, ni outil de mesure d'audience.</span><span data-if="analytics">Le site n'utilise aucun cookie publicitaire ; les cookies de mesure d'audience (Google Analytics) ne sont déposés qu'avec votre accord.</span> Le détail figure dans la <a href="/cookies/">politique cookies</a>.</p>
 
 <h2>10. Mise à jour de la présente politique</h2>
 <p>Cette politique peut être mise à jour, notamment en cas d'évolution du service ou de la réglementation. La date de la dernière mise à jour figure ci-dessous.</p>
 
-<p><em>Dernière mise à jour : 8 octobre 2026</em></p>
+<p><em>Dernière mise à jour : 9 octobre 2026</em></p>

@@ -1,15 +1,17 @@
 ---
 import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
-import {SITE} from '../data/site';
+import {SITE, PLANS, SETUP_FEE} from '../data/site';
+// Montant du premier paiement par offre, pour la mesure de conversion (sans donnée personnelle).
+const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.monthly + SETUP_FEE], [`${p.id}-annuel`, p.yearly]]));
 ---
 
-<Base title="Merci pour votre commande" description="Votre abonnement LOYNA est confirmé. Voici les prochaines étapes pour lancer votre carte de fidélité." noindex>
+<Base stickyCta={false} title="Merci pour votre commande" description="Votre abonnement LOYNA est confirmé. Voici les prochaines étapes pour lancer votre carte de fidélité." noindex>
   <section class="page-hero">
     <div class="narrow">
       <span class="done"><Icon name="check" size={34} /></span>
       <h1>Merci, votre abonnement est confirmé&nbsp;!</h1>
-      <p class="lead">Vous allez recevoir un reçu de Stripe par e-mail. Voici la suite :</p>
+      <p class="lead">Vous allez recevoir un reçu par e-mail, au nom de KOVA Elec (l’entreprise qui édite LOYNA). Voici la suite :</p>
     </div>
   </section>
   <section class="section pt0">
@@ -20,6 +22,7 @@ import {SITE} from '../data/site';
         <li><strong>Vous recevez votre accès à LOYNA Business</strong> pour scanner les cartes depuis votre téléphone.</li>
         <li><strong>Vous lancez votre programme</strong> : affichez le QR code au comptoir, vos clients s’inscrivent en quelques secondes.</li>
       </ol>
+      <p>Rappel de votre engagement : en mensuel, 12 mois minimum, puis résiliable à la fin de chaque mois, sans frais ; en annuel, 12 mois réglés d’avance. Tout se gère depuis votre <a href="/espace-client/">espace client</a>.</p>
       <p>Vous pouvez dès maintenant nous envoyer votre logo à <a href={`mailto:${SITE.email}?subject=Mon logo pour ma carte LOYNA`}>{SITE.email}</a>.</p>
       <div class="btn-row">
         <a class="btn btn--primary" href="/espace-client/">Mon espace client</a>
@@ -28,6 +31,23 @@ import {SITE} from '../data/site';
     </div>
   </section>
 </Base>
+
+<div id="merci-data" data-montants={JSON.stringify(montants)} hidden></div>
+<script>
+  window.addEventListener('load', () => {
+    const q = new URLSearchParams(location.search);
+    const offre = q.get('offre') || '';
+    const el = document.getElementById('merci-data');
+    const montants = JSON.parse(el?.dataset.montants || '{}') as Record<string, number>;
+    if (!montants[offre]) return;
+    (window as unknown as {loynaTrack?: (n: string, p?: object) => void}).loynaTrack?.('purchase', {
+      transaction_id: q.get('session_id') || undefined,
+      value: montants[offre],
+      currency: 'EUR',
+      items: [{item_id: offre}],
+    });
+  });
+</script>
 
 <style>
   .pt0 {

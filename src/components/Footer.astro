@@ -1,6 +1,10 @@
 ---
 import Logo from './Logo.astro';
 import {SITE} from '../data/site';
+interface Props {
+  consent?: boolean;
+}
+const {consent = false} = Astro.props;
 const year = new Date().getFullYear();
 const cols = [
   {
@@ -52,6 +56,11 @@ const cols = [
         <Logo height={34} tone="light" />
         <p>La carte de fidélité digitale des commerces indépendants, dans Apple Wallet et Google Wallet. Conçue à {SITE.city}.</p>
         <a class="mail" href={`mailto:${SITE.email}`}>{SITE.email}</a>
+        <address>
+          LOYNA, une activité de KOVA Elec<br />
+          {SITE.address.street}<br />
+          {SITE.address.postalCode} {SITE.address.locality}
+        </address>
       </div>
       {
         cols.map((c) => (
@@ -69,13 +78,36 @@ const cols = [
       }
     </div>
     <div class="bottom">
-      <p>© {year} LOYNA · {SITE.city}, {SITE.region} · Prix en euros hors taxes · {SITE.vatNote}</p>
+      <p>
+        © {year} LOYNA · {SITE.address.locality}, {SITE.region} · Prix en euros hors taxes · {SITE.vatNote}
+        {consent && (
+          <>
+            {' · '}
+            <button type="button" class="linkish" data-open-consent>Gérer les cookies</button>
+          </>
+        )}
+      </p>
       <p>Apple Wallet est une marque d'Apple Inc. Google Wallet est une marque de Google LLC.</p>
     </div>
   </div>
 </footer>
 
 <style>
+  address {
+    font-style: normal;
+    margin-top: 14px;
+    line-height: 1.6;
+    font-size: 0.92rem;
+  }
+  .linkish {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+  }
   .site-footer {
     background: var(--ink);
     color: #b9b3a7;

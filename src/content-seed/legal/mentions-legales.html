@@ -5,11 +5,12 @@
 <p>Le site loyna.fr est édité par :</p>
 <ul>
   <li><strong>{{NOM_DIRIGEANT}}</strong>, entrepreneur individuel (EI), exerçant sous le régime de la micro-entreprise</li>
-  <li>Nom commercial : LOYNA</li>
+  <li>Nom commercial : {{NOM_COMMERCIAL}}</li>
+  <li>Marque et service : LOYNA</li>
   <li>Adresse : {{ADRESSE}}</li>
-  <li>Téléphone : {{TELEPHONE}}</li>
+  <li data-if="telephone">Téléphone : {{TELEPHONE}}</li>
   <li>E-mail : <a href="mailto:{{EMAIL}}">{{EMAIL}}</a></li>
-  <li>Numéro SIRET : {{SIRET}}</li>
+  <li>Numéro SIRET : {{SIRET}} (SIREN {{SIREN}})</li>
   <li>TVA non applicable, art. 293 B du CGI</li>
 </ul>
 
@@ -43,9 +44,9 @@
 <p>L'éditeur s'efforce de publier des informations exactes et à jour. Il peut toutefois corriger ou modifier le contenu du site à tout moment. Les caractéristiques et les prix qui engagent LOYNA sont ceux des conditions générales de vente et d'abonnement en vigueur au jour de la souscription.</p>
 
 <h2>Données personnelles et cookies</h2>
-<p>Les traitements de données personnelles réalisés par LOYNA sont décrits dans la <a href="/confidentialite/">politique de confidentialité</a>. Le site n'utilise aucun cookie publicitaire ni aucun outil de mesure d'audience : voir la <a href="/cookies/">politique cookies</a>.</p>
+<p>Les traitements de données personnelles réalisés par LOYNA sont décrits dans la <a href="/confidentialite/">politique de confidentialité</a>. <span data-if="sans-analytics">Le site n'utilise aucun cookie publicitaire ni aucun outil de mesure d'audience</span><span data-if="analytics">Le site n'utilise aucun cookie publicitaire ; la mesure d'audience n'est activée qu'avec votre accord</span> : voir la <a href="/cookies/">politique cookies</a>.</p>
 
 <h2>Contact</h2>
-<p>Pour toute question relative au site ou aux présentes mentions légales, vous pouvez écrire à <a href="mailto:{{EMAIL}}">{{EMAIL}}</a>, par courrier à {{ADRESSE}}, ou appeler le {{TELEPHONE}}.</p>
+<p>Pour toute question relative au site ou aux présentes mentions légales, vous pouvez écrire à <a href="mailto:{{EMAIL}}">{{EMAIL}}</a>, par courrier à {{ADRESSE}}<span data-if="telephone">, ou appeler le {{TELEPHONE}}</span>.</p>
 
-<p><em>Dernière mise à jour : 8 octobre 2026</em></p>
+<p><em>Dernière mise à jour : 9 octobre 2026</em></p>

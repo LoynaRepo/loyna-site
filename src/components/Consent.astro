@@ -1,0 +1,135 @@
+---
+// Bandeau de consentement + mesure d'audience Google Analytics 4.
+// Rien n'est chargé chez Google tant que le visiteur n'a pas cliqué sur « Accepter » (règles CNIL :
+// refuser aussi simple qu'accepter, choix conservé 6 mois, modifiable à tout moment depuis le pied de page).
+// Sans identifiant GA4 (réglages Builder « ga4Id »), ce composant n'affiche rien.
+interface Props {
+  gaId: string;
+}
+const {gaId} = Astro.props;
+---
+
+{
+  gaId && (
+    <div class="consent" id="consent" data-ga={gaId} role="dialog" aria-labelledby="consent-title" aria-describedby="consent-text" hidden>
+      <p class="consent-title" id="consent-title">Mesure d’audience</p>
+      <p id="consent-text">
+        Avec votre accord, nous utilisons Google Analytics pour savoir quelles pages sont consultées et améliorer le site. Aucune publicité, aucun suivi sur d’autres sites.{' '}
+        <a href="/cookies/">En savoir plus</a>
+      </p>
+      <div class="consent-actions">
+        <button type="button" class="btn btn--ghost" data-consent="refuse">Refuser</button>
+        <button type="button" class="btn btn--primary" data-consent="accept">Accepter</button>
+      </div>
+    </div>
+  )
+}
+
+<script>
+  const KEY = 'loyna-consent';
+  const SIX_MOIS = 182 * 24 * 3600 * 1000;
+  const box = document.getElementById('consent') as HTMLDivElement | null;
+  const w = window as unknown as {dataLayer: unknown[]; gtag?: (...a: unknown[]) => void; loynaTrack?: (n: string, p?: object) => void};
+
+  // Événements de conversion : envoyés seulement si la mesure a été acceptée.
+  w.loynaTrack = (name, params = {}) => w.gtag?.('event', name, params);
+
+  function charger(id: string) {
+    if (w.gtag) return;
+    w.dataLayer = w.dataLayer || [];
+    w.gtag = function () {
+      // eslint-disable-next-line prefer-rest-params
+      w.dataLayer.push(arguments);
+    };
+    w.gtag('js', new Date());
+    w.gtag('config', id, {allow_google_signals: false, allow_ad_personalization_signals: false});
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
+    document.head.append(s);
+  }
+  function effacerCookiesGa() {
+    for (const c of document.cookie.split(';')) {
+      const nom = c.split('=')[0].trim();
+      if (!nom.startsWith('_ga')) continue;
+      for (const d of ['', `; domain=${location.hostname}`, `; domain=.${location.hostname}`]) {
+        document.cookie = `${nom}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/${d}`;
+      }
+    }
+  }
+  function lire(): {ok: boolean; t: number} | null {
+    try {
+      const v = JSON.parse(localStorage.getItem(KEY) || 'null');
+      return v && Date.now() - v.t < SIX_MOIS ? v : null;
+    } catch {
+      return null;
+    }
+  }
+  function enregistrer(ok: boolean) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ok, t: Date.now()}));
+    } catch {
+      /* stockage indisponible : le bandeau reviendra à la prochaine visite */
+    }
+  }
+
+  if (box) {
+    const id = box.dataset.ga!;
+    const choix = lire();
+    if (choix?.ok) charger(id);
+    if (!choix) box.hidden = false;
+    box.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-consent]');
+      if (!b) return;
+      const ok = b.dataset.consent === 'accept';
+      enregistrer(ok);
+      box.hidden = true;
+      if (ok) charger(id);
+      else if (w.gtag) {
+        effacerCookiesGa();
+        location.reload(); // décharge Google Analytics déjà actif
+      } else effacerCookiesGa();
+    });
+    document.querySelectorAll('[data-open-consent]').forEach((el) =>
+      el.addEventListener('click', () => {
+        box.hidden = false;
+        box.querySelector<HTMLButtonElement>('[data-consent="refuse"]')?.focus();
+      }),
+    );
+  }
+</script>
+
+<style>
+  .consent {
+    position: fixed;
+    z-index: 60;
+    left: 16px;
+    bottom: 16px;
+    width: min(420px, calc(100% - 32px));
+    padding: 20px 22px;
+    border-radius: var(--radius-lg, 20px);
+    background: var(--card, #fff);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-lg);
+    font-size: 0.95rem;
+  }
+  .consent[hidden] {
+    display: none;
+  }
+  .consent-title {
+    margin: 0 0 6px;
+    font-weight: 750;
+    color: var(--ink);
+  }
+  .consent p {
+    margin: 0 0 14px;
+  }
+  .consent-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .consent-actions .btn {
+    min-height: 46px;
+  }
+</style>

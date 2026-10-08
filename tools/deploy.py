@@ -1,6 +1,9 @@
-"""Mise en ligne de loyna.fr sur l'hébergement OVH (FTP chiffré, dossier www).
+"""Mise en ligne de loyna.fr sur l'hébergement OVH (SFTP chiffré, dossier www).
 
-Commandes (Python 3.13 de la machine) :
+L'hébergement gratuit OVH n'accepte pas le FTP chiffré (AUTH TLS refusé) : on passe par SFTP (port 22),
+qui chiffre le mot de passe et les fichiers. Mêmes identifiants que le FTP.
+
+Commandes (Python 3.13 de la machine, module paramiko) :
   python tools/deploy.py configurer   enregistre le mot de passe FTP dans le Gestionnaire d'identifiants Windows
   python tools/deploy.py test         connexion + contenu actuel du dossier www (ne modifie rien)
   python tools/deploy.py publier      envoie dist/ vers www/ (fichiers nouveaux ou modifiés), puis
@@ -9,23 +12,26 @@ Commandes (Python 3.13 de la machine) :
 
 Le mot de passe n'est jamais écrit dans un fichier ni affiché.
 """
-import ftplib
 import getpass
 import hashlib
 import json
 import posixpath
-import ssl
+import stat
 import sys
 from pathlib import Path
 
+import paramiko
+
 HOTE = "ftp.cluster129.hosting.ovh.net"
+PORT = 22
 UTILISATEUR = "loynafb"
 SERVICE_KEYRING = "loyna-site-ftp"
-DOSSIER_DISTANT = "/www"
+DOSSIER_DISTANT = "www"  # relatif au dossier personnel de l'hébergement
 QUOTA_OCTETS = 100 * 1024 * 1024  # hébergement gratuit OVH : 100 Mo
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 MANIFESTE = ROOT / "out" / "deploy-manifest.json"  # empreintes des fichiers déjà envoyés
+CLES_SERVEUR = ROOT / "tools" / "ovh_known_hosts"  # clé publique du serveur, vérifiée à chaque connexion
 # Fichiers propres à OVH à ne jamais supprimer dans www/
 GARDER = {".ovhconfig"}
 
@@ -39,26 +45,40 @@ def mot_de_passe() -> str:
     return mdp
 
 
-def connexion() -> ftplib.FTP_TLS:
-    ftp = ftplib.FTP_TLS(HOTE, timeout=60, context=ssl.create_default_context())
-    ftp.login(UTILISATEUR, mot_de_passe())
-    ftp.prot_p()
-    ftp.encoding = "utf-8"
-    return ftp
+class _PremiereConnexion(paramiko.MissingHostKeyPolicy):
+    """Première connexion : la clé du serveur est enregistrée, puis exigée à l'identique les fois suivantes."""
+
+    def missing_host_key(self, client, hostname, key):
+        client.get_host_keys().add(hostname, key.get_name(), key)
+        CLES_SERVEUR.write_text(f"{hostname} {key.get_name()} {key.get_base64()}\n", encoding="utf-8")
+        print(f"Clé du serveur enregistrée ({key.get_name()} {key.get_fingerprint().hex(':')}).")
 
 
-def lister(ftp: ftplib.FTP_TLS, dossier: str) -> dict[str, int]:
-    """Tous les fichiers sous `dossier` : chemin relatif -> taille."""
+def connexion() -> tuple[paramiko.SSHClient, paramiko.SFTPClient]:
+    client = paramiko.SSHClient()
+    if CLES_SERVEUR.is_file():
+        client.load_host_keys(str(CLES_SERVEUR))
+        client.set_missing_host_key_policy(paramiko.RejectPolicy())
+    else:
+        client.set_missing_host_key_policy(_PremiereConnexion())
+    client.connect(HOTE, port=PORT, username=UTILISATEUR, password=mot_de_passe(),
+                   look_for_keys=False, allow_agent=False, timeout=30)
+    return client, client.open_sftp()
+
+
+def lister(sftp: paramiko.SFTPClient, dossier: str) -> dict[str, int]:
+    """Tous les fichiers sous `dossier` : chemin relatif -> taille (-1 pour un lien symbolique,
+    comme le www/index.html qu'OVH fait pointer vers sa page « Site en construction »)."""
     out: dict[str, int] = {}
-    for nom, faits in ftp.mlsd(dossier, facts=["type", "size"]):
-        if nom in (".", ".."):
-            continue
-        chemin = posixpath.join(dossier, nom)
-        if faits.get("type") == "dir":
-            for k, v in lister(ftp, chemin).items():
-                out[posixpath.join(nom, k)] = v
-        elif faits.get("type") == "file":
-            out[nom] = int(faits.get("size", 0))
+    for a in sftp.listdir_attr(dossier):
+        chemin = posixpath.join(dossier, a.filename)
+        if stat.S_ISDIR(a.st_mode or 0):
+            for k, v in lister(sftp, chemin).items():
+                out[posixpath.join(a.filename, k)] = v
+        elif stat.S_ISREG(a.st_mode or 0):
+            out[a.filename] = int(a.st_size or 0)
+        elif stat.S_ISLNK(a.st_mode or 0):
+            out[a.filename] = -1
     return out
 
 
@@ -80,29 +100,29 @@ def cmd_configurer() -> int:
 
 
 def cmd_test() -> int:
-    ftp = connexion()
-    print("Connexion FTP chiffrée : OK")
-    fichiers = lister(ftp, DOSSIER_DISTANT)
+    client, sftp = connexion()
+    print("Connexion SFTP chiffrée : OK")
+    fichiers = lister(sftp, DOSSIER_DISTANT)
     total = sum(fichiers.values())
-    print(f"{DOSSIER_DISTANT} : {len(fichiers)} fichiers, {total / 1024 / 1024:.1f} Mo")
+    print(f"{DOSSIER_DISTANT}/ : {len(fichiers)} fichiers, {total / 1024 / 1024:.1f} Mo")
     for k in sorted(fichiers)[:25]:
         print("  ", k, fichiers[k])
     if len(fichiers) > 25:
         print("   …")
-    ftp.quit()
+    client.close()
     return 0
 
 
-def creer_dossiers(ftp: ftplib.FTP_TLS, chemin: str, existants: set[str]) -> None:
+def creer_dossiers(sftp: paramiko.SFTPClient, chemin: str, existants: set[str]) -> None:
     parties = chemin.strip("/").split("/")
     for i in range(1, len(parties) + 1):
-        d = "/" + "/".join(parties[:i])
+        d = "/".join(parties[:i])
         if d in existants:
             continue
         try:
-            ftp.mkd(d)
-        except ftplib.error_perm:
-            pass  # existe déjà
+            sftp.stat(d)
+        except FileNotFoundError:
+            sftp.mkdir(d)
         existants.add(d)
 
 
@@ -116,8 +136,8 @@ def cmd_publier(essai: bool) -> int:
         sys.exit("Le site dépasse 90 % du quota de l'hébergement : rien n'est envoyé.")
 
     manifeste = json.loads(MANIFESTE.read_text(encoding="utf-8")) if MANIFESTE.is_file() else {}
-    ftp = connexion()
-    distants = lister(ftp, DOSSIER_DISTANT)
+    client, sftp = connexion()
+    distants = lister(sftp, DOSSIER_DISTANT)
 
     a_envoyer = []
     for rel, p in sorted(locaux.items()):
@@ -133,7 +153,7 @@ def cmd_publier(essai: bool) -> int:
         print("  -", rel)
     if essai:
         print("Mode essai : rien n'a été modifié.")
-        ftp.quit()
+        client.close()
         return 0
 
     # Les pages HTML en dernier : les fichiers qu'elles appellent sont déjà en ligne.
@@ -141,25 +161,26 @@ def cmd_publier(essai: bool) -> int:
     dossiers: set[str] = set()
     for i, (rel, p, h) in enumerate(a_envoyer, 1):
         distant = posixpath.join(DOSSIER_DISTANT, rel)
-        creer_dossiers(ftp, posixpath.dirname(distant), dossiers)
-        with p.open("rb") as f:
-            ftp.storbinary(f"STOR {distant}", f)
+        creer_dossiers(sftp, posixpath.dirname(distant), dossiers)
+        if distants.get(rel) == -1:
+            sftp.remove(distant)  # lien symbolique OVH : remplacé par le vrai fichier
+        sftp.put(str(p), distant)
         manifeste[rel] = h
         if i % 20 == 0:
             print(f"  {i}/{len(a_envoyer)} envoyés")
     for rel in a_supprimer:
         try:
-            ftp.delete(posixpath.join(DOSSIER_DISTANT, rel))
-        except ftplib.error_perm as e:
+            sftp.remove(posixpath.join(DOSSIER_DISTANT, rel))
+        except OSError as e:
             print("  suppression impossible :", rel, e)
         manifeste.pop(rel, None)
     # dossiers devenus vides
     for d in sorted({posixpath.dirname(r) for r in a_supprimer if "/" in r}, key=len, reverse=True):
         try:
-            ftp.rmd(posixpath.join(DOSSIER_DISTANT, d))
-        except ftplib.error_perm:
+            sftp.rmdir(posixpath.join(DOSSIER_DISTANT, d))
+        except OSError:
             pass
-    ftp.quit()
+    client.close()
     MANIFESTE.parent.mkdir(parents=True, exist_ok=True)
     MANIFESTE.write_text(json.dumps(manifeste, indent=0, sort_keys=True), encoding="utf-8")
     print("Mise en ligne terminée : https://loyna.fr/")

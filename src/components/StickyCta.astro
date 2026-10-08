@@ -1,0 +1,75 @@
+---
+// Barre d'action fixée en bas de l'écran, sur mobile uniquement. Elle apparaît une fois le haut de page
+// dépassé et s'efface quand un champ de saisie est actif (clavier ouvert) ou quand le bandeau cookies est affiché.
+import Icon from './Icon.astro';
+interface Props {
+  primary?: {href: string; label: string};
+  secondary?: {href: string; label: string};
+}
+const {primary = {href: '/creer-ma-carte/', label: 'Créer ma carte'}, secondary = {href: '/tarifs/', label: 'Tarifs'}} = Astro.props;
+---
+
+<div class="sticky-cta" id="sticky-cta">
+  <a class="btn btn--primary" href={primary.href}>{primary.label} <Icon name="arrow-right" size={16} /></a>
+  <a class="btn btn--ghost" href={secondary.href}>{secondary.label}</a>
+</div>
+
+<script>
+  const bar = document.getElementById('sticky-cta');
+  if (bar) {
+    const update = () => bar.classList.toggle('on', window.scrollY > window.innerHeight * 0.55);
+    update();
+    window.addEventListener('scroll', update, {passive: true});
+  }
+</script>
+
+<style>
+  .sticky-cta {
+    display: none;
+  }
+  @media (max-width: 767px) {
+    .sticky-cta {
+      position: fixed;
+      z-index: 40;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+      background: rgba(251, 250, 248, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--line);
+      box-shadow: 0 -8px 24px rgba(18, 18, 22, 0.08);
+      transform: translateY(110%);
+      visibility: hidden;
+      transition:
+        transform 0.3s ease,
+        visibility 0s linear 0.3s;
+    }
+    .sticky-cta.on {
+      transform: none;
+      visibility: visible;
+      transition: transform 0.3s ease;
+    }
+    .sticky-cta .btn {
+      min-height: 48px;
+      padding-inline: 18px;
+    }
+    /* place pour que la barre ne cache jamais le bas du pied de page */
+    :global(body:has(.sticky-cta)) {
+      padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    }
+    :global(body:has(input:focus, textarea:focus, select:focus)) .sticky-cta,
+    :global(body:has(.consent:not([hidden]))) .sticky-cta {
+      display: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sticky-cta {
+      transition: none !important;
+    }
+  }
+</style>

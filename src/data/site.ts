@@ -15,11 +15,16 @@ export const SITE = {
   vatNote: 'TVA non applicable, art. 293 B du CGI',
   // Identité légale : à compléter dans Builder.io (modèle « site-settings ») ou ici.
   legal: {
-    nomDirigeant: '',
-    siret: '',
-    adresse: '',
+    nomDirigeant: 'Ewan Touquet',
+    nomCommercial: 'KOVA Elec',
+    siret: '932 811 839 00020',
+    adresse: 'C 07, 137 rue Uderzo, 34690 Fabrègues',
     telephone: '',
   },
+  // Adresse postale (registre SIRENE, siège de l'entreprise)
+  address: {street: 'C 07, 137 rue Uderzo', postalCode: '34690', locality: 'Fabrègues', region: 'Occitanie', country: 'FR'},
+  // Mesure d'audience Google Analytics 4 (« G-… ») : vide = aucun bandeau ni traceur. Modifiable dans Builder.
+  ga4Id: '',
   // Espace commerçant (LOYNA Business) : laissé vide tant que l'application n'est pas en ligne.
   appUrl: '',
   // Portail Stripe (abonnement, factures, moyen de paiement) : rempli après création du portail.

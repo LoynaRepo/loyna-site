@@ -70,11 +70,13 @@ export interface SiteSettings {
   heroSubtitle: string;
   announcement: string;
   nomDirigeant: string;
+  nomCommercial: string;
   siret: string;
   adresse: string;
   telephone: string;
   appUrl: string;
   billingPortalUrl: string;
+  ga4Id?: string;
 }
 
 // Les listes Builder (champ « list ») arrivent sous forme d'objets { value } : on les aplatit.

@@ -25,7 +25,14 @@ const organization = {
   logo: `${SITE.url}/icon-512.png`,
   email: SITE.email,
   slogan: SITE.slogan,
-  address: {'@type': 'PostalAddress', addressLocality: 'Montpellier', addressRegion: 'Occitanie', addressCountry: 'FR'},
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: SITE.address.street,
+    postalCode: SITE.address.postalCode,
+    addressLocality: SITE.address.locality,
+    addressRegion: SITE.address.region,
+    addressCountry: SITE.address.country,
+  },
   areaServed: 'FR',
   contactPoint: [{'@type': 'ContactPoint', email: SITE.email, contactType: 'customer service', availableLanguage: ['French']}],
 };

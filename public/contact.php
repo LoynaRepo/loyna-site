@@ -27,16 +27,21 @@ function erreur(string $code): void
     aller('/contact/?erreur=' . $code . '#contact-form');
 }
 // Champ sur une ligne (nom, commerce…) : sans retour à la ligne ni caractère de contrôle.
+// Texte reçu en UTF-8 (cas normal d'un navigateur) ; sinon converti depuis Windows-1252.
+function utf8(string $v): string
+{
+    return mb_check_encoding($v, 'UTF-8') ? $v : mb_convert_encoding($v, 'UTF-8', 'Windows-1252');
+}
 function ligne(string $k, int $max): string
 {
-    $v = (string) ($_POST[$k] ?? '');
+    $v = utf8((string) ($_POST[$k] ?? ''));
     $v = preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $v) ?? '';
     return trim(mb_substr($v, 0, $max));
 }
 // Champ sur plusieurs lignes (message) : retours à la ligne conservés, autres caractères de contrôle retirés.
 function texte(string $k, int $max): string
 {
-    $v = str_replace(["\r\n", "\r"], "\n", (string) ($_POST[$k] ?? ''));
+    $v = str_replace(["\r\n", "\r"], "\n", utf8((string) ($_POST[$k] ?? '')));
     $v = preg_replace('/[\x00-\x09\x0B-\x1F\x7F]+/u', ' ', $v) ?? '';
     return trim(mb_substr($v, 0, $max));
 }

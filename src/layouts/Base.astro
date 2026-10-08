@@ -4,7 +4,12 @@ import fontLatin from '@fontsource-variable/plus-jakarta-sans/files/plus-jakarta
 import Seo from '../components/Seo.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import StickyCta from '../components/StickyCta.astro';
+import Consent from '../components/Consent.astro';
+import {getSettings} from '../lib/builder';
+import {SITE} from '../data/site';
 
+type Link = {href: string; label: string};
 interface Props {
   title: string;
   description: string;
@@ -15,8 +20,13 @@ interface Props {
   breadcrumbs?: {name: string; url: string}[];
   published?: string;
   bare?: boolean;
+  /** Barre d'action fixe sur mobile : false pour la masquer, ou liens personnalisés. */
+  stickyCta?: false | {primary?: Link; secondary?: Link};
 }
 const props = Astro.props;
+const {stickyCta = {}} = props;
+const settings = await getSettings();
+const gaId = (settings.ga4Id || SITE.ga4Id || '').trim();
 ---
 
 <!doctype html>
@@ -33,7 +43,7 @@ const props = Astro.props;
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="alternate" type="application/rss+xml" title="Blog LOYNA" href="/rss.xml" />
-    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="sitemap" href="/sitemap.xml" />
     <slot name="head" />
   </head>
   <body>
@@ -42,6 +52,49 @@ const props = Astro.props;
     <main id="contenu">
       <slot />
     </main>
-    {!props.bare && <Footer />}
+    {!props.bare && <Footer consent={!!gaId} />}
+    {!props.bare && stickyCta !== false && <StickyCta {...stickyCta} />}
+    {!props.bare && <Consent gaId={gaId} />}
   </body>
 </html>
+
+<script>
+  // États de chargement : liens et formulaires marqués data-loading (« Redirection… », « Envoi… »).
+  const busy = (el: HTMLElement) => {
+    const label = el.dataset.loading;
+    if (label) {
+      el.dataset.label = el.innerHTML;
+      el.textContent = label;
+    }
+    el.classList.add('is-loading');
+    el.setAttribute('aria-busy', 'true');
+  };
+  document.addEventListener('click', (e) => {
+    const me = e as MouseEvent;
+    if (me.button || me.metaKey || me.ctrlKey || me.shiftKey || me.altKey) return;
+    const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[data-loading]');
+    if (!a) return;
+    busy(a);
+    const plan = a.dataset.plan;
+    if (plan) (window as unknown as {loynaTrack?: (n: string, p?: object) => void}).loynaTrack?.('begin_checkout', {items: [{item_id: plan}]});
+  });
+  document.addEventListener('submit', (e) => {
+    const f = e.target as HTMLFormElement;
+    const btn = f.querySelector<HTMLButtonElement>('button[type="submit"][data-loading]');
+    if (!btn) return;
+    if (btn.classList.contains('is-loading')) {
+      e.preventDefault(); // évite un double envoi
+      return;
+    }
+    busy(btn);
+  });
+  // Retour arrière depuis Stripe (cache du navigateur) : on rend les boutons à nouveau cliquables.
+  window.addEventListener('pageshow', (e) => {
+    if (!e.persisted) return;
+    document.querySelectorAll<HTMLElement>('.is-loading').forEach((el) => {
+      if (el.dataset.label) el.innerHTML = el.dataset.label;
+      el.classList.remove('is-loading');
+      el.removeAttribute('aria-busy');
+    });
+  });
+</script>

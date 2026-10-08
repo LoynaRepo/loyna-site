@@ -91,13 +91,13 @@
   },
   {
     "q": "Suis-je engagé sur une durée ?",
-    "a": "Pas en paiement mensuel : il n’y a aucun engagement de durée, vous pouvez résilier à tout moment et la résiliation prend effet à la fin de la période en cours. Le paiement annuel, lui, vous engage pour 12 mois, en échange de 15 % de réduction et de la mise en service offerte.",
+    "a": "Oui, pour 12 mois au départ. En paiement mensuel, l’abonnement comporte un engagement minimum de 12 mois, réglé mois par mois ; ensuite, vous pouvez résilier à la fin de n’importe quel mois, sans frais. Le paiement annuel couvre aussi 12 mois, réglés d’avance, avec 15 % de réduction et la mise en service offerte.",
     "categorie": "Tarifs et abonnement",
     "ordre": 16
   },
   {
     "q": "Comment résilier ou changer de formule ?",
-    "a": "Tout se fait depuis votre espace client. Vous pouvez y changer de formule, par exemple passer d’Essentiel à Growth pour envoyer des SMS, ou résilier votre abonnement. En paiement mensuel, la résiliation prend effet à la fin de la période en cours. Pour toute question, écrivez-nous à contact@loyna.fr.",
+    "a": "Tout se fait depuis votre espace client. Vous pouvez y changer de formule, par exemple passer d’Essentiel à Growth pour envoyer des SMS, ou résilier votre abonnement. En paiement mensuel, une résiliation demandée pendant les 12 premiers mois prend effet à la fin de cette première année ; ensuite, elle prend effet à la fin du mois en cours. Pour toute question, écrivez-nous à contact@loyna.fr.",
     "categorie": "Tarifs et abonnement",
     "ordre": 17
   },
