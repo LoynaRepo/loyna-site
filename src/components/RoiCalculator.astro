@@ -1,27 +1,33 @@
 ---
 // Simulateur de rentabilité : uniquement de l'arithmétique sur les chiffres saisis par le commerçant
-// (aucune statistique inventée). Résultat calculé côté serveur pour les valeurs par défaut, puis en direct.
+// (aucune statistique inventée). Le gain net, le graphique et le multiple dépendent de la formule choisie.
+// Résultat calculé côté serveur pour les valeurs par défaut, puis en direct.
 import {PLANS, euro} from '../data/site';
 const defaults = {clients: 200, panier: 25, pct: 10, plan: 'growth'};
 const prix = Object.fromEntries(PLANS.map((p) => [p.id, p.monthly]));
-const visites = Math.round((defaults.clients * defaults.pct) / 100);
-const ca = visites * defaults.panier;
-const seuil = Math.ceil(prix[defaults.plan] / defaults.panier);
+const calc = (clients: number, panier: number, pct: number, p: number) => {
+  const visites = Math.round((clients * pct) / 100);
+  const ca = visites * panier;
+  return {visites, ca, net: ca - p, seuil: Math.ceil(p / panier), multiple: p ? ca / p : 0, part: ca > 0 ? Math.min(100, (p / ca) * 100) : 100};
+};
+const r = calc(defaults.clients, defaults.panier, defaults.pct, prix[defaults.plan]);
+const fmtMult = (m: number) => (m >= 10 ? Math.round(m) : Math.round(m * 10) / 10).toLocaleString('fr-FR');
+const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - min)) * 100}%`;
 ---
 
 <div class="roi" id="roi" data-prix={JSON.stringify(prix)}>
   <form class="roi-inputs" aria-label="Vos chiffres">
     <div class="roi-field">
       <label for="roi-clients">Clients différents par mois <output for="roi-clients" data-out="clients">{defaults.clients}</output></label>
-      <input id="roi-clients" name="clients" type="range" min="20" max="1500" step="10" value={defaults.clients} />
+      <input id="roi-clients" name="clients" type="range" min="20" max="1500" step="10" value={defaults.clients} style={`--p:${pctOf(defaults.clients, 20, 1500)}`} />
     </div>
     <div class="roi-field">
       <label for="roi-panier">Panier moyen <output for="roi-panier" data-out="panier">{defaults.panier} €</output></label>
-      <input id="roi-panier" name="panier" type="range" min="5" max="150" step="1" value={defaults.panier} />
+      <input id="roi-panier" name="panier" type="range" min="5" max="150" step="1" value={defaults.panier} style={`--p:${pctOf(defaults.panier, 5, 150)}`} />
     </div>
     <div class="roi-field">
       <label for="roi-pct">Clients qui reviennent une fois de plus par mois <output for="roi-pct" data-out="pct">{defaults.pct} %</output></label>
-      <input id="roi-pct" name="pct" type="range" min="2" max="30" step="1" value={defaults.pct} />
+      <input id="roi-pct" name="pct" type="range" min="2" max="30" step="1" value={defaults.pct} style={`--p:${pctOf(defaults.pct, 2, 30)}`} />
     </div>
     <fieldset class="roi-plans">
       <legend>Formule</legend>
@@ -39,14 +45,28 @@ const seuil = Math.ceil(prix[defaults.plan] / defaults.panier);
   </form>
 
   <div class="roi-result" aria-live="polite">
-    <p class="roi-kicker">Avec ces chiffres, chaque mois :</p>
-    <p class="roi-big"><span data-out="ca">+ {euro(ca)}</span><small>de chiffre d’affaires</small></p>
+    <p class="roi-kicker">Gain estimé chaque mois avec <b data-out="plan-name">Growth</b> :</p>
+    <p class="roi-big"><span data-out="net">{r.net >= 0 ? '+ ' : '− '}{euro(Math.abs(r.net))}</span><small>de chiffre d’affaires en plus, abonnement déduit</small></p>
+
+    <div class="roi-chart" aria-hidden="true">
+      <div class="bar-row">
+        <span class="bar-label">Chiffre d’affaires en plus</span>
+        <div class="bar"><i class="bar-ca" style="width:100%"></i></div>
+        <b data-out="ca">{euro(r.ca)}</b>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Abonnement LOYNA</span>
+        <div class="bar"><i class="bar-cost" data-bar="cost" style={`width:${Math.max(2, r.part)}%`}></i></div>
+        <b data-out="prix">{euro(prix[defaults.plan])}</b>
+      </div>
+    </div>
+
     <ul class="roi-lines">
-      <li><span>Visites en plus</span><b data-out="visites">{visites}</b></li>
-      <li><span>Prix de LOYNA</span><b data-out="prix">{euro(prix[defaults.plan])} HT</b></li>
-      <li><span>Rentabilisé dès</span><b data-out="seuil">{seuil} visite{seuil > 1 ? 's' : ''} en plus</b></li>
+      <li><span>Visites en plus par mois</span><b data-out="visites">{r.visites}</b></li>
+      <li><span>Rentabilisé dès</span><b data-out="seuil">{r.seuil} visite{r.seuil > 1 ? 's' : ''} en plus</b></li>
+      <li><span>Retour sur l’abonnement</span><b data-out="multiple">× {fmtMult(r.multiple)}</b></li>
     </ul>
-    <p class="roi-note">Simulation indicative calculée à partir de vos propres chiffres, en chiffre d’affaires (votre marge en dépend). Elle ne constitue pas une promesse de résultat.</p>
+    <p class="roi-note">Simulation indicative calculée à partir de vos propres chiffres, en chiffre d’affaires (votre marge en dépend), prix HT. Elle ne constitue pas une promesse de résultat.</p>
     <div class="roi-cta">
       <a class="btn btn--gold" href="/creer-ma-carte/">Créer l’aperçu de ma carte</a>
       <a class="btn btn--ghost" href="/tarifs/">Voir les tarifs</a>
@@ -58,26 +78,50 @@ const seuil = Math.ceil(prix[defaults.plan] / defaults.panier);
   const root = document.getElementById('roi');
   if (root) {
     const prix = JSON.parse(root.dataset.prix || '{}') as Record<string, number>;
-    const fmt = (n: number) => n.toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' €';
+    const noms: Record<string, string> = {essentiel: 'Essentiel', growth: 'Growth', pro: 'Pro'};
+    const fmt = (n: number) => Math.round(n).toLocaleString('fr-FR') + ' €';
     const out = (k: string, v: string) => root.querySelectorAll(`[data-out="${k}"]`).forEach((el) => (el.textContent = v));
     const form = root.querySelector('form')!;
+    const cost = root.querySelector<HTMLElement>('[data-bar="cost"]')!;
+    const big = root.querySelector<HTMLElement>('.roi-big span')!;
+    let lastPlan = '';
     const update = () => {
       const f = new FormData(form);
       const clients = Number(f.get('clients'));
       const panier = Number(f.get('panier'));
       const pct = Number(f.get('pct'));
-      const p = prix[String(f.get('plan'))] ?? 49;
+      const plan = String(f.get('plan'));
+      const p = prix[plan] ?? 49;
       const visites = Math.round((clients * pct) / 100);
+      const ca = visites * panier;
+      const net = ca - p;
       const seuil = Math.ceil(p / panier);
+      const multiple = p ? ca / p : 0;
+      // remplissage des curseurs
+      form.querySelectorAll<HTMLInputElement>('input[type=range]').forEach((r) => {
+        r.style.setProperty('--p', `${((Number(r.value) - Number(r.min)) / (Number(r.max) - Number(r.min))) * 100}%`);
+      });
       out('clients', String(clients));
       out('panier', `${panier} €`);
       out('pct', `${pct} %`);
-      out('ca', `+ ${fmt(visites * panier)}`);
+      out('plan-name', noms[plan] || plan);
+      out('net', `${net >= 0 ? '+ ' : '− '}${fmt(Math.abs(net))}`);
+      out('ca', fmt(ca));
+      out('prix', fmt(p));
       out('visites', String(visites));
-      out('prix', `${fmt(p)} HT`);
       out('seuil', `${seuil} visite${seuil > 1 ? 's' : ''} en plus`);
+      out('multiple', `× ${(multiple >= 10 ? Math.round(multiple) : Math.round(multiple * 10) / 10).toLocaleString('fr-FR')}`);
+      cost.style.width = `${Math.max(2, ca > 0 ? Math.min(100, (p / ca) * 100) : 100)}%`;
+      root.classList.toggle('roi--loss', net < 0);
+      if (plan !== lastPlan && lastPlan) {
+        big.classList.remove('flash');
+        void big.offsetWidth;
+        big.classList.add('flash');
+      }
+      lastPlan = plan;
     };
     form.addEventListener('input', update);
+    form.addEventListener('change', update);
     update();
   }
 </script>
@@ -99,6 +143,7 @@ const seuil = Math.ceil(prix[defaults.plan] / defaults.panier);
     border: 1px solid rgba(250, 247, 240, 0.08);
     display: grid;
     gap: 26px;
+    align-content: start;
   }
   .roi-field label {
     display: flex;
@@ -106,18 +151,63 @@ const seuil = Math.ceil(prix[defaults.plan] / defaults.panier);
     gap: 12px;
     font-weight: 600;
     color: #e9e5dc;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
   .roi-field output {
     color: #e6c27a;
     font-weight: 800;
     white-space: nowrap;
   }
+
+  /* Curseurs dessinés à la main : même rendu sur tous les navigateurs */
   .roi-field input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
     width: 100%;
-    accent-color: #c9963f;
     height: 28px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
   }
+  .roi-field input[type='range']:focus-visible {
+    outline: 3px solid rgba(230, 194, 122, 0.5);
+    outline-offset: 4px;
+    border-radius: 999px;
+  }
+  .roi-field input[type='range']::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #a87530, #e6c27a var(--p, 50%), rgba(250, 247, 240, 0.14) var(--p, 50%));
+  }
+  .roi-field input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    margin-top: -8px;
+    border-radius: 50%;
+    background: #faf7f0;
+    border: 4px solid #c9963f;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  }
+  .roi-field input[type='range']::-moz-range-track {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(250, 247, 240, 0.14);
+  }
+  .roi-field input[type='range']::-moz-range-progress {
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #a87530, #e6c27a);
+  }
+  .roi-field input[type='range']::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #faf7f0;
+    border: 4px solid #c9963f;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  }
+
   .roi-plans {
     border: 0;
     padding: 0;
@@ -146,6 +236,9 @@ const seuil = Math.ceil(prix[defaults.plan] / defaults.panier);
     color: #e9e5dc;
     font-weight: 600;
     cursor: pointer;
+    transition:
+      background 0.2s,
+      color 0.2s;
   }
   .roi-plans input:checked + span {
     background: var(--grad-gold);
@@ -156,6 +249,7 @@ const seuil = Math.ceil(prix[defaults.plan] / defaults.panier);
     outline: 3px solid #e6c27a;
     outline-offset: 2px;
   }
+
   .roi-result {
     background:
       radial-gradient(80% 60% at 100% 0%, rgba(230, 194, 122, 0.25), transparent 70%),
@@ -168,6 +262,9 @@ const seuil = Math.ceil(prix[defaults.plan] / defaults.panier);
     margin: 0 0 6px;
     color: #c9c2b4;
     font-weight: 600;
+  }
+  .roi-kicker b {
+    color: #e6c27a;
   }
   .roi-big {
     margin: 0 0 22px;
@@ -183,24 +280,72 @@ const seuil = Math.ceil(prix[defaults.plan] / defaults.panier);
     background-clip: text;
     color: transparent;
   }
+  .roi--loss .roi-big span {
+    background: none;
+    color: #e8a29a;
+  }
+  .roi-big span.flash {
+    animation: flash 0.5s ease-out;
+  }
   .roi-big small {
     color: #e9e5dc;
-    font-size: 1.05rem;
+    font-size: 1rem;
     font-weight: 600;
-    margin-top: 6px;
+    margin-top: 8px;
   }
+
+  .roi-chart {
+    display: grid;
+    gap: 12px;
+    margin: 0 0 14px;
+  }
+  .bar-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 12px;
+    align-items: center;
+  }
+  .bar-label {
+    grid-column: 1 / -1;
+    color: #c9c2b4;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+  .bar {
+    height: 14px;
+    border-radius: 999px;
+    background: rgba(250, 247, 240, 0.08);
+    overflow: hidden;
+  }
+  .bar i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .bar-ca {
+    background: var(--grad-gold);
+  }
+  .bar-cost {
+    background: #8f887c;
+  }
+  .bar-row b {
+    color: #faf7f0;
+    min-width: 72px;
+    text-align: right;
+  }
+
   .roi-lines {
     list-style: none;
     padding: 0;
     margin: 0 0 18px;
     display: grid;
-    gap: 2px;
   }
   .roi-lines li {
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    padding: 12px 0;
+    padding: 11px 0;
     border-bottom: 1px solid rgba(250, 247, 240, 0.1);
     color: #c9c2b4;
   }
@@ -223,9 +368,20 @@ const seuil = Math.ceil(prix[defaults.plan] / defaults.panier);
     color: #faf7f0;
     border-color: rgba(250, 247, 240, 0.25);
   }
+  @keyframes flash {
+    from {
+      transform: scale(1.06);
+      filter: brightness(1.4);
+    }
+  }
   @media (max-width: 900px) {
     .roi {
       grid-template-columns: 1fr;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bar i {
+      transition: none;
     }
   }
 </style>

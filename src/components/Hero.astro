@@ -29,12 +29,12 @@ const demos: Demo[] = [
 ];
 const first = demos[0];
 const swatches = [
-  ['#1f1c17', '#d9b27a'],
-  ['#14213d', '#fca311'],
-  ['#7a3d1c', '#f2c879'],
-  ['#1e4d3a', '#e9c46a'],
-  ['#5b2a86', '#f4c2ff'],
-  ['#b3261e', '#ffc94a'],
+  {bg: '#1f1c17', accent: '#d9b27a', nom: 'Noir et or'},
+  {bg: '#14213d', accent: '#fca311', nom: 'Marine et orange'},
+  {bg: '#7a3d1c', accent: '#f2c879', nom: 'Cognac et miel'},
+  {bg: '#1e4d3a', accent: '#e9c46a', nom: 'Forêt et safran'},
+  {bg: '#5b2a86', accent: '#f4c2ff', nom: 'Prune et lilas'},
+  {bg: '#b3261e', accent: '#ffc94a', nom: 'Rouge et jaune'},
 ];
 const offer = offerActive();
 ---
@@ -93,8 +93,14 @@ const offer = offerActive();
         <div class="try-colors" role="radiogroup" aria-label="Couleur de la carte">
           <span>Couleur&nbsp;:</span>
           {
-            swatches.map(([bg, accent], i) => (
-              <button type="button" class="sw" data-bg={bg} data-accent={accent} aria-label={`Couleur ${i + 1}`} aria-pressed={i === 0 ? 'true' : 'false'} style={`--sbg:${bg};--sac:${accent}`} />
+            swatches.map((c, i) => (
+              <button type="button" class="sw" data-bg={c.bg} data-accent={c.accent} aria-label={c.nom} title={c.nom} aria-pressed={i === 0 ? 'true' : 'false'} style={`--sbg:${c.bg};--sac:${c.accent}`}>
+                <span class="sw-card">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              </button>
             ))
           }
         </div>
@@ -309,25 +315,55 @@ const offer = offerActive();
   }
   .try-colors {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 4px 6px;
     margin-top: 12px;
     color: #a8a194;
     font-size: 0.9rem;
     font-weight: 600;
   }
   .sw {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    border: 2px solid rgba(250, 247, 240, 0.25);
-    background: linear-gradient(135deg, var(--sbg) 55%, var(--sac) 55%);
+    padding: 3px;
+    border-radius: 11px;
+    border: 2px solid transparent;
+    background: none;
     cursor: pointer;
-    padding: 0;
+    transition:
+      transform 0.15s,
+      border-color 0.15s;
+  }
+  .sw:hover {
+    transform: translateY(-2px);
   }
   .sw[aria-pressed='true'] {
     border-color: #e6c27a;
-    box-shadow: 0 0 0 3px rgba(230, 194, 122, 0.35);
+  }
+  .sw:focus-visible {
+    outline: 3px solid rgba(230, 194, 122, 0.55);
+    outline-offset: 2px;
+  }
+  /* mini-carte : fond de la carte + trois tampons de la couleur d'accent */
+  .sw-card {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    width: 44px;
+    height: 28px;
+    padding: 0 6px 6px;
+    border-radius: 7px;
+    background:
+      radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--sac) 40%, transparent), transparent 60%),
+      var(--sbg);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+      0 4px 10px rgba(0, 0, 0, 0.35);
+  }
+  .sw-card i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--sac);
   }
   .hero-alt {
     margin: 14px 0 0;

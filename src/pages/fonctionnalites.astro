@@ -12,6 +12,7 @@ import tableau from '../assets/shots/tableau-de-bord.png';
 import sms from '../assets/shots/sms.png';
 import automatisations from '../assets/shots/automatisations.png';
 import inscription from '../assets/shots/inscription.png';
+import walletShot from '../assets/shots/wallet-card.png';
 
 const crumbs = [
   {name: 'Accueil', url: '/'},
@@ -92,6 +93,27 @@ const blocks = [
   },
 ];
 
+// Haut de page : chaque fonctionnalité a son icône, sa capture et une phrase d'accroche.
+const ICONES: Record<string, string> = {
+  'carte-wallet': 'wallet',
+  inscription: 'user-plus',
+  scanner: 'scan-line',
+  recompenses: 'gift',
+  notifications: 'bell',
+  automatisations: 'workflow',
+  'campagnes-sms': 'message-square-text',
+  'tableau-de-bord': 'chart-column',
+};
+const explorer = blocks.map((b) => ({
+  id: b.id,
+  label: b.eyebrow,
+  title: b.title,
+  short: b.text.split(/(?<=\.)\s/)[0],
+  icon: ICONES[b.id],
+  img: b.img ?? walletShot,
+  alt: b.alt ?? 'Carte de fidélité LOYNA dans Apple Wallet',
+}));
+
 const more = [
   {icon: 'users', title: 'Équipe et rôles', text: 'Un compte par personne : propriétaire, administrateur, employé. Pas de limite d’employés.'},
   {icon: 'palette', title: 'Personnalisation sans code', text: 'Logo, couleurs, nom du programme et récompense, modifiables quand vous voulez.'},
@@ -108,16 +130,45 @@ const more = [
   ogImage="/og/fonctionnalites.png"
   breadcrumbs={crumbs}
 >
-  <section class="page-hero">
-    <div class="container">
-      <Breadcrumbs items={crumbs} />
-      <p class="eyebrow">Fonctionnalités</p>
-      <h1>Tout pour fidéliser vos clients, rien de compliqué</h1>
-      <p class="lead">Une carte dans le téléphone de vos clients, un scanner dans le vôtre, et des automatisations qui travaillent pour vous.</p>
-      <nav class="toc" aria-label="Sommaire">
-        {blocks.map((b) => <a href={`#${b.id}`}>{b.eyebrow}</a>)}
-      </nav>
+  <section class="f-hero" id="explorer">
+    <div class="container f-grid">
+      <div class="f-copy">
+        <Breadcrumbs items={crumbs} />
+        <p class="eyebrow">Fonctionnalités</p>
+        <h1>Tout pour fidéliser vos clients, <span class="gold-text">rien de compliqué</span></h1>
+        <p class="lead">Une carte dans le téléphone de vos clients, un scanner dans le vôtre, et des automatisations qui travaillent pour vous.</p>
+      </div>
+
+      <div class="f-tabs" role="tablist" aria-label="Fonctionnalités">
+        {
+          explorer.map((f, k) => (
+            <a href={`#${f.id}`} class="f-tab" role="tab" id={`tab-${f.id}`} aria-selected={k === 0 ? 'true' : 'false'} aria-controls="f-panel" data-k={k}>
+              <Icon name={f.icon} size={18} />
+              <span>{f.label}</span>
+              <i class="f-progress" aria-hidden="true" />
+            </a>
+          ))
+        }
+      </div>
+
+      <div class="f-stage" aria-hidden="true">
+        {
+          explorer.map((f, k) => (
+            <figure class={`f-shot ${k === 0 ? 'on' : ''}`} data-k={k}>
+              <Picture src={f.img} formats={['avif', 'webp']} fallbackFormat="webp" widths={[360, 540]} sizes="(max-width: 900px) 80vw, 420px" alt={f.alt} loading={k === 0 ? 'eager' : 'lazy'} fetchpriority={k === 0 ? 'high' : undefined} />
+            </figure>
+          ))
+        }
+        <div class="f-count"><b data-f="num">1</b> / {explorer.length}</div>
+      </div>
+
+      <div class="f-panel" id="f-panel" role="tabpanel" aria-live="polite">
+        <p class="f-title" data-f="title">{explorer[0].title}</p>
+        <p class="f-text" data-f="short">{explorer[0].short}</p>
+        <a class="f-more" href={`#${explorer[0].id}`} data-f="more">Voir le détail <Icon name="arrow-down" size={16} /></a>
+      </div>
     </div>
+    <script type="application/json" id="f-data" set:html={JSON.stringify(explorer.map((f) => ({id: f.id, title: f.title, short: f.short})))} />
   </section>
 
   {
@@ -176,27 +227,295 @@ const more = [
   <CtaBand />
 </Base>
 
-<style>
-  .toc {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 34px;
+<script>
+  // Explorateur : onglet actif = capture affichée ; défilement automatique jusqu'à la première interaction.
+  const root = document.getElementById('explorer');
+  if (root) {
+    const data = JSON.parse(document.getElementById('f-data')!.textContent || '[]') as {id: string; title: string; short: string}[];
+    const tabs = [...root.querySelectorAll<HTMLAnchorElement>('.f-tab')];
+    const shots = [...root.querySelectorAll<HTMLElement>('.f-shot')];
+    const strip = root.querySelector<HTMLElement>('.f-tabs')!;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let cur = 0;
+    let timer = 0;
+    const set = (k: number) => {
+      cur = (k + data.length) % data.length;
+      tabs.forEach((t, n) => {
+        t.setAttribute('aria-selected', n === cur ? 'true' : 'false');
+        t.tabIndex = n === cur ? 0 : -1;
+      });
+      shots.forEach((sh, n) => sh.classList.toggle('on', n === cur));
+      root.querySelector('[data-f="num"]')!.textContent = String(cur + 1);
+      root.querySelector('[data-f="title"]')!.textContent = data[cur].title;
+      root.querySelector('[data-f="short"]')!.textContent = data[cur].short;
+      root.querySelector<HTMLAnchorElement>('[data-f="more"]')!.href = `#${data[cur].id}`;
+      // rangée d'onglets défilante (mobile) : on amène l'onglet actif au centre, sans faire défiler la page
+      if (strip.scrollWidth > strip.clientWidth) {
+        const t = tabs[cur];
+        strip.scrollTo({left: t.offsetLeft - (strip.clientWidth - t.offsetWidth) / 2, behavior: reduce ? 'auto' : 'smooth'});
+      }
+    };
+    const stop = () => {
+      window.clearInterval(timer);
+      root.classList.add('manual');
+    };
+    if (!reduce) {
+      root.classList.add('auto');
+      timer = window.setInterval(() => set(cur + 1), 4500);
+    }
+    tabs.forEach((t, n) => {
+      t.addEventListener('click', (e) => {
+        e.preventDefault();
+        stop();
+        set(n);
+      });
+      t.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          stop();
+          set(cur + (e.key === 'ArrowRight' ? 1 : -1));
+          tabs[cur].focus();
+        }
+      });
+    });
+    root.querySelector('.f-stage')?.addEventListener('pointerenter', stop);
   }
-  .toc a {
-    padding: 9px 16px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: var(--card);
-    color: var(--ink);
+</script>
+
+<style>
+  /* Haut de page : explorateur visuel des fonctionnalités */
+  .f-hero {
+    padding: clamp(36px, 5vw, 72px) 0 clamp(44px, 6vw, 84px);
+    color: #e9e5dc;
+    background:
+      radial-gradient(50% 70% at 80% 35%, rgba(230, 194, 122, 0.22), transparent 70%),
+      radial-gradient(40% 60% at 0% 100%, rgba(201, 150, 63, 0.12), transparent 70%),
+      linear-gradient(180deg, #121216, #17151a);
+  }
+  .f-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    grid-template-areas:
+      'copy stage'
+      'tabs stage'
+      'panel stage';
+    column-gap: clamp(30px, 5vw, 72px);
+    align-items: start;
+  }
+  .f-copy {
+    grid-area: copy;
+  }
+  .f-copy :global(.breadcrumbs a),
+  .f-copy :global(.breadcrumbs li) {
+    color: #a8a194;
+  }
+  .f-copy :global(.breadcrumbs li[aria-current]) {
+    color: #e9e5dc;
+  }
+  .f-copy h1 {
+    color: #faf7f0;
+    font-size: clamp(2.2rem, 4.6vw, 3.6rem);
+  }
+  .f-copy .eyebrow {
+    color: #e6c27a;
+  }
+  .f-copy .lead {
+    color: #c9c2b4;
+    max-width: 560px;
+  }
+  .f-tabs {
+    grid-area: tabs;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .f-tab {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(250, 247, 240, 0.12);
+    background: rgba(250, 247, 240, 0.04);
+    color: #d9d2c4;
     text-decoration: none;
     font-weight: 600;
-    font-size: 0.93rem;
+    font-size: 0.95rem;
+    transition:
+      background 0.2s,
+      border-color 0.2s,
+      color 0.2s;
   }
-  .toc a:hover {
-    border-color: var(--ink);
+  .f-tab :global(svg) {
+    color: #e6c27a;
+    flex-shrink: 0;
   }
+  .f-tab:hover {
+    border-color: rgba(230, 194, 122, 0.45);
+    color: #fff;
+  }
+  .f-tab[aria-selected='true'] {
+    background: rgba(230, 194, 122, 0.14);
+    border-color: rgba(230, 194, 122, 0.6);
+    color: #fff;
+  }
+  .f-tab:focus-visible {
+    outline: 3px solid rgba(230, 194, 122, 0.55);
+    outline-offset: 2px;
+  }
+  /* barre de progression du défilement automatique */
+  .f-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    width: 0;
+    background: var(--grad-gold);
+  }
+  :global(.auto:not(.manual)) .f-tab[aria-selected='true'] .f-progress {
+    animation: fprog 4.5s linear;
+  }
+  .f-panel {
+    grid-area: panel;
+    margin-top: 22px;
+    padding-left: 16px;
+    border-left: 3px solid #c9963f;
+    min-height: 118px;
+  }
+  .f-title {
+    margin: 0 0 6px;
+    font-weight: 750;
+    font-size: 1.15rem;
+    color: #faf7f0;
+  }
+  .f-text {
+    margin: 0 0 10px;
+    color: #c9c2b4;
+  }
+  .f-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #e6c27a;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .f-more:hover {
+    text-decoration: underline;
+  }
+  .f-stage {
+    grid-area: stage;
+    position: relative;
+    align-self: center;
+    aspect-ratio: 4 / 5;
+    width: 100%;
+    max-width: 470px;
+    justify-self: center;
+    border-radius: 32px;
+    background:
+      radial-gradient(70% 60% at 50% 40%, rgba(230, 194, 122, 0.28), transparent 70%),
+      #0d0c10;
+    border: 1px solid rgba(230, 194, 122, 0.22);
+    box-shadow: 0 40px 90px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+  }
+  .f-shot {
+    position: absolute;
+    inset: 6%;
+    margin: 0;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+    transition:
+      opacity 0.5s ease,
+      transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .f-shot.on {
+    opacity: 1;
+    transform: none;
+  }
+  .f-shot :global(picture) {
+    display: contents;
+  }
+  .f-shot :global(img) {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 18px;
+    /* bords de la capture fondus dans la vitrine */
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent), linear-gradient(to bottom, transparent, #000 6%, #000 94%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent), linear-gradient(to bottom, transparent, #000 6%, #000 94%, transparent);
+    mask-composite: intersect;
+  }
+  .f-count {
+    position: absolute;
+    right: 16px;
+    bottom: 14px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(18, 18, 22, 0.7);
+    color: #c9c2b4;
+    font-size: 0.82rem;
+  }
+  .f-count b {
+    color: #e6c27a;
+  }
+  @keyframes fprog {
+    from {
+      width: 0;
+    }
+    to {
+      width: 100%;
+    }
+  }
+  @media (max-width: 900px) {
+    .f-grid {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        'copy'
+        'tabs'
+        'stage'
+        'panel';
+    }
+    .f-tabs {
+      display: flex;
+      overflow-x: auto;
+      gap: 8px;
+      margin: 6px -20px 0;
+      padding: 4px 20px 10px;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+    }
+    .f-tabs::-webkit-scrollbar {
+      display: none;
+    }
+    .f-tab {
+      flex: 0 0 auto;
+      scroll-snap-align: center;
+      padding: 10px 14px;
+    }
+    .f-stage {
+      margin-top: 18px;
+      max-width: 380px;
+      aspect-ratio: 1 / 1;
+    }
+    .f-panel {
+      min-height: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .f-shot {
+      transition: none;
+    }
+  }
+
   .feat {
     display: grid;
     grid-template-columns: 1.1fr 0.9fr;
