@@ -1,4 +1,4 @@
-/* LOYNA — charte du site : crème, noir et or, beaucoup d'air. */
+/* LOYNA — charte du site : noir, or et crème chaud, beaucoup d'air. */
 @import '@fontsource-variable/plus-jakarta-sans/wght.css';
 
 /* Police de secours aux métriques proches : évite les sauts de mise en page au chargement */
@@ -16,12 +16,13 @@
   --ink-2: #1c1b21;
   --text: #1d1c22;
   --muted: #5d5850;
-  --line: #e9e2d6;
-  --bg: #fbfaf8;
-  --bg-alt: #f5f0e7;
-  --card: #ffffff;
+  --line: #e3d7c2;
+  --bg: #f7f1e6;
+  --bg-alt: #ede2cf;
+  --card: #fffdf8;
+  --ink-3: #26231d;
   --gold: #c9963f;
-  --gold-strong: #8a6120;
+  --gold-strong: #7a5418;
   --gold-soft: #f3e3c3;
   --grad-gold: linear-gradient(135deg, #e6c27a 0%, #c9963f 55%, #a87530 100%);
   --green: #1f9d5c;
@@ -134,9 +135,26 @@ p {
 .section--alt {
   background: var(--bg-alt);
 }
+/* Fond sable avec halo doré discret */
+.section--warm {
+  background:
+    radial-gradient(60% 50% at 0% 0%, rgba(230, 194, 122, 0.28), transparent 70%),
+    radial-gradient(50% 45% at 100% 100%, rgba(201, 150, 63, 0.18), transparent 70%),
+    var(--bg-alt);
+}
 .section--dark {
-  background: var(--ink);
+  background:
+    radial-gradient(55% 60% at 85% 0%, rgba(230, 194, 122, 0.16), transparent 70%),
+    radial-gradient(45% 50% at 0% 100%, rgba(201, 150, 63, 0.1), transparent 70%),
+    var(--ink);
   color: #e9e5dc;
+}
+.section--dark .lead,
+.section--dark p {
+  color: #c9c2b4;
+}
+.section--dark a:not(.btn) {
+  color: #e6c27a;
 }
 .section--dark h2,
 .section--dark h3 {
@@ -165,7 +183,8 @@ p {
   color: var(--gold-strong);
   margin-bottom: 18px;
 }
-.section--dark .eyebrow {
+.section--dark .eyebrow,
+.section--dark .section-head .eyebrow {
   color: #e6c27a;
 }
 .lead {
@@ -354,6 +373,11 @@ p {
 .page-hero {
   padding: clamp(56px, 8vw, 104px) 0 clamp(40px, 6vw, 72px);
   text-align: center;
+  background:
+    radial-gradient(50% 80% at 50% 0%, rgba(230, 194, 122, 0.3), transparent 70%),
+    linear-gradient(180deg, var(--bg-alt), var(--bg));
+  border-bottom: 1px solid var(--line);
+  margin-bottom: clamp(32px, 5vw, 64px);
 }
 .page-hero .lead {
   max-width: 720px;
@@ -485,6 +509,14 @@ p {
 .cta-band .btn--ghost {
   color: #faf7f0;
   border-color: rgba(250, 247, 240, 0.25);
+}
+.cta-band .cta-alt {
+  margin: 22px auto 0;
+  font-size: 1rem;
+}
+.cta-band .cta-alt a {
+  color: #e6c27a;
+  font-weight: 700;
 }
 
 /* Médias */

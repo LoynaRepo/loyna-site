@@ -1,0 +1,231 @@
+---
+// Simulateur de rentabilité : uniquement de l'arithmétique sur les chiffres saisis par le commerçant
+// (aucune statistique inventée). Résultat calculé côté serveur pour les valeurs par défaut, puis en direct.
+import {PLANS, euro} from '../data/site';
+const defaults = {clients: 200, panier: 25, pct: 10, plan: 'growth'};
+const prix = Object.fromEntries(PLANS.map((p) => [p.id, p.monthly]));
+const visites = Math.round((defaults.clients * defaults.pct) / 100);
+const ca = visites * defaults.panier;
+const seuil = Math.ceil(prix[defaults.plan] / defaults.panier);
+---
+
+<div class="roi" id="roi" data-prix={JSON.stringify(prix)}>
+  <form class="roi-inputs" aria-label="Vos chiffres">
+    <div class="roi-field">
+      <label for="roi-clients">Clients différents par mois <output for="roi-clients" data-out="clients">{defaults.clients}</output></label>
+      <input id="roi-clients" name="clients" type="range" min="20" max="1500" step="10" value={defaults.clients} />
+    </div>
+    <div class="roi-field">
+      <label for="roi-panier">Panier moyen <output for="roi-panier" data-out="panier">{defaults.panier} €</output></label>
+      <input id="roi-panier" name="panier" type="range" min="5" max="150" step="1" value={defaults.panier} />
+    </div>
+    <div class="roi-field">
+      <label for="roi-pct">Clients qui reviennent une fois de plus par mois <output for="roi-pct" data-out="pct">{defaults.pct} %</output></label>
+      <input id="roi-pct" name="pct" type="range" min="2" max="30" step="1" value={defaults.pct} />
+    </div>
+    <fieldset class="roi-plans">
+      <legend>Formule</legend>
+      {
+        PLANS.map((p) => (
+          <label>
+            <input type="radio" name="plan" value={p.id} checked={p.id === defaults.plan} />
+            <span>
+              {p.name} · {euro(p.monthly)}
+            </span>
+          </label>
+        ))
+      }
+    </fieldset>
+  </form>
+
+  <div class="roi-result" aria-live="polite">
+    <p class="roi-kicker">Avec ces chiffres, chaque mois :</p>
+    <p class="roi-big"><span data-out="ca">+ {euro(ca)}</span><small>de chiffre d’affaires</small></p>
+    <ul class="roi-lines">
+      <li><span>Visites en plus</span><b data-out="visites">{visites}</b></li>
+      <li><span>Prix de LOYNA</span><b data-out="prix">{euro(prix[defaults.plan])} HT</b></li>
+      <li><span>Rentabilisé dès</span><b data-out="seuil">{seuil} visite{seuil > 1 ? 's' : ''} en plus</b></li>
+    </ul>
+    <p class="roi-note">Simulation indicative calculée à partir de vos propres chiffres, en chiffre d’affaires (votre marge en dépend). Elle ne constitue pas une promesse de résultat.</p>
+    <div class="roi-cta">
+      <a class="btn btn--gold" href="/creer-ma-carte/">Créer l’aperçu de ma carte</a>
+      <a class="btn btn--ghost" href="/tarifs/">Voir les tarifs</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  const root = document.getElementById('roi');
+  if (root) {
+    const prix = JSON.parse(root.dataset.prix || '{}') as Record<string, number>;
+    const fmt = (n: number) => n.toLocaleString('fr-FR', {maximumFractionDigits: 0}) + ' €';
+    const out = (k: string, v: string) => root.querySelectorAll(`[data-out="${k}"]`).forEach((el) => (el.textContent = v));
+    const form = root.querySelector('form')!;
+    const update = () => {
+      const f = new FormData(form);
+      const clients = Number(f.get('clients'));
+      const panier = Number(f.get('panier'));
+      const pct = Number(f.get('pct'));
+      const p = prix[String(f.get('plan'))] ?? 49;
+      const visites = Math.round((clients * pct) / 100);
+      const seuil = Math.ceil(p / panier);
+      out('clients', String(clients));
+      out('panier', `${panier} €`);
+      out('pct', `${pct} %`);
+      out('ca', `+ ${fmt(visites * panier)}`);
+      out('visites', String(visites));
+      out('prix', `${fmt(p)} HT`);
+      out('seuil', `${seuil} visite${seuil > 1 ? 's' : ''} en plus`);
+    };
+    form.addEventListener('input', update);
+    update();
+  }
+</script>
+
+<style>
+  .roi {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: clamp(20px, 3vw, 36px);
+    align-items: stretch;
+  }
+  .roi-inputs,
+  .roi-result {
+    border-radius: var(--radius-lg);
+    padding: clamp(24px, 3vw, 40px);
+  }
+  .roi-inputs {
+    background: var(--ink-2);
+    border: 1px solid rgba(250, 247, 240, 0.08);
+    display: grid;
+    gap: 26px;
+  }
+  .roi-field label {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-weight: 600;
+    color: #e9e5dc;
+    margin-bottom: 10px;
+  }
+  .roi-field output {
+    color: #e6c27a;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .roi-field input[type='range'] {
+    width: 100%;
+    accent-color: #c9963f;
+    height: 28px;
+  }
+  .roi-plans {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .roi-plans legend {
+    font-weight: 600;
+    color: #e9e5dc;
+    margin-bottom: 10px;
+  }
+  .roi-plans label {
+    position: relative;
+  }
+  .roi-plans input {
+    position: absolute;
+    opacity: 0;
+  }
+  .roi-plans span {
+    display: inline-block;
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(250, 247, 240, 0.2);
+    color: #e9e5dc;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .roi-plans input:checked + span {
+    background: var(--grad-gold);
+    border-color: transparent;
+    color: var(--ink);
+  }
+  .roi-plans input:focus-visible + span {
+    outline: 3px solid #e6c27a;
+    outline-offset: 2px;
+  }
+  .roi-result {
+    background:
+      radial-gradient(80% 60% at 100% 0%, rgba(230, 194, 122, 0.25), transparent 70%),
+      linear-gradient(160deg, #2a2419, #17151a);
+    border: 1px solid rgba(230, 194, 122, 0.25);
+    display: flex;
+    flex-direction: column;
+  }
+  .roi-kicker {
+    margin: 0 0 6px;
+    color: #c9c2b4;
+    font-weight: 600;
+  }
+  .roi-big {
+    margin: 0 0 22px;
+    display: grid;
+    line-height: 1.05;
+  }
+  .roi-big span {
+    font-size: clamp(2.6rem, 6vw, 4rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: var(--grad-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .roi-big small {
+    color: #e9e5dc;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-top: 6px;
+  }
+  .roi-lines {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 18px;
+    display: grid;
+    gap: 2px;
+  }
+  .roi-lines li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(250, 247, 240, 0.1);
+    color: #c9c2b4;
+  }
+  .roi-lines b {
+    color: #faf7f0;
+    text-align: right;
+  }
+  .roi-note {
+    font-size: 0.85rem;
+    color: #9d968a !important;
+    margin: 0 0 22px;
+  }
+  .roi-cta {
+    margin-top: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .roi-cta .btn--ghost {
+    color: #faf7f0;
+    border-color: rgba(250, 247, 240, 0.25);
+  }
+  @media (max-width: 900px) {
+    .roi {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

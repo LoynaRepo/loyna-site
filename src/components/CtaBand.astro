@@ -2,8 +2,11 @@
 interface Props {
   title?: string;
   text?: string;
+  /** Lien « être rappelé » (ancre du formulaire de rappel si la page en a un). */
+  callbackHref?: string;
 }
 const {
+  callbackHref = '/#rappel',
   title = 'Prêt à faire revenir vos clients ?',
   text = "Créez l'aperçu de votre carte en quelques secondes, puis choisissez votre formule. Votre carte est prête sous 24 h.",
 } = Astro.props;
@@ -15,9 +18,10 @@ const {
       <h2>{title.replace(' ?', ' ?')}</h2>
       <p>{text}</p>
       <div class="btn-row">
-        <a class="btn btn--gold" href="/creer-ma-carte/">Créer ma carte</a>
+        <a class="btn btn--gold" href="/creer-ma-carte/">Créer l’aperçu de ma carte</a>
         <a class="btn btn--ghost" href="/tarifs/">Voir les tarifs</a>
       </div>
+      <p class="cta-alt">Une question avant de vous lancer ? <a href={callbackHref}>Être rappelé gratuitement</a></p>
     </div>
   </div>
 </section>

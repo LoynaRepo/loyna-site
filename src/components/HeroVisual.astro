@@ -233,5 +233,12 @@ import WalletCard from './WalletCard.astro';
     .pill-scan {
       right: 0;
     }
+    /* sur mobile, le bas de l'écran du téléphone (vide) est fondu pour gagner de la hauteur */
+    .hero-visual {
+      max-height: 560px;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent);
+      mask-image: linear-gradient(to bottom, #000 82%, transparent);
+    }
   }
 </style>

@@ -8,7 +8,7 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
 
 <header class="site-header">
   <div class="container bar">
-    <a href="/" class="brand" aria-label="LOYNA, accueil"><Logo height={32} /></a>
+    <a href="/" class="brand" aria-label="LOYNA, accueil"><Logo height={32} tone="light" /></a>
     <nav class="nav-desktop" aria-label="Navigation principale">
       <ul>
         {NAV.map((n) => <li><a href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}>{n.label}</a></li>)}
@@ -16,7 +16,7 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
     </nav>
     <div class="actions">
       <a href="/espace-client/" class="login">Espace client</a>
-      <a href="/tarifs/" class="btn btn--primary btn--sm">Commencer</a>
+      <a href="/tarifs/" class="btn btn--gold btn--sm">Commencer</a>
     </div>
     <details class="nav-mobile">
       <summary aria-label="Ouvrir le menu"><Icon name="menu" size={26} /></summary>
@@ -37,10 +37,10 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
     position: sticky;
     top: 0;
     z-index: 50;
-    background: rgba(251, 250, 248, 0.86);
+    background: rgba(18, 18, 22, 0.9);
     backdrop-filter: saturate(160%) blur(14px);
     -webkit-backdrop-filter: saturate(160%) blur(14px);
-    border-bottom: 1px solid rgba(233, 226, 214, 0.7);
+    border-bottom: 1px solid rgba(230, 194, 122, 0.16);
   }
   .bar {
     display: flex;
@@ -65,15 +65,15 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
     display: block;
     padding: 9px 13px;
     border-radius: 999px;
-    color: var(--text);
+    color: #d9d2c4;
     text-decoration: none;
     font-weight: 600;
     font-size: 0.96rem;
   }
   .nav-desktop a:hover,
   .nav-desktop a[aria-current='page'] {
-    background: var(--bg-alt);
-    color: var(--ink);
+    background: rgba(230, 194, 122, 0.14);
+    color: #fff;
   }
   .actions {
     display: flex;
@@ -81,13 +81,13 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
     gap: 18px;
   }
   .login {
-    color: var(--text);
+    color: #d9d2c4;
     font-weight: 600;
     text-decoration: none;
     font-size: 0.96rem;
   }
   .login:hover {
-    color: var(--gold-strong);
+    color: #e6c27a;
   }
   .btn--sm {
     min-height: 44px;
@@ -106,8 +106,8 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
     display: grid;
     place-items: center;
     border-radius: 14px;
-    border: 1px solid var(--line);
-    color: var(--ink);
+    border: 1px solid rgba(230, 194, 122, 0.3);
+    color: #f8f4ec;
   }
   .nav-mobile summary::-webkit-details-marker {
     display: none;

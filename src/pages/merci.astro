@@ -1,45 +1,178 @@
 ---
 import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
-import {SITE, PLANS, SETUP_FEE} from '../data/site';
+import {PLANS, SETUP_FEE} from '../data/site';
 // Montant du premier paiement par offre, pour la mesure de conversion (sans donnée personnelle).
 const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.monthly + SETUP_FEE], [`${p.id}-annuel`, p.yearly]]));
 ---
 
-<Base stickyCta={false} title="Merci pour votre commande" description="Votre abonnement LOYNA est confirmé. Voici les prochaines étapes pour lancer votre carte de fidélité." noindex>
+<Base stickyCta={false} title="Merci pour votre commande" description="Votre abonnement LOYNA est confirmé. Envoyez les éléments de votre carte : elle est prête sous 24 h." noindex>
   <section class="page-hero">
     <div class="narrow">
       <span class="done"><Icon name="check" size={34} /></span>
       <h1>Merci, votre abonnement est confirmé&nbsp;!</h1>
-      <p class="lead">Vous allez recevoir un reçu par e-mail, au nom de KOVA Elec (l’entreprise qui édite LOYNA). Voici la suite :</p>
+      <p class="lead">Vous allez recevoir un reçu par e-mail, au nom de KOVA Elec (l’entreprise qui édite LOYNA). Plus qu’une étape pour lancer votre carte.</p>
     </div>
   </section>
+
   <section class="section pt0">
-    <div class="narrow">
-      <ol class="next">
-        <li><strong>Nous vous contactons</strong> pour récupérer votre logo, vos couleurs et votre récompense (si ce n’est pas déjà fait).</li>
-        <li><strong>Votre carte est prête sous 24&nbsp;h</strong>, avec votre QR code d’inscription à imprimer ou à partager.</li>
-        <li><strong>Vous recevez votre accès à LOYNA Business</strong> pour scanner les cartes depuis votre téléphone.</li>
-        <li><strong>Vous lancez votre programme</strong> : affichez le QR code au comptoir, vos clients s’inscrivent en quelques secondes.</li>
-      </ol>
-      <p>Rappel de votre engagement : en mensuel, 12 mois minimum, puis résiliable à la fin de chaque mois, sans frais ; en annuel, 12 mois réglés d’avance. Tout se gère depuis votre <a href="/espace-client/">espace client</a>.</p>
-      <p>Vous pouvez dès maintenant nous envoyer votre logo à <a href={`mailto:${SITE.email}?subject=Mon logo pour ma carte LOYNA`}>{SITE.email}</a>.</p>
-      <div class="btn-row">
-        <a class="btn btn--primary" href="/espace-client/">Mon espace client</a>
-        <a class="btn btn--ghost" href="/creer-ma-carte/">Revoir l’aperçu de ma carte</a>
+    <div class="container merci-grid">
+      <div>
+        <h2 class="h3">La suite, en 4 étapes</h2>
+        <ol class="next">
+          <li><strong>Envoyez vos éléments</strong> avec le formulaire : logo, couleurs, récompense. Deux minutes suffisent.</li>
+          <li><strong>Votre carte est prête sous 24&nbsp;h</strong>, avec votre QR code d’inscription à imprimer ou à partager.</li>
+          <li><strong>Vous recevez votre accès à LOYNA Business</strong> pour scanner les cartes depuis votre téléphone.</li>
+          <li><strong>Vous lancez votre programme</strong> : QR code au comptoir, vos clients s’inscrivent en quelques secondes.</li>
+        </ol>
+        <p class="small">
+          Rappel de votre engagement : en mensuel, 12 mois minimum, puis résiliable à la fin de chaque mois, sans frais ; en annuel, 12 mois réglés d’avance. Factures et
+          abonnement se gèrent depuis votre <a href="/espace-client/">espace client</a>.
+        </p>
+      </div>
+
+      <div class="elements" id="elements">
+        <div class="recu" id="recu" hidden>
+          <span class="done small-done"><Icon name="check" size={24} /></span>
+          <h2 class="h3">Bien reçu, merci&nbsp;!</h2>
+          <p>Nous créons votre carte et revenons vers vous sous 24&nbsp;h avec votre QR code et votre accès LOYNA Business.</p>
+          <a class="btn btn--primary" href="/espace-client/">Mon espace client</a>
+        </div>
+
+        <form method="post" action="/elements.php" enctype="multipart/form-data" id="elements-form">
+          <h2 class="h3">Les éléments de votre carte</h2>
+          <p class="alert" id="el-error" role="alert" tabindex="-1" hidden></p>
+          <input type="hidden" name="t" value="" />
+          <input type="hidden" name="offre" value="" />
+          <input type="hidden" name="session" value="" />
+          <div class="hp" aria-hidden="true">
+            <label for="el-site">Ne pas remplir</label>
+            <input id="el-site" name="site_web" type="text" tabindex="-1" autocomplete="off" />
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="el-commerce">Nom du commerce *</label>
+              <input id="el-commerce" name="commerce" type="text" required maxlength="100" autocomplete="organization" />
+              <p class="err">Indiquez le nom de votre commerce.</p>
+            </div>
+            <div class="field">
+              <label for="el-activite">Activité</label>
+              <input id="el-activite" name="activite" type="text" maxlength="60" placeholder="Coiffure, boulangerie…" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="el-nom">Votre nom *</label>
+              <input id="el-nom" name="nom" type="text" required maxlength="80" autocomplete="name" />
+              <p class="err">Indiquez votre nom.</p>
+            </div>
+            <div class="field">
+              <label for="el-tel">Téléphone</label>
+              <input id="el-tel" name="telephone" type="tel" maxlength="30" pattern="[0-9+ ().-]{8,30}" autocomplete="tel" />
+              <p class="err">Ce numéro semble incomplet.</p>
+            </div>
+          </div>
+          <div class="field">
+            <label for="el-email">E-mail utilisé pour le paiement *</label>
+            <input id="el-email" name="email" type="email" required maxlength="120" autocomplete="email" />
+            <p class="err">Indiquez une adresse e-mail valide.</p>
+          </div>
+          <div class="row row-3">
+            <div class="field">
+              <label for="el-fond">Couleur de la carte</label>
+              <input id="el-fond" name="fond" type="color" value="#1f1c17" />
+            </div>
+            <div class="field">
+              <label for="el-accent">Couleur des tampons</label>
+              <input id="el-accent" name="accent" type="color" value="#d9b27a" />
+            </div>
+            <div class="field">
+              <label for="el-passages">Passages pour la récompense</label>
+              <input id="el-passages" name="passages" type="number" min="2" max="50" value="10" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="el-recompense">Récompense</label>
+            <input id="el-recompense" name="recompense" type="text" maxlength="120" placeholder="Ex. : un café offert, -10 % sur la prochaine prestation" />
+          </div>
+          <div class="field">
+            <span class="flabel">Votre logo <span class="opt">(PNG, JPG, SVG ou PDF, 5 Mo au plus)</span></span>
+            <div class="file">
+              <input id="el-logo" name="logo" type="file" accept=".png,.jpg,.jpeg,.webp,.svg,.pdf,image/png,image/jpeg,image/webp,image/svg+xml,application/pdf" />
+              <label for="el-logo" class="btn btn--ghost btn--sm"><Icon name="upload" size={16} /> Choisir un fichier</label>
+              <span id="el-logo-name">Aucun fichier choisi</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="el-message">Précisions <span class="opt">(facultatif)</span></label>
+            <textarea id="el-message" name="message" rows="3" maxlength="2000" placeholder="Horaires, réseaux sociaux, idée de récompense…"></textarea>
+          </div>
+          <button type="submit" class="btn btn--gold btn--block" data-loading="Envoi en cours…">Envoyer mes éléments <Icon name="send" size={18} /></button>
+          <p class="small center">Pas votre logo sous la main ? Envoyez le formulaire quand même, ou répondez plus tard au reçu.</p>
+        </form>
       </div>
     </div>
   </section>
+
+  <div id="merci-data" data-montants={JSON.stringify(montants)} hidden></div>
 </Base>
 
-<div id="merci-data" data-montants={JSON.stringify(montants)} hidden></div>
 <script>
+  const q = new URLSearchParams(location.search);
+  const form = document.getElementById('elements-form') as HTMLFormElement;
+  const set = (name: string, v: string) => {
+    const el = form.elements.namedItem(name) as HTMLInputElement | null;
+    if (el && v) el.value = v;
+  };
+  // Envoi réussi : on remplace le formulaire par la confirmation.
+  if (q.get('recu') === '1') {
+    form.hidden = true;
+    (document.getElementById('recu') as HTMLElement).hidden = false;
+  }
+  // Erreur renvoyée par elements.php
+  const ERREURS: Record<string, string> = {
+    champs: 'Merci d’indiquer votre nom et celui de votre commerce.',
+    email: 'Cette adresse e-mail semble incorrecte.',
+    delai: 'Le formulaire a expiré : merci de le renvoyer.',
+    limite: 'Plusieurs envois en peu de temps : merci de réessayer dans une heure.',
+    fichier: 'Le logo n’a pas pu être reçu : merci de réessayer.',
+    taille: 'Le logo dépasse 5 Mo : envoyez une version plus légère.',
+    format: 'Format de logo non accepté : PNG, JPG, WEBP, SVG ou PDF.',
+    envoi: 'L’envoi a échoué de notre côté : écrivez-nous à contact@loyna.fr.',
+  };
+  const err = q.get('erreur');
+  if (err && ERREURS[err]) {
+    const box = document.getElementById('el-error') as HTMLElement;
+    box.textContent = ERREURS[err];
+    box.hidden = false;
+    box.focus();
+  }
+  document.getElementById('el-logo')?.addEventListener('change', (e) => {
+    const f = (e.target as HTMLInputElement).files?.[0];
+    (document.getElementById('el-logo-name') as HTMLElement).textContent = f ? f.name : 'Aucun fichier choisi';
+  });
+  set('t', String(Date.now()));
+  set('offre', /^[a-z-]{3,30}$/.test(q.get('offre') || '') ? q.get('offre')! : '');
+  set('session', /^cs_[A-Za-z0-9_]{10,200}$/.test(q.get('session_id') || '') ? q.get('session_id')! : '');
+  // Préremplissage avec l'aperçu préparé dans le configurateur (même navigateur)
+  try {
+    const c = JSON.parse(localStorage.getItem('loyna-config') || 'null');
+    if (c) {
+      if (c.name && c.name !== 'Votre commerce') set('commerce', c.name);
+      set('activite', c.activity || '');
+      if (/^#[0-9a-f]{6}$/i.test(c.bg)) set('fond', c.bg);
+      if (/^#[0-9a-f]{6}$/i.test(c.accent)) set('accent', c.accent);
+      if (c.total) set('passages', String(c.total));
+      set('recompense', c.reward || '');
+    }
+  } catch {
+    /* stockage indisponible */
+  }
+  // Mesure de conversion (seulement si la mesure d'audience a été acceptée)
   window.addEventListener('load', () => {
-    const q = new URLSearchParams(location.search);
     const offre = q.get('offre') || '';
-    const el = document.getElementById('merci-data');
-    const montants = JSON.parse(el?.dataset.montants || '{}') as Record<string, number>;
-    if (!montants[offre]) return;
+    const montants = JSON.parse(document.getElementById('merci-data')?.dataset.montants || '{}') as Record<string, number>;
+    if (!montants[offre] || q.get('recu')) return;
     (window as unknown as {loynaTrack?: (n: string, p?: object) => void}).loynaTrack?.('purchase', {
       transaction_id: q.get('session_id') || undefined,
       value: montants[offre],
@@ -63,11 +196,140 @@ const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.
     color: #fff;
     margin-bottom: 20px;
   }
+  .small-done {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 8px;
+  }
+  .merci-grid {
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: clamp(28px, 5vw, 64px);
+    align-items: start;
+  }
   .next {
     display: grid;
-    gap: 16px;
+    gap: 14px;
     padding-left: 1.3em;
-    margin: 0 0 28px;
-    font-size: 1.08rem;
+    margin: 0 0 24px;
+    font-size: 1.05rem;
+  }
+  .small {
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+  .center {
+    text-align: center;
+    margin: 0;
+  }
+  .elements form,
+  .recu {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: clamp(22px, 3vw, 36px);
+    box-shadow: var(--shadow-lg);
+    display: grid;
+    gap: 16px;
+  }
+  .elements form[hidden],
+  .recu[hidden] {
+    display: none;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .row-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .field label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  .opt {
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .field input:not([type='color']):not([type='file']),
+  .field textarea {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #fff;
+    font: inherit;
+  }
+  .field input[type='color'] {
+    width: 100%;
+    height: 46px;
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #fff;
+  }
+  .flabel {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  .file {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .file input[type='file'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+  .file label {
+    margin: 0;
+    cursor: pointer;
+    min-height: 42px;
+    padding: 8px 16px;
+    font-size: 0.92rem;
+  }
+  .file input:focus-visible + label {
+    outline: 3px solid var(--gold);
+    outline-offset: 2px;
+  }
+  .file span {
+    color: var(--muted);
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+  }
+  .alert {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #fdecea;
+    color: #8a1c12;
+    font-weight: 600;
+  }
+  .hp {
+    position: absolute;
+    left: -9999px;
+  }
+  @media (max-width: 900px) {
+    .merci-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 560px) {
+    .row,
+    .row-3 {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

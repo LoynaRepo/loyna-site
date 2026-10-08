@@ -1,0 +1,172 @@
+---
+// « Être rappelé » : seconde porte d'entrée, sans engagement, pour les commerçants qui préfèrent en parler
+// avant de payer. Envoie une demande « [Site LOYNA] Être rappelé » à contact@loyna.fr (contact.php),
+// reprise par l'agent Trieur qui fixe le rendez-vous téléphonique dans l'agenda.
+import Icon from './Icon.astro';
+interface Props {
+  id?: string;
+  title?: string;
+  text?: string;
+}
+const {
+  id = 'rappel',
+  title = 'Vous préférez en parler avant de vous lancer ?',
+  text = 'Laissez votre numéro : on vous rappelle au créneau de votre choix pour répondre à vos questions et vous montrer votre future carte. Sans engagement.',
+} = Astro.props;
+const uid = id;
+---
+
+<div class="callback" id={id}>
+  <div class="cb-copy">
+    <p class="eyebrow">Être rappelé</p>
+    <h2>{title}</h2>
+    <p>{text}</p>
+    <ul class="cb-points">
+      <li><Icon name="phone" size={18} /> Un échange de 15 minutes, au moment qui vous arrange</li>
+      <li><Icon name="palette" size={18} /> Un aperçu de votre carte à votre nom</li>
+      <li><Icon name="shield-check" size={18} /> Aucun paiement demandé à cette étape</li>
+    </ul>
+  </div>
+  <form class="cb-form" method="post" action="/contact.php" data-cb>
+    <input type="hidden" name="type" value="rappel" />
+    <input type="hidden" name="t" value="" />
+    <input type="hidden" name="page" value={Astro.url.pathname} />
+    <div class="hp" aria-hidden="true">
+      <label for={`${uid}-site`}>Ne pas remplir</label>
+      <input id={`${uid}-site`} name="site_web" type="text" tabindex="-1" autocomplete="off" />
+    </div>
+    <div class="cb-row">
+      <div class="field">
+        <label for={`${uid}-nom`}>Votre nom *</label>
+        <input id={`${uid}-nom`} name="nom" type="text" required maxlength="80" autocomplete="name" aria-describedby={`${uid}-nom-err`} />
+        <p class="err" id={`${uid}-nom-err`}>Indiquez votre nom.</p>
+      </div>
+      <div class="field">
+        <label for={`${uid}-commerce`}>Votre commerce *</label>
+        <input id={`${uid}-commerce`} name="commerce" type="text" required maxlength="100" autocomplete="organization" aria-describedby={`${uid}-commerce-err`} />
+        <p class="err" id={`${uid}-commerce-err`}>Indiquez le nom de votre commerce.</p>
+      </div>
+    </div>
+    <div class="cb-row">
+      <div class="field">
+        <label for={`${uid}-tel`}>Téléphone *</label>
+        <input id={`${uid}-tel`} name="telephone" type="tel" required pattern="[0-9+ ().-]{8,30}" maxlength="30" autocomplete="tel" aria-describedby={`${uid}-tel-err`} />
+        <p class="err" id={`${uid}-tel-err`}>Indiquez un numéro de téléphone valide.</p>
+      </div>
+      <div class="field">
+        <label for={`${uid}-email`}>E-mail *</label>
+        <input id={`${uid}-email`} name="email" type="email" required maxlength="120" autocomplete="email" aria-describedby={`${uid}-email-err`} />
+        <p class="err" id={`${uid}-email-err`}>Pour vous confirmer le rendez-vous.</p>
+      </div>
+    </div>
+    <div class="field">
+      <label for={`${uid}-creneau`}>Quand vous rappeler ?</label>
+      <select id={`${uid}-creneau`} name="creneau">
+        <option>Dès que possible</option>
+        <option>En matinée (9 h – 12 h)</option>
+        <option>En début d’après-midi (14 h – 16 h)</option>
+        <option>En fin d’après-midi (16 h – 19 h)</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn--gold btn--block" data-loading="Envoi en cours…">Être rappelé <Icon name="phone" size={18} /></button>
+    <p class="cb-legal">Vos coordonnées servent uniquement à vous rappeler. <a href="/confidentialite/">Confidentialité</a></p>
+  </form>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('form[data-cb]').forEach((f) => {
+    (f.elements.namedItem('t') as HTMLInputElement).value = String(Date.now());
+    f.addEventListener('submit', () => {
+      if (f.checkValidity()) (window as unknown as {loynaTrack?: (n: string, p?: object) => void}).loynaTrack?.('generate_lead', {form: 'rappel'});
+    });
+  });
+</script>
+
+<style>
+  .callback {
+    display: grid;
+    grid-template-columns: 0.95fr 1.05fr;
+    gap: clamp(28px, 5vw, 64px);
+    align-items: center;
+  }
+  .cb-copy h2 {
+    margin-bottom: 14px;
+  }
+  .cb-points {
+    list-style: none;
+    padding: 0;
+    margin: 22px 0 0;
+    display: grid;
+    gap: 12px;
+    font-weight: 600;
+  }
+  .cb-points li {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .cb-points :global(svg) {
+    color: #c9963f;
+    flex-shrink: 0;
+  }
+  .cb-form {
+    background: var(--card);
+    color: var(--text);
+    border-radius: var(--radius-lg);
+    padding: clamp(22px, 3vw, 36px);
+    box-shadow: var(--shadow-lg);
+    display: grid;
+    gap: 16px;
+  }
+  .cb-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .field label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  .field input,
+  .field select {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #fff;
+    font: inherit;
+    color: var(--ink);
+  }
+  .field input:focus,
+  .field select:focus {
+    outline: 3px solid rgba(201, 150, 63, 0.35);
+    border-color: #c9963f;
+  }
+  .hp {
+    position: absolute;
+    left: -9999px;
+  }
+  .cb-legal {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted) !important;
+    text-align: center;
+  }
+  .cb-legal a {
+    color: var(--gold-strong) !important;
+  }
+  @media (max-width: 900px) {
+    .callback {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 520px) {
+    .cb-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

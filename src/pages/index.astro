@@ -7,6 +7,8 @@ import PricingCards from '../components/PricingCards.astro';
 import VideoFacade from '../components/VideoFacade.astro';
 import WalletCard from '../components/WalletCard.astro';
 import CtaBand from '../components/CtaBand.astro';
+import RoiCalculator from '../components/RoiCalculator.astro';
+import CallbackForm from '../components/CallbackForm.astro';
 import {getFaq, getSectors, getSettings} from '../lib/builder';
 import {PLANS, SITE} from '../data/site';
 import scanQr from '../assets/shots/scan-qr.png';
@@ -18,6 +20,9 @@ import notifications from '../assets/shots/notifications.png';
 const settings = await getSettings();
 const sectors = await getSectors();
 const faq = (await getFaq()).slice(0, 6);
+// Titre d'accueil : les mots entre *astérisques* (réglage Builder) sont mis en valeur en doré.
+const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const heroTitleHtml = esc(settings.heroTitle).replace(/\*(.+?)\*/g, '<span class="gold-text">$1</span>');
 
 const steps = [
   {img: scanQr, title: 'Il scanne votre QR code', text: 'Sur votre comptoir, en vitrine ou sur vos réseaux : un QR code suffit pour rejoindre votre programme.'},
@@ -59,16 +64,17 @@ const softwareLd = {
   description={SITE.description}
   jsonLd={softwareLd}
 >
-  <section class="hero">
+  <section class="hero" data-theme="dark">
     <div class="container hero-grid">
       <div class="hero-copy">
         <p class="eyebrow">Carte de fidélité digitale · Apple Wallet &amp; Google Wallet</p>
-        <h1>{settings.heroTitle}</h1>
+        <h1 set:html={heroTitleHtml} />
         <p class="lead">{settings.heroSubtitle}</p>
         <div class="btn-row">
-          <a class="btn btn--primary" href="/creer-ma-carte/">Créer ma carte <Icon name="arrow-right" size={18} /></a>
+          <a class="btn btn--gold" href="/creer-ma-carte/">Créer l’aperçu de ma carte <Icon name="arrow-right" size={18} /></a>
           <a class="btn btn--ghost" href="/tarifs/">Voir les tarifs</a>
         </div>
+        <p class="hero-alt">Gratuit, sans inscription · ou <a href="#rappel">être rappelé</a></p>
         <ul class="hero-points">
           <li><Icon name="smartphone" size={18} /> Sans application</li>
           <li><Icon name="zap" size={18} /> Prête sous 24&nbsp;h</li>
@@ -116,7 +122,7 @@ const softwareLd = {
     </div>
   </section>
 
-  <section class="section section--alt" id="comment-ca-marche">
+  <section class="section section--warm" id="comment-ca-marche">
     <div class="container">
       <div class="section-head">
         <p class="eyebrow">Comment ça marche</p>
@@ -137,6 +143,10 @@ const softwareLd = {
           ))
         }
       </ol>
+      <div class="mid-cta">
+        <a class="btn btn--primary" href="/creer-ma-carte/">Voir ma carte en 1 minute <Icon name="arrow-right" size={18} /></a>
+        <span>Aperçu gratuit, à vos couleurs, avant tout paiement</span>
+      </div>
     </div>
   </section>
 
@@ -160,7 +170,7 @@ const softwareLd = {
     </div>
   </section>
 
-  <section class="section section--dark">
+  <section class="section section--alt">
     <div class="container">
       <div class="section-head">
         <p class="eyebrow">Fonctionnalités</p>
@@ -179,6 +189,10 @@ const softwareLd = {
             </div>
           ))
         }
+      </div>
+      <div class="mid-cta">
+        <a class="btn btn--primary" href="/tarifs/">Voir les formules <Icon name="arrow-right" size={18} /></a>
+        <a href="/fonctionnalites/">Le détail des fonctionnalités</a>
       </div>
     </div>
   </section>
@@ -202,7 +216,18 @@ const softwareLd = {
     </div>
   </section>
 
-  <section class="section section--alt">
+  <section class="section section--dark" id="rentabilite">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Rentabilité</p>
+        <h2>Combien vous rapporte un client qui revient ?</h2>
+        <p>Entrez vos propres chiffres : vous voyez tout de suite combien de visites en plus suffisent à couvrir votre abonnement.</p>
+      </div>
+      <RoiCalculator />
+    </div>
+  </section>
+
+  <section class="section">
     <div class="container split">
       <VideoFacade />
       <div>
@@ -210,13 +235,14 @@ const softwareLd = {
         <h2>LOYNA en 80 secondes</h2>
         <p class="lead">Du QR code d’inscription à la récompense débloquée, en passant par les notifications et le tableau de bord : voyez tout le parcours, côté client et côté commerçant.</p>
         <div class="btn-row">
-          <a class="btn btn--primary" href="/demo/">Voir la démo complète</a>
+          <a class="btn btn--primary" href="/creer-ma-carte/">Créer l’aperçu de ma carte</a>
+          <a class="btn btn--ghost" href="/demo/">Voir la démo complète</a>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="section" id="tarifs">
+  <section class="section section--warm" id="tarifs">
     <div class="container">
       <div class="section-head">
         <p class="eyebrow">Tarifs</p>
@@ -224,11 +250,23 @@ const softwareLd = {
         <p>Choisissez votre formule et payez en ligne en toute sécurité. Mise en service offerte en paiement annuel.</p>
       </div>
       <PricingCards idPrefix="home" />
+      <ul class="reassure">
+        <li><Icon name="zap" size={18} /> Carte prête sous 24&nbsp;h</li>
+        <li><Icon name="gift" size={18} /> Mise en service offerte en annuel</li>
+        <li><Icon name="lock" size={18} /> Paiement sécurisé par Stripe</li>
+        <li><Icon name="phone" size={18} /> Une question ? <a href="#rappel">On vous rappelle</a></li>
+      </ul>
       <p class="center"><a href="/tarifs/">Comparer les formules en détail</a></p>
     </div>
   </section>
 
-  <section class="section section--alt">
+  <section class="section section--dark">
+    <div class="container">
+      <CallbackForm />
+    </div>
+  </section>
+
+  <section class="section">
     <div class="container">
       <div class="section-head">
         <p class="eyebrow">Secteurs</p>
@@ -261,7 +299,7 @@ const softwareLd = {
     </div>
   </section>
 
-  <section class="section">
+  <section class="section section--alt">
     <div class="container narrow">
       <div class="section-head">
         <p class="eyebrow">Questions fréquentes</p>
@@ -283,13 +321,49 @@ const softwareLd = {
     </div>
   </section>
 
-  <CtaBand />
+  <CtaBand callbackHref="#rappel" />
 </Base>
 
 <style>
   .hero {
-    padding: clamp(40px, 6vw, 80px) 0 clamp(40px, 6vw, 70px);
+    padding: clamp(40px, 6vw, 84px) 0 clamp(44px, 6vw, 80px);
     overflow: hidden;
+    color: #e9e5dc;
+    background:
+      radial-gradient(55% 75% at 78% 40%, rgba(230, 194, 122, 0.24), transparent 70%),
+      radial-gradient(40% 60% at 0% 100%, rgba(201, 150, 63, 0.14), transparent 70%),
+      linear-gradient(180deg, #121216 0%, #17151a 100%);
+  }
+  .hero h1 {
+    color: #faf7f0;
+  }
+  .hero .eyebrow {
+    color: #e6c27a;
+  }
+  .hero .lead {
+    color: #c9c2b4;
+  }
+  .hero .btn--ghost {
+    color: #faf7f0;
+    border-color: rgba(250, 247, 240, 0.28);
+  }
+  .hero .btn--ghost:hover {
+    border-color: #e6c27a;
+    color: #fff;
+  }
+  .hero-alt {
+    margin: 16px 0 0;
+    font-size: 0.95rem;
+    color: #a8a194;
+  }
+  .hero-alt a {
+    color: #e6c27a;
+    font-weight: 700;
+  }
+  .hero :global(.phone) {
+    box-shadow:
+      0 0 0 1px rgba(230, 194, 122, 0.28),
+      0 40px 90px rgba(0, 0, 0, 0.55);
   }
   .hero-grid {
     display: grid;
@@ -308,7 +382,7 @@ const softwareLd = {
     display: flex;
     flex-wrap: wrap;
     gap: 10px 24px;
-    color: var(--muted);
+    color: #c9c2b4;
     font-weight: 600;
     font-size: 0.97rem;
   }
@@ -318,11 +392,11 @@ const softwareLd = {
     gap: 8px;
   }
   .hero-points :global(svg) {
-    color: var(--gold-strong);
+    color: #e6c27a;
   }
   .strip {
-    border-block: 1px solid var(--line);
-    background: var(--card);
+    border-block: 1px solid rgba(230, 194, 122, 0.18);
+    background: #1a181c;
   }
   .strip-row {
     display: flex;
@@ -330,9 +404,48 @@ const softwareLd = {
     justify-content: space-between;
     gap: 14px 28px;
     padding: 22px 0;
+    color: #d9d2c4;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .strip-row :global(svg) {
+    color: #e6c27a;
+  }
+  .mid-cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 14px 22px;
+    margin-top: clamp(36px, 5vw, 56px);
+    text-align: center;
+  }
+  .mid-cta span {
     color: var(--muted);
     font-weight: 600;
     font-size: 0.95rem;
+  }
+  .mid-cta a:not(.btn) {
+    font-weight: 700;
+  }
+  .reassure {
+    list-style: none;
+    padding: 0;
+    margin: 34px auto 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px 28px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .reassure li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .reassure :global(svg) {
+    color: var(--gold-strong);
   }
   .strip-row span {
     display: inline-flex;

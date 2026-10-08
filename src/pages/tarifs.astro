@@ -4,6 +4,7 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 import PricingCards from '../components/PricingCards.astro';
 import Icon from '../components/Icon.astro';
 import CtaBand from '../components/CtaBand.astro';
+import CallbackForm from '../components/CallbackForm.astro';
 import {COMPARISON, PLANS, SETUP_FEE, SITE, euro} from '../data/site';
 import {getFaq} from '../lib/builder';
 
@@ -63,6 +64,11 @@ const faqLd = {
 
   <section class="section pt0">
     <div class="container">
+      <p class="ma-carte" id="ma-carte" hidden>
+        <span class="mc-dots" aria-hidden="true"><i></i><i></i></span>
+        <span>Votre carte <strong id="mc-name"></strong> est prête à être créée : choisissez votre formule, nous la mettons en service sous 24&nbsp;h.</span>
+        <a href="/creer-ma-carte/">Modifier</a>
+      </p>
       <PricingCards idPrefix="tarifs" level={2} />
     </div>
   </section>
@@ -138,6 +144,12 @@ const faqLd = {
     </div>
   </section>
 
+  <section class="section section--dark">
+    <div class="container">
+      <CallbackForm title="Un doute sur la formule à choisir ?" text="Laissez votre numéro : on vous rappelle au créneau de votre choix pour trouver la formule adaptée à votre commerce. Sans engagement." />
+    </div>
+  </section>
+
   {
     faq.length > 0 && (
       <section class="section section--alt">
@@ -160,10 +172,64 @@ const faqLd = {
     )
   }
 
-  <CtaBand title="Pas encore décidé ?" text="Créez l’aperçu de votre carte en 30 secondes, ou écrivez-nous : nous vous aidons à choisir la formule adaptée à votre commerce." />
+  <CtaBand callbackHref="#rappel" title="Pas encore décidé ?" text="Créez l’aperçu de votre carte en 30 secondes, ou écrivez-nous : nous vous aidons à choisir la formule adaptée à votre commerce." />
 </Base>
 
+<script>
+  // Carte préparée dans le configurateur (même navigateur) : on la rappelle au-dessus des formules.
+  try {
+    const c = JSON.parse(localStorage.getItem('loyna-config') || 'null');
+    const box = document.getElementById('ma-carte');
+    if (c && c.name && box) {
+      document.getElementById('mc-name')!.textContent = `« ${c.name} »`;
+      const dots = box.querySelectorAll<HTMLElement>('.mc-dots i');
+      if (/^#[0-9a-f]{6}$/i.test(c.bg)) dots[0].style.background = c.bg;
+      if (/^#[0-9a-f]{6}$/i.test(c.accent)) dots[1].style.background = c.accent;
+      box.hidden = false;
+    }
+  } catch {
+    /* stockage indisponible */
+  }
+</script>
+
 <style>
+  .ma-carte {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px 14px;
+    max-width: 860px;
+    margin: 0 auto 30px;
+    padding: 14px 20px;
+    border-radius: 18px;
+    background: var(--gold-soft);
+    border: 1px solid rgba(201, 150, 63, 0.35);
+    color: var(--ink);
+    font-weight: 600;
+    text-align: center;
+  }
+  .ma-carte[hidden] {
+    display: none;
+  }
+  .ma-carte a {
+    color: #6b4a14;
+    font-weight: 700;
+  }
+  .mc-dots {
+    display: inline-flex;
+  }
+  .mc-dots i {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    background: #1f1c17;
+  }
+  .mc-dots i + i {
+    margin-left: -8px;
+    background: #d9b27a;
+  }
   .pt0 {
     padding-top: 0;
   }

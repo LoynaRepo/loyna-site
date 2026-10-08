@@ -108,9 +108,28 @@ const appLd = {
         </Phone>
         <p class="caption">Aperçu indicatif : la carte définitive est créée par LOYNA à vos couleurs, avec votre logo en haute définition.</p>
         <div class="btn-row center">
-          <a class="btn btn--gold" href="/tarifs/" id="go-plans">Je veux cette carte <Icon name="arrow-right" size={18} /></a>
-          <a class="btn btn--ghost" href={`mailto:${SITE.email}`} id="mail-me"><Icon name="mail" size={18} /> Envoyer mon aperçu</a>
+          <a class="btn btn--gold" href="/tarifs/?carte=1" id="go-plans">Je veux cette carte <Icon name="arrow-right" size={18} /></a>
         </div>
+        <form class="send-preview" method="post" action="/contact.php" id="send-preview">
+          <p class="sp-title"><Icon name="mail" size={18} /> Pas encore décidé ? Recevez cet aperçu et nos conseils</p>
+          <input type="hidden" name="type" value="apercu" />
+          <input type="hidden" name="page" value="/creer-ma-carte/" />
+          <input type="hidden" name="t" value="" />
+          <input type="hidden" name="commerce" value="" />
+          <input type="hidden" name="apercu" value="" />
+          <div class="hp" aria-hidden="true">
+            <label for="sp-site">Ne pas remplir</label>
+            <input id="sp-site" name="site_web" type="text" tabindex="-1" autocomplete="off" />
+          </div>
+          <div class="sp-row">
+            <label class="sr-only" for="sp-email">Votre e-mail</label>
+            <input id="sp-email" name="email" type="email" required maxlength="120" placeholder="Votre e-mail" autocomplete="email" />
+            <label class="sr-only" for="sp-tel">Téléphone (facultatif)</label>
+            <input id="sp-tel" name="telephone" type="tel" maxlength="30" pattern="[0-9+ ().-]{8,30}" placeholder="Téléphone" autocomplete="tel" />
+            <button type="submit" class="btn btn--primary" data-loading="Envoi…">Recevoir</button>
+          </div>
+          <p class="sp-legal">Votre demande arrive directement chez nous : nous vous répondons avec votre aperçu. Aucun paiement à cette étape. <a href="/confidentialite/">Confidentialité</a></p>
+        </form>
       </div>
     </div>
   </section>
@@ -215,8 +234,11 @@ const appLd = {
     } catch {
       /* stockage indisponible : sans conséquence */
     }
-    const body = `Bonjour,%0D%0A%0D%0AVoici l'aperçu de la carte que je souhaite :%0D%0A- Commerce : ${encodeURIComponent(c.name)} (${encodeURIComponent(c.activity)})%0D%0A- Couleurs : ${c.bg} / ${c.accent}%0D%0A- Récompense : ${encodeURIComponent(c.reward)} au bout de ${c.total} passages%0D%0A%0D%0AMerci de me recontacter.`;
-    $<HTMLAnchorElement>('#mail-me').href = `mailto:contact@loyna.fr?subject=${encodeURIComponent('Ma carte LOYNA : ' + c.name)}&body=${body}`;
+    // Formulaire « Recevoir cet aperçu » : le commerce et l'aperçu suivent la carte affichée.
+    const sp = $<HTMLFormElement>('#send-preview');
+    (sp.elements.namedItem('commerce') as HTMLInputElement).value = c.name;
+    (sp.elements.namedItem('apercu') as HTMLInputElement).value =
+      `${c.name} (${c.activity}) · fond ${c.bg} · tampons ${c.accent} · ${c.total} passages · récompense : ${c.reward} · style ${c.variant === 'google' ? 'Google Wallet' : 'Apple Wallet'}`;
   }
 
   // Couleurs : pastilles et sélecteur libre
@@ -244,6 +266,12 @@ const appLd = {
     render();
   });
   document.querySelectorAll('#cfg input:not([type=file]):not([type=color]), #cfg select').forEach((el) => el.addEventListener('input', render));
+
+  ($<HTMLFormElement>('#send-preview').elements.namedItem('t') as HTMLInputElement).value = String(Date.now());
+  $<HTMLFormElement>('#send-preview').addEventListener('submit', (e) => {
+    if ((e.target as HTMLFormElement).checkValidity())
+      (window as unknown as {loynaTrack?: (n: string, p?: object) => void}).loynaTrack?.('generate_lead', {form: 'apercu'});
+  });
 
   // Reprise d'un brouillon enregistré
   try {
@@ -433,6 +461,11 @@ const appLd = {
     justify-items: center;
     gap: 18px;
   }
+  @media (max-height: 1100px) {
+    .preview {
+      position: static;
+    }
+  }
   .wallet-ui {
     position: absolute;
     inset: 0;
@@ -443,6 +476,67 @@ const appLd = {
     font-size: 26px;
     font-weight: 750;
     margin: 6px 2px 16px;
+  }
+  .send-preview {
+    margin-top: 22px;
+    width: 100%;
+    max-width: 460px;
+    padding: 18px;
+    border-radius: 20px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    display: grid;
+    gap: 10px;
+  }
+  .sp-title {
+    margin: 0;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 0.98rem;
+  }
+  .sp-title :global(svg) {
+    color: var(--gold-strong);
+    flex-shrink: 0;
+  }
+  .sp-row {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr auto;
+    gap: 8px;
+  }
+  .sp-row input {
+    min-width: 0;
+    min-height: 46px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #fff;
+    font: inherit;
+    font-size: 0.95rem;
+  }
+  .sp-row input:user-invalid {
+    border-color: #b3261e;
+  }
+  .sp-row .btn {
+    min-height: 46px;
+    padding-inline: 18px;
+  }
+  .sp-legal {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .hp {
+    position: absolute;
+    left: -9999px;
+  }
+  @media (max-width: 520px) {
+    .sp-row {
+      grid-template-columns: 1fr;
+    }
   }
   .caption {
     color: var(--muted);

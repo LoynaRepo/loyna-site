@@ -4,6 +4,7 @@ Allow: /
 Disallow: /merci/
 Disallow: /builder-preview/
 Disallow: /contact.php
+Disallow: /elements.php
 
 Sitemap: https://loyna.fr/sitemap-index.xml
 `;

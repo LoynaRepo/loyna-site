@@ -76,12 +76,12 @@ RewriteRule ^sitemap\.xml$ /sitemap-index.xml [L]
   <Else>
     Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cdn.builder.io https://*.google-analytics.com https://*.googletagmanager.com; media-src 'self'; font-src 'self' data:; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self' https://builder.io https://*.builder.io; upgrade-insecure-requests"
   </Else>
-  <Files "contact.php">
+  <FilesMatch "^(contact|elements)\.php$">
     Header always set X-Robots-Tag "noindex, nofollow"
-  </Files>
+  </FilesMatch>
 </IfModule>
 
 # --- Fichiers jamais servis ---------------------------------------------------------------------
-<FilesMatch "^\.(?!well-known)|\.(env|ini|log|sh|py|bak|sql)$">
+<FilesMatch "^\.(?!well-known)|\.(env|ini|log|sh|py|bak|sql)$|\.inc\.php$">
   Require all denied
 </FilesMatch>
