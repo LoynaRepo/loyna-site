@@ -1,0 +1,101 @@
+---
+import {Picture} from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import VideoFacade from '../components/VideoFacade.astro';
+import CtaBand from '../components/CtaBand.astro';
+import {SITE} from '../data/site';
+import scanQr from '../assets/shots/scan-qr.png';
+import inscription from '../assets/shots/inscription.png';
+import ajoutWallet from '../assets/shots/ajout-wallet.png';
+import passageValide from '../assets/shots/passage-valide.png';
+import recompense from '../assets/shots/recompense.png';
+import notifications from '../assets/shots/notifications.png';
+
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: 'Démo vidéo', url: '/demo/'},
+];
+const gallery = [
+  {img: scanQr, cap: 'Le client scanne le QR code du commerce'},
+  {img: inscription, cap: 'Il s’inscrit en quelques secondes'},
+  {img: ajoutWallet, cap: 'La carte arrive dans son Wallet'},
+  {img: passageValide, cap: 'Au comptoir, un scan valide le passage'},
+  {img: recompense, cap: 'La récompense se débloque toute seule'},
+  {img: notifications, cap: 'Les notifications le font revenir'},
+];
+const videoLd = {
+  '@type': 'VideoObject',
+  name: 'LOYNA : la carte de fidélité digitale en 80 secondes',
+  description: 'Démonstration de LOYNA : inscription par QR code, carte Apple Wallet et Google Wallet, validation en un scan, récompenses, notifications Wallet, tableau de bord et tarifs.',
+  thumbnailUrl: `${SITE.url}/og/demo.png`,
+  uploadDate: '2026-10-04',
+  duration: 'PT1M19S',
+  contentUrl: `${SITE.url}/video/loyna-presentation-720p.mp4`,
+  inLanguage: 'fr',
+  publisher: {'@id': `${SITE.url}/#organisation`},
+};
+---
+
+<Base
+  title="Démo vidéo : LOYNA en 80 secondes"
+  description="Regardez comment fonctionne LOYNA : QR code d'inscription, carte Apple Wallet et Google Wallet, scan au comptoir, récompense automatique et notifications."
+  ogImage="/og/demo.png"
+  breadcrumbs={crumbs}
+  jsonLd={videoLd}
+>
+  <section class="page-hero">
+    <div class="container">
+      <Breadcrumbs items={crumbs} />
+      <p class="eyebrow">Démo vidéo</p>
+      <h1>LOYNA en 80 secondes</h1>
+      <p class="lead">Tout le parcours, côté client et côté commerçant : de l’inscription à la récompense, en passant par les notifications et le tableau de bord.</p>
+    </div>
+  </section>
+  <section class="section pt0">
+    <div class="container">
+      <VideoFacade />
+    </div>
+  </section>
+  <section class="section section--alt">
+    <div class="container">
+      <div class="section-head">
+        <h2>Le parcours en images</h2>
+      </div>
+      <div class="gallery">
+        {
+          gallery.map((g) => (
+            <figure>
+              <div class="shot">
+                <Picture src={g.img} formats={['avif', 'webp']} fallbackFormat="webp" widths={[280, 420]} sizes="(max-width: 700px) 45vw, 280px" alt={g.cap} loading="lazy" />
+              </div>
+              <figcaption>{g.cap}</figcaption>
+            </figure>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+  <CtaBand />
+</Base>
+
+<style>
+  .pt0 {
+    padding-top: 0;
+  }
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 28px;
+  }
+  figure {
+    margin: 0;
+    display: grid;
+    gap: 14px;
+  }
+  figcaption {
+    font-weight: 600;
+    text-align: center;
+    color: var(--ink);
+  }
+</style>

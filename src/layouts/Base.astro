@@ -1,0 +1,47 @@
+---
+import '../styles/global.css';
+import fontLatin from '@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2?url';
+import Seo from '../components/Seo.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  noindex?: boolean;
+  ogImage?: string;
+  type?: 'website' | 'article';
+  jsonLd?: object | object[];
+  breadcrumbs?: {name: string; url: string}[];
+  published?: string;
+  bare?: boolean;
+}
+const props = Astro.props;
+---
+
+<!doctype html>
+<html lang="fr-FR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preload" href={fontLatin} as="font" type="font/woff2" crossorigin />
+    <Seo {...props} />
+    <meta name="theme-color" content="#FBFAF8" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="alternate" type="application/rss+xml" title="Blog LOYNA" href="/rss.xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#contenu">Aller au contenu</a>
+    {!props.bare && <Header />}
+    <main id="contenu">
+      <slot />
+    </main>
+    {!props.bare && <Footer />}
+  </body>
+</html>

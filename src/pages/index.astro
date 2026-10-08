@@ -1,0 +1,442 @@
+---
+import {Picture} from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import HeroVisual from '../components/HeroVisual.astro';
+import Icon from '../components/Icon.astro';
+import PricingCards from '../components/PricingCards.astro';
+import VideoFacade from '../components/VideoFacade.astro';
+import WalletCard from '../components/WalletCard.astro';
+import CtaBand from '../components/CtaBand.astro';
+import {getFaq, getSectors, getSettings} from '../lib/builder';
+import {PLANS, SITE} from '../data/site';
+import scanQr from '../assets/shots/scan-qr.png';
+import inscription from '../assets/shots/inscription.png';
+import ajoutWallet from '../assets/shots/ajout-wallet.png';
+import passageValide from '../assets/shots/passage-valide.png';
+import notifications from '../assets/shots/notifications.png';
+
+const settings = await getSettings();
+const sectors = await getSectors();
+const faq = (await getFaq()).slice(0, 6);
+
+const steps = [
+  {img: scanQr, title: 'Il scanne votre QR code', text: 'Sur votre comptoir, en vitrine ou sur vos réseaux : un QR code suffit pour rejoindre votre programme.'},
+  {img: inscription, title: "Il s'inscrit en quelques secondes", text: 'Un formulaire très court, des consentements clairs et séparés. Aucune application à télécharger.'},
+  {img: ajoutWallet, title: 'Sa carte arrive dans son Wallet', text: 'Un geste et la carte est dans Apple Wallet ou Google Wallet, toujours dans sa poche.'},
+];
+
+const features = [
+  {icon: 'wallet', title: 'Carte Apple & Google Wallet', text: 'À vos couleurs, avec votre logo et votre récompense. Elle se met à jour toute seule.'},
+  {icon: 'scan-line', title: 'Un scan, un passage', text: "Pas de recherche, pas de bouton +1 : le passage est validé dès le scan, avec protection anti double scan."},
+  {icon: 'gift', title: 'Récompenses automatiques', text: 'Au seuil fixé, la récompense se débloque et le client est prévenu sur son téléphone.'},
+  {icon: 'bell', title: 'Notifications Wallet', text: 'Récompense, anniversaire, client inactif, nouveauté : des messages utiles, sans coût par envoi.'},
+  {icon: 'megaphone', title: 'Campagnes ciblées', text: 'Wallet ou SMS, vers vos clients actifs, inactifs depuis 30, 60 ou 90 jours, ou ceux qui fêtent leur anniversaire.'},
+  {icon: 'chart-column', title: 'Tableau de bord clair', text: 'Clients actifs, nouveaux clients, passages, récompenses : vous voyez enfin ce qui marche.'},
+  {icon: 'users', title: 'Toute votre équipe', text: 'Un compte par personne, des rôles et des droits adaptés, sans limite d’employés.'},
+  {icon: 'shield-check', title: 'Données protégées', text: 'Hébergées dans l’Union européenne, chiffrées, consentements séparés, export et suppression à la demande.'},
+];
+
+const softwareLd = {
+  '@type': 'SoftwareApplication',
+  name: 'LOYNA',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'iOS, Android, Web',
+  description: SITE.description,
+  url: SITE.url,
+  publisher: {'@id': `${SITE.url}/#organisation`},
+  offers: {
+    '@type': 'AggregateOffer',
+    priceCurrency: 'EUR',
+    lowPrice: Math.min(...PLANS.map((p) => p.monthly)),
+    highPrice: Math.max(...PLANS.map((p) => p.monthly)),
+    offerCount: PLANS.length,
+  },
+};
+---
+
+<Base
+  title="Carte de fidélité digitale Apple et Google Wallet | LOYNA"
+  description={SITE.description}
+  jsonLd={softwareLd}
+>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">Carte de fidélité digitale · Apple Wallet &amp; Google Wallet</p>
+        <h1>{settings.heroTitle}</h1>
+        <p class="lead">{settings.heroSubtitle}</p>
+        <div class="btn-row">
+          <a class="btn btn--primary" href="/creer-ma-carte/">Créer ma carte <Icon name="arrow-right" size={18} /></a>
+          <a class="btn btn--ghost" href="/tarifs/">Voir les tarifs</a>
+        </div>
+        <ul class="hero-points">
+          <li><Icon name="smartphone" size={18} /> Sans application</li>
+          <li><Icon name="zap" size={18} /> Prête sous 24&nbsp;h</li>
+          <li><Icon name="credit-card" size={18} /> Dès 29&nbsp;€ HT/mois</li>
+        </ul>
+      </div>
+      <HeroVisual />
+    </div>
+  </section>
+
+  <section class="strip" aria-label="Compatibilité">
+    <div class="container strip-row">
+      <span><Icon name="wallet" size={18} /> Apple Wallet</span>
+      <span><Icon name="wallet" size={18} /> Google Wallet</span>
+      <span><Icon name="smartphone" size={18} /> iPhone et Android</span>
+      <span><Icon name="shield-check" size={18} /> Données hébergées dans l’UE</span>
+      <span><Icon name="lock" size={18} /> Paiement sécurisé Stripe</span>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Le constat</p>
+        <h2>La carte à tampons a fait son temps</h2>
+        <p>Perdue au fond d’un sac, oubliée à la maison, jetée au premier tri : la carte papier ne fait revenir personne. Et quand un client ne revient plus, vous n’avez aucun moyen de le relancer.</p>
+      </div>
+      <div class="grid grid-3">
+        <div class="card compare">
+          <p class="before">Carte papier perdue ou oubliée</p>
+          <h3>Toujours dans le téléphone</h3>
+          <p>La carte vit dans Apple Wallet ou Google Wallet, à côté de la carte bancaire. Impossible de la perdre.</p>
+        </div>
+        <div class="card compare">
+          <p class="before">Aucun contact avec vos clients</p>
+          <h3>Des notifications qui font revenir</h3>
+          <p>Récompense disponible, anniversaire, client inactif depuis 30 jours : le bon message arrive au bon moment.</p>
+        </div>
+        <div class="card compare">
+          <p class="before">Aucune idée de ce qui marche</p>
+          <h3>Un tableau de bord clair</h3>
+          <p>Clients actifs, passages, récompenses débloquées et utilisées : pilotez votre fidélité avec de vrais chiffres.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt" id="comment-ca-marche">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Comment ça marche</p>
+        <h2>Pour vos clients, trois gestes</h2>
+        <p>Aucune application à installer, aucun compte à créer : la carte s’ajoute au Wallet du téléphone, comme une carte d’embarquement.</p>
+      </div>
+      <ol class="steps">
+        {
+          steps.map((s, i) => (
+            <li class="step">
+              <div class="shot">
+                <Picture src={s.img} formats={['avif', 'webp']} fallbackFormat="webp" widths={[300, 460]} sizes="(max-width: 700px) 80vw, 300px" alt={s.title} loading="lazy" />
+              </div>
+              <span class="num">{i + 1}</span>
+              <h3>{s.title}</h3>
+              <p>{s.text}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container split">
+      <div class="shot narrow-shot">
+        <Picture src={passageValide} formats={['avif', 'webp']} fallbackFormat="webp" widths={[320, 480]} sizes="(max-width: 700px) 80vw, 340px" alt="Écran LOYNA Business : passage validé, 8 sur 10" loading="lazy" />
+      </div>
+      <div>
+        <p class="eyebrow">Au comptoir</p>
+        <h2>Un scan, c’est validé</h2>
+        <p class="lead">Avec LOYNA Business sur votre téléphone, vous scannez la carte du client : le passage est enregistré, la carte se met à jour, la récompense se débloque toute seule au bon moment.</p>
+        <ul class="checks">
+          <li>Pas de tampon, pas de recherche du client, pas de bouton +1</li>
+          <li>Protection anti double scan et bouton « Annuler » pendant quelques secondes</li>
+          <li>Un simple smartphone suffit : aucun matériel à acheter</li>
+          <li>Chaque action est tracée dans un journal d’activité</li>
+        </ul>
+        <a class="btn btn--ghost" href="/fonctionnalites/">Toutes les fonctionnalités</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--dark">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Fonctionnalités</p>
+        <h2>Tout ce qu’il faut pour fidéliser, rien de compliqué</h2>
+        <p>Une carte, un scanner et des automatisations qui travaillent pour vous pendant que vous servez vos clients.</p>
+      </div>
+      <div class="grid grid-4">
+        {
+          features.map((f) => (
+            <div class="card">
+              <span class="icon">
+                <Icon name={f.icon} />
+              </span>
+              <h3>{f.title}</h3>
+              <p>{f.text}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container split reverse">
+      <div>
+        <p class="eyebrow">Notifications Wallet</p>
+        <h2>Le message arrive sur l’écran de verrouillage</h2>
+        <p class="lead">Les notifications Wallet s’affichent comme un message, directement sur le téléphone de vos clients. Elles sont incluses dans toutes les formules, sans coût par envoi.</p>
+        <ul class="checks">
+          <li>« Votre récompense vous attend » dès que le seuil est atteint</li>
+          <li>Un petit mot le jour de l’anniversaire</li>
+          <li>Une relance douce après 30, 60 ou 90 jours d’absence</li>
+          <li>Vos nouveautés et offres, vers les clients qui l’ont accepté</li>
+        </ul>
+      </div>
+      <div class="shot narrow-shot">
+        <Picture src={notifications} formats={['avif', 'webp']} fallbackFormat="webp" widths={[320, 480]} sizes="(max-width: 700px) 80vw, 340px" alt="Notifications Wallet sur l’écran de verrouillage d’un iPhone" loading="lazy" />
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container split">
+      <VideoFacade />
+      <div>
+        <p class="eyebrow">Démo vidéo</p>
+        <h2>LOYNA en 80 secondes</h2>
+        <p class="lead">Du QR code d’inscription à la récompense débloquée, en passant par les notifications et le tableau de bord : voyez tout le parcours, côté client et côté commerçant.</p>
+        <div class="btn-row">
+          <a class="btn btn--primary" href="/demo/">Voir la démo complète</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="tarifs">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Tarifs</p>
+        <h2>Des formules simples, sans surprise sur le prix</h2>
+        <p>Choisissez votre formule et payez en ligne en toute sécurité. Mise en service offerte en paiement annuel.</p>
+      </div>
+      <PricingCards idPrefix="home" />
+      <p class="center"><a href="/tarifs/">Comparer les formules en détail</a></p>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Secteurs</p>
+        <h2>Pensé pour les commerces de proximité</h2>
+        <p>Coiffure, beauté, restauration rapide, boulangerie, café ou boutique : la carte s’adapte à votre rythme de visites et à vos récompenses.</p>
+      </div>
+      <div class="sectors">
+        {
+          sectors.map((s) => (
+            <a class="sector" href={`/secteurs/${s.slug}/`}>
+              <WalletCard
+                name={s.carte.nom}
+                activity={s.carte.activite}
+                bg={s.carte.couleurFond}
+                accent={s.carte.couleurAccent}
+                text={s.carte.couleurTexte}
+                filled={Math.max(2, s.carte.total - 3)}
+                total={s.carte.total}
+                reward={s.carte.recompense}
+                qr={false}
+                width={240}
+              />
+              <span class="sector-name">
+                {s.nom} <Icon name="arrow-right" size={16} />
+              </span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container narrow">
+      <div class="section-head">
+        <p class="eyebrow">Questions fréquentes</p>
+        <h2>Vous vous demandez peut-être…</h2>
+      </div>
+      <div class="faq">
+        {
+          faq.map((f) => (
+            <details>
+              <summary>{f.q}</summary>
+              <div class="answer">
+                <p set:html={f.a} />
+              </div>
+            </details>
+          ))
+        }
+      </div>
+      <p class="center"><a href="/faq/">Toutes les questions</a></p>
+    </div>
+  </section>
+
+  <CtaBand />
+</Base>
+
+<style>
+  .hero {
+    padding: clamp(40px, 6vw, 80px) 0 clamp(40px, 6vw, 70px);
+    overflow: hidden;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: clamp(30px, 5vw, 70px);
+    align-items: center;
+  }
+  .hero-copy .lead {
+    max-width: 560px;
+    margin-bottom: 30px;
+  }
+  .hero-points {
+    list-style: none;
+    padding: 0;
+    margin: 30px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 24px;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.97rem;
+  }
+  .hero-points li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hero-points :global(svg) {
+    color: var(--gold-strong);
+  }
+  .strip {
+    border-block: 1px solid var(--line);
+    background: var(--card);
+  }
+  .strip-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 14px 28px;
+    padding: 22px 0;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .strip-row span {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .compare .before {
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #a8473f;
+    text-decoration: line-through;
+    text-decoration-color: rgba(168, 71, 63, 0.5);
+    margin: 0;
+  }
+  .steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: clamp(24px, 3vw, 40px);
+  }
+  .step {
+    position: relative;
+  }
+  .step .shot {
+    max-width: 300px;
+    margin: 0 auto 26px;
+  }
+  .num {
+    display: inline-grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #faf7f0;
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+  .step p {
+    color: var(--muted);
+  }
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(32px, 6vw, 90px);
+    align-items: center;
+  }
+  .split .checks {
+    margin: 26px 0 30px;
+  }
+  .narrow-shot {
+    max-width: 360px;
+    justify-self: center;
+    width: 100%;
+  }
+  .center {
+    text-align: center;
+    margin-top: 26px;
+    font-weight: 600;
+  }
+  .sectors {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+    gap: 22px;
+  }
+  .sector {
+    display: grid;
+    justify-items: center;
+    gap: 16px;
+    padding: 26px 16px 22px;
+    border-radius: var(--radius-lg);
+    background: var(--card);
+    border: 1px solid var(--line);
+    text-decoration: none;
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+  }
+  .sector:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+  .sector :global(.wcard) {
+    width: 100%;
+    max-width: 240px;
+    font-size: 11px;
+  }
+  .sector-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  @media (max-width: 920px) {
+    .hero-grid,
+    .split {
+      grid-template-columns: 1fr;
+    }
+    .split.reverse > :first-child {
+      order: 2;
+    }
+  }
+</style>

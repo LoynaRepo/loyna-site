@@ -1,0 +1,134 @@
+[
+  {
+    "q": "Mes clients doivent-ils télécharger une application ?",
+    "a": "Non. La carte de fidélité LOYNA s’ajoute directement dans Apple Wallet sur iPhone ou dans Google Wallet sur Android. Votre client n’a aucune application à télécharger : il scanne votre QR code d’inscription, remplit un formulaire très court et ajoute sa carte en un geste. De votre côté, vous utilisez l’application LOYNA Business, sur téléphone ou sur ordinateur.",
+    "categorie": "Fonctionnement",
+    "ordre": 1
+  },
+  {
+    "q": "Comment valider le passage d’un client ?",
+    "a": "À chaque visite, vous ou votre équipe scannez la carte du client avec LOYNA Business sur smartphone. Un scan égale un passage validé : pas de recherche du client, pas de bouton +1, pas de seconde confirmation. La carte du client se met à jour toute seule et, au seuil que vous avez fixé, la récompense se débloque automatiquement.",
+    "categorie": "Fonctionnement",
+    "ordre": 2
+  },
+  {
+    "q": "Qu’est-ce qu’une notification Wallet, et combien coûte-t-elle ?",
+    "a": "C’est un message qui s’affiche sur le téléphone de votre client grâce à sa carte rangée dans Apple Wallet ou Google Wallet. LOYNA l’utilise pour signaler une récompense disponible, un changement de solde, une offre ou une nouveauté, et, avec Growth et Pro, un anniversaire ou une relance après une période d’inactivité. Les notifications Wallet sont incluses dans toutes les formules, sans coût par message.",
+    "categorie": "Fonctionnement",
+    "ordre": 3
+  },
+  {
+    "q": "Quelle différence entre une notification Wallet et un SMS ?",
+    "a": "La notification Wallet passe par la carte de fidélité installée dans Apple Wallet ou Google Wallet. C’est le canal principal de LOYNA, inclus dans toutes les formules, sans coût par message. Le SMS est envoyé au numéro de téléphone, uniquement aux clients qui l’ont donné et qui ont accepté de recevoir des SMS. Il est compris dans un volume mensuel : 200 SMS avec Growth, 500 avec Pro. Un compteur vous indique le nombre de SMS par destinataire avant l’envoi.",
+    "categorie": "Fonctionnement",
+    "ordre": 4
+  },
+  {
+    "q": "La carte fonctionne-t-elle sur iPhone et sur Android ?",
+    "a": "Oui. Sur iPhone, la carte s’ajoute dans Apple Wallet ; sur Android, dans Google Wallet. Dans les deux cas, votre client l’ajoute en un geste après son inscription, sans application à télécharger. La carte se met ensuite à jour toute seule à chaque passage validé, et votre client reçoit ses notifications Wallet.",
+    "categorie": "Clients",
+    "ordre": 5
+  },
+  {
+    "q": "Comment mes clients s’inscrivent-ils ?",
+    "a": "Votre client scanne le QR code d’inscription de votre commerce, affiché au comptoir, en vitrine, sur une affiche ou partagé sur vos réseaux sociaux. Il remplit un formulaire très court : son prénom, son téléphone s’il le souhaite, et des consentements séparés, jamais cochés d’avance. Il ajoute ensuite sa carte dans Apple Wallet ou Google Wallet en un geste.",
+    "categorie": "Clients",
+    "ordre": 6
+  },
+  {
+    "q": "Que se passe-t-il si un client change de téléphone ?",
+    "a": "Votre client peut ajouter de nouveau sa carte dans son Wallet en repassant par le lien ou le QR code d’inscription de votre commerce. Ses passages déjà validés restent enregistrés dans sa fiche client, dans LOYNA Business. En cas d’écart, vous pouvez ajuster son solde manuellement : l’ajustement est motivé et tracé. Pour toute question, écrivez-nous à contact@loyna.fr.",
+    "categorie": "Clients",
+    "ordre": 7
+  },
+  {
+    "q": "Faut-il acheter du matériel ?",
+    "a": "Non, rien de spécial. Un smartphone suffit pour scanner les cartes de vos clients avec LOYNA Business, que vous pouvez aussi ouvrir sur ordinateur pour gérer votre programme et vos clients. Pas de terminal, pas de lecteur, pas de cartes à imprimer : il vous suffit d’afficher votre QR code d’inscription là où vos clients le verront.",
+    "categorie": "Commerçant",
+    "ordre": 8
+  },
+  {
+    "q": "En combien de temps ma carte de fidélité est-elle prête ?",
+    "a": "Votre carte est prête sous 24 h, hors personnalisation exceptionnelle. Logo, couleurs, nom du programme et récompense se règlent sans code. Dès que la carte est prête, vous affichez votre QR code d’inscription au comptoir, en vitrine ou sur vos réseaux sociaux, et vous pouvez scanner vos premiers clients.",
+    "categorie": "Commerçant",
+    "ordre": 9
+  },
+  {
+    "q": "Puis-je personnaliser ma carte (logo, couleurs, récompense) ?",
+    "a": "Oui, sans écrire une ligne de code. Vous personnalisez votre logo, vos couleurs, le nom de votre programme et la récompense. Vous choisissez aussi le type de carte, à passages (tampons) ou à points, le nombre de passages nécessaires et le délai anti double scan. Votre carte ressemble ainsi à votre commerce, dans le Wallet de vos clients.",
+    "categorie": "Commerçant",
+    "ordre": 10
+  },
+  {
+    "q": "Plusieurs employés peuvent-ils utiliser LOYNA ?",
+    "a": "Oui, sans limite d’employés. Chaque personne a son propre compte, avec un rôle : propriétaire, administrateur ou employé, et des droits adaptés à ce rôle. Les actions importantes sont enregistrées dans un journal d’audit : passage ajouté ou annulé, récompense utilisée, campagne envoyée. Vous savez toujours qui a fait quoi.",
+    "categorie": "Commerçant",
+    "ordre": 11
+  },
+  {
+    "q": "Que se passe-t-il si une carte est scannée deux fois ?",
+    "a": "LOYNA intègre une protection anti double scan : la même carte ne peut pas être validée deux fois dans le délai que vous avez réglé. En cas d’erreur, un bouton « Annuler » reste disponible pendant quelques secondes après le scan. Et chaque passage ajouté ou annulé est inscrit dans le journal d’audit.",
+    "categorie": "Commerçant",
+    "ordre": 12
+  },
+  {
+    "q": "Combien coûte LOYNA ?",
+    "a": "Trois formules, prix HT par mois, TVA non applicable. Essentiel, 29 € : Apple Wallet, Google Wallet, notifications Wallet, QR code d’inscription, points ou passages, récompenses, scanner et tableau de bord. Growth, 49 € : tout Essentiel, plus 200 SMS par mois, segmentation, anniversaires, clients inactifs, campagnes Wallet programmées et statistiques avancées. Pro, 79 € : tout Growth, plus 500 SMS par mois, intégrations compatibles, automatisations avancées, API et webhooks, support prioritaire.",
+    "categorie": "Tarifs et abonnement",
+    "ordre": 13
+  },
+  {
+    "q": "Y a-t-il des frais de mise en service ?",
+    "a": "Oui, des frais de mise en service de 49 € HT, facturés une seule fois au démarrage. Ils sont offerts si vous choisissez le paiement annuel. Aucun matériel n’est à acheter en plus : un smartphone suffit pour scanner les cartes de vos clients.",
+    "categorie": "Tarifs et abonnement",
+    "ordre": 14
+  },
+  {
+    "q": "Le paiement annuel est-il plus avantageux ?",
+    "a": "Oui. En payant à l’année, vous bénéficiez de 15 % de réduction et la mise en service de 49 € HT est offerte. L’abonnement revient à 295,80 € HT par an pour Essentiel, 499,80 € pour Growth et 805,80 € pour Pro, au lieu de 348 €, 588 € et 948 € sur douze mois en paiement mensuel. L’abonnement annuel est conclu pour 12 mois.",
+    "categorie": "Tarifs et abonnement",
+    "ordre": 15
+  },
+  {
+    "q": "Suis-je engagé sur une durée ?",
+    "a": "Pas en paiement mensuel : il n’y a aucun engagement de durée, vous pouvez résilier à tout moment et la résiliation prend effet à la fin de la période en cours. Le paiement annuel, lui, vous engage pour 12 mois, en échange de 15 % de réduction et de la mise en service offerte.",
+    "categorie": "Tarifs et abonnement",
+    "ordre": 16
+  },
+  {
+    "q": "Comment résilier ou changer de formule ?",
+    "a": "Tout se fait depuis votre espace client. Vous pouvez y changer de formule, par exemple passer d’Essentiel à Growth pour envoyer des SMS, ou résilier votre abonnement. En paiement mensuel, la résiliation prend effet à la fin de la période en cours. Pour toute question, écrivez-nous à contact@loyna.fr.",
+    "categorie": "Tarifs et abonnement",
+    "ordre": 17
+  },
+  {
+    "q": "Comment se fait le paiement, et où trouver mes factures ?",
+    "a": "Le paiement se fait en ligne, par carte bancaire, de façon sécurisée via Stripe. Vos factures sont disponibles dans votre espace client, prêtes pour votre comptabilité. Pour rappel, la TVA n’est pas applicable : le montant facturé correspond au prix HT de votre formule.",
+    "categorie": "Tarifs et abonnement",
+    "ordre": 18
+  },
+  {
+    "q": "Pourquoi la TVA n’apparaît-elle pas sur les prix ?",
+    "a": "LOYNA est une micro-entreprise qui relève de la franchise en base de TVA : « TVA non applicable, art. 293 B du CGI ». Concrètement, aucune TVA ne s’ajoute à nos prix : le prix HT affiché est le prix que vous payez. Essentiel vous revient donc à 29 € par mois, Growth à 49 € et Pro à 79 €.",
+    "categorie": "Tarifs et abonnement",
+    "ordre": 19
+  },
+  {
+    "q": "Où sont hébergées les données ?",
+    "a": "Les données de votre programme et de vos clients sont hébergées dans l’Union européenne. Elles sont protégées, chiffrées, et ne sont jamais utilisées à des fins commerciales. LOYNA applique aussi un principe de minimisation : on ne demande à vos clients que l’essentiel, à savoir leur prénom, leur téléphone s’ils le souhaitent, et leurs consentements.",
+    "categorie": "Données et sécurité",
+    "ordre": 20
+  },
+  {
+    "q": "Comment LOYNA m’aide-t-il à respecter le RGPD ?",
+    "a": "À l’inscription, vos clients donnent des consentements séparés pour la fidélité, les offres Wallet et les SMS, jamais cochés d’avance. Chaque fiche client affiche ces consentements, et vos clients peuvent se désinscrire des SMS. Sur demande d’un client, vous pouvez exporter ou supprimer ses données. Seules les données utiles sont collectées, et elles sont hébergées dans l’Union européenne.",
+    "categorie": "Données et sécurité",
+    "ordre": 21
+  },
+  {
+    "q": "Le QR code de la carte contient-il des données personnelles ?",
+    "a": "Non. Le QR code de la carte de fidélité ne contient aucune donnée personnelle : ni nom, ni numéro de téléphone. Il contient seulement un jeton opaque, qui ne révèle rien sur votre client et qui peut être révoqué. C’est au moment du scan, dans LOYNA Business, que la carte correspondante est retrouvée.",
+    "categorie": "Données et sécurité",
+    "ordre": 22
+  }
+]

@@ -1,0 +1,23 @@
+---
+interface Props {
+  title?: string;
+  text?: string;
+}
+const {
+  title = 'Prêt à faire revenir vos clients ?',
+  text = "Créez l'aperçu de votre carte en quelques secondes, puis choisissez votre formule. Votre carte est prête sous 24 h.",
+} = Astro.props;
+---
+
+<section class="section" aria-label="Passer à l'action">
+  <div class="container">
+    <div class="cta-band">
+      <h2>{title.replace(' ?', ' ?')}</h2>
+      <p>{text}</p>
+      <div class="btn-row">
+        <a class="btn btn--gold" href="/creer-ma-carte/">Créer ma carte</a>
+        <a class="btn btn--ghost" href="/tarifs/">Voir les tarifs</a>
+      </div>
+    </div>
+  </div>
+</section>

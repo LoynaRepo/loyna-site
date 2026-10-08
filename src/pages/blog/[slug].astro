@@ -1,0 +1,162 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import Icon from '../../components/Icon.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import {getArticles, type Article} from '../../lib/builder';
+import {SITE} from '../../data/site';
+import {ogImage} from '../../lib/og';
+
+export async function getStaticPaths() {
+  const all = await getArticles();
+  return all.map((a) => ({params: {slug: a.slug}, props: {a, others: all.filter((o) => o.slug !== a.slug).slice(0, 3)}}));
+}
+const {a, others} = Astro.props as {a: Article; others: Article[]};
+const url = `${SITE.url}/blog/${a.slug}/`;
+const og = a.cover || ogImage(`blog-${a.slug}`);
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: 'Ressources', url: '/blog/'},
+  {name: a.title, url: `/blog/${a.slug}/`},
+];
+const date = new Date(a.date).toLocaleDateString('fr-FR', {day: 'numeric', month: 'long', year: 'numeric'});
+const words = a.body.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+const ld: object[] = [
+  {
+    '@type': 'BlogPosting',
+    headline: a.title,
+    description: a.metaDescription,
+    datePublished: a.date,
+    dateModified: a.date,
+    inLanguage: 'fr-FR',
+    wordCount: words,
+    keywords: a.tags.join(', '),
+    mainEntityOfPage: url,
+    url,
+    image: og.startsWith('http') ? og : SITE.url + og,
+    author: {'@type': 'Organization', name: 'LOYNA', url: SITE.url},
+    publisher: {'@id': `${SITE.url}/#organisation`},
+  },
+];
+if (a.faq?.length) {
+  ld.push({'@type': 'FAQPage', mainEntity: a.faq.map((f) => ({'@type': 'Question', name: f.q, acceptedAnswer: {'@type': 'Answer', text: f.a}}))});
+}
+---
+
+<Base title={a.metaTitle} description={a.metaDescription} type="article" published={a.date} ogImage={og} breadcrumbs={crumbs} jsonLd={ld}>
+  <article>
+    <header class="page-hero article-head">
+      <div class="narrow">
+        <Breadcrumbs items={crumbs} />
+        <p class="meta">{date} · {a.readingMinutes} min de lecture</p>
+        <h1>{a.title}</h1>
+        <p class="lead">{a.excerpt}</p>
+      </div>
+    </header>
+    <div class="narrow prose" set:html={a.body} />
+    {
+      a.faq && a.faq.length > 0 && (
+        <section class="narrow faq-block" aria-labelledby="faq-title">
+          <h2 id="faq-title">Questions fréquentes</h2>
+          <div class="faq">
+            {a.faq.map((f) => (
+              <details>
+                <summary>{f.q}</summary>
+                <div class="answer">
+                  <p set:html={f.a} />
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+      )
+    }
+    <aside class="narrow box">
+      <p class="eyebrow">LOYNA</p>
+      <p class="box-title">Votre carte de fidélité dans Apple Wallet et Google Wallet</p>
+      <p>Sans application, prête sous 24&nbsp;h, récompenses et relances automatiques. Dès 29&nbsp;€ HT par mois.</p>
+      <div class="btn-row">
+        <a class="btn btn--primary" href="/creer-ma-carte/">Créer ma carte</a>
+        <a class="btn btn--ghost" href="/tarifs/">Voir les tarifs</a>
+      </div>
+    </aside>
+  </article>
+  <section class="section">
+    <div class="container">
+      <h2 class="center">À lire aussi</h2>
+      <div class="related">
+        {
+          others.map((o) => (
+            <a href={`/blog/${o.slug}/`}>
+              <strong>{o.title}</strong>
+              <span>
+                Lire <Icon name="arrow-right" size={15} />
+              </span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+  <CtaBand />
+</Base>
+
+<style>
+  .article-head {
+    text-align: left;
+  }
+  .article-head :global(.breadcrumbs ol) {
+    justify-content: flex-start;
+  }
+  .article-head h1 {
+    font-size: clamp(2rem, 4.2vw, 3.2rem);
+  }
+  .meta {
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+  .faq-block {
+    margin-top: 48px;
+  }
+  .box {
+    margin-top: 56px;
+    padding: clamp(26px, 4vw, 40px);
+    border-radius: var(--radius-lg);
+    background: var(--bg-alt);
+    border: 1px solid var(--line);
+  }
+  .box-title {
+    font-size: 1.4rem;
+    font-weight: 750;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .center {
+    text-align: center;
+    font-size: 1.6rem;
+  }
+  .related {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 18px;
+    margin-top: 24px;
+  }
+  .related a {
+    display: grid;
+    gap: 10px;
+    padding: 24px;
+    border-radius: var(--radius);
+    background: var(--card);
+    border: 1px solid var(--line);
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .related span {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    color: var(--gold-strong);
+    font-weight: 700;
+  }
+</style>

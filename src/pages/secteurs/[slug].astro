@@ -1,0 +1,293 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import WalletCard from '../../components/WalletCard.astro';
+import Phone from '../../components/Phone.astro';
+import Icon from '../../components/Icon.astro';
+import PricingCards from '../../components/PricingCards.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import {getSectors, type Sector} from '../../lib/builder';
+import {SITE} from '../../data/site';
+import {ogImage} from '../../lib/og';
+
+export async function getStaticPaths() {
+  const sectors = await getSectors();
+  return sectors.map((s) => ({params: {slug: s.slug}, props: {s, others: sectors.filter((o) => o.slug !== s.slug)}}));
+}
+const {s, others} = Astro.props as {s: Sector; others: Sector[]};
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: 'Secteurs', url: '/secteurs/'},
+  {name: s.nom, url: `/secteurs/${s.slug}/`},
+];
+const faqLd = {
+  '@type': 'FAQPage',
+  mainEntity: s.faq.map((f) => ({'@type': 'Question', name: f.q, acceptedAnswer: {'@type': 'Answer', text: f.a}})),
+};
+const serviceLd = {
+  '@type': 'Service',
+  name: s.h1,
+  serviceType: 'Carte de fidélité digitale',
+  provider: {'@id': `${SITE.url}/#organisation`},
+  areaServed: 'FR',
+  audience: {'@type': 'BusinessAudience', name: s.nom},
+  offers: {'@type': 'Offer', price: 29, priceCurrency: 'EUR', url: `${SITE.url}/tarifs/`},
+};
+---
+
+<Base title={s.metaTitle} description={s.metaDescription} ogImage={ogImage(`secteur-${s.slug}`)} breadcrumbs={crumbs} jsonLd={[serviceLd, faqLd]}>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <Breadcrumbs items={crumbs} />
+        <p class="eyebrow">{s.nom}</p>
+        <h1>{s.h1}</h1>
+        <div class="lead intro" set:html={s.intro} />
+        <div class="btn-row">
+          <a class="btn btn--primary" href="/creer-ma-carte/">Créer ma carte <Icon name="arrow-right" size={18} /></a>
+          <a class="btn btn--ghost" href="/tarifs/">Voir les tarifs</a>
+        </div>
+      </div>
+      <div class="visual" aria-hidden="true">
+        <Phone width={290} screen="#000">
+          <div class="wallet-ui">
+            <p class="wallet-title">Wallet</p>
+            <WalletCard
+              name={s.carte.nom}
+              activity={s.carte.activite}
+              bg={s.carte.couleurFond}
+              accent={s.carte.couleurAccent}
+              text={s.carte.couleurTexte}
+              filled={Math.max(2, s.carte.total - 2)}
+              total={s.carte.total}
+              reward={s.carte.recompense}
+              width={258}
+            />
+          </div>
+        </Phone>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <div class="section-head">
+        <h2>Vos enjeux au quotidien</h2>
+      </div>
+      <div class="grid grid-3">
+        {
+          s.enjeux.map((e) => (
+            <div class="card">
+              <h3>{e.titre}</h3>
+              <p>{e.texte}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <h2>Ce que LOYNA change pour vous</h2>
+      </div>
+      <div class="grid grid-2">
+        {
+          s.benefices.map((b) => (
+            <div class="card benefit">
+              <span class="icon">
+                <Icon name="check" />
+              </span>
+              <div>
+                <h3>{b.titre}</h3>
+                <p>{b.texte}</p>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--dark">
+    <div class="container grid grid-2">
+      <div>
+        <h2>Idées de récompenses</h2>
+        <ul class="checks light">
+          {s.recompenses.map((r) => <li>{r}</li>)}
+        </ul>
+      </div>
+      <div>
+        <h2>Exemples de notifications</h2>
+        <div class="notifs">
+          {
+            s.messages.map((m) => (
+              <div class="notif">
+                <span class="n-icon">{s.carte.nom.slice(0, 1)}</span>
+                <span>
+                  <b>{s.carte.nom}</b>
+                  <span>{m}</span>
+                </span>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <h2>Les tarifs</h2>
+        <p>Les mêmes formules pour tous les métiers, sans engagement de durée en mensuel.</p>
+      </div>
+      <PricingCards idPrefix={`s-${s.slug}`} compact />
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container narrow">
+      <div class="section-head">
+        <h2>Questions fréquentes</h2>
+      </div>
+      <div class="faq">
+        {
+          s.faq.map((f) => (
+            <details>
+              <summary>{f.q}</summary>
+              <div class="answer">
+                <p set:html={f.a} />
+              </div>
+            </details>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 class="others-title">Les autres métiers</h2>
+      <div class="others">
+        {
+          others.map((o) => (
+            <a href={`/secteurs/${o.slug}/`}>
+              {o.nom} <Icon name="arrow-right" size={16} />
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <CtaBand />
+</Base>
+
+<style>
+  .hero {
+    padding: clamp(40px, 6vw, 80px) 0;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: clamp(30px, 5vw, 70px);
+    align-items: center;
+  }
+  .hero h1 {
+    font-size: clamp(2.1rem, 4.4vw, 3.5rem);
+  }
+  .intro :global(p) {
+    margin-bottom: 0.9em;
+  }
+  .visual {
+    display: grid;
+    justify-items: center;
+  }
+  .wallet-ui {
+    position: absolute;
+    inset: 0;
+    padding: 44px 16px;
+    color: #fff;
+  }
+  .wallet-title {
+    font-size: 24px;
+    font-weight: 750;
+    margin: 6px 2px 14px;
+  }
+  .benefit {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  .benefit h3 {
+    margin-top: 6px;
+  }
+  .light :global(li) {
+    color: #e9e5dc;
+  }
+  .checks.light {
+    margin-top: 20px;
+    font-size: 1.1rem;
+  }
+  .notifs {
+    display: grid;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .notif {
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 20px;
+    background: rgba(248, 244, 236, 0.94);
+    color: #16161a;
+  }
+  .notif b {
+    display: block;
+  }
+  .n-icon {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: var(--ink);
+    color: #e6c27a;
+    font-weight: 800;
+  }
+  .others-title {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+  .others {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 18px;
+  }
+  .others a {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    padding: 12px 18px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .others a:hover {
+    border-color: var(--ink);
+  }
+  @media (max-width: 900px) {
+    .hero-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

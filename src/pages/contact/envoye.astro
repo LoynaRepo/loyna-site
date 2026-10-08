@@ -1,0 +1,40 @@
+---
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import {SITE} from '../../data/site';
+---
+
+<Base title="Message envoyé" description="Votre message a bien été envoyé à l'équipe LOYNA. Nous vous répondons rapidement." noindex>
+  <section class="page-hero">
+    <div class="narrow center">
+      <span class="done"><Icon name="check" size={34} /></span>
+      <h1>Merci, votre message est bien parti&nbsp;!</h1>
+      <p class="lead">Nous vous répondons rapidement, à l’adresse e-mail que vous avez indiquée. Pensez à vérifier vos indésirables.</p>
+      <div class="btn-row">
+        <a class="btn btn--primary" href="/creer-ma-carte/">Préparer l’aperçu de ma carte <Icon name="arrow-right" size={18} /></a>
+        <a class="btn btn--ghost" href="/demo/">Voir la démo</a>
+      </div>
+      <p class="small">Une urgence ? <a href={`mailto:${SITE.email}`}>{SITE.email}</a></p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .done {
+    display: inline-grid;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--green);
+    color: #fff;
+    margin-bottom: 20px;
+  }
+  .btn-row {
+    justify-content: center;
+    margin: 28px 0 18px;
+  }
+  .small {
+    color: var(--muted);
+  }
+</style>

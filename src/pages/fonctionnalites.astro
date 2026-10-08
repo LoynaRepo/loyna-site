@@ -1,0 +1,241 @@
+---
+import {Picture} from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Icon from '../components/Icon.astro';
+import CtaBand from '../components/CtaBand.astro';
+import WalletCard from '../components/WalletCard.astro';
+import passageValide from '../assets/shots/passage-valide.png';
+import recompense from '../assets/shots/recompense.png';
+import notifications from '../assets/shots/notifications.png';
+import tableau from '../assets/shots/tableau-de-bord.png';
+import sms from '../assets/shots/sms.png';
+import automatisations from '../assets/shots/automatisations.png';
+import inscription from '../assets/shots/inscription.png';
+
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: 'Fonctionnalités', url: '/fonctionnalites/'},
+];
+
+const blocks = [
+  {
+    id: 'carte-wallet',
+    eyebrow: 'La carte',
+    title: 'Une carte de fidélité dans Apple Wallet et Google Wallet',
+    text: 'Votre carte vit dans le téléphone de vos clients, à côté de leur carte bancaire. Pas d’application à télécharger, pas de compte à créer : un QR code, un formulaire court, et la carte est ajoutée en un geste.',
+    points: ['Compatible iPhone (Apple Wallet) et Android (Google Wallet)', 'À vos couleurs, avec votre logo et le nom de votre programme', 'Solde et récompense mis à jour automatiquement après chaque passage', 'QR code sans aucune donnée personnelle (jeton opaque et révocable)'],
+    card: true,
+  },
+  {
+    id: 'inscription',
+    eyebrow: 'Inscription',
+    title: 'Vos clients s’inscrivent en quelques secondes',
+    text: 'Affichez votre QR code d’inscription au comptoir, en vitrine ou sur vos réseaux. Le formulaire ne demande que l’essentiel, avec des consentements séparés et jamais pré-cochés.',
+    points: ['Prénom et téléphone facultatif', 'Consentements distincts : fidélité, offres Wallet, SMS', 'Boutons « Ajouter à Apple Wallet » et « Enregistrer dans Google Wallet »', 'Page d’inscription à votre nom et à vos couleurs'],
+    img: inscription,
+    alt: 'Formulaire d’inscription au programme de fidélité sur mobile',
+  },
+  {
+    id: 'scanner',
+    eyebrow: 'Scanner',
+    title: 'Un scan = un passage validé',
+    text: 'Le cœur de LOYNA Business : vous scannez la carte du client avec votre téléphone, et c’est tout. Pas de recherche du client, pas de bouton +1, pas de seconde confirmation.',
+    points: ['Protection anti double scan (délai réglable)', 'Bouton « Annuler » pendant quelques secondes', 'Fonctionne sur n’importe quel smartphone récent', 'Chaque passage est tracé dans le journal d’activité'],
+    img: passageValide,
+    alt: 'Écran « Passage validé » dans LOYNA Business',
+  },
+  {
+    id: 'recompenses',
+    eyebrow: 'Récompenses',
+    title: 'Les récompenses se débloquent toutes seules',
+    text: 'Fixez votre seuil (par exemple 10 passages) et votre récompense. Quand le client l’atteint, la récompense apparaît sur sa carte et il reçoit une notification. Au comptoir, elle s’utilise en un scan.',
+    points: ['Carte à passages (tampons) ou à points', 'Récompenses multiples possibles', 'Historique complet de chaque client', 'Ajustement manuel motivé et tracé si besoin'],
+    img: recompense,
+    alt: 'Récompense débloquée sur l’écran du commerçant',
+  },
+  {
+    id: 'notifications',
+    eyebrow: 'Notifications Wallet',
+    title: 'Le bon message, au bon moment, sur l’écran de verrouillage',
+    text: 'Les notifications Wallet sont le canal principal de LOYNA : elles s’affichent sur le téléphone du client, sans coût par message. Elles servent à faire revenir, pas à harceler.',
+    points: ['Récompense disponible', 'Anniversaire du client', 'Relance après 30, 60 ou 90 jours d’absence', 'Offre ou nouveauté, pour les clients qui l’ont accepté'],
+    img: notifications,
+    alt: 'Notifications Wallet affichées sur un iPhone',
+  },
+  {
+    id: 'automatisations',
+    eyebrow: 'Automatisations',
+    title: 'La fidélité qui fonctionne toute seule',
+    text: 'Anniversaires, clients inactifs, récompenses, campagnes programmées : LOYNA envoie les bons messages pendant que vous travaillez. Vous gardez la main sur les textes et les règles.',
+    points: ['Anniversaires automatiques (Growth et Pro)', 'Relance des clients inactifs (Growth et Pro)', 'Campagnes Wallet programmées (Growth et Pro)', 'Automatisations avancées (Pro)'],
+    img: automatisations,
+    alt: 'Schéma des automatisations : anniversaire, absence, dixième passage',
+  },
+  {
+    id: 'campagnes-sms',
+    eyebrow: 'Campagnes et SMS',
+    title: 'Des campagnes ciblées, en Wallet ou par SMS',
+    text: 'Choisissez votre audience (tous, actifs, inactifs depuis 30, 60 ou 90 jours, anniversaires du mois, récompense disponible) et votre canal. Le compteur SMS vous indique le nombre de SMS par destinataire avant l’envoi.',
+    points: ['200 SMS par mois inclus en Growth, 500 en Pro', 'Détection des caractères coûteux et suggestion d’une version plus courte', 'Jamais de modification de votre message sans votre accord', 'Désinscription SMS gérée automatiquement'],
+    img: sms,
+    alt: 'Compteur SMS : 1 SMS par destinataire',
+  },
+  {
+    id: 'tableau-de-bord',
+    eyebrow: 'Tableau de bord',
+    title: 'Des chiffres clairs pour piloter votre fidélité',
+    text: 'Clients actifs, nouveaux clients, passages, récompenses débloquées et utilisées, clients inactifs, évolution de l’activité : tout est calculé à partir de vos vrais passages.',
+    points: ['Période réglable', 'Statistiques avancées en Growth et Pro', 'Fiche détaillée par client', 'Export des données d’un client à la demande'],
+    img: tableau,
+    alt: 'Tableau de bord LOYNA Business : clients actifs, passages, récompenses',
+  },
+];
+
+const more = [
+  {icon: 'users', title: 'Équipe et rôles', text: 'Un compte par personne : propriétaire, administrateur, employé. Pas de limite d’employés.'},
+  {icon: 'palette', title: 'Personnalisation sans code', text: 'Logo, couleurs, nom du programme et récompense, modifiables quand vous voulez.'},
+  {icon: 'file-text', title: 'Journal d’activité', text: 'Passage ajouté ou annulé, récompense utilisée, campagne envoyée : tout est tracé.'},
+  {icon: 'shield-check', title: 'RGPD intégré', text: 'Consentements séparés, désinscription, export et suppression des données d’un client.'},
+  {icon: 'lock', title: 'Sécurité', text: 'Données chiffrées et hébergées dans l’Union européenne, jamais utilisées à des fins commerciales.'},
+  {icon: 'settings-2', title: 'Intégrations (Pro)', text: 'Intégrations compatibles, API et webhooks pour connecter vos outils.'},
+];
+---
+
+<Base
+  title="Fonctionnalités : carte Wallet, scan et relances"
+  description="Carte Apple et Google Wallet, validation en un scan, récompenses automatiques, notifications, SMS et tableau de bord : toutes les fonctionnalités LOYNA."
+  ogImage="/og/fonctionnalites.png"
+  breadcrumbs={crumbs}
+>
+  <section class="page-hero">
+    <div class="container">
+      <Breadcrumbs items={crumbs} />
+      <p class="eyebrow">Fonctionnalités</p>
+      <h1>Tout pour fidéliser vos clients, rien de compliqué</h1>
+      <p class="lead">Une carte dans le téléphone de vos clients, un scanner dans le vôtre, et des automatisations qui travaillent pour vous.</p>
+      <nav class="toc" aria-label="Sommaire">
+        {blocks.map((b) => <a href={`#${b.id}`}>{b.eyebrow}</a>)}
+      </nav>
+    </div>
+  </section>
+
+  {
+    blocks.map((b, i) => (
+      <section id={b.id} class={`section ${i % 2 ? 'section--alt' : ''}`}>
+        <div class={`container feat ${i % 2 ? 'flip' : ''}`}>
+          <div>
+            <p class="eyebrow">{b.eyebrow}</p>
+            <h2>{b.title}</h2>
+            <p class="lead">{b.text}</p>
+            <ul class="checks">
+              {b.points.map((p) => (
+                <li>{p}</li>
+              ))}
+            </ul>
+          </div>
+          <div class="media">
+            {b.card ? (
+              <div class="cards-demo">
+                <WalletCard name="Maison Lumière" activity="Coiffure" filled={7} total={10} reward="Brushing offert" width={300} />
+                <WalletCard name="Snack Sirocco" activity="Restauration rapide" bg="#9b1c1c" accent="#ffd166" filled={5} total={8} reward="Un menu offert" variant="google" qr={false} width={260} class="second" />
+              </div>
+            ) : (
+              <div class="shot">
+                <Picture src={b.img!} formats={['avif', 'webp']} fallbackFormat="webp" widths={[320, 480, 640]} sizes="(max-width: 900px) 85vw, 420px" alt={b.alt!} loading="lazy" />
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    ))
+  }
+
+  <section class="section section--dark">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Et aussi</p>
+        <h2>Les détails qui font la différence</h2>
+      </div>
+      <div class="grid grid-3">
+        {
+          more.map((m) => (
+            <div class="card">
+              <span class="icon">
+                <Icon name={m.icon} />
+              </span>
+              <h3>{m.title}</h3>
+              <p>{m.text}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <CtaBand />
+</Base>
+
+<style>
+  .toc {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 34px;
+  }
+  .toc a {
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.93rem;
+  }
+  .toc a:hover {
+    border-color: var(--ink);
+  }
+  .feat {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: clamp(32px, 6vw, 90px);
+    align-items: center;
+  }
+  .feat .checks {
+    margin-top: 24px;
+  }
+  .flip > :first-child {
+    order: 2;
+  }
+  .media {
+    display: grid;
+    justify-items: center;
+  }
+  .media .shot {
+    max-width: 420px;
+    width: 100%;
+  }
+  .cards-demo {
+    position: relative;
+    padding: 20px 0 60px;
+  }
+  .cards-demo :global(.second) {
+    position: absolute;
+    right: -40px;
+    bottom: 0;
+    transform: rotate(6deg);
+  }
+  @media (max-width: 900px) {
+    .feat {
+      grid-template-columns: 1fr;
+    }
+    .flip > :first-child {
+      order: 0;
+    }
+    .cards-demo :global(.second) {
+      display: none;
+    }
+  }
+</style>

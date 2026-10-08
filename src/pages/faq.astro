@@ -1,0 +1,96 @@
+---
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import CtaBand from '../components/CtaBand.astro';
+import {getFaq} from '../lib/builder';
+
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: 'Questions fréquentes', url: '/faq/'},
+];
+const faq = await getFaq();
+const cats = [...new Set(faq.map((f) => f.categorie))];
+const slug = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+const faqLd = {
+  '@type': 'FAQPage',
+  mainEntity: faq.map((f) => ({'@type': 'Question', name: f.q, acceptedAnswer: {'@type': 'Answer', text: f.a.replace(/<[^>]+>/g, '')}})),
+};
+---
+
+<Base
+  title="Questions fréquentes : carte de fidélité digitale"
+  description="Sans application ? iPhone et Android ? Matériel, délais, notifications Wallet, tarifs, engagement, données : toutes les réponses sur LOYNA."
+  breadcrumbs={crumbs}
+  jsonLd={faqLd}
+>
+  <section class="page-hero">
+    <div class="container">
+      <Breadcrumbs items={crumbs} />
+      <p class="eyebrow">FAQ</p>
+      <h1>Questions fréquentes</h1>
+      <p class="lead">Tout ce qu’il faut savoir sur la carte de fidélité digitale LOYNA. Une autre question ? <a href="/contact/">Écrivez-nous</a>.</p>
+      <nav class="cats" aria-label="Catégories">
+        {cats.map((c) => <a href={`#${slug(c)}`}>{c}</a>)}
+      </nav>
+    </div>
+  </section>
+  <section class="section pt0">
+    <div class="narrow">
+      {
+        cats.map((c) => (
+          <div class="group" id={slug(c)}>
+            <h2>{c}</h2>
+            <div class="faq">
+              {faq
+                .filter((f) => f.categorie === c)
+                .map((f) => (
+                  <details>
+                    <summary>{f.q}</summary>
+                    <div class="answer">
+                      <p set:html={f.a} />
+                    </div>
+                  </details>
+                ))}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+  <CtaBand />
+</Base>
+
+<style>
+  .pt0 {
+    padding-top: 0;
+  }
+  .cats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 30px;
+  }
+  .cats a {
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.93rem;
+  }
+  .group + .group {
+    margin-top: 56px;
+  }
+  .group h2 {
+    font-size: 1.6rem;
+  }
+</style>

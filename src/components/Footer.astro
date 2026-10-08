@@ -1,0 +1,136 @@
+---
+import Logo from './Logo.astro';
+import {SITE} from '../data/site';
+const year = new Date().getFullYear();
+const cols = [
+  {
+    title: 'Produit',
+    links: [
+      ['/fonctionnalites/', 'Fonctionnalités'],
+      ['/tarifs/', 'Tarifs'],
+      ['/creer-ma-carte/', 'Créer ma carte'],
+      ['/demo/', 'Démo vidéo'],
+      ['/espace-client/', 'Espace client'],
+    ],
+  },
+  {
+    title: 'Secteurs',
+    links: [
+      ['/secteurs/coiffeur-barbier/', 'Coiffeurs et barbiers'],
+      ['/secteurs/institut-onglerie/', 'Instituts et ongleries'],
+      ['/secteurs/restauration-rapide/', 'Restauration rapide'],
+      ['/secteurs/boulangerie-cafe/', 'Boulangeries et cafés'],
+      ['/secteurs/commerce-de-proximite/', 'Commerces de proximité'],
+    ],
+  },
+  {
+    title: 'Ressources',
+    links: [
+      ['/blog/', 'Blog'],
+      ['/faq/', 'Questions fréquentes'],
+      ['/contact/', 'Contact'],
+      ['/plan-du-site/', 'Plan du site'],
+    ],
+  },
+  {
+    title: 'Informations légales',
+    links: [
+      ['/mentions-legales/', 'Mentions légales'],
+      ['/cgv/', 'CGV'],
+      ['/cgu/', 'CGU'],
+      ['/confidentialite/', 'Confidentialité'],
+      ['/cookies/', 'Cookies'],
+    ],
+  },
+];
+---
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="top">
+      <div class="about">
+        <Logo height={34} tone="light" />
+        <p>La carte de fidélité digitale des commerces indépendants, dans Apple Wallet et Google Wallet. Conçue à {SITE.city}.</p>
+        <a class="mail" href={`mailto:${SITE.email}`}>{SITE.email}</a>
+      </div>
+      {
+        cols.map((c) => (
+          <nav aria-label={c.title}>
+            <p class="col-title">{c.title}</p>
+            <ul>
+              {c.links.map(([href, label]) => (
+                <li>
+                  <a href={href}>{label}</a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))
+      }
+    </div>
+    <div class="bottom">
+      <p>© {year} LOYNA · {SITE.city}, {SITE.region} · Prix en euros hors taxes · {SITE.vatNote}</p>
+      <p>Apple Wallet est une marque d'Apple Inc. Google Wallet est une marque de Google LLC.</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: var(--ink);
+    color: #b9b3a7;
+    padding: clamp(56px, 8vw, 96px) 0 32px;
+    font-size: 0.97rem;
+  }
+  .top {
+    display: grid;
+    grid-template-columns: 1.4fr repeat(4, 1fr);
+    gap: 36px;
+  }
+  .about p {
+    margin: 20px 0 14px;
+    max-width: 320px;
+  }
+  .mail {
+    color: #e6c27a;
+    font-weight: 600;
+  }
+  .col-title {
+    color: #faf7f0;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 9px;
+  }
+  a {
+    color: #b9b3a7;
+    text-decoration: none;
+  }
+  a:hover {
+    color: #faf7f0;
+    text-decoration: underline;
+  }
+  .bottom {
+    margin-top: 56px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(250, 247, 240, 0.1);
+    font-size: 0.85rem;
+    color: #8f897e;
+  }
+  .bottom p {
+    margin: 0 0 6px;
+  }
+  @media (max-width: 960px) {
+    .top {
+      grid-template-columns: 1fr 1fr;
+    }
+    .about {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

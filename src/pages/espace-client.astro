@@ -1,0 +1,100 @@
+---
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Icon from '../components/Icon.astro';
+import {SITE} from '../data/site';
+import {getSettings} from '../lib/builder';
+
+const settings = await getSettings();
+const portal = settings.billingPortalUrl || SITE.billingPortalUrl;
+const app = settings.appUrl || SITE.appUrl;
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: 'Espace client', url: '/espace-client/'},
+];
+---
+
+<Base
+  title="Espace client : abonnement, factures et LOYNA Business"
+  description="Gérez votre abonnement LOYNA, vos factures et votre moyen de paiement, et accédez à LOYNA Business pour scanner les cartes et suivre vos clients."
+  breadcrumbs={crumbs}
+>
+  <section class="page-hero">
+    <div class="container">
+      <Breadcrumbs items={crumbs} />
+      <p class="eyebrow">Espace client</p>
+      <h1>Bienvenue dans votre espace</h1>
+      <p class="lead">Retrouvez ici l’accès à votre application commerçant et à la gestion de votre abonnement.</p>
+    </div>
+  </section>
+  <section class="section pt0">
+    <div class="container grid grid-2">
+      <div class="card big">
+        <span class="icon"><Icon name="layout-dashboard" /></span>
+        <h2 class="h3">LOYNA Business</h2>
+        <p>Scanner les cartes, suivre vos clients, modifier votre programme, lancer une campagne, consulter vos statistiques et gérer votre équipe.</p>
+        {
+          app ? (
+            <a class="btn btn--primary" href={app}>
+              Ouvrir LOYNA Business <Icon name="arrow-right" size={18} />
+            </a>
+          ) : (
+            <p class="info">Votre lien de connexion personnel vous est envoyé par e-mail à l’activation de votre carte. Vous ne le trouvez plus ? Écrivez à <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.</p>
+          )
+        }
+      </div>
+      <div class="card big">
+        <span class="icon"><Icon name="credit-card" /></span>
+        <h2 class="h3">Abonnement et factures</h2>
+        <p>Télécharger vos factures, changer de formule, mettre à jour votre carte bancaire ou résilier votre abonnement, en toute autonomie.</p>
+        {
+          portal ? (
+            <a class="btn btn--gold" href={portal} rel="nofollow">
+              Gérer mon abonnement <Icon name="arrow-right" size={18} />
+            </a>
+          ) : (
+            <p class="info">Le portail de gestion de l’abonnement arrive très bientôt. En attendant, écrivez-nous à <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.</p>
+          )
+        }
+        <p class="small">Connexion sécurisée par Stripe : saisissez l’e-mail utilisé lors de votre commande, vous recevez un lien de connexion.</p>
+      </div>
+    </div>
+  </section>
+  <section class="section section--alt">
+    <div class="narrow center">
+      <h2 class="h3">Vous êtes client d’un commerce ?</h2>
+      <p>Pour modifier vos préférences de messages ou supprimer vos données, ouvrez le lien « Mes préférences » au dos de votre carte de fidélité, dans votre Wallet.</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .pt0 {
+    padding-top: 0;
+  }
+  .big {
+    display: grid;
+    gap: 14px;
+    align-content: start;
+  }
+  .big .btn {
+    justify-self: start;
+    margin-top: 8px;
+  }
+  .h3 {
+    font-size: 1.45rem;
+    margin: 6px 0 0;
+  }
+  .info {
+    background: var(--bg-alt);
+    border-radius: 14px;
+    padding: 14px 16px;
+    color: var(--text) !important;
+  }
+  .small {
+    font-size: 0.88rem;
+  }
+  .center {
+    text-align: center;
+  }
+</style>

@@ -1,0 +1,93 @@
+---
+// Vidéo de présentation : affiche légère, la vidéo n'est chargée qu'au clic (aucun poids au chargement de la page).
+import {Picture} from 'astro:assets';
+import poster from '../assets/shots/poster-video.png';
+interface Props {
+  title?: string;
+}
+const {title = 'Découvrez LOYNA en 80 secondes'} = Astro.props;
+---
+
+<figure class="video">
+  <button class="facade" type="button" data-src="/video/loyna-presentation-720p.mp4" aria-label={`Lire la vidéo : ${title}`}>
+    <Picture src={poster} formats={['avif', 'webp']} fallbackFormat="webp" widths={[360, 540, 720]} sizes="(max-width: 600px) 80vw, 360px" alt="" loading="lazy" decoding="async" />
+    <span class="play" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="30" height="30"><path d="M8 5.5v13l11-6.5z" fill="currentColor"></path></svg>
+    </span>
+  </button>
+  <figcaption>{title} · 1 min 19 · avec le son</figcaption>
+</figure>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.facade').forEach((btn) => {
+    btn.addEventListener(
+      'click',
+      () => {
+        const v = document.createElement('video');
+        v.src = btn.dataset.src!;
+        v.controls = true;
+        v.autoplay = true;
+        v.playsInline = true;
+        v.setAttribute('width', '720');
+        v.setAttribute('height', '1280');
+        btn.replaceWith(v);
+        v.focus();
+      },
+      {once: true},
+    );
+  });
+</script>
+
+<style>
+  .video {
+    margin: 0;
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+  }
+  .facade,
+  .video :global(video) {
+    width: min(100%, 360px);
+    aspect-ratio: 9 / 16;
+    border-radius: 30px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    background: #0b0b0f;
+  }
+  .facade {
+    position: relative;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+  }
+  .facade :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .play {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 84px;
+    height: 84px;
+    margin: -42px 0 0 -42px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--grad-gold);
+    color: var(--ink);
+    box-shadow: 0 14px 40px rgba(201, 150, 63, 0.5);
+    transition: transform 0.2s;
+  }
+  .facade:hover .play {
+    transform: scale(1.08);
+  }
+  figcaption {
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+  :global(.section--dark) figcaption {
+    color: #b9b3a7;
+  }
+</style>

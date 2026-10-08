@@ -1,0 +1,17 @@
+---
+// Pages créées librement dans l'éditeur visuel Builder.io (modèle « page », URL /p/…), rendues en HTML statique.
+import Base from '../../layouts/Base.astro';
+import {getBuilderPages} from '../../lib/builder';
+
+export async function getStaticPaths() {
+  const pages = await getBuilderPages();
+  return pages
+    .filter((p) => p.url.startsWith('/p/'))
+    .map((p) => ({params: {path: p.url.replace(/^\/p\//, '').replace(/\/$/, '')}, props: p}));
+}
+const {title, description, html} = Astro.props as {title: string; description: string; html: string};
+---
+
+<Base title={title} description={description || title}>
+  <div class="builder-page" set:html={html} />
+</Base>

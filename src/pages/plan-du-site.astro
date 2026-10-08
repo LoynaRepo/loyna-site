@@ -1,0 +1,81 @@
+---
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import {getArticles, getSectors} from '../lib/builder';
+
+const sectors = await getSectors();
+const articles = await getArticles();
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: 'Plan du site', url: '/plan-du-site/'},
+];
+const groups = [
+  {
+    title: 'LOYNA',
+    links: [
+      ['/', 'Accueil'],
+      ['/fonctionnalites/', 'Fonctionnalités'],
+      ['/tarifs/', 'Tarifs'],
+      ['/creer-ma-carte/', 'Créer ma carte'],
+      ['/demo/', 'Démo vidéo'],
+      ['/faq/', 'Questions fréquentes'],
+      ['/contact/', 'Contact'],
+      ['/espace-client/', 'Espace client'],
+    ],
+  },
+  {title: 'Secteurs', links: [['/secteurs/', 'Tous les secteurs'], ...sectors.map((s) => [`/secteurs/${s.slug}/`, s.nom])]},
+  {title: 'Ressources', links: [['/blog/', 'Tous les articles'], ...articles.map((a) => [`/blog/${a.slug}/`, a.title])]},
+  {
+    title: 'Informations légales',
+    links: [
+      ['/mentions-legales/', 'Mentions légales'],
+      ['/cgv/', 'Conditions générales de vente'],
+      ['/cgu/', "Conditions générales d'utilisation"],
+      ['/confidentialite/', 'Politique de confidentialité'],
+      ['/cookies/', 'Politique cookies'],
+    ],
+  },
+];
+---
+
+<Base title="Plan du site" description="Toutes les pages du site LOYNA : fonctionnalités, tarifs, configurateur, secteurs, guides et informations légales." breadcrumbs={crumbs}>
+  <section class="page-hero">
+    <div class="container">
+      <Breadcrumbs items={crumbs} />
+      <h1>Plan du site</h1>
+    </div>
+  </section>
+  <section class="section pt0">
+    <div class="container grid grid-2">
+      {
+        groups.map((g) => (
+          <nav class="card" aria-label={g.title}>
+            <h2 class="h3">{g.title}</h2>
+            <ul>
+              {g.links.map(([href, label]) => (
+                <li>
+                  <a href={href}>{label}</a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))
+      }
+    </div>
+  </section>
+</Base>
+
+<style>
+  .pt0 {
+    padding-top: 0;
+  }
+  .h3 {
+    font-size: 1.3rem;
+  }
+  ul {
+    margin: 12px 0 0;
+    padding-left: 1.2em;
+    display: grid;
+    gap: 8px;
+  }
+</style>

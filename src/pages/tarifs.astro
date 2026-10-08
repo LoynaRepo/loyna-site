@@ -1,0 +1,218 @@
+---
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import PricingCards from '../components/PricingCards.astro';
+import Icon from '../components/Icon.astro';
+import CtaBand from '../components/CtaBand.astro';
+import {COMPARISON, PLANS, SETUP_FEE, SITE, euro} from '../data/site';
+import {getFaq} from '../lib/builder';
+
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: 'Tarifs', url: '/tarifs/'},
+];
+const faq = (await getFaq()).filter((f) => f.categorie === 'Tarifs et abonnement');
+
+const offersLd = {
+  '@type': 'Product',
+  name: 'LOYNA — carte de fidélité digitale',
+  description: SITE.description,
+  brand: {'@type': 'Brand', name: 'LOYNA'},
+  offers: PLANS.flatMap((p) => [
+    {
+      '@type': 'Offer',
+      name: `${p.name} — mensuel`,
+      price: p.monthly,
+      priceCurrency: 'EUR',
+      url: `${SITE.url}/tarifs/`,
+      availability: 'https://schema.org/InStock',
+      priceSpecification: {'@type': 'UnitPriceSpecification', price: p.monthly, priceCurrency: 'EUR', unitCode: 'MON', valueAddedTaxIncluded: false},
+    },
+    {
+      '@type': 'Offer',
+      name: `${p.name} — annuel`,
+      price: p.yearly,
+      priceCurrency: 'EUR',
+      url: `${SITE.url}/tarifs/`,
+      availability: 'https://schema.org/InStock',
+      priceSpecification: {'@type': 'UnitPriceSpecification', price: p.yearly, priceCurrency: 'EUR', unitCode: 'ANN', valueAddedTaxIncluded: false},
+    },
+  ]),
+};
+const faqLd = {
+  '@type': 'FAQPage',
+  mainEntity: faq.map((f) => ({'@type': 'Question', name: f.q, acceptedAnswer: {'@type': 'Answer', text: f.a}})),
+};
+---
+
+<Base
+  title="Tarifs : carte de fidélité digitale dès 29 € HT/mois"
+  description="Essentiel 29 €, Growth 49 €, Pro 79 € HT par mois. -15 % et mise en service offerte en paiement annuel. Paiement sécurisé en ligne par Stripe."
+  ogImage="/og/tarifs.png"
+  breadcrumbs={crumbs}
+  jsonLd={[offersLd, faqLd]}
+>
+  <section class="page-hero">
+    <div class="container">
+      <Breadcrumbs items={crumbs} />
+      <p class="eyebrow">Tarifs</p>
+      <h1>Des formules simples, dès 29&nbsp;€ HT par mois</h1>
+      <p class="lead">Toutes les formules incluent la carte Apple Wallet et Google Wallet, les notifications Wallet et le scanner. Payez en ligne, votre carte est prête sous 24&nbsp;h.</p>
+    </div>
+  </section>
+
+  <section class="section pt0">
+    <div class="container">
+      <PricingCards idPrefix="tarifs" level={2} />
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <div class="section-head">
+        <h2>Comparer les formules</h2>
+        <p>Le détail de ce qui est inclus dans chaque formule.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="compare">
+          <caption class="visually-hidden">Comparatif des formules LOYNA</caption>
+          <thead>
+            <tr>
+              <th scope="col">Fonctionnalité</th>
+              {
+                PLANS.map((p) => (
+                  <th scope="col">
+                    {p.name}
+                    <span>{euro(p.monthly)} HT/mois</span>
+                  </th>
+                ))
+              }
+            </tr>
+          </thead>
+          <tbody>
+            {
+              COMPARISON.map((row) => (
+                <tr>
+                  <th scope="row">{row.label}</th>
+                  {row.values.map((v) => (
+                    <td>
+                      {v === true ? (
+                        <span class="yes">
+                          <Icon name="check" size={18} label="Inclus" />
+                        </span>
+                      ) : v === false ? (
+                        <span class="no" aria-label="Non inclus">
+                          —
+                        </span>
+                      ) : (
+                        <strong>{v}</strong>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container grid grid-3">
+      <div class="card">
+        <span class="icon"><Icon name="rocket" /></span>
+        <h2 class="h3">Mise en service : {euro(SETUP_FEE)} HT</h2>
+        <p>Création de votre carte à vos couleurs, de votre QR code d’inscription et de votre espace commerçant. Offerte en paiement annuel.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><Icon name="sparkles" /></span>
+        <h2 class="h3">−15&nbsp;% en paiement annuel</h2>
+        <p>Payez l’année en une fois : vous économisez 15&nbsp;% sur l’abonnement et la mise en service est offerte.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><Icon name="lock" /></span>
+        <h2 class="h3">Paiement sécurisé</h2>
+        <p>Paiement par carte bancaire via Stripe. Factures, moyen de paiement et abonnement se gèrent depuis votre espace client.</p>
+      </div>
+    </div>
+  </section>
+
+  {
+    faq.length > 0 && (
+      <section class="section section--alt">
+        <div class="container narrow">
+          <div class="section-head">
+            <h2>Questions sur les tarifs</h2>
+          </div>
+          <div class="faq">
+            {faq.map((f) => (
+              <details>
+                <summary>{f.q}</summary>
+                <div class="answer">
+                  <p set:html={f.a} />
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <CtaBand title="Pas encore décidé ?" text="Créez l’aperçu de votre carte en 30 secondes, ou écrivez-nous : nous vous aidons à choisir la formule adaptée à votre commerce." />
+</Base>
+
+<style>
+  .pt0 {
+    padding-top: 0;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--line);
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+  .compare {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 640px;
+  }
+  .compare th,
+  .compare td {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--line);
+    text-align: center;
+  }
+  .compare thead th {
+    font-size: 1.05rem;
+    color: var(--ink);
+    background: var(--bg-alt);
+  }
+  .compare thead th span {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .compare tbody th {
+    text-align: left;
+    font-weight: 600;
+  }
+  .compare tbody tr:last-child > * {
+    border-bottom: 0;
+  }
+  .yes {
+    display: inline-grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--gold-soft);
+    color: var(--gold-strong);
+  }
+  .no {
+    color: #b9b1a3;
+  }
+</style>

@@ -1,0 +1,53 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import {SITE} from '../data/site';
+---
+
+<Base title="Merci pour votre commande" description="Votre abonnement LOYNA est confirmé. Voici les prochaines étapes pour lancer votre carte de fidélité." noindex>
+  <section class="page-hero">
+    <div class="narrow">
+      <span class="done"><Icon name="check" size={34} /></span>
+      <h1>Merci, votre abonnement est confirmé&nbsp;!</h1>
+      <p class="lead">Vous allez recevoir un reçu de Stripe par e-mail. Voici la suite :</p>
+    </div>
+  </section>
+  <section class="section pt0">
+    <div class="narrow">
+      <ol class="next">
+        <li><strong>Nous vous contactons</strong> pour récupérer votre logo, vos couleurs et votre récompense (si ce n’est pas déjà fait).</li>
+        <li><strong>Votre carte est prête sous 24&nbsp;h</strong>, avec votre QR code d’inscription à imprimer ou à partager.</li>
+        <li><strong>Vous recevez votre accès à LOYNA Business</strong> pour scanner les cartes depuis votre téléphone.</li>
+        <li><strong>Vous lancez votre programme</strong> : affichez le QR code au comptoir, vos clients s’inscrivent en quelques secondes.</li>
+      </ol>
+      <p>Vous pouvez dès maintenant nous envoyer votre logo à <a href={`mailto:${SITE.email}?subject=Mon logo pour ma carte LOYNA`}>{SITE.email}</a>.</p>
+      <div class="btn-row">
+        <a class="btn btn--primary" href="/espace-client/">Mon espace client</a>
+        <a class="btn btn--ghost" href="/creer-ma-carte/">Revoir l’aperçu de ma carte</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .pt0 {
+    padding-top: 0;
+  }
+  .done {
+    display: inline-grid;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--green);
+    color: #fff;
+    margin-bottom: 20px;
+  }
+  .next {
+    display: grid;
+    gap: 16px;
+    padding-left: 1.3em;
+    margin: 0 0 28px;
+    font-size: 1.08rem;
+  }
+</style>

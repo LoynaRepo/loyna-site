@@ -1,0 +1,108 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import WalletCard from '../../components/WalletCard.astro';
+import Icon from '../../components/Icon.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import {getSectors} from '../../lib/builder';
+
+const sectors = await getSectors();
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: 'Secteurs', url: '/secteurs/'},
+];
+---
+
+<Base
+  title="Carte de fidélité digitale par métier"
+  description="Coiffeurs, barbiers, instituts, ongleries, snacks, boulangeries, cafés et boutiques : une carte de fidélité Wallet adaptée à chaque commerce de proximité."
+  breadcrumbs={crumbs}
+>
+  <section class="page-hero">
+    <div class="container">
+      <Breadcrumbs items={crumbs} />
+      <p class="eyebrow">Secteurs</p>
+      <h1>Une carte de fidélité adaptée à votre métier</h1>
+      <p class="lead">Rythme de visites, récompenses, messages : chaque commerce fidélise à sa façon. Découvrez comment LOYNA s’adapte au vôtre.</p>
+    </div>
+  </section>
+  <section class="section pt0">
+    <div class="container list">
+      {
+        sectors.map((s) => (
+          <a class="item" href={`/secteurs/${s.slug}/`}>
+            <WalletCard
+              name={s.carte.nom}
+              activity={s.carte.activite}
+              bg={s.carte.couleurFond}
+              accent={s.carte.couleurAccent}
+              text={s.carte.couleurTexte}
+              filled={Math.max(2, s.carte.total - 3)}
+              total={s.carte.total}
+              reward={s.carte.recompense}
+              qr={false}
+              width={260}
+            />
+            <div>
+              <h2>{s.nom}</h2>
+              <p>{s.metaDescription}</p>
+              <span class="more">
+                Découvrir <Icon name="arrow-right" size={16} />
+              </span>
+            </div>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+  <CtaBand />
+</Base>
+
+<style>
+  .pt0 {
+    padding-top: 0;
+  }
+  .list {
+    display: grid;
+    gap: 22px;
+  }
+  .item {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: clamp(20px, 4vw, 48px);
+    align-items: center;
+    padding: clamp(22px, 3vw, 34px);
+    border-radius: var(--radius-lg);
+    background: var(--card);
+    border: 1px solid var(--line);
+    text-decoration: none;
+    color: var(--text);
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+  }
+  .item:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+  }
+  .item h2 {
+    font-size: 1.6rem;
+  }
+  .item p {
+    color: var(--muted);
+  }
+  .more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    color: var(--gold-strong);
+  }
+  @media (max-width: 700px) {
+    .item {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      text-align: center;
+    }
+  }
+</style>

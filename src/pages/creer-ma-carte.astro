@@ -1,0 +1,466 @@
+---
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Phone from '../components/Phone.astro';
+import WalletCard from '../components/WalletCard.astro';
+import Icon from '../components/Icon.astro';
+import {SITE} from '../data/site';
+
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: 'Créer ma carte', url: '/creer-ma-carte/'},
+];
+const bgs = ['#1f1c17', '#121216', '#7a3d1c', '#9b1c1c', '#14532d', '#1e3a5f', '#5b2a86', '#f5efe4'];
+const accents = ['#d9b27a', '#f2c879', '#ffd166', '#f4a3b5', '#86efac', '#7dd3fc', '#e9d5ff', '#121216'];
+const activities = ['Coiffure', 'Barbier', 'Institut de beauté', 'Onglerie', 'Boulangerie', 'Café', 'Snack', 'Pizzeria', 'Boutique', 'Autre'];
+const appLd = {
+  '@type': 'WebApplication',
+  name: 'Configurateur de carte de fidélité LOYNA',
+  applicationCategory: 'DesignApplication',
+  operatingSystem: 'Web',
+  url: `${SITE.url}/creer-ma-carte/`,
+  offers: {'@type': 'Offer', price: 0, priceCurrency: 'EUR'},
+};
+---
+
+<Base
+  title="Créer ma carte de fidélité : configurateur en ligne"
+  description="Créez l'aperçu de votre carte de fidélité Apple Wallet et Google Wallet : nom, couleurs, logo, nombre de passages et récompense. Résultat en direct, gratuit."
+  ogImage="/og/creer-ma-carte.png"
+  breadcrumbs={crumbs}
+  jsonLd={appLd}
+>
+  <section class="page-hero compact">
+    <div class="container">
+      <Breadcrumbs items={crumbs} />
+      <p class="eyebrow">Configurateur</p>
+      <h1>Créez l’aperçu de votre carte de fidélité</h1>
+      <p class="lead">Choisissez votre nom, vos couleurs, votre logo et votre récompense : votre carte se met à jour en direct, telle que vos clients la verront dans leur Wallet.</p>
+    </div>
+  </section>
+
+  <section class="section pt0">
+    <div class="container configurator">
+      <form class="panel" id="cfg" aria-label="Personnalisation de la carte" onsubmit="return false">
+        <div class="field">
+          <label for="c-name">Nom de votre commerce</label>
+          <input id="c-name" name="name" type="text" maxlength="32" value="Maison Lumière" autocomplete="organization" />
+        </div>
+        <div class="field">
+          <label for="c-activity">Activité</label>
+          <select id="c-activity" name="activity">
+            {activities.map((a) => <option selected={a === 'Coiffure'}>{a}</option>)}
+          </select>
+        </div>
+        <fieldset class="field">
+          <legend>Couleur de la carte</legend>
+          <div class="swatches" data-target="bg">
+            {bgs.map((c, i) => <button type="button" class="sw" style={`--c:${c}`} data-color={c} aria-label={`Couleur ${c}`} aria-pressed={i === 0 ? 'true' : 'false'} />)}
+            <label class="sw custom" title="Couleur personnalisée"><input type="color" id="c-bg" value="#1f1c17" aria-label="Couleur de carte personnalisée" /></label>
+          </div>
+        </fieldset>
+        <fieldset class="field">
+          <legend>Couleur des tampons</legend>
+          <div class="swatches" data-target="accent">
+            {accents.map((c, i) => <button type="button" class="sw" style={`--c:${c}`} data-color={c} aria-label={`Couleur ${c}`} aria-pressed={i === 0 ? 'true' : 'false'} />)}
+            <label class="sw custom" title="Couleur personnalisée"><input type="color" id="c-accent" value="#d9b27a" aria-label="Couleur des tampons personnalisée" /></label>
+          </div>
+        </fieldset>
+        <div class="field">
+          <span class="label">Votre logo <span class="hint">(facultatif, reste sur votre appareil)</span></span>
+          <label class="file" for="c-logo">
+            <input id="c-logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+            <span class="file-btn">Choisir une image</span>
+            <span class="file-name" id="file-name">Aucun fichier choisi</span>
+          </label>
+        </div>
+        <div class="field two">
+          <div>
+            <label for="c-total">Passages pour la récompense : <output id="o-total">10</output></label>
+            <input id="c-total" type="range" min="4" max="15" value="10" />
+          </div>
+          <div>
+            <label for="c-filled">Passages du client : <output id="o-filled">7</output></label>
+            <input id="c-filled" type="range" min="0" max="10" value="7" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="c-reward">Récompense</label>
+          <input id="c-reward" type="text" maxlength="40" value="Brushing offert" />
+        </div>
+        <fieldset class="field">
+          <legend>Aperçu</legend>
+          <div class="seg" role="radiogroup">
+            <input type="radio" name="variant" id="v-apple" value="apple" checked /><label for="v-apple">Apple Wallet</label>
+            <input type="radio" name="variant" id="v-google" value="google" /><label for="v-google">Google Wallet</label>
+          </div>
+        </fieldset>
+      </form>
+
+      <div class="preview" aria-live="polite">
+        <Phone width={330} screen="#000">
+          <div class="wallet-ui" id="wallet-ui">
+            <p class="wallet-title" id="wallet-title">Wallet</p>
+            <div id="card-slot">
+              <WalletCard name="Maison Lumière" activity="Coiffure" filled={7} total={10} reward="Brushing offert" width={294} />
+            </div>
+          </div>
+        </Phone>
+        <p class="caption">Aperçu indicatif : la carte définitive est créée par LOYNA à vos couleurs, avec votre logo en haute définition.</p>
+        <div class="btn-row center">
+          <a class="btn btn--gold" href="/tarifs/" id="go-plans">Je veux cette carte <Icon name="arrow-right" size={18} /></a>
+          <a class="btn btn--ghost" href={`mailto:${SITE.email}`} id="mail-me"><Icon name="mail" size={18} /> Envoyer mon aperçu</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container grid grid-3">
+      <div class="card">
+        <span class="icon"><Icon name="palette" /></span>
+        <h2 class="h3">À votre image</h2>
+        <p>Logo, couleurs, nom du programme et récompense : vous pourrez tout modifier ensuite depuis votre espace, sans code.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><Icon name="zap" /></span>
+        <h2 class="h3">Prête sous 24&nbsp;h</h2>
+        <p>Après votre commande, nous créons votre carte et votre QR code d’inscription sous 24&nbsp;h, hors personnalisation exceptionnelle.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><Icon name="smartphone" /></span>
+        <h2 class="h3">iPhone et Android</h2>
+        <p>La même carte fonctionne dans Apple Wallet et Google Wallet. Vos clients n’ont aucune application à installer.</p>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  type Cfg = {name: string; activity: string; bg: string; accent: string; total: number; filled: number; reward: string; variant: 'apple' | 'google'};
+  const $ = <T extends HTMLElement>(s: string) => document.querySelector<T>(s)!;
+  const card = document.querySelector<HTMLElement>('#card-slot .wcard')!;
+  const KEY = 'loyna-config';
+  let logoUrl = '';
+
+  const read = (): Cfg => ({
+    name: $<HTMLInputElement>('#c-name').value.trim() || 'Votre commerce',
+    activity: $<HTMLSelectElement>('#c-activity').value,
+    bg: $<HTMLInputElement>('#c-bg').value,
+    accent: $<HTMLInputElement>('#c-accent').value,
+    total: Number($<HTMLInputElement>('#c-total').value),
+    filled: Number($<HTMLInputElement>('#c-filled').value),
+    reward: $<HTMLInputElement>('#c-reward').value.trim() || 'Récompense offerte',
+    variant: ($<HTMLInputElement>('#v-google').checked ? 'google' : 'apple') as Cfg['variant'],
+  });
+
+  const luminance = (hex: string) => {
+    const n = parseInt(hex.slice(1), 16);
+    const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
+      const s = v / 255;
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+  };
+
+  function render() {
+    const c = read();
+    const filledInput = $<HTMLInputElement>('#c-filled');
+    filledInput.max = String(c.total);
+    if (c.filled > c.total) {
+      c.filled = c.total;
+      filledInput.value = String(c.total);
+    }
+    $<HTMLOutputElement>('#o-total').value = String(c.total);
+    $<HTMLOutputElement>('#o-filled').value = String(c.filled);
+    const fg = luminance(c.bg) > 0.45 ? '#16130e' : '#f8f4ec';
+    card.style.setProperty('--bg', c.bg);
+    card.style.setProperty('--accent', c.accent);
+    card.style.setProperty('--fg', fg);
+    card.classList.toggle('wcard--google', c.variant === 'google');
+    card.classList.toggle('wcard--apple', c.variant === 'apple');
+    card.querySelector('.wc-name strong')!.textContent = c.name;
+    card.querySelector('.wc-name small')!.textContent = c.activity;
+    const logo = card.querySelector<HTMLElement>('.wc-logo')!;
+    if (logoUrl) {
+      logo.innerHTML = `<img src="${logoUrl}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    } else {
+      logo.textContent = c.name
+        .split(/\s+/)
+        .filter((w) => /^[A-Za-zÀ-ÿ]/.test(w) && !/^(de|du|des|la|le|les|et|d'|l'|chez|au|aux)$/i.test(w))
+        .slice(0, 2)
+        .map((w) => w[0].toUpperCase())
+        .join('');
+    }
+    const count = card.querySelector<HTMLElement>('.wc-count');
+    if (count) {
+      count.style.display = c.variant === 'apple' ? '' : 'none';
+      count.querySelector('b')!.innerHTML = `${c.filled}<i>/${c.total}</i>`;
+    }
+    let gt = card.querySelector<HTMLElement>('.wc-gtitle');
+    if (!gt) {
+      gt = document.createElement('p');
+      gt.className = 'wc-gtitle';
+      card.querySelector('.wc-head')!.after(gt);
+    }
+    gt.textContent = `${c.filled} / ${c.total} passages`;
+    gt.style.display = c.variant === 'google' ? '' : 'none';
+    const stamps = card.querySelector<HTMLElement>('.wc-stamps')!;
+    stamps.style.setProperty('--n', String(c.total));
+    stamps.innerHTML = Array.from({length: c.total}, (_, i) => `<span class="${i < c.filled ? 'on' : ''}"></span>`).join('');
+    card.querySelector('.wc-reward span')!.textContent = c.reward;
+    $('#wallet-title').textContent = c.variant === 'apple' ? 'Wallet' : 'Google Wallet';
+    try {
+      localStorage.setItem(KEY, JSON.stringify(c));
+    } catch {
+      /* stockage indisponible : sans conséquence */
+    }
+    const body = `Bonjour,%0D%0A%0D%0AVoici l'aperçu de la carte que je souhaite :%0D%0A- Commerce : ${encodeURIComponent(c.name)} (${encodeURIComponent(c.activity)})%0D%0A- Couleurs : ${c.bg} / ${c.accent}%0D%0A- Récompense : ${encodeURIComponent(c.reward)} au bout de ${c.total} passages%0D%0A%0D%0AMerci de me recontacter.`;
+    $<HTMLAnchorElement>('#mail-me').href = `mailto:contact@loyna.fr?subject=${encodeURIComponent('Ma carte LOYNA : ' + c.name)}&body=${body}`;
+  }
+
+  // Couleurs : pastilles et sélecteur libre
+  document.querySelectorAll<HTMLElement>('.swatches').forEach((group) => {
+    const input = group.querySelector<HTMLInputElement>('input[type=color]')!;
+    group.querySelectorAll<HTMLButtonElement>('.sw[data-color]').forEach((b) =>
+      b.addEventListener('click', () => {
+        group.querySelectorAll('.sw[data-color]').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+        b.setAttribute('aria-pressed', 'true');
+        input.value = b.dataset.color!;
+        render();
+      }),
+    );
+    input.addEventListener('input', () => {
+      group.querySelectorAll('.sw[data-color]').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+      render();
+    });
+  });
+
+  $<HTMLInputElement>('#c-logo').addEventListener('change', (e) => {
+    const f = (e.target as HTMLInputElement).files?.[0];
+    if (logoUrl) URL.revokeObjectURL(logoUrl);
+    logoUrl = f ? URL.createObjectURL(f) : '';
+    $('#file-name').textContent = f ? f.name : 'Aucun fichier choisi';
+    render();
+  });
+  document.querySelectorAll('#cfg input:not([type=file]):not([type=color]), #cfg select').forEach((el) => el.addEventListener('input', render));
+
+  // Reprise d'un brouillon enregistré
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || 'null') as Cfg | null;
+    if (saved) {
+      $<HTMLInputElement>('#c-name').value = saved.name;
+      $<HTMLSelectElement>('#c-activity').value = saved.activity;
+      $<HTMLInputElement>('#c-bg').value = saved.bg;
+      $<HTMLInputElement>('#c-accent').value = saved.accent;
+      $<HTMLInputElement>('#c-total').value = String(saved.total);
+      $<HTMLInputElement>('#c-filled').value = String(saved.filled);
+      $<HTMLInputElement>('#c-reward').value = saved.reward;
+      $<HTMLInputElement>(saved.variant === 'google' ? '#v-google' : '#v-apple').checked = true;
+    }
+  } catch {
+    /* rien */
+  }
+  render();
+</script>
+
+<style>
+  .compact {
+    padding-bottom: clamp(30px, 4vw, 50px);
+  }
+  .pt0 {
+    padding-top: 0;
+  }
+  .configurator {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(30px, 5vw, 70px);
+    align-items: start;
+  }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: clamp(24px, 3vw, 38px);
+    box-shadow: var(--shadow);
+    display: grid;
+    gap: 22px;
+  }
+  .field {
+    display: grid;
+    gap: 9px;
+    border: 0;
+    padding: 0;
+    margin: 0;
+  }
+  .field label,
+  .field legend {
+    font-weight: 700;
+    color: var(--ink);
+    padding: 0;
+  }
+  .hint {
+    font-weight: 500;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .two {
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .two > div {
+    display: grid;
+    gap: 9px;
+  }
+  input[type='text'],
+  select {
+    width: 100%;
+    min-height: 50px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    border: 1.5px solid var(--line);
+    background: var(--bg);
+    font: 500 1rem var(--font);
+    color: var(--ink);
+  }
+  input[type='text']:focus,
+  select:focus {
+    border-color: var(--gold);
+    outline: none;
+  }
+  input[type='range'] {
+    width: 100%;
+    accent-color: var(--ink);
+  }
+  .label {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .file {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    font-weight: 500 !important;
+  }
+  .file input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+  .file-btn {
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 1.5px solid var(--line);
+    background: var(--bg);
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .file:hover .file-btn,
+  .file input:focus-visible + .file-btn {
+    border-color: var(--ink);
+  }
+  .file-name {
+    color: var(--muted);
+    font-size: 0.92rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .sw {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    background: var(--c);
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+  }
+  .sw[aria-pressed='true'] {
+    box-shadow:
+      0 0 0 3px var(--bg),
+      0 0 0 5px var(--ink);
+  }
+  .custom {
+    background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+    overflow: hidden;
+  }
+  .custom input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+  .seg {
+    display: inline-flex;
+    padding: 4px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    width: fit-content;
+  }
+  .seg input {
+    position: absolute;
+    opacity: 0;
+  }
+  .seg label {
+    padding: 9px 18px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .seg input:checked + label {
+    background: var(--ink);
+    color: #faf7f0;
+  }
+  .seg input:focus-visible + label {
+    outline: 3px solid var(--gold);
+  }
+  .preview {
+    position: sticky;
+    top: 100px;
+    display: grid;
+    justify-items: center;
+    gap: 18px;
+  }
+  .wallet-ui {
+    position: absolute;
+    inset: 0;
+    padding: 46px 18px;
+    color: #fff;
+  }
+  .wallet-title {
+    font-size: 26px;
+    font-weight: 750;
+    margin: 6px 2px 16px;
+  }
+  .caption {
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-align: center;
+    max-width: 380px;
+    margin: 0;
+  }
+  .center {
+    justify-content: center;
+  }
+  @media (max-width: 900px) {
+    .configurator {
+      grid-template-columns: 1fr;
+    }
+    .preview {
+      position: static;
+      order: -1;
+    }
+  }
+</style>

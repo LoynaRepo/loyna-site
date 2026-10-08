@@ -1,0 +1,65 @@
+---
+// Pages juridiques : contenus dans src/content-seed/legal, identité de l'éditeur depuis Builder.io (site-settings).
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import {getSettings} from '../lib/builder';
+import {SITE} from '../data/site';
+
+const PAGES = {
+  'mentions-legales': {title: 'Mentions légales', description: 'Mentions légales du site loyna.fr : éditeur, directeur de la publication, hébergeur et propriété intellectuelle.'},
+  cgv: {title: 'Conditions générales de vente', description: "Conditions générales de vente et d'abonnement du service LOYNA : offres, prix, paiement, durée, résiliation et protection des données."},
+  cgu: {title: "Conditions générales d'utilisation", description: "Conditions générales d'utilisation du site loyna.fr, de l'application LOYNA Business et des cartes de fidélité LOYNA."},
+  confidentialite: {title: 'Politique de confidentialité', description: 'Comment LOYNA protège vos données personnelles : finalités, bases légales, durées de conservation, sous-traitants et vos droits.'},
+  cookies: {title: 'Politique cookies', description: "Le site loyna.fr n'utilise ni cookie publicitaire ni mesure d'audience. Détail des stockages techniques utilisés."},
+} as const;
+type Slug = keyof typeof PAGES;
+
+export function getStaticPaths() {
+  return ['mentions-legales', 'cgv', 'cgu', 'confidentialite', 'cookies'].map((legal) => ({params: {legal}}));
+}
+
+const slug = Astro.params.legal as Slug;
+const meta = PAGES[slug];
+const files = import.meta.glob<string>('../content-seed/legal/*.html', {query: '?raw', import: 'default', eager: true});
+const raw = files[`../content-seed/legal/${slug}.html`] ?? '';
+const s = await getSettings();
+const todo = '<mark class="todo">[à compléter]</mark>';
+const val = (v: string) => (v && v.trim() ? v.trim().replace(/\n/g, '<br>') : todo);
+const html = raw
+  .replace(/<!--[\s\S]*?-->/g, '')
+  .replaceAll('{{NOM_DIRIGEANT}}', val(s.nomDirigeant || SITE.legal.nomDirigeant))
+  .replaceAll('{{SIRET}}', val(s.siret || SITE.legal.siret))
+  .replaceAll('{{ADRESSE}}', val(s.adresse || SITE.legal.adresse))
+  .replaceAll('{{TELEPHONE}}', val(s.telephone || SITE.legal.telephone))
+  .replaceAll('{{EMAIL}}', `<a href="mailto:${SITE.email}">${SITE.email}</a>`);
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: meta.title, url: `/${slug}/`},
+];
+---
+
+<Base title={meta.title} description={meta.description} breadcrumbs={crumbs}>
+  <section class="page-hero">
+    <div class="narrow">
+      <Breadcrumbs items={crumbs} />
+      <h1>{meta.title}</h1>
+    </div>
+  </section>
+  <section class="section pt0">
+    <div class="narrow prose legal" set:html={html} />
+  </section>
+</Base>
+
+<style>
+  .pt0 {
+    padding-top: 0;
+  }
+  .page-hero h1 {
+    font-size: clamp(2rem, 4vw, 3rem);
+  }
+  .legal :global(mark.todo) {
+    background: #fff1c2;
+    padding: 0 4px;
+    border-radius: 4px;
+  }
+</style>

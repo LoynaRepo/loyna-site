@@ -1,0 +1,26 @@
+{
+  "name": "loyna-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Site commercial loyna.fr (Astro statique + Builder.io comme CMS)",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.4",
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "astro": "^7.3.8",
+    "lucide-static": "^1.53.0",
+    "qrcode-generator": "^2.0.4",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "lighthouse": "^12.6.1",
+    "puppeteer-core": "^25.13.0"
+  }
+}

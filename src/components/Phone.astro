@@ -1,0 +1,48 @@
+---
+// Cadre de téléphone en CSS ; le contenu de l'écran est passé en enfant.
+interface Props {
+  width?: number;
+  screen?: string;
+  class?: string;
+}
+const {width = 300, screen = '#000', class: cls = ''} = Astro.props;
+---
+
+<div class={`phone ${cls}`} style={`--pw:${width}px;--screen:${screen}`}>
+  <div class="screen">
+    <div class="island"></div>
+    <slot />
+  </div>
+</div>
+
+<style>
+  .phone {
+    width: var(--pw);
+    max-width: 100%;
+    aspect-ratio: 9 / 19;
+    border-radius: calc(var(--pw) * 0.16);
+    padding: calc(var(--pw) * 0.03);
+    background: linear-gradient(150deg, #4a4a52, #16161b 25%, #0c0c10 65%, #33333b);
+    box-shadow:
+      0 40px 90px rgba(18, 18, 22, 0.28),
+      inset 0 0 0 1.5px rgba(255, 255, 255, 0.1);
+  }
+  .screen {
+    position: relative;
+    height: 100%;
+    border-radius: calc(var(--pw) * 0.13);
+    overflow: hidden;
+    background: var(--screen);
+  }
+  .island {
+    position: absolute;
+    z-index: 5;
+    top: calc(var(--pw) * 0.03);
+    left: 50%;
+    width: 30%;
+    height: calc(var(--pw) * 0.085);
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: #000;
+  }
+</style>

@@ -1,0 +1,14 @@
+---
+// Page d'aperçu pour l'éditeur visuel Builder.io (non indexée). Le contenu « page » est affiché par le
+// composant web officiel de Builder.io ; les pages publiées sont ensuite générées en HTML statique.
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Aperçu Builder.io" description="Aperçu de l'éditeur de contenu." noindex>
+  <section class="section">
+    <div class="container">
+      <builder-component model="page" api-key="61b8020017bc4b33a6d54bd3e667bb03"></builder-component>
+    </div>
+  </section>
+  <script is:inline async src="https://cdn.builder.io/js/webcomponents"></script>
+</Base>

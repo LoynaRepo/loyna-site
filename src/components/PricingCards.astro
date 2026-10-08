@@ -1,0 +1,225 @@
+---
+// Grille tarifaire avec bascule mensuel / annuel en CSS pur (aucun JavaScript).
+import {PLANS, SETUP_FEE, SITE, euro} from '../data/site';
+interface Props {
+  idPrefix?: string;
+  compact?: boolean;
+  /** Niveau du titre de chaque formule (2 si aucun h2 ne précède la grille). */
+  level?: 2 | 3;
+}
+const {idPrefix = 'p', compact = false, level = 3} = Astro.props;
+const H = level === 2 ? 'h2' : 'h3';
+const fallback = (plan: string, period: string) => `/contact/?offre=${plan}-${period}`;
+// Lien de paiement Stripe affiché en français
+const buy = (link: string) => (link ? `${link}?locale=fr` : '');
+---
+
+<div class="pricing">
+  <div class="toggle" role="radiogroup" aria-label="Période de facturation">
+    <input type="radio" name={`${idPrefix}-period`} id={`${idPrefix}-m`} checked />
+    <label for={`${idPrefix}-m`}>Mensuel</label>
+    <input type="radio" name={`${idPrefix}-period`} id={`${idPrefix}-y`} class="yearly" />
+    <label for={`${idPrefix}-y`}>Annuel <span class="save">−15&nbsp;%</span></label>
+  </div>
+
+  <div class="plans">
+    {
+      PLANS.map((p) => (
+        <article class={`plan ${p.highlight ? 'plan--hl' : ''}`} aria-labelledby={`${idPrefix}-${p.id}`}>
+          <header>
+            <H class="plan-name" id={`${idPrefix}-${p.id}`}>{p.name}</H>
+            {p.badge && <span class="badge">{p.badge}</span>}
+          </header>
+          <p class="pitch">{p.pitch}</p>
+          <div class="price only-m">
+            <span class="amount">{euro(p.monthly)}</span>
+            <span class="per">HT / mois</span>
+          </div>
+          <p class="note only-m">+ {euro(SETUP_FEE)} HT de mise en service, une seule fois</p>
+          <div class="price only-y">
+            <span class="amount">{euro(p.yearly)}</span>
+            <span class="per">HT / an</span>
+          </div>
+          <p class="note only-y">
+            soit {euro(Math.round((p.yearly / 12) * 100) / 100)} HT / mois · <strong>mise en service offerte</strong>
+          </p>
+          <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-m`} href={buy(p.links.monthly) || fallback(p.id, 'mensuel')} rel="nofollow">
+            Choisir {p.name}
+          </a>
+          <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-y`} href={buy(p.links.yearly) || fallback(p.id, 'annuel')} rel="nofollow">
+            Choisir {p.name} en annuel
+          </a>
+          {!compact && (
+            <>
+              {p.intro && <p class="intro">{p.intro}</p>}
+              <ul class="checks">
+                {p.features.map((f) => (
+                  <li>{f}</li>
+                ))}
+              </ul>
+            </>
+          )}
+        </article>
+      ))
+    }
+  </div>
+  <p class="fine">
+    Prix en euros hors taxes. {SITE.vatNote} : le prix affiché est le prix payé. Paiement sécurisé par Stripe, factures dans votre espace client.
+  </p>
+</div>
+
+<style>
+  .toggle {
+    display: inline-flex;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 5px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    margin-bottom: 40px;
+    box-shadow: var(--shadow);
+  }
+  .toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .toggle label {
+    padding: 11px 24px;
+    border-radius: 999px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--muted);
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .toggle input:checked + label {
+    background: var(--ink);
+    color: #faf7f0;
+  }
+  .toggle input:focus-visible + label {
+    outline: 3px solid var(--gold);
+    outline-offset: 2px;
+  }
+  .save {
+    font-size: 0.78rem;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--gold-soft);
+    color: #6b4a14;
+  }
+  .plans {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 24px;
+    align-items: start;
+  }
+  .plan {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 34px 30px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .plan--hl {
+    background: var(--ink);
+    color: #e9e5dc;
+    border-color: var(--ink);
+    box-shadow: var(--shadow-lg);
+  }
+  .plan header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .plan-name {
+    margin: 0;
+    font-size: 1.45rem;
+  }
+  .plan--hl .plan-name {
+    color: #faf7f0;
+  }
+  .badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--gold-soft);
+    color: #6b4a14;
+  }
+  .plan--hl .badge {
+    background: var(--grad-gold);
+    color: var(--ink);
+  }
+  .pitch {
+    color: var(--muted);
+    margin: 0;
+    min-height: 3.2em;
+  }
+  .plan--hl .pitch,
+  .plan--hl .note {
+    color: #b9b3a7;
+  }
+  .price {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .amount {
+    font-size: 2.9rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .plan--hl .amount {
+    color: #faf7f0;
+  }
+  .per {
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .plan--hl .per {
+    color: #b9b3a7;
+  }
+  .note {
+    font-size: 0.92rem;
+    color: var(--muted);
+    margin: 0 0 6px;
+  }
+  .intro {
+    font-weight: 700;
+    margin: 10px 0 0;
+  }
+  .plan--hl :global(.checks li::before) {
+    background-color: rgba(230, 194, 122, 0.18);
+  }
+  .fine {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.92rem;
+    margin-top: 28px;
+  }
+  .only-y {
+    display: none;
+  }
+  .pricing:has(.yearly:checked) .only-y {
+    display: flex;
+  }
+  .pricing:has(.yearly:checked) p.only-y {
+    display: block;
+  }
+  .pricing:has(.yearly:checked) .only-m {
+    display: none;
+  }
+</style>

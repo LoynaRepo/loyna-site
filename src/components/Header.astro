@@ -1,0 +1,156 @@
+---
+import Logo from './Logo.astro';
+import Icon from './Icon.astro';
+import {NAV} from '../data/site';
+const path = Astro.url.pathname;
+const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+---
+
+<header class="site-header">
+  <div class="container bar">
+    <a href="/" class="brand" aria-label="LOYNA, accueil"><Logo height={32} /></a>
+    <nav class="nav-desktop" aria-label="Navigation principale">
+      <ul>
+        {NAV.map((n) => <li><a href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}>{n.label}</a></li>)}
+      </ul>
+    </nav>
+    <div class="actions">
+      <a href="/espace-client/" class="login">Espace client</a>
+      <a href="/tarifs/" class="btn btn--primary btn--sm">Commencer</a>
+    </div>
+    <details class="nav-mobile">
+      <summary aria-label="Ouvrir le menu"><Icon name="menu" size={26} /></summary>
+      <div class="sheet">
+        <ul>
+          {NAV.map((n) => <li><a href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}>{n.label}</a></li>)}
+          <li><a href="/espace-client/">Espace client</a></li>
+          <li><a href="/contact/">Contact</a></li>
+        </ul>
+        <a href="/tarifs/" class="btn btn--primary btn--block">Voir les offres</a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(251, 250, 248, 0.86);
+    backdrop-filter: saturate(160%) blur(14px);
+    -webkit-backdrop-filter: saturate(160%) blur(14px);
+    border-bottom: 1px solid rgba(233, 226, 214, 0.7);
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    height: 76px;
+  }
+  .brand {
+    display: inline-flex;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .nav-desktop ul {
+    display: flex;
+    gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .nav-desktop a {
+    display: block;
+    padding: 9px 13px;
+    border-radius: 999px;
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.96rem;
+  }
+  .nav-desktop a:hover,
+  .nav-desktop a[aria-current='page'] {
+    background: var(--bg-alt);
+    color: var(--ink);
+  }
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .login {
+    color: var(--text);
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 0.96rem;
+  }
+  .login:hover {
+    color: var(--gold-strong);
+  }
+  .btn--sm {
+    min-height: 44px;
+    padding: 10px 20px;
+    font-size: 0.95rem;
+  }
+  .nav-mobile {
+    display: none;
+    position: relative;
+  }
+  .nav-mobile summary {
+    list-style: none;
+    cursor: pointer;
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    color: var(--ink);
+  }
+  .nav-mobile summary::-webkit-details-marker {
+    display: none;
+  }
+  .sheet {
+    position: absolute;
+    right: 0;
+    top: 58px;
+    width: min(88vw, 340px);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: var(--shadow-lg);
+    padding: 14px;
+  }
+  .sheet ul {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+  }
+  .sheet a:not(.btn) {
+    display: block;
+    padding: 13px 14px;
+    border-radius: 12px;
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .sheet a:not(.btn):hover {
+    background: var(--bg-alt);
+  }
+  @media (max-width: 1080px) {
+    .nav-desktop,
+    .login {
+      display: none;
+    }
+    .nav-mobile {
+      display: block;
+    }
+  }
+  @media (max-width: 520px) {
+    .actions .btn {
+      display: none;
+    }
+  }
+</style>

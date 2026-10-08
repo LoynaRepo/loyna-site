@@ -1,0 +1,215 @@
+---
+// Carte de fidélité Wallet en HTML/CSS (aucune image) : style Apple Wallet ou Google Wallet.
+import QrCode from './QrCode.astro';
+interface Props {
+  name: string;
+  activity?: string;
+  bg?: string;
+  accent?: string;
+  text?: string;
+  filled?: number;
+  total?: number;
+  reward?: string;
+  variant?: 'apple' | 'google';
+  qr?: boolean;
+  width?: number;
+  class?: string;
+}
+const {
+  name,
+  activity = 'Carte de fidélité',
+  bg = '#1f1c17',
+  accent = '#d9b27a',
+  text = '#f8f4ec',
+  filled = 7,
+  total = 10,
+  reward = 'Récompense offerte',
+  variant = 'apple',
+  qr = true,
+  width = 340,
+  class: cls = '',
+} = Astro.props;
+const initials = name
+  .split(/\s+/)
+  .filter((w) => /^[A-Za-zÀ-ÿ]/.test(w) && !/^(de|du|des|la|le|les|et|d'|l'|chez|au|aux)$/i.test(w))
+  .slice(0, 2)
+  .map((w) => w[0].toUpperCase())
+  .join('');
+---
+
+<div class={`wcard wcard--${variant} ${cls}`} style={`--bg:${bg};--accent:${accent};--fg:${text};--w:${width}px`}>
+  <div class="wc-head">
+    <span class="wc-logo">{initials}</span>
+    <span class="wc-name">
+      <strong>{name}</strong>
+      <small>{activity}</small>
+    </span>
+    {
+      variant === 'apple' && (
+        <span class="wc-count">
+          <small>PASSAGES</small>
+          <b>
+            {filled}
+            <i>/{total}</i>
+          </b>
+        </span>
+      )
+    }
+  </div>
+  {variant === 'google' && <p class="wc-gtitle">{filled} / {total} passages</p>}
+  <div class="wc-stamps" style={`--n:${total}`}>
+    {Array.from({length: total}).map((_, i) => <span class={i < filled ? 'on' : ''} />)}
+  </div>
+  <p class="wc-reward">
+    <small>Prochaine récompense</small>
+    <span>{reward}</span>
+  </p>
+  {
+    qr && (
+      <div class="wc-qr">
+        <QrCode text="https://loyna.fr/creer-ma-carte/" size={Math.round(width * 0.34)} label="QR code de la carte (exemple)" />
+        <small>
+          Propulsé par <b>LOYNA</b>
+        </small>
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .wcard {
+    width: var(--w);
+    max-width: 100%;
+    font-size: calc(var(--w) / 20);
+    color: var(--fg);
+    background: var(--bg);
+    background-image: radial-gradient(circle at 88% 0%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 58%);
+    border-radius: 0.95em;
+    padding: 1.1em 1.15em 1em;
+    box-shadow:
+      0 1.4em 2.6em rgba(0, 0, 0, 0.28),
+      inset 0 0 0 0.06em color-mix(in srgb, var(--accent) 45%, transparent);
+    line-height: 1.25;
+  }
+  .wc-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+  }
+  .wc-logo {
+    width: 2.2em;
+    height: 2.2em;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    background: var(--accent);
+    color: color-mix(in srgb, var(--bg) 80%, #000);
+    font-weight: 800;
+    font-size: 0.95em;
+    letter-spacing: 0.02em;
+  }
+  .wc-name {
+    display: grid;
+    min-width: 0;
+    flex: 1;
+  }
+  .wc-name strong {
+    font-size: 0.98em;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+  .wc-name small {
+    font-size: 0.6em;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-top: 0.2em;
+  }
+  .wc-count {
+    text-align: right;
+    display: grid;
+  }
+  .wc-count small {
+    font-size: 0.52em;
+    letter-spacing: 0.16em;
+    opacity: 0.7;
+  }
+  .wc-count b {
+    font-size: 1.5em;
+    line-height: 1.05;
+  }
+  .wc-count i {
+    font-style: normal;
+    opacity: 0.55;
+    font-weight: 500;
+  }
+  .wcard :global(.wc-gtitle) {
+    margin: 0.9em 0 0;
+    font-size: 1.45em;
+    font-weight: 700;
+  }
+  .wc-stamps {
+    display: grid;
+    grid-template-columns: repeat(min(var(--n), 10), 1fr);
+    gap: 0.42em;
+    margin: 1.05em 0 0.9em;
+  }
+  .wc-stamps :global(span) {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 0.08em color-mix(in srgb, var(--fg) 35%, transparent);
+  }
+  .wc-stamps :global(span.on) {
+    background: var(--accent);
+    box-shadow: 0 0 0.45em color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  .wc-reward {
+    margin: 0;
+    display: grid;
+  }
+  .wc-reward small {
+    font-size: 0.56em;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    opacity: 0.65;
+  }
+  .wc-reward span {
+    font-size: 0.95em;
+    font-weight: 650;
+    margin-top: 0.15em;
+  }
+  .wc-qr {
+    display: grid;
+    justify-items: center;
+    margin-top: 1.05em;
+    gap: 0.55em;
+  }
+  .wc-qr :global(svg) {
+    border-radius: 0.45em;
+    padding: 0.35em;
+    background: #fff;
+    box-sizing: content-box;
+  }
+  .wc-qr small {
+    font-size: 0.5em;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+  .wc-qr b {
+    color: var(--accent);
+    letter-spacing: 0.22em;
+  }
+  .wcard--google {
+    border-radius: 1.1em;
+    box-shadow: 0 1.2em 2.4em rgba(0, 0, 0, 0.22);
+  }
+</style>

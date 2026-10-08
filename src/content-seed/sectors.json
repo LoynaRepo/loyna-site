@@ -1,0 +1,372 @@
+[
+  {
+    "slug": "coiffeur-barbier",
+    "nom": "Coiffeurs et barbiers",
+    "metaTitle": "Carte de fidélité digitale coiffeur et barbier",
+    "metaDescription": "Carte de fidélité pour salon de coiffure et barbershop, dans Apple Wallet et Google Wallet, sans application. Un scan par passage, récompense auto.",
+    "h1": "Carte de fidélité coiffeur et barbier, directement dans le Wallet",
+    "intro": "<p>Entre deux coupes, plusieurs semaines passent. C’est souvent à ce moment-là qu’un client essaie un autre salon, simplement parce que rien ne lui rappelle le vôtre. Une carte de fidélité coiffeur ou barbier lui donne une vraie raison de revenir, à condition qu’elle ne reste pas oubliée au fond d’un tiroir.</p><p>Avec LOYNA, la carte de fidélité de votre salon de coiffure ou de votre barbershop s’installe dans le téléphone de vos clients, dans Apple Wallet ou Google Wallet, sans application à télécharger. Après chaque prestation, vous scannez la carte : le passage est validé et la carte se met à jour toute seule. Au seuil que vous avez fixé, la récompense se débloque automatiquement et votre client reçoit une notification.</p>",
+    "enjeux": [
+      {
+        "titre": "Des visites espacées de plusieurs semaines",
+        "texte": "Entre deux coupes ou deux tailles de barbe, le temps passe. Sans rappel de votre part, votre salon sort peu à peu de l’esprit du client, et un autre fauteuil n’est jamais bien loin."
+      },
+      {
+        "titre": "Des cartes tamponnées qui se perdent",
+        "texte": "La carte en carton reste à la maison, se plie dans un portefeuille ou disparaît. Le client repart sans son tampon, se décourage et finit par oublier votre programme."
+      },
+      {
+        "titre": "Des creux dans le planning",
+        "texte": "Certaines journées débordent quand d’autres laissent des créneaux vides. Prévenir vos clients un par un prend un temps que vous n’avez pas entre deux rendez-vous."
+      }
+    ],
+    "benefices": [
+      {
+        "titre": "Une carte toujours dans la poche",
+        "texte": "La carte vit dans Apple Wallet ou Google Wallet, sur le téléphone que votre client garde sur lui. Impossible de l’oublier, et rien à installer : il l’ajoute en un geste après avoir scanné votre QR code."
+      },
+      {
+        "titre": "Un scan, et le passage est validé",
+        "texte": "En fin de prestation, vous scannez la carte avec votre smartphone dans LOYNA Business. Pas de recherche du client, pas de bouton +1, pas de seconde confirmation : vous restez disponible pour vos clients."
+      },
+      {
+        "titre": "La récompense se débloque toute seule",
+        "texte": "Au nombre de passages que vous avez choisi, la récompense se débloque automatiquement et votre client est prévenu par une notification Wallet. Il l’utilise en un scan lors de sa prochaine visite."
+      },
+      {
+        "titre": "Des messages pour faire revenir",
+        "texte": "Annoncez une offre ou une nouveauté par notification Wallet, sans coût par message. Avec les formules Growth et Pro, relancez automatiquement les clients inactifs et souhaitez les anniversaires."
+      }
+    ],
+    "recompenses": [
+      "10e coupe offerte",
+      "Taille de barbe offerte",
+      "Soin profond offert au 8e passage",
+      "Produit coiffant offert"
+    ],
+    "messages": [
+      "Votre 10e coupe est offerte ! Présentez votre carte lors de votre prochain passage.",
+      "Joyeux anniversaire ! Une taille de barbe vous est offerte ce mois-ci au salon.",
+      "Cela fait un moment ! Votre fauteuil vous attend pour votre prochaine coupe."
+    ],
+    "carte": {
+      "nom": "Atelier Noé",
+      "activite": "Coiffure & barbier",
+      "couleurFond": "#1F2A44",
+      "couleurAccent": "#C9A66B",
+      "couleurTexte": "#FFFFFF",
+      "total": 10,
+      "recompense": "10e coupe offerte"
+    },
+    "faq": [
+      {
+        "q": "Comment mes clients ajoutent-ils la carte de fidélité du salon ?",
+        "a": "Vous affichez votre QR code d’inscription au comptoir, en vitrine ou sur vos réseaux sociaux. Votre client le scanne, indique son prénom (son téléphone est facultatif), choisit ses consentements, puis ajoute la carte dans Apple Wallet ou Google Wallet en un geste. Il peut le faire en attendant son tour, sans application à télécharger."
+      },
+      {
+        "q": "Tous les coiffeurs du salon peuvent-ils scanner les cartes ?",
+        "a": "Oui. Chaque membre de l’équipe a son propre compte dans LOYNA Business, avec un rôle : propriétaire, administrateur ou employé. Il n’y a pas de limite d’employés. Le journal d’audit garde la trace des actions importantes, comme un passage ajouté ou annulé, ou une récompense utilisée."
+      },
+      {
+        "q": "Puis-je relancer un client qui n’est pas revenu depuis longtemps ?",
+        "a": "Oui, avec les formules Growth et Pro. Vous ciblez les clients inactifs depuis 30, 60 ou 90 jours et leur envoyez une notification Wallet, sans coût par message, ou un SMS s’ils ont accepté d’en recevoir. Vous pouvez aussi automatiser cette relance pour ne plus avoir à y penser."
+      }
+    ]
+  },
+  {
+    "slug": "institut-onglerie",
+    "nom": "Instituts de beauté et ongleries",
+    "metaTitle": "Programme de fidélité onglerie et institut de beauté",
+    "metaDescription": "Carte de fidélité digitale pour onglerie, institut de beauté ou spa : dans Apple Wallet et Google Wallet, sans application, à vos couleurs.",
+    "h1": "Programme de fidélité onglerie et institut de beauté, dans le Wallet",
+    "intro": "<p>Un remplissage, une pose de semi-permanent, un soin du visage : vos prestations appellent des visites régulières. Pourtant, une offre de bienvenue dans l’institut voisin suffit parfois à faire partir une habituée. Un programme de fidélité pour votre onglerie ou votre institut de beauté récompense celles et ceux qui reviennent chez vous, et leur donne envie de continuer.</p><p>LOYNA place votre carte de fidélité dans Apple Wallet ou Google Wallet, sur le téléphone de votre clientèle, sans application à télécharger. Elle reprend votre logo et vos couleurs. À chaque rendez-vous, un scan suffit pour valider le passage. Au seuil choisi, la récompense se débloque automatiquement et votre cliente ou votre client reçoit une notification. Onglerie, institut ou spa : le fonctionnement est le même.</p>",
+    "enjeux": [
+      {
+        "titre": "Une concurrence qui multiplie les offres",
+        "texte": "Nouvelles ongleries, promotions de bienvenue, réseaux sociaux : votre clientèle est sollicitée en permanence. Sans attention particulière, une habituée peut tester un autre institut et ne pas revenir."
+      },
+      {
+        "titre": "Un carnet de fidélité qui ne suit pas",
+        "texte": "La carte papier se perd dans un sac, s’oublie à la maison ou s’abîme. Et à l’accueil, retrouver qui a droit à quoi prend du temps entre deux rendez-vous."
+      },
+      {
+        "titre": "Des journées inégales",
+        "texte": "Certains jours, l’agenda est plein ; d’autres, des créneaux restent libres. Prévenir vos clientes une à une d’une offre ou d’une nouveauté demande un temps précieux."
+      }
+    ],
+    "benefices": [
+      {
+        "titre": "Une carte élégante, à vos couleurs",
+        "texte": "Logo, couleurs, nom du programme, récompense : vous personnalisez votre carte sans code. Elle prend place dans Apple Wallet ou Google Wallet, à l’image de votre institut."
+      },
+      {
+        "titre": "Une validation discrète, en un scan",
+        "texte": "À la fin du rendez-vous, vous scannez la carte depuis LOYNA Business. Le passage est validé et la carte se met à jour toute seule, sans recherche ni saisie."
+      },
+      {
+        "titre": "Des récompenses qui arrivent au bon moment",
+        "texte": "La récompense se débloque automatiquement au seuil fixé et une notification Wallet prévient votre cliente. Elle s’utilise en un scan, et l’historique complet reste consultable."
+      },
+      {
+        "titre": "Des attentions personnalisées",
+        "texte": "Annoncez une nouveauté ou une offre par notification Wallet, sans coût par message. Avec Growth et Pro, souhaitez automatiquement les anniversaires et relancez les clientes absentes depuis 30, 60 ou 90 jours."
+      }
+    ],
+    "recompenses": [
+      "Semi-permanent offert à la 8e pose",
+      "Soin des mains offert",
+      "Nail art offert sur deux ongles",
+      "-20 % sur un soin du visage"
+    ],
+    "messages": [
+      "Votre soin des mains offert vous attend ! Présentez votre carte à l’institut.",
+      "Joyeux anniversaire ! Une petite attention vous attend à l’institut ce mois-ci.",
+      "Nouvelles teintes de saison : découvrez-les lors de votre prochaine pose !"
+    ],
+    "carte": {
+      "nom": "Maison Opaline",
+      "activite": "Onglerie & institut",
+      "couleurFond": "#3D1E34",
+      "couleurAccent": "#E7B3C6",
+      "couleurTexte": "#FFFFFF",
+      "total": 8,
+      "recompense": "Soin des mains offert"
+    },
+    "faq": [
+      {
+        "q": "Comment souhaiter l’anniversaire de mes clientes ?",
+        "a": "Avec les formules Growth et Pro, l’automatisation des anniversaires envoie un message le moment venu, par notification Wallet ou par SMS aux personnes qui ont accepté d’en recevoir. Vous pouvez aussi cibler le segment « anniversaire du mois » dans une campagne, pour proposer une attention à vos clientes."
+      },
+      {
+        "q": "Mon institut compte plusieurs praticiennes : comment ça se passe ?",
+        "a": "Chaque praticienne dispose de son propre compte dans LOYNA Business, sans limite d’employés. Les rôles (propriétaire, administrateur, employé) déterminent les droits de chacune. Le journal d’audit enregistre qui a ajouté ou annulé un passage et quelle récompense a été utilisée, pour un suivi clair au sein de l’équipe."
+      },
+      {
+        "q": "Les données de mes clientes sont-elles protégées ?",
+        "a": "Oui. Les données sont hébergées dans l’Union européenne, chiffrées et jamais utilisées à des fins commerciales. Le formulaire d’inscription ne demande que l’essentiel : prénom, téléphone facultatif et consentements séparés, non cochés. Le QR code de la carte ne contient aucune donnée personnelle, et vous pouvez exporter ou supprimer les données d’une cliente à sa demande."
+      }
+    ]
+  },
+  {
+    "slug": "restauration-rapide",
+    "nom": "Restauration rapide",
+    "metaTitle": "Carte de fidélité snack, kebab, tacos et pizzeria",
+    "metaDescription": "Carte de fidélité digitale pour snack, kebab, tacos ou pizzeria à emporter : un scan par passage, récompense automatique, sans application.",
+    "h1": "Carte de fidélité snack, kebab, tacos et pizzeria à emporter",
+    "intro": "<p>Au comptoir d’un snack, d’un kebab, d’une boutique de tacos ou d’une pizzeria à emporter, chaque seconde compte. Pendant le rush de midi, personne n’a le temps de chercher une carte en carton ni de compter des tampons. Et quand la concurrence est à deux rues, un client sans raison particulière de revenir chez vous ira simplement là où il passe.</p><p>LOYNA met votre carte de fidélité dans le téléphone de vos clients, dans Apple Wallet ou Google Wallet, sans application à télécharger. Au moment de payer, vous scannez la carte : un scan, un passage validé, sans rechercher le client ni appuyer sur +1. La carte se met à jour toute seule et, au seuil choisi, la récompense se débloque automatiquement, par exemple un menu offert.</p>",
+    "enjeux": [
+      {
+        "titre": "Le rush ne laisse pas de place aux tampons",
+        "texte": "Entre la prise de commande, la caisse et la préparation, il n’y a pas de temps à perdre. Une fidélité qui ralentit la file finit par ne plus être proposée."
+      },
+      {
+        "titre": "Une concurrence à chaque coin de rue",
+        "texte": "Snacks, kebabs, tacos, pizzerias : l’offre est dense et les prix sont proches. Sans lien avec votre clientèle, rien ne la retient d’aller tester le voisin."
+      },
+      {
+        "titre": "Des heures creuses à remplir",
+        "texte": "Le midi et le soir, ça déborde ; l’après-midi, le comptoir est calme. Faire passer une offre au bon moment, sans imprimer de prospectus, n’a rien de simple."
+      }
+    ],
+    "benefices": [
+      {
+        "titre": "Un scan, pas une manipulation",
+        "texte": "Un scan égale un passage validé : pas de recherche du client, pas de bouton +1, pas de seconde confirmation. En cas d’erreur, un bouton « Annuler » reste disponible quelques secondes."
+      },
+      {
+        "titre": "Pas de double validation",
+        "texte": "La protection anti double scan, avec un délai réglable, évite de valider deux fois la même carte quand tout va vite. Chaque passage ajouté ou annulé est tracé dans le journal d’audit."
+      },
+      {
+        "titre": "La récompense, sans calcul",
+        "texte": "Au nombre de passages fixé, la récompense se débloque automatiquement et le client reçoit une notification Wallet. Au comptoir, elle s’utilise en un scan."
+      },
+      {
+        "titre": "Des offres pour vos heures calmes",
+        "texte": "Envoyez une offre par notification Wallet, sans coût par message. Avec Growth et Pro, programmez vos campagnes à l’avance et ciblez les clients inactifs, en Wallet ou par SMS."
+      }
+    ],
+    "recompenses": [
+      "10e menu offert",
+      "Boisson offerte au 5e passage",
+      "Dessert ou frites offerts",
+      "Pizza offerte au 10e passage"
+    ],
+    "messages": [
+      "Votre menu offert est disponible ! Montrez simplement votre carte au comptoir.",
+      "Cet après-midi de 15 h à 18 h : une boisson offerte pour tout menu acheté.",
+      "Plus que 2 passages avant votre menu offert. À bientôt au comptoir !"
+    ],
+    "carte": {
+      "nom": "Snack Sirocco",
+      "activite": "Snack & tacos",
+      "couleurFond": "#B3261E",
+      "couleurAccent": "#FFC94A",
+      "couleurTexte": "#FFFFFF",
+      "total": 10,
+      "recompense": "10e menu offert"
+    },
+    "faq": [
+      {
+        "q": "La carte de fidélité ralentit-elle le service pendant le rush ?",
+        "a": "Non, elle est pensée pour aller vite. Un scan de la carte dans LOYNA Business valide le passage : pas de recherche du client, pas de bouton +1, pas de seconde confirmation. La protection anti double scan évite les erreurs quand la file s’allonge, et un bouton « Annuler » permet de corriger pendant quelques secondes."
+      },
+      {
+        "q": "Mes équipiers peuvent-ils valider les passages ?",
+        "a": "Oui. Chaque équipier a son propre compte avec le rôle employé, sans limite d’employés, et vous gardez le rôle de propriétaire. Les droits dépendent du rôle, et le journal d’audit enregistre les actions importantes : passage ajouté ou annulé, récompense utilisée. Vous savez qui a fait quoi, même les soirs où vous n’êtes pas au comptoir."
+      },
+      {
+        "q": "Comment faire connaître la carte à mes clients ?",
+        "a": "Affichez votre QR code d’inscription au comptoir, en vitrine, sur une affiche près de la caisse ou sur vos réseaux sociaux. Vos clients le scannent en attendant leur commande, remplissent un formulaire très court et ajoutent la carte dans leur Wallet en un geste, sans application à télécharger."
+      }
+    ]
+  },
+  {
+    "slug": "boulangerie-cafe",
+    "nom": "Boulangeries, pâtisseries et cafés",
+    "metaTitle": "Carte de fidélité boulangerie, pâtisserie et café",
+    "metaDescription": "Carte de fidélité digitale pour boulangerie-pâtisserie, café ou salon de thé : dans Apple Wallet et Google Wallet, validée d’un scan au comptoir.",
+    "h1": "Carte de fidélité digitale boulangerie, pâtisserie et café",
+    "intro": "<p>Dans une boulangerie-pâtisserie, un café ou un salon de thé, les clients passent souvent, mais vite. La file avance, le panier est petit, et personne ne veut attendre qu’on retrouve une carte tamponnée. Pourtant, ce sont ces habitués qui font vivre votre commerce, et il suffit d’une nouvelle adresse sur leur trajet pour qu’ils changent d’habitude.</p><p>Avec LOYNA, votre carte de fidélité digitale s’ajoute dans Apple Wallet ou Google Wallet, sans application à télécharger. Au comptoir, vous scannez la carte avec votre smartphone : le passage est validé et la carte se met à jour toute seule. Au seuil choisi, la viennoiserie ou le café offert se débloque automatiquement, et votre client en est prévenu par une notification Wallet.</p>",
+    "enjeux": [
+      {
+        "titre": "Des passages fréquents mais très courts",
+        "texte": "Le matin, la file s’allonge vite. Chercher une carte, la tamponner, la rendre : chaque geste en plus ralentit le service, et la fidélité passe à la trappe."
+      },
+      {
+        "titre": "Des cartes papier qui s’oublient",
+        "texte": "Rangées dans un portefeuille, laissées sur un meuble, perdues : les cartes en carton sont rarement là au bon moment. Le client renonce à son tampon, puis au programme."
+      },
+      {
+        "titre": "Des nouveautés difficiles à faire connaître",
+        "texte": "Une pâtisserie de saison, un nouveau pain, une offre pour l’après-midi plus calme : sans moyen simple de prévenir vos habitués, l’information reste dans la boutique."
+      }
+    ],
+    "benefices": [
+      {
+        "titre": "Validé d’un scan au comptoir",
+        "texte": "Un scan égale un passage validé : pas de recherche du client, pas de bouton +1, pas de seconde confirmation. La file continue d’avancer."
+      },
+      {
+        "titre": "Une carte qui ne se perd plus",
+        "texte": "La carte est dans le téléphone de votre client, dans Apple Wallet ou Google Wallet. Elle se met à jour toute seule après chaque passage."
+      },
+      {
+        "titre": "La récompense, automatiquement",
+        "texte": "Au seuil fixé, la récompense se débloque et une notification Wallet prévient votre client. Elle s’utilise en un scan, et vous gardez l’historique complet."
+      },
+      {
+        "titre": "Vos nouveautés, directement sur leur téléphone",
+        "texte": "Annoncez une nouveauté ou une offre par notification Wallet, sans coût par message. Avec Growth et Pro, programmez vos campagnes et souhaitez automatiquement les anniversaires."
+      }
+    ],
+    "recompenses": [
+      "10e café offert",
+      "Viennoiserie offerte au 8e passage",
+      "Baguette tradition offerte",
+      "Pâtisserie individuelle offerte"
+    ],
+    "messages": [
+      "Votre viennoiserie offerte vous attend ! Présentez votre carte au comptoir.",
+      "Nouveau : notre pâtisserie de saison est arrivée, venez la goûter cette semaine !",
+      "Joyeux anniversaire ! Une pâtisserie vous attend à la boutique ce mois-ci."
+    ],
+    "carte": {
+      "nom": "Le Fournil d’Albane",
+      "activite": "Boulangerie-pâtisserie",
+      "couleurFond": "#5B3A21",
+      "couleurAccent": "#F2C46D",
+      "couleurTexte": "#FFF8EE",
+      "total": 10,
+      "recompense": "Viennoiserie offerte"
+    },
+    "faq": [
+      {
+        "q": "Mes clients passent tous les jours : comment éviter les doubles validations ?",
+        "a": "LOYNA intègre une protection anti double scan : la même carte ne peut pas être validée deux fois dans le délai que vous avez réglé, et vous adaptez ce délai à votre fonctionnement. En cas d’erreur, le bouton « Annuler » reste disponible quelques secondes, et chaque passage ajouté ou annulé est inscrit dans le journal d’audit."
+      },
+      {
+        "q": "Faut-il un équipement particulier au comptoir ?",
+        "a": "Non. Un smartphone suffit pour scanner les cartes avec LOYNA Business : pas de terminal ni de lecteur spécial à installer à côté de la caisse. Il vous suffit d’afficher votre QR code d’inscription au comptoir ou en vitrine pour que vos clients ajoutent leur carte en un geste."
+      },
+      {
+        "q": "Comment annoncer une nouveauté ou une offre du moment ?",
+        "a": "Envoyez une notification Wallet aux clients qui ont accepté de recevoir vos offres : elle est incluse dans toutes les formules, sans coût par message. Avec Growth et Pro, vous pouvez aussi programmer la campagne à l’avance, cibler un segment ou envoyer des SMS. LOYNA privilégie les messages utiles, pour ne pas lasser vos habitués."
+      }
+    ]
+  },
+  {
+    "slug": "commerce-de-proximite",
+    "nom": "Commerces de proximité",
+    "metaTitle": "Carte de fidélité digitale commerce de proximité",
+    "metaDescription": "Programme de fidélité pour boutique et commerce de quartier : carte dans Apple Wallet et Google Wallet, sans application, à vos couleurs.",
+    "h1": "Carte de fidélité digitale pour commerce de proximité et boutique",
+    "intro": "<p>Épicerie fine, fleuriste, caviste, boutique de quartier : vous connaissez vos habitués, mais vous n’avez pas toujours les outils des grandes enseignes pour les faire revenir. Les cartes en carton se perdent, le fichier client tient dans un cahier, et les clients de passage repartent sans laisser de trace.</p><p>LOYNA vous donne une carte de fidélité digitale à vos couleurs, dans Apple Wallet ou Google Wallet, sans application à télécharger. Vos clients s’inscrivent en scannant un QR code, vous validez chaque passage d’un scan, et la récompense se débloque automatiquement au seuil choisi. Vous retrouvez vos clients dans une liste claire, avec leur historique, et vous pouvez leur envoyer des notifications Wallet utiles, sans coût par message.</p>",
+    "enjeux": [
+      {
+        "titre": "Face aux grandes enseignes",
+        "texte": "Les chaînes ont leurs applications et leurs programmes de fidélité. Un commerce indépendant a besoin d’un outil aussi pratique, sans la complexité ni le temps de gestion."
+      },
+      {
+        "titre": "Des clients de passage qui ne reviennent pas",
+        "texte": "Un premier achat, un bon contact, puis plus de nouvelles. Sans moyen simple de garder le lien, ce client ne devient jamais un habitué."
+      },
+      {
+        "titre": "Pas de temps pour tenir un fichier client",
+        "texte": "Entre la caisse, les commandes et la mise en rayon, tenir un fichier à jour passe après tout le reste. Et une carte en carton ne vous dit rien de vos clients."
+      }
+    ],
+    "benefices": [
+      {
+        "titre": "Simple à mettre en place",
+        "texte": "Personnalisation sans code (logo, couleurs, nom du programme, récompense), carte prête sous 24 h et aucun matériel spécial : un smartphone suffit pour scanner."
+      },
+      {
+        "titre": "Vos clients, enfin visibles",
+        "texte": "Liste, recherche et filtres (actifs, inactifs, récompense disponible, nouveaux) : chaque fiche client montre le solde, l’historique, les récompenses et les consentements."
+      },
+      {
+        "titre": "Un tableau de bord sans jargon",
+        "texte": "Clients actifs, nouveaux clients, passages, récompenses débloquées et utilisées, clients inactifs : vous suivez l’évolution de votre activité à partir des données de votre programme."
+      },
+      {
+        "titre": "Des messages qui donnent envie de revenir",
+        "texte": "Prévenez vos clients d’un arrivage ou d’une offre par notification Wallet, sans coût par message. Avec Growth, ajoutez 200 SMS par mois, la segmentation et la relance des clients inactifs."
+      }
+    ],
+    "recompenses": [
+      "Bon d’achat de 10 € au 10e passage",
+      "-10 % sur l’achat suivant",
+      "Emballage cadeau offert",
+      "Produit découverte offert"
+    ],
+    "messages": [
+      "Votre bon d’achat de 10 € est disponible ! Présentez votre carte en boutique.",
+      "Nouvel arrivage cette semaine : venez découvrir notre sélection en boutique !",
+      "Plus que 2 passages avant votre récompense. À très bientôt !"
+    ],
+    "carte": {
+      "nom": "Maison Garance",
+      "activite": "Épicerie fine",
+      "couleurFond": "#1E4D3A",
+      "couleurAccent": "#E9C46A",
+      "couleurTexte": "#FFFFFF",
+      "total": 10,
+      "recompense": "Bon d’achat de 10 €"
+    },
+    "faq": [
+      {
+        "q": "Carte à passages ou carte à points : que choisir pour ma boutique ?",
+        "a": "LOYNA propose les deux. La carte à passages, sur le principe des tampons, est la plus simple à expliquer : une visite validée, un tampon de plus. La carte à points offre une autre façon de construire votre programme. Dans les deux cas, vous fixez vous-même le seuil et la récompense. Une question ? Écrivez à contact@loyna.fr."
+      },
+      {
+        "q": "Je ne suis pas à l’aise avec la technique : est-ce compliqué ?",
+        "a": "Non. La personnalisation se fait sans code : logo, couleurs, nom du programme et récompense. La carte est prête sous 24 h (hors personnalisation exceptionnelle), et un smartphone suffit pour scanner. Au quotidien, un scan égale un passage validé : pas de recherche du client, pas de bouton +1."
+      },
+      {
+        "q": "Puis-je voir qui sont mes clients réguliers ?",
+        "a": "Oui. Dans LOYNA Business, la liste de vos clients se filtre par actifs, inactifs, nouveaux ou récompense disponible. Chaque fiche affiche le solde, l’historique des passages, les récompenses et les consentements. Le tableau de bord résume l’évolution de votre activité : passages, nouveaux clients, récompenses débloquées et utilisées."
+      }
+    ]
+  }
+]

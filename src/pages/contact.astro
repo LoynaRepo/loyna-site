@@ -1,0 +1,232 @@
+---
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Icon from '../components/Icon.astro';
+import {SITE} from '../data/site';
+
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: 'Contact', url: '/contact/'},
+];
+const contactLd = {
+  '@type': 'ContactPage',
+  name: 'Contacter LOYNA',
+  url: `${SITE.url}/contact/`,
+  about: {'@id': `${SITE.url}/#organisation`},
+};
+---
+
+<Base
+  title="Contact et demande de démo"
+  description="Une question sur LOYNA, une démo ou un exemple de carte à votre nom ? Écrivez-nous : nous vous répondons rapidement, depuis Montpellier."
+  breadcrumbs={crumbs}
+  jsonLd={contactLd}
+>
+  <section class="page-hero">
+    <div class="container">
+      <Breadcrumbs items={crumbs} />
+      <p class="eyebrow">Contact</p>
+      <h1>Parlons de votre commerce</h1>
+      <p class="lead">Une question, une démo, ou un exemple de carte à votre nom et à vos couleurs : laissez-nous un message, nous revenons vers vous rapidement.</p>
+    </div>
+  </section>
+  <section class="section pt0">
+    <div class="container contact">
+      <form class="panel" method="post" action="/contact.php" id="contact-form">
+        <input type="hidden" name="offre" id="offre" value="" />
+        <input type="hidden" name="t" id="t" value="" />
+        <input type="hidden" name="apercu" id="apercu" value="" />
+        <p class="alert" id="form-error" role="alert" hidden></p>
+        <div class="hp" aria-hidden="true">
+          <label for="site-web">Ne pas remplir</label>
+          <input id="site-web" name="site_web" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="nom">Votre nom *</label>
+            <input id="nom" name="nom" type="text" required maxlength="80" autocomplete="name" />
+          </div>
+          <div class="field">
+            <label for="commerce">Votre commerce *</label>
+            <input id="commerce" name="commerce" type="text" required maxlength="100" autocomplete="organization" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="email">E-mail *</label>
+            <input id="email" name="email" type="email" required maxlength="120" autocomplete="email" />
+          </div>
+          <div class="field">
+            <label for="tel">Téléphone</label>
+            <input id="tel" name="telephone" type="tel" maxlength="30" autocomplete="tel" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="sujet">Votre demande</label>
+          <select id="sujet" name="sujet">
+            <option>Je veux une démo</option>
+            <option>Je veux un exemple de carte à mon nom</option>
+            <option>Question sur les tarifs</option>
+            <option>Je suis déjà client</option>
+            <option>Autre question</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="message">Message *</label>
+          <textarea id="message" name="message" rows="5" required maxlength="3000"></textarea>
+        </div>
+        <p class="legal">
+          Vos informations servent uniquement à vous répondre. Elles sont conservées 3 ans au plus après notre dernier échange. Voir notre <a href="/confidentialite/">politique de confidentialité</a>.
+        </p>
+        <button type="submit" class="btn btn--primary">Envoyer le message <Icon name="send" size={18} /></button>
+      </form>
+      <aside class="side">
+        <div class="card">
+          <span class="icon"><Icon name="mail" /></span>
+          <h2 class="h3">Par e-mail</h2>
+          <p><a href={`mailto:${SITE.email}`}>{SITE.email}</a></p>
+        </div>
+        <div class="card">
+          <span class="icon"><Icon name="map-pin" /></span>
+          <h2 class="h3">Depuis Montpellier</h2>
+          <p>LOYNA accompagne les commerces indépendants partout en France.</p>
+        </div>
+        <div class="card">
+          <span class="icon"><Icon name="palette" /></span>
+          <h2 class="h3">Un exemple à votre nom</h2>
+          <p>Envoyez-nous votre logo : nous vous montrons le rendu de votre carte directement sur téléphone.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+</Base>
+
+<script>
+  // Pré-remplit l'offre demandée (?offre=…) et horodate le formulaire (anti-robots).
+  const p = new URLSearchParams(location.search);
+  const offre = p.get('offre');
+  const o = document.getElementById('offre') as HTMLInputElement;
+  if (offre && /^[a-z-]{3,30}$/.test(offre)) {
+    o.value = offre;
+    (document.getElementById('sujet') as HTMLSelectElement).value = 'Question sur les tarifs';
+    const msg = document.getElementById('message') as HTMLTextAreaElement;
+    if (!msg.value) msg.value = `Bonjour, je suis intéressé(e) par l'offre ${offre.replace('-', ' ')}.`;
+  }
+  (document.getElementById('t') as HTMLInputElement).value = String(Date.now());
+
+  // Message d'erreur renvoyé par /contact.php (?erreur=…)
+  const ERREURS: Record<string, string> = {
+    champs: 'Merci de renseigner votre nom, votre commerce et votre message.',
+    email: 'Cette adresse e-mail semble incorrecte : pouvez-vous la vérifier ?',
+    delai: 'Le formulaire a expiré ou a été envoyé trop vite. Merci de le renvoyer.',
+    liens: 'Votre message contient trop de liens. Merci de les retirer.',
+    limite: 'Vous avez envoyé plusieurs messages en peu de temps. Merci de réessayer dans une heure.',
+    envoi: "L'envoi a échoué de notre côté. Écrivez-nous directement à contact@loyna.fr.",
+  };
+  const err = p.get('erreur');
+  if (err && ERREURS[err]) {
+    const box = document.getElementById('form-error') as HTMLParagraphElement;
+    box.textContent = ERREURS[err];
+    box.hidden = false;
+  }
+
+  // Joint l'aperçu de carte préparé dans le configurateur, s'il existe.
+  try {
+    const c = JSON.parse(localStorage.getItem('loyna-config') || 'null');
+    if (c && c.name) {
+      (document.getElementById('apercu') as HTMLInputElement).value =
+        `${c.name} (${c.activity || 'activité non précisée'}) · fond ${c.bg} · tampons ${c.accent} · ${c.total} passages · récompense : ${c.reward} · style ${c.variant === 'google' ? 'Google Wallet' : 'Apple Wallet'}`.slice(0, 600);
+    }
+  } catch {
+    /* stockage indisponible */
+  }
+</script>
+
+<style>
+  .pt0 {
+    padding-top: 0;
+  }
+  .contact {
+    display: grid;
+    grid-template-columns: 1.4fr 0.8fr;
+    gap: clamp(28px, 4vw, 56px);
+    align-items: start;
+  }
+  .alert {
+    margin: 0;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #fdecea;
+    color: #8a1c12;
+    font-weight: 600;
+  }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: clamp(24px, 3vw, 40px);
+    box-shadow: var(--shadow);
+    display: grid;
+    gap: 20px;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .field {
+    display: grid;
+    gap: 8px;
+  }
+  label {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  input,
+  select,
+  textarea {
+    width: 100%;
+    min-height: 50px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    border: 1.5px solid var(--line);
+    background: var(--bg);
+    font: 500 1rem var(--font);
+    color: var(--ink);
+  }
+  textarea {
+    resize: vertical;
+  }
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--gold);
+    outline: none;
+  }
+  .hp {
+    position: absolute;
+    left: -9999px;
+  }
+  .legal {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin: 0;
+  }
+  .panel .btn {
+    justify-self: start;
+  }
+  .side {
+    display: grid;
+    gap: 18px;
+  }
+  .h3 {
+    font-size: 1.2rem;
+    margin-top: 14px;
+  }
+  @media (max-width: 860px) {
+    .contact,
+    .row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

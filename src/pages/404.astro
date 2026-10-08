@@ -1,0 +1,25 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Page introuvable" description="Cette page n'existe pas ou a été déplacée." noindex>
+  <section class="page-hero">
+    <div class="narrow">
+      <p class="eyebrow">Erreur 404</p>
+      <h1>Cette page s’est perdue, comme une carte papier</h1>
+      <p class="lead">Elle n’existe pas ou a été déplacée. Voici de quoi retrouver votre chemin :</p>
+      <div class="btn-row center">
+        <a class="btn btn--primary" href="/">Accueil</a>
+        <a class="btn btn--ghost" href="/tarifs/">Tarifs</a>
+        <a class="btn btn--ghost" href="/creer-ma-carte/">Créer ma carte</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .center {
+    justify-content: center;
+    margin-top: 30px;
+  }
+</style>
