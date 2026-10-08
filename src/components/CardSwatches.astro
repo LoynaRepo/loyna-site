@@ -1,0 +1,135 @@
+---
+// Choix des couleurs de la carte, identique au configurateur : ronds de couleur pour le fond de la carte
+// et pour les tampons, plus un rond arc-en-ciel pour une couleur libre. Branché par lib/carte-live.ts
+// (brancherCouleurs) : groupes .swatches[data-target="bg" | "accent"], boutons .sw[data-color].
+import {CARD_ACCENTS, CARD_BGS} from '../data/site';
+interface Props {
+  theme?: 'dark' | 'light';
+  bg?: string;
+  accent?: string;
+  /** Libellé au-dessus des ronds (espaces étroits) plutôt qu'à gauche. */
+  stacked?: boolean;
+}
+const {theme = 'dark', bg = CARD_BGS[0].c, accent = CARD_ACCENTS[0].c, stacked = false} = Astro.props;
+const rows = [
+  {target: 'bg', label: 'Carte', list: CARD_BGS, value: bg, custom: 'Couleur de carte personnalisée'},
+  {target: 'accent', label: 'Tampons', list: CARD_ACCENTS, value: accent, custom: 'Couleur des tampons personnalisée'},
+];
+---
+
+<div class={`card-sw card-sw--${theme} ${stacked ? 'card-sw--stacked' : ''}`}>
+  {
+    rows.map((r) => (
+      <div class="sw-row">
+        <span class="sw-label">{r.label}</span>
+        <div class="swatches" data-target={r.target} role="group" aria-label={r.target === 'bg' ? 'Couleur de la carte' : 'Couleur des tampons'}>
+          {r.list.map((c) => (
+            <button type="button" class="sw" style={`--c:${c.c}`} data-color={c.c} aria-label={c.nom} title={c.nom} aria-pressed={c.c === r.value ? 'true' : 'false'} />
+          ))}
+          <label class="sw custom" title="Couleur personnalisée">
+            <input type="color" value={r.value} aria-label={r.custom} />
+          </label>
+        </div>
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .card-sw {
+    display: grid;
+    gap: 10px;
+  }
+  .sw-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sw-label {
+    width: 62px;
+    flex-shrink: 0;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .card-sw--dark .sw-label {
+    color: #a8a194;
+  }
+  .swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .sw {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    background: var(--c);
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    transition: transform 0.15s;
+  }
+  .card-sw--dark .sw {
+    border-color: rgba(250, 247, 240, 0.22);
+  }
+  .sw:hover {
+    transform: scale(1.08);
+  }
+  .sw[aria-pressed='true'] {
+    box-shadow:
+      0 0 0 2px var(--bg),
+      0 0 0 4px var(--ink);
+  }
+  .card-sw--dark .sw[aria-pressed='true'] {
+    box-shadow:
+      0 0 0 2px #17151a,
+      0 0 0 4px #e6c27a;
+  }
+  .sw:focus-visible,
+  .custom:focus-within {
+    outline: 3px solid rgba(230, 194, 122, 0.6);
+    outline-offset: 3px;
+  }
+  .custom {
+    background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+    overflow: hidden;
+  }
+  .custom input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+  .card-sw--stacked .sw-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .card-sw--stacked .sw-label {
+    width: auto;
+  }
+  @media (max-width: 560px) {
+    .sw-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .sw-label {
+      width: auto;
+    }
+    .swatches {
+      flex-wrap: nowrap;
+      gap: 5px;
+    }
+  }
+  @media (max-width: 380px) {
+    .sw {
+      width: 27px;
+      height: 27px;
+    }
+  }
+</style>

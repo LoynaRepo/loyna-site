@@ -4,14 +4,14 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 import Phone from '../components/Phone.astro';
 import WalletCard from '../components/WalletCard.astro';
 import Icon from '../components/Icon.astro';
-import {SITE} from '../data/site';
+import {CARD_ACCENTS, CARD_BGS, SITE} from '../data/site';
 
 const crumbs = [
   {name: 'Accueil', url: '/'},
   {name: 'Créer ma carte', url: '/creer-ma-carte/'},
 ];
-const bgs = ['#1f1c17', '#121216', '#7a3d1c', '#9b1c1c', '#14532d', '#1e3a5f', '#5b2a86', '#f5efe4'];
-const accents = ['#d9b27a', '#f2c879', '#ffd166', '#f4a3b5', '#86efac', '#7dd3fc', '#e9d5ff', '#121216'];
+const bgs = CARD_BGS;
+const accents = CARD_ACCENTS;
 const activities = ['Coiffure', 'Barbier', 'Institut de beauté', 'Onglerie', 'Boulangerie', 'Café', 'Snack', 'Pizzeria', 'Boutique', 'Autre'];
 const appLd = {
   '@type': 'WebApplication',
@@ -55,14 +55,14 @@ const appLd = {
         <fieldset class="field">
           <legend>Couleur de la carte</legend>
           <div class="swatches" data-target="bg">
-            {bgs.map((c, i) => <button type="button" class="sw" style={`--c:${c}`} data-color={c} aria-label={`Couleur ${c}`} aria-pressed={i === 0 ? 'true' : 'false'} />)}
+            {bgs.map((c, i) => <button type="button" class="sw" style={`--c:${c.c}`} data-color={c.c} aria-label={c.nom} title={c.nom} aria-pressed={i === 0 ? 'true' : 'false'} />)}
             <label class="sw custom" title="Couleur personnalisée"><input type="color" id="c-bg" value="#1f1c17" aria-label="Couleur de carte personnalisée" /></label>
           </div>
         </fieldset>
         <fieldset class="field">
           <legend>Couleur des tampons</legend>
           <div class="swatches" data-target="accent">
-            {accents.map((c, i) => <button type="button" class="sw" style={`--c:${c}`} data-color={c} aria-label={`Couleur ${c}`} aria-pressed={i === 0 ? 'true' : 'false'} />)}
+            {accents.map((c, i) => <button type="button" class="sw" style={`--c:${c.c}`} data-color={c.c} aria-label={c.nom} title={c.nom} aria-pressed={i === 0 ? 'true' : 'false'} />)}
             <label class="sw custom" title="Couleur personnalisée"><input type="color" id="c-accent" value="#d9b27a" aria-label="Couleur des tampons personnalisée" /></label>
           </div>
         </fieldset>

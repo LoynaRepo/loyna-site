@@ -5,6 +5,7 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 import Icon from '../components/Icon.astro';
 import CtaBand from '../components/CtaBand.astro';
 import WalletCard from '../components/WalletCard.astro';
+import CardSwatches from '../components/CardSwatches.astro';
 import passageValide from '../assets/shots/passage-valide.png';
 import recompense from '../assets/shots/recompense.png';
 import notifications from '../assets/shots/notifications.png';
@@ -151,13 +152,25 @@ const more = [
         }
       </div>
 
-      <div class="f-stage" aria-hidden="true">
+      <div class="f-stage">
         {
-          explorer.map((f, k) => (
-            <figure class={`f-shot ${k === 0 ? 'on' : ''}`} data-k={k}>
-              <Picture src={f.img} formats={['avif', 'webp']} fallbackFormat="webp" widths={[360, 540]} sizes="(max-width: 900px) 80vw, 420px" alt={f.alt} loading={k === 0 ? 'eager' : 'lazy'} fetchpriority={k === 0 ? 'high' : undefined} />
-            </figure>
-          ))
+          explorer.map((f, k) =>
+            f.id === 'carte-wallet' ? (
+              <figure class={`f-shot f-custom ${k === 0 ? 'on' : ''}`} data-k={k}>
+                <WalletCard name="Maison Lumière" activity="Coiffure" filled={7} total={10} reward="Brushing offert" width={320} qr={false} class="fc-live" />
+                <form class="fc-form" id="fc-form" method="get" action="/creer-ma-carte/">
+                  <label class="sr-only" for="fc-name">Nom de votre commerce</label>
+                  <input id="fc-name" name="nom" type="text" maxlength="40" placeholder="Tapez le nom de votre commerce" autocomplete="organization" />
+                  <CardSwatches stacked />
+                  <button type="submit" class="btn btn--gold btn--block">Personnaliser ma carte <Icon name="arrow-right" size={18} /></button>
+                </form>
+              </figure>
+            ) : (
+              <figure class={`f-shot ${k === 0 ? 'on' : ''}`} data-k={k} aria-hidden={k === 0 ? undefined : 'true'}>
+                <Picture src={f.img} formats={['avif', 'webp']} fallbackFormat="webp" widths={[360, 540]} sizes="(max-width: 900px) 80vw, 420px" alt={f.alt} loading={k === 0 ? 'eager' : 'lazy'} fetchpriority={k === 0 ? 'high' : undefined} />
+              </figure>
+            ),
+          )
         }
         <div class="f-count"><b data-f="num">1</b> / {explorer.length}</div>
       </div>
@@ -228,6 +241,28 @@ const more = [
 </Base>
 
 <script>
+  import {appliquerCarte, brancherCouleurs, ouvrirConfigurateur, type CarteDemo} from '../lib/carte-live';
+
+  // Onglet « La carte » : la carte se met à jour en direct (nom, couleurs) et ouvre le configurateur.
+  const carte = document.querySelector<HTMLElement>('.fc-live');
+  const fcForm = document.getElementById('fc-form') as HTMLFormElement | null;
+  if (carte && fcForm) {
+    const nom = fcForm.querySelector<HTMLInputElement>('#fc-name')!;
+    let d: CarteDemo = {name: 'Maison Lumière', activity: 'Coiffure', bg: '#1f1c17', accent: '#d9b27a', total: 10, reward: 'Brushing offert'};
+    nom.addEventListener('input', () => {
+      d = {...d, name: nom.value.trim() || 'Votre commerce'};
+      appliquerCarte(carte, d, false);
+    });
+    brancherCouleurs(fcForm, (cible, couleur) => {
+      d = {...d, name: nom.value.trim() || d.name, [cible]: couleur};
+      appliquerCarte(carte, d, false);
+    });
+    fcForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      ouvrirConfigurateur({...d, name: nom.value.trim() || d.name});
+    });
+  }
+
   // Explorateur : onglet actif = capture affichée ; défilement automatique jusqu'à la première interaction.
   const root = document.getElementById('explorer');
   if (root) {
@@ -244,7 +279,12 @@ const more = [
         t.setAttribute('aria-selected', n === cur ? 'true' : 'false');
         t.tabIndex = n === cur ? 0 : -1;
       });
-      shots.forEach((sh, n) => sh.classList.toggle('on', n === cur));
+      shots.forEach((sh, n) => {
+        sh.classList.toggle('on', n === cur);
+        sh.toggleAttribute('inert', n !== cur);
+        if (n === cur) sh.removeAttribute('aria-hidden');
+        else sh.setAttribute('aria-hidden', 'true');
+      });
       root.querySelector('[data-f="num"]')!.textContent = String(cur + 1);
       root.querySelector('[data-f="title"]')!.textContent = data[cur].title;
       root.querySelector('[data-f="short"]')!.textContent = data[cur].short;
@@ -279,6 +319,8 @@ const more = [
       });
     });
     root.querySelector('.f-stage')?.addEventListener('pointerenter', stop);
+    root.querySelector('.f-stage')?.addEventListener('focusin', stop);
+    shots.forEach((sh, n) => sh.toggleAttribute('inert', n !== cur));
   }
 </script>
 
@@ -442,17 +484,50 @@ const more = [
     display: contents;
   }
   .f-shot :global(img) {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
+    /* image entière et centrée dans la vitrine, quel que soit son format */
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
+    object-position: center;
     border-radius: 18px;
     /* bords de la capture fondus dans la vitrine */
     -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent), linear-gradient(to bottom, transparent, #000 6%, #000 94%, transparent);
     -webkit-mask-composite: source-in;
     mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent), linear-gradient(to bottom, transparent, #000 6%, #000 94%, transparent);
     mask-composite: intersect;
+  }
+  .f-custom {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 18px;
+  }
+  .f-custom :global(.wcard) {
+    width: min(320px, 100%);
+  }
+  .fc-form {
+    width: min(340px, 100%);
+    display: grid;
+    gap: 12px;
+  }
+  .fc-form input[type='text'] {
+    min-height: 48px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(250, 247, 240, 0.2);
+    background: rgba(18, 18, 22, 0.7);
+    color: #faf7f0;
+    font: inherit;
+  }
+  .fc-form input[type='text']::placeholder {
+    color: #8f887c;
+  }
+  .fc-form input[type='text']:focus {
+    outline: 3px solid rgba(230, 194, 122, 0.45);
+    border-color: #e6c27a;
   }
   .f-count {
     position: absolute;

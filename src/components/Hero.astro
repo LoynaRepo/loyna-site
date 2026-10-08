@@ -5,6 +5,7 @@
 import Icon from './Icon.astro';
 import Phone from './Phone.astro';
 import WalletCard from './WalletCard.astro';
+import CardSwatches from './CardSwatches.astro';
 import {LAUNCH_OFFER, offerActive} from '../data/site';
 import type {Sector} from '../lib/builder';
 
@@ -28,14 +29,6 @@ const demos: Demo[] = [
   })),
 ];
 const first = demos[0];
-const swatches = [
-  {bg: '#1f1c17', accent: '#d9b27a', nom: 'Noir et or'},
-  {bg: '#14213d', accent: '#fca311', nom: 'Marine et orange'},
-  {bg: '#7a3d1c', accent: '#f2c879', nom: 'Cognac et miel'},
-  {bg: '#1e4d3a', accent: '#e9c46a', nom: 'Forêt et safran'},
-  {bg: '#5b2a86', accent: '#f4c2ff', nom: 'Prune et lilas'},
-  {bg: '#b3261e', accent: '#ffc94a', nom: 'Rouge et jaune'},
-];
 const offer = offerActive();
 ---
 
@@ -90,20 +83,7 @@ const offer = offerActive();
           <input id="try-name" name="nom" type="text" maxlength="40" placeholder="Ex. : Le Fournil d’Albane" autocomplete="organization" />
           <button type="submit" class="btn btn--gold">Voir ma carte <Icon name="arrow-right" size={18} /></button>
         </div>
-        <div class="try-colors" role="radiogroup" aria-label="Couleur de la carte">
-          <span>Couleur&nbsp;:</span>
-          {
-            swatches.map((c, i) => (
-              <button type="button" class="sw" data-bg={c.bg} data-accent={c.accent} aria-label={c.nom} title={c.nom} aria-pressed={i === 0 ? 'true' : 'false'} style={`--sbg:${c.bg};--sac:${c.accent}`}>
-                <span class="sw-card">
-                  <i />
-                  <i />
-                  <i />
-                </span>
-              </button>
-            ))
-          }
-        </div>
+        <div class="try-colors"><CardSwatches /></div>
       </form>
       <p class="hero-alt">Gratuit, sans inscription · <a href="/tarifs/">voir les tarifs</a> · <a href="#rappel">être rappelé</a></p>
       <ul class="hero-points">
@@ -116,59 +96,24 @@ const offer = offerActive();
 </section>
 
 <script>
-  type Demo = {name: string; activity: string; bg: string; accent: string; total: number; reward: string};
+  import {appliquerCarte, brancherCouleurs, initiales, ouvrirConfigurateur, type CarteDemo} from '../lib/carte-live';
+
   const hero = document.getElementById('hero');
   if (hero) {
-    const demos = JSON.parse(hero.dataset.demos || '[]') as Demo[];
+    const demos = JSON.parse(hero.dataset.demos || '[]') as CarteDemo[];
     const cards = [...hero.querySelectorAll<HTMLElement>('.wcard.live')];
     const input = hero.querySelector<HTMLInputElement>('#try-name')!;
     const form = hero.querySelector<HTMLFormElement>('#try')!;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let current: Demo = {...demos[0]};
+    let current: CarteDemo = {...demos[0]};
     let i = 0;
     let timer = 0;
 
-    const luminance = (hex: string) => {
-      const n = parseInt(hex.slice(1), 16);
-      const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
-        const s = v / 255;
-        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-      });
-      return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
-    };
-    const initials = (name: string) =>
-      name
-        .split(/\s+/)
-        .filter((w) => /^[A-Za-zÀ-ÿ]/.test(w) && !/^(de|du|des|la|le|les|et|d'|l'|chez|au|aux)$/i.test(w))
-        .slice(0, 2)
-        .map((w) => w[0].toUpperCase())
-        .join('') || 'LO';
-
-    function show(d: Demo, animate = true) {
+    function show(d: CarteDemo, animate = true) {
       current = d;
-      const filled = Math.max(1, d.total - 3);
-      const fg = luminance(d.bg) > 0.45 ? '#16130e' : '#f8f4ec';
-      for (const card of cards) {
-        card.style.setProperty('--bg', d.bg);
-        card.style.setProperty('--accent', d.accent);
-        card.style.setProperty('--fg', fg);
-        card.querySelector('.wc-name strong')!.textContent = d.name;
-        card.querySelector('.wc-name small')!.textContent = d.activity;
-        card.querySelector('.wc-logo')!.textContent = initials(d.name);
-        card.querySelector('.wc-reward span')!.textContent = d.reward;
-        const count = card.querySelector('.wc-count b');
-        if (count) count.innerHTML = `${filled}<i>/${d.total}</i>`;
-        const stamps = card.querySelector<HTMLElement>('.wc-stamps')!;
-        stamps.style.setProperty('--n', String(d.total));
-        stamps.innerHTML = Array.from({length: d.total}, (_, k) => `<span class="${k < filled ? 'on' : ''}" style="--k:${k}"></span>`).join('');
-        if (animate && !reduce) {
-          card.classList.remove('swap');
-          void card.offsetWidth; // relance l'animation
-          card.classList.add('swap');
-        }
-      }
+      cards.forEach((card) => appliquerCarte(card, d, animate));
       hero!.querySelectorAll('[data-name]').forEach((el) => (el.textContent = d.name));
-      hero!.querySelectorAll('[data-initials]').forEach((el) => (el.textContent = initials(d.name)));
+      hero!.querySelectorAll('[data-initials]').forEach((el) => (el.textContent = initiales(d.name)));
       hero!.querySelectorAll('[data-reward]').forEach((el) => (el.textContent = d.reward));
     }
 
@@ -186,27 +131,15 @@ const offer = offerActive();
       stop();
       show({...current, name: input.value.trim() || 'Votre commerce'}, false);
     });
-    hero.querySelectorAll<HTMLButtonElement>('.sw').forEach((b) =>
-      b.addEventListener('click', () => {
-        stop();
-        hero.querySelectorAll('.sw').forEach((x) => x.setAttribute('aria-pressed', 'false'));
-        b.setAttribute('aria-pressed', 'true');
-        show({...current, name: input.value.trim() || current.name, bg: b.dataset.bg!, accent: b.dataset.accent!});
-      }),
-    );
+    // Ronds de couleur (identiques au configurateur) : fond de la carte et tampons
+    brancherCouleurs(hero, (cible, couleur) => {
+      stop();
+      show({...current, name: input.value.trim() || current.name, [cible]: couleur}, false);
+    });
     // « Voir ma carte » : le configurateur reprend le nom, les couleurs et la récompense.
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const name = input.value.trim() || current.name;
-      try {
-        localStorage.setItem(
-          'loyna-config',
-          JSON.stringify({name, activity: current.activity, bg: current.bg, accent: current.accent, total: current.total, filled: Math.max(1, current.total - 3), reward: current.reward, variant: 'apple'}),
-        );
-      } catch {
-        /* stockage indisponible : le nom passe dans l'adresse */
-      }
-      location.href = `/creer-ma-carte/?nom=${encodeURIComponent(name)}`;
+      ouvrirConfigurateur({...current, name: input.value.trim() || current.name});
     });
   }
 </script>
@@ -314,56 +247,7 @@ const offer = offerActive();
     white-space: nowrap;
   }
   .try-colors {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 6px;
     margin-top: 12px;
-    color: #a8a194;
-    font-size: 0.9rem;
-    font-weight: 600;
-  }
-  .sw {
-    padding: 3px;
-    border-radius: 11px;
-    border: 2px solid transparent;
-    background: none;
-    cursor: pointer;
-    transition:
-      transform 0.15s,
-      border-color 0.15s;
-  }
-  .sw:hover {
-    transform: translateY(-2px);
-  }
-  .sw[aria-pressed='true'] {
-    border-color: #e6c27a;
-  }
-  .sw:focus-visible {
-    outline: 3px solid rgba(230, 194, 122, 0.55);
-    outline-offset: 2px;
-  }
-  /* mini-carte : fond de la carte + trois tampons de la couleur d'accent */
-  .sw-card {
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
-    width: 44px;
-    height: 28px;
-    padding: 0 6px 6px;
-    border-radius: 7px;
-    background:
-      radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--sac) 40%, transparent), transparent 60%),
-      var(--sbg);
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.14),
-      0 4px 10px rgba(0, 0, 0, 0.35);
-  }
-  .sw-card i {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--sac);
   }
   .hero-alt {
     margin: 14px 0 0;
@@ -521,15 +405,6 @@ const offer = offerActive();
     font-size: 13px;
   }
 
-  /* Carte qui change : apparition + tampons qui se remplissent un à un */
-  .h-visual :global(.wcard.swap) {
-    animation: swap 0.55s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .h-visual :global(.wcard.swap .wc-stamps span.on) {
-    animation: stampIn 0.4s ease-out both;
-    animation-delay: calc(var(--k, 0) * 70ms + 150ms);
-  }
-
   /* Mobile : éventail de cartes */
   .card-fan {
     display: none;
@@ -542,22 +417,6 @@ const offer = offerActive();
     }
     50% {
       translate: 0 -10px;
-    }
-  }
-  @keyframes swap {
-    from {
-      opacity: 0.2;
-      transform: translateY(10px) scale(0.97);
-    }
-  }
-  @keyframes stampIn {
-    from {
-      transform: scale(0.2);
-      opacity: 0;
-    }
-    70% {
-      transform: scale(1.25);
-      opacity: 1;
     }
   }
   @keyframes toast {

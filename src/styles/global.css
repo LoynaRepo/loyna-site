@@ -553,6 +553,31 @@ p {
   top: 12px;
 }
 
+/* Carte vivante (accueil, Fonctionnalités) : apparition et tampons qui se remplissent un à un */
+.wcard.swap {
+  animation: wc-swap 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.wcard.swap .wc-stamps span.on {
+  animation: wc-stamp 0.4s ease-out both;
+  animation-delay: calc(var(--k, 0) * 70ms + 150ms);
+}
+@keyframes wc-swap {
+  from {
+    opacity: 0.2;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+@keyframes wc-stamp {
+  from {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+}
+
 /* États de chargement (liens et boutons marqués data-loading) */
 .is-loading {
   pointer-events: none;

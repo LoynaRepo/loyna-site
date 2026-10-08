@@ -47,6 +47,28 @@ export interface Plan {
   links: {monthly: string; yearly: string};
 }
 
+// Couleurs proposées pour la carte (configurateur, haut de l'accueil, page Fonctionnalités)
+export const CARD_BGS = [
+  {c: '#1f1c17', nom: 'Noir chaud'},
+  {c: '#121216', nom: 'Noir'},
+  {c: '#7a3d1c', nom: 'Cognac'},
+  {c: '#9b1c1c', nom: 'Bordeaux'},
+  {c: '#14532d', nom: 'Vert forêt'},
+  {c: '#1e3a5f', nom: 'Bleu nuit'},
+  {c: '#5b2a86', nom: 'Prune'},
+  {c: '#f5efe4', nom: 'Crème'},
+];
+export const CARD_ACCENTS = [
+  {c: '#d9b27a', nom: 'Or'},
+  {c: '#f2c879', nom: 'Miel'},
+  {c: '#ffd166', nom: 'Jaune'},
+  {c: '#f4a3b5', nom: 'Rose'},
+  {c: '#86efac', nom: 'Vert menthe'},
+  {c: '#7dd3fc', nom: 'Bleu ciel'},
+  {c: '#e9d5ff', nom: 'Lilas'},
+  {c: '#121216', nom: 'Noir'},
+];
+
 export const SETUP_FEE = 49;
 
 // Offre de lancement (décision d'Ewan du 2026-10-09) : mise en service offerte en mensuel avec un code promo
