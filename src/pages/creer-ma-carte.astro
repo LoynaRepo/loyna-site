@@ -520,7 +520,7 @@ const appLd = {
     border: 1px solid var(--line);
     background: #fff;
     font: inherit;
-    font-size: 0.95rem;
+    font-size: 1rem;
   }
   .sp-row input:user-invalid {
     border-color: #b3261e;
@@ -560,6 +560,18 @@ const appLd = {
     .preview {
       position: static;
       order: -1;
+    }
+    /* téléphone : le cadre s'arrête sous la carte (pas d'écran noir vide) */
+    .preview :global(.phone) {
+      aspect-ratio: auto;
+    }
+    .preview :global(.screen) {
+      height: auto;
+    }
+    .wallet-ui {
+      position: relative;
+      inset: auto;
+      padding: 46px 14px 24px;
     }
   }
 </style>

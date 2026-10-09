@@ -441,6 +441,7 @@ const more = [
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    min-height: 44px;
     color: #e6c27a;
     font-weight: 700;
     text-decoration: none;
@@ -579,7 +580,11 @@ const more = [
     .f-stage {
       margin-top: 18px;
       max-width: 380px;
-      aspect-ratio: 1 / 1;
+      /* plus haute que large : la carte, le champ et les couleurs de l'onglet « La carte » tiennent en entier */
+      aspect-ratio: 2 / 3;
+    }
+    .f-custom {
+      gap: 12px;
     }
     .f-panel {
       min-height: 0;

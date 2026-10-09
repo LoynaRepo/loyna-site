@@ -32,7 +32,7 @@
   --shadow-lg: 0 2px 4px rgba(18, 18, 22, 0.05), 0 30px 70px rgba(18, 18, 22, 0.12);
   --container: 1180px;
   --font: 'Plus Jakarta Sans Variable', 'Jakarta Fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --section: clamp(72px, 10vw, 136px);
+  --section: clamp(54px, 10vw, 136px); /* téléphone : sections plus serrées */
 }
 
 *,
@@ -42,6 +42,7 @@
 }
 html {
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent; /* retour visuel géré par :active */
   scroll-behavior: smooth;
   scroll-padding-top: 90px;
 }
@@ -221,6 +222,9 @@ p {
 }
 .btn:hover {
   transform: translateY(-1px);
+}
+.btn:active {
+  transform: scale(0.98);
 }
 .btn--primary {
   background: var(--ink);
@@ -625,5 +629,20 @@ p {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* --- Téléphone : cibles tactiles confortables (44 px environ) --------------------------------- */
+@media (max-width: 760px) {
+  .breadcrumbs a {
+    display: inline-block;
+    padding-block: 11px;
+    margin-block: -11px;
+  }
+  .section-head {
+    margin-bottom: 32px;
+  }
+  .card {
+    padding: 22px;
   }
 }

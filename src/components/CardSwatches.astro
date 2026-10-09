@@ -77,6 +77,12 @@ const rows = [
   .sw:hover {
     transform: scale(1.08);
   }
+  .sw::before {
+    content: '';
+    position: absolute;
+    inset: -7px -3px;
+    border-radius: 50%;
+  }
   .sw[aria-pressed='true'] {
     box-shadow:
       0 0 0 2px var(--bg),

@@ -125,7 +125,7 @@ const softwareLd = {
         <h2>Pour vos clients, trois gestes</h2>
         <p>Aucune application à installer, aucun compte à créer : la carte s’ajoute au Wallet du téléphone, comme une carte d’embarquement.</p>
       </div>
-      <ol class="steps">
+      <ol class="steps" aria-label="Les trois étapes">
         {
           steps.map((s, i) => (
             <li class="step">
@@ -139,6 +139,7 @@ const softwareLd = {
           ))
         }
       </ol>
+      <p class="swipe-hint" aria-hidden="true">Faites glisser pour voir les 3 étapes →</p>
       <div class="mid-cta">
         <a class="btn btn--primary" href="/creer-ma-carte/">Voir ma carte en 1 minute <Icon name="arrow-right" size={18} /></a>
         <span>Aperçu gratuit, à vos couleurs, avant tout paiement</span>
@@ -173,7 +174,7 @@ const softwareLd = {
         <h2>Tout ce qu’il faut pour fidéliser, rien de compliqué</h2>
         <p>Une carte, un scanner et des automatisations qui travaillent pour vous pendant que vous servez vos clients.</p>
       </div>
-      <div class="grid grid-4">
+      <div class="grid grid-4 feat-list">
         {
           features.map((f) => (
             <div class="card">
@@ -340,6 +341,10 @@ const softwareLd = {
   }
   .mid-cta a:not(.btn) {
     font-weight: 700;
+    padding: 10px 4px;
+  }
+  .swipe-hint {
+    display: none;
   }
   .reassure {
     list-style: none;
@@ -462,6 +467,62 @@ const softwareLd = {
     }
     .split.reverse > :first-child {
       order: 2;
+    }
+  }
+  /* Téléphone : les 3 étapes défilent à l'horizontale, les fonctionnalités en liste compacte */
+  @media (max-width: 700px) {
+    .steps {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      margin-inline: -20px;
+      padding: 4px 20px 6px;
+      scroll-padding-inline: 20px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .steps::-webkit-scrollbar {
+      display: none;
+    }
+    .step {
+      flex: 0 0 82%;
+      scroll-snap-align: start;
+    }
+    .step .shot {
+      max-width: 240px;
+      margin-bottom: 18px;
+    }
+    .swipe-hint {
+      display: block;
+      margin: 10px 0 0;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .feat-list {
+      gap: 10px;
+    }
+    .feat-list .card {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      column-gap: 14px;
+      align-items: start;
+      padding: 18px;
+      border-radius: 20px;
+    }
+    .feat-list .card :global(.icon) {
+      grid-row: span 2;
+      width: 44px;
+      height: 44px;
+    }
+    .feat-list .card h3 {
+      margin: 2px 0 4px;
+      font-size: 1.08rem;
+    }
+    .feat-list .card p {
+      font-size: 0.95rem;
     }
   }
 </style>

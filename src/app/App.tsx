@@ -4,15 +4,24 @@ import {useEffect, useState} from 'preact/hooks';
 import {Icon} from './icons';
 import {api, can, go, loadPlans, merchant, rememberMerchant, rememberedMerchant, route, session, setBackend, staffCtx, toastError, type Membership, type StaffContext} from './state';
 import {Btn, Field, Spinner, Toasts} from './ui';
-import {Dashboard} from './views/Dashboard';
-import {Scanner} from './views/Scanner';
-import {Clients} from './views/Clients';
-import {ClientDetail} from './views/ClientDetail';
-import {Programme} from './views/Programme';
-import {Campagnes} from './views/Campagnes';
-import {Equipe} from './views/Equipe';
-import {Reglages} from './views/Reglages';
-import {Abonnement} from './views/Abonnement';
+
+// Écrans chargés à la demande : le téléphone ne télécharge que la page ouverte (le scanner en premier).
+type ViewComp = (props: any) => any;
+const LOADERS: Record<string, () => Promise<ViewComp>> = {
+  accueil: () => import('./views/Dashboard').then((m) => m.Dashboard),
+  scanner: () => import('./views/Scanner').then((m) => m.Scanner),
+  clients: () => import('./views/Clients').then((m) => m.Clients),
+  client: () => import('./views/ClientDetail').then((m) => m.ClientDetail),
+  programme: () => import('./views/Programme').then((m) => m.Programme),
+  campagnes: () => import('./views/Campagnes').then((m) => m.Campagnes),
+  equipe: () => import('./views/Equipe').then((m) => m.Equipe),
+  reglages: () => import('./views/Reglages').then((m) => m.Reglages),
+  abonnement: () => import('./views/Abonnement').then((m) => m.Abonnement),
+};
+const loaded: Record<string, ViewComp> = {};
+function loadView(name: string): Promise<ViewComp> {
+  return loaded[name] ? Promise.resolve(loaded[name]) : LOADERS[name]().then((c) => (loaded[name] = c));
+}
 
 const PORTAL = 'https://billing.stripe.com/p/login/28E28u2vEcIt4tvbiw5Ne00';
 const PLAN_LABEL = {ESSENTIEL: 'Essentiel', GROWTH: 'Growth', PRO: 'Pro'} as const;
@@ -44,7 +53,7 @@ function defaultView(): string {
   return can('analytics.read') ? 'accueil' : can('scan.validate') ? 'scanner' : (NAV.find((n) => n.show())?.view ?? 'accueil');
 }
 
-export default function App({logo, demo = false}: {logo: string; demo?: boolean}) {
+export default function App({logo, demo = false, staticSide = false}: {logo: string; demo?: boolean; staticSide?: boolean}) {
   const [booted, setBooted] = useState(false);
 
   useEffect(() => {
@@ -67,9 +76,24 @@ export default function App({logo, demo = false}: {logo: string; demo?: boolean}
     })();
   }, []);
 
-  if (!booted || session.value === undefined) return <Splash />;
-  if (!session.value) return <Login logo={logo} />;
+  // Page /espace-client/ : la colonne de présentation est dans le HTML ; elle disparaît une fois connecté.
+  useEffect(() => {
+    if (staticSide) document.documentElement.classList.toggle('in-app', !!session.value);
+  }, [session.value]);
+
+  if (!booted || session.value === undefined) return staticSide ? <LoginWait /> : <Splash />;
+  if (!session.value) return <Login logo={logo} withSide={!staticSide} />;
   return <Workspace logo={logo} />;
+}
+
+function LoginWait() {
+  return (
+    <div class="login-main">
+      <div class="login-card login-card--wait">
+        <Spinner label="Ouverture de votre espace…" />
+      </div>
+    </div>
+  );
 }
 
 function Splash() {
@@ -81,7 +105,7 @@ function Splash() {
 }
 
 // --- Connexion ------------------------------------------------------------------------------------
-function Login({logo}: {logo: string}) {
+function Login({logo, withSide = true}: {logo: string; withSide?: boolean}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
@@ -103,6 +127,61 @@ function Login({logo}: {logo: string}) {
     }
   };
 
+  const form = (
+    <div class="login-main">
+      <form class="login-card" onSubmit={submit} noValidate={false}>
+        <h2>Connexion</h2>
+        <p class="muted">Utilisez l’adresse e-mail et le mot de passe choisis à l’activation de votre compte.</p>
+        <Field label="Adresse e-mail">
+          <input type="email" name="email" autocomplete="username" required value={email} onInput={(e) => setEmail((e.target as HTMLInputElement).value)} />
+        </Field>
+        <Field label="Mot de passe">
+          <span class="pw">
+            <input
+              type={show ? 'text' : 'password'}
+              name="password"
+              autocomplete="current-password"
+              required
+              value={password}
+              onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
+            />
+            <button type="button" class="pw-eye" onClick={() => setShow(!show)} aria-label={show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}>
+              <Icon name={show ? 'eye-off' : 'eye'} size={18} />
+            </button>
+          </span>
+        </Field>
+        {error && (
+          <p class="form-err" role="alert">
+            {error}
+          </p>
+        )}
+        <Btn type="submit" kind="gold" block busy={busy} icon="lock">
+          Se connecter
+        </Btn>
+        <button type="button" class="linkish" onClick={() => setHelp(!help)} aria-expanded={help}>
+          Mot de passe oublié ou première connexion ?
+        </button>
+        {help && (
+          <div class="login-help">
+            <p>
+              <strong>Employé :</strong> demandez à votre responsable un nouveau lien depuis le menu <em>Équipe</em>. Vous y choisirez vous-même votre mot de passe.
+            </p>
+            <p>
+              <strong>Propriétaire :</strong> votre lien d’activation vous a été envoyé à la mise en service de votre carte. Pour en recevoir un nouveau, écrivez à{' '}
+              <a href="mailto:contact@loyna.fr?subject=Nouveau%20lien%20de%20connexion%20LOYNA%20Business">contact@loyna.fr</a> depuis l’adresse de votre compte.
+            </p>
+          </div>
+        )}
+      </form>
+      <p class="login-foot">
+        <a href="/espace-client/demo/">Découvrir LOYNA Business en démonstration →</a>
+      </p>
+      <p class="login-foot">
+        Vous êtes client d’un commerce ? Vos préférences de messages se gèrent depuis le lien « Mes préférences » au dos de votre carte, dans votre Wallet.
+      </p>
+    </div>
+  );
+  if (!withSide) return form;
   return (
     <div class="login">
       <aside class="login-side">
@@ -131,58 +210,7 @@ function Login({logo}: {logo: string}) {
           <Icon name="arrow-right" size={18} />
         </a>
       </aside>
-      <main class="login-main" id="contenu">
-        <form class="login-card" onSubmit={submit} noValidate={false}>
-          <h2>Connexion</h2>
-          <p class="muted">Utilisez l’adresse e-mail et le mot de passe choisis à l’activation de votre compte.</p>
-          <Field label="Adresse e-mail">
-            <input type="email" name="email" autocomplete="username" required value={email} onInput={(e) => setEmail((e.target as HTMLInputElement).value)} />
-          </Field>
-          <Field label="Mot de passe">
-            <span class="pw">
-              <input
-                type={show ? 'text' : 'password'}
-                name="password"
-                autocomplete="current-password"
-                required
-                value={password}
-                onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
-              />
-              <button type="button" class="pw-eye" onClick={() => setShow(!show)} aria-label={show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}>
-                <Icon name={show ? 'eye-off' : 'eye'} size={18} />
-              </button>
-            </span>
-          </Field>
-          {error && (
-            <p class="form-err" role="alert">
-              {error}
-            </p>
-          )}
-          <Btn type="submit" kind="gold" block busy={busy} icon="lock">
-            Se connecter
-          </Btn>
-          <button type="button" class="linkish" onClick={() => setHelp(!help)} aria-expanded={help}>
-            Mot de passe oublié ou première connexion ?
-          </button>
-          {help && (
-            <div class="login-help">
-              <p>
-                <strong>Employé :</strong> demandez à votre responsable un nouveau lien depuis le menu <em>Équipe</em>. Vous y choisirez vous-même votre mot de passe.
-              </p>
-              <p>
-                <strong>Propriétaire :</strong> votre lien d’activation vous a été envoyé à la mise en service de votre carte. Pour en recevoir un nouveau, écrivez à{' '}
-                <a href="mailto:contact@loyna.fr?subject=Nouveau%20lien%20de%20connexion%20LOYNA%20Business">contact@loyna.fr</a> depuis l’adresse de votre compte.
-              </p>
-            </div>
-          )}
-        </form>
-        <p class="login-foot">
-          <a href="/espace-client/demo/">Découvrir LOYNA Business en démonstration →</a>
-        </p>
-        <p class="login-foot">
-          Vous êtes client d’un commerce ? Vos préférences de messages se gèrent depuis le lien « Mes préférences » au dos de votre carte, dans votre Wallet.
-        </p>
-      </main>
+      {form}
     </div>
   );
 }
@@ -362,7 +390,7 @@ function Shell({logo}: {logo: string}) {
         </button>
       </header>
 
-      <main class="main" id="contenu">
+      <div class="main">
         {api.demo && <DemoBar />}
         {m.merchant_status === 'SUSPENDED' && (
           <div class="banner">
@@ -371,7 +399,7 @@ function Shell({logo}: {logo: string}) {
           </div>
         )}
         <View view={view} id={route.value.id} />
-      </main>
+      </div>
 
       <nav class="tabbar" aria-label="Navigation">
         {left.map((n) => (
@@ -430,30 +458,42 @@ function Shell({logo}: {logo: string}) {
 }
 
 function View({view, id}: {view: string; id?: string}) {
-  switch (view) {
-    case 'accueil':
-      return <Dashboard />;
-    case 'scanner':
-      return <Scanner />;
-    case 'clients':
-      return <Clients />;
-    case 'client':
-      return id ? <ClientDetail id={id} /> : <Clients />;
-    case 'programme':
-      return <Programme />;
-    case 'campagnes':
-      return <Campagnes />;
-    case 'campagne':
-      return <Campagnes id={id} />;
-    case 'equipe':
-      return <Equipe />;
-    case 'reglages':
-      return <Reglages />;
-    case 'abonnement':
-      return <Abonnement portal={PORTAL} />;
-    default:
-      return <Dashboard />;
-  }
+  // écran à charger et ses paramètres
+  const [name, props]: [string, Record<string, unknown>] =
+    view === 'client' && id
+      ? ['client', {id}]
+      : view === 'client'
+        ? ['clients', {}]
+        : view === 'campagne'
+          ? ['campagnes', {id}]
+          : view === 'abonnement'
+            ? ['abonnement', {portal: PORTAL}]
+            : LOADERS[view]
+              ? [view, {}]
+              : ['accueil', {}];
+  const [, setTick] = useState(0);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+    if (!loaded[name]) loadView(name).then(() => setTick((t) => t + 1), () => setFailed(true));
+  }, [name]);
+  // les deux écrans les plus utilisés sont préchargés dès que le navigateur est libre
+  useEffect(() => {
+    const idle = (window as any).requestIdleCallback ?? ((f: () => void) => setTimeout(f, 1200));
+    idle(() => ['scanner', 'accueil', 'clients'].forEach((v) => loadView(v).catch(() => {})));
+  }, []);
+  const C = loaded[name];
+  if (failed)
+    return (
+      <div class="errbox" role="alert">
+        <Icon name="triangle-alert" />
+        <span>Chargement impossible : vérifiez votre connexion.</span>
+        <Btn kind="ghost" small icon="refresh-cw" onClick={() => location.reload()}>
+          Recharger
+        </Btn>
+      </div>
+    );
+  return C ? <C {...props} /> : <Spinner />;
 }
 
 /** Bandeau de la démonstration : données fictives, rien n'est enregistré. */

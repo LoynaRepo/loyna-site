@@ -2492,3 +2492,16 @@ label.b {
   color: #faf7f0;
   border-color: rgba(250, 247, 240, 0.25);
 }
+
+/* Page /espace-client/ : colonne de présentation dans le HTML, masquée une fois connecté */
+.login-card--wait {
+  min-height: 360px;
+  place-items: center;
+}
+.in-app .login--page {
+  display: block;
+  min-height: 0;
+}
+.in-app .login--page > .login-side {
+  display: none;
+}

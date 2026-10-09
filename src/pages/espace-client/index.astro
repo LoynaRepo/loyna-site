@@ -2,6 +2,7 @@
 // Espace client : LOYNA Business (scanner, clients, programme, campagnes, équipe, réglages,
 // abonnement). Application Preact chargée dans le navigateur ; données Supabase (RLS).
 import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
 import App from '../../app/App';
 import {logoHtml} from '../../lib/logo-html';
 import '../../app/styles/base.css';
@@ -15,14 +16,42 @@ const logo = logoHtml('lg-app', 30);
   title="Espace client LOYNA : scanner, clients et abonnement"
   description="Connectez-vous à LOYNA Business pour scanner les cartes de fidélité de vos clients, suivre vos statistiques, lancer une campagne et gérer votre abonnement."
 >
-  <App client:only="preact" logo={logo}>
-    <div slot="fallback" class="splash">
-      <div class="spin-wrap" role="status">
-        <span class="spin"></span>
-        <span class="sr-only">Ouverture de votre espace…</span>
+  <script is:inline slot="head">
+    // Déjà connecté : la colonne de présentation est masquée dès le premier affichage
+    try {
+      if (localStorage.getItem('loyna-business-auth')) document.documentElement.classList.add('in-app');
+    } catch (e) {}
+  </script>
+  <div class="login login--page">
+    <aside class="login-side">
+      <a href="/" class="login-logo" aria-label="Retour au site loyna.fr" set:html={logoHtml('lg-static', 30)} />
+      <div class="login-pitch">
+        <p class="eyebrow">LOYNA Business</p>
+        <h1>Votre espace commerçant</h1>
+        <ul class="login-list">
+          <li><span class="ic" style="width:20px;height:20px"><Icon name="scan-line" size={20} /></span> Scannez les cartes de vos clients depuis votre téléphone</li>
+          <li><span class="ic" style="width:20px;height:20px"><Icon name="users" size={20} /></span> Suivez vos clients, leurs passages et leurs récompenses</li>
+          <li><span class="ic" style="width:20px;height:20px"><Icon name="megaphone" size={20} /></span> Envoyez une offre dans leur Wallet en quelques secondes</li>
+        </ul>
       </div>
-    </div>
-  </App>
+      <a class="login-portal" href="https://billing.stripe.com/p/login/28E28u2vEcIt4tvbiw5Ne00" rel="nofollow">
+        <span class="ic" style="width:20px;height:20px"><Icon name="credit-card" size={20} /></span>
+        <span>
+          <strong>Abonnement et factures</strong>
+          <small>Portail sécurisé Stripe : factures, carte bancaire, formule</small>
+        </span>
+        <span class="ic" style="width:18px;height:18px"><Icon name="arrow-right" size={18} /></span>
+      </a>
+    </aside>
+    <App client:only="preact" logo={logo} staticSide>
+      <div slot="fallback" class="login-main">
+        <div class="login-card login-card--wait" role="status">
+          <span class="spin"></span>
+          <span class="sr-only">Ouverture de votre espace…</span>
+        </div>
+      </div>
+    </App>
+  </div>
   <noscript>
     <div class="center-screen">
       <div class="center-card">

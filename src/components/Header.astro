@@ -37,7 +37,7 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
     position: sticky;
     top: 0;
     z-index: 50;
-    background: rgba(18, 18, 22, 0.9);
+    background: rgba(18, 18, 22, 0.96);
     backdrop-filter: saturate(160%) blur(14px);
     -webkit-backdrop-filter: saturate(160%) blur(14px);
     border-bottom: 1px solid rgba(230, 194, 122, 0.16);
@@ -53,6 +53,7 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
     display: inline-flex;
     text-decoration: none;
     flex-shrink: 0;
+    padding-block: 6px;
   }
   .nav-desktop ul {
     display: flex;
@@ -151,6 +152,12 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
   @media (max-width: 520px) {
     .actions .btn {
       display: none;
+    }
+  }
+  /* Téléphone : barre plus basse, plus de place pour le contenu */
+  @media (max-width: 760px) {
+    .bar {
+      height: 64px;
     }
   }
 </style>

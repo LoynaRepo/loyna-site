@@ -58,9 +58,9 @@ const {primary = {href: '/creer-ma-carte/', label: 'Créer ma carte'}, secondary
       min-height: 48px;
       padding-inline: 18px;
     }
-    /* place pour que la barre ne cache jamais le bas du pied de page */
-    :global(body:has(.sticky-cta)) {
-      padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    /* place pour la barre fixe : ajoutée au pied de page (même fond sombre), pas sous la page */
+    :global(body:has(.sticky-cta) .site-footer) {
+      padding-bottom: calc(102px + env(safe-area-inset-bottom));
     }
     :global(body:has(input:focus, textarea:focus, select:focus)) .sticky-cta,
     :global(body:has(.consent:not([hidden]))) .sticky-cta {

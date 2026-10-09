@@ -74,7 +74,15 @@ const text = announcement.trim();
     .ob-row p {
       flex-wrap: nowrap;
       font-size: 0.84rem;
-      padding: 7px 0;
+      padding: 10px 0;
+    }
+    .offer-bar {
+      position: relative;
+    }
+    .ob-row a::after {
+      content: '';
+      position: absolute;
+      inset: 0;
     }
     .ob-row :global(svg) {
       display: none;
