@@ -37,8 +37,13 @@ export default function Join() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Done | null>(null);
 
+  const demo = !!slug && /^demo-\d{4,9}$/.test(slug);
   const load = () => {
     if (!slug) return setPage({status: 'NOT_FOUND'});
+    if (demo) {
+      import('./mock').then((m) => setPage(m.demoJoinPage(Number(slug.slice(5)))));
+      return;
+    }
     setLoadErr('');
     publicEdge<Page>('customer-enroll', {method: 'GET', query: {slug}}).then(
       (p) => {
@@ -100,6 +105,12 @@ export default function Join() {
     if (f.sms && !f.phone.trim()) return setError('Indiquez votre numéro pour recevoir les offres par SMS.');
     if (!f.terms) return setError('Cochez la case d’adhésion au programme de fidélité.');
     setBusy(true);
+    if (demo) {
+      await new Promise((res) => setTimeout(res, 500));
+      setDone({first_name: f.first_name.trim(), wallet: {apple_pass_url: '#demo', google_save_url: '#demo', preferred: null}});
+      setBusy(false);
+      return;
+    }
     try {
       const r = await publicEdge<Done>('customer-enroll', {
         body: {
@@ -163,6 +174,7 @@ export default function Join() {
                 ))}
               </div>
               <p class="j-small">À chaque visite, présentez votre carte en caisse : vos {p.unit_plural} s’ajoutent automatiquement.</p>
+              {demo && <p class="note">Démonstration : avec un vrai commerce, ces boutons ajoutent la carte au Wallet du client. Aucune donnée n’a été enregistrée.</p>}
             </>
           ) : (
             <p>Votre inscription est bien enregistrée. L’ajout de la carte au téléphone n’est pas encore disponible : votre commerçant vous la présentera lors de votre prochaine visite.</p>

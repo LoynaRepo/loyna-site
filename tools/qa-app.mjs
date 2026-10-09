@@ -4,6 +4,7 @@ import puppeteer from 'puppeteer-core';
 import fs from 'node:fs';
 const CH = 'C:/Users/vaiko/Documents/LOYNA-Motion/node_modules/.remotion/chrome-headless-shell/win64/chrome-headless-shell-win64/chrome-headless-shell.exe';
 const BASE = process.env.QA_BASE ?? 'http://127.0.0.1:4322';
+const APP = process.env.QA_APP ?? '/espace-client/?demo';
 const [w, ...views] = process.argv.slice(2);
 const width = Number(w);
 const mobile = width < 700;
@@ -21,9 +22,9 @@ for (const v of views) {
     // page publique ou écran complet (adresse directe)
     await page.goto(BASE + v, {waitUntil: 'networkidle0'});
   } else {
-    await page.goto(`${BASE}/espace-client/?demo#/${v === 'login' ? '' : v}`, {waitUntil: 'networkidle0'});
+    await page.goto(`${BASE}${APP}#/${v === 'login' ? '' : v}`, {waitUntil: 'networkidle0'});
     if (v === 'login') {
-      await page.evaluate(() => sessionStorage.removeItem('demo-session'));
+      await page.evaluate(() => sessionStorage.setItem('demo-session', 'out'));
       await page.reload({waitUntil: 'networkidle0'});
     } else {
       await page.evaluate(() => sessionStorage.setItem('demo-session', '1'));

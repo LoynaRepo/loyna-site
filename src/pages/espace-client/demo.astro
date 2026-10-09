@@ -1,0 +1,27 @@
+---
+// Démonstration de LOYNA Business : commerce et clients fictifs tirés au hasard, tout reste dans le
+// navigateur (src/app/mock.ts), aucune connexion ni enregistrement.
+import Base from '../../layouts/Base.astro';
+import App from '../../app/App';
+import {logoHtml} from '../../lib/logo-html';
+import '../../app/styles/base.css';
+import '../../app/styles/business.css';
+
+const logo = logoHtml('lg-demo', 30);
+---
+
+<Base
+  bare
+  noindex
+  title="Démonstration LOYNA Business : scanner, clients et campagnes"
+  description="Essayez LOYNA Business avec un commerce fictif : scanner, clients, récompenses, campagnes Wallet et SMS, statistiques. Données tirées au hasard, rien n'est enregistré."
+>
+  <App client:only="preact" logo={logo} demo>
+    <div slot="fallback" class="splash">
+      <div class="spin-wrap" role="status">
+        <span class="spin"></span>
+        <span class="sr-only">Préparation de la démonstration…</span>
+      </div>
+    </div>
+  </App>
+</Base>

@@ -44,15 +44,16 @@ function defaultView(): string {
   return can('analytics.read') ? 'accueil' : can('scan.validate') ? 'scanner' : (NAV.find((n) => n.show())?.view ?? 'accueil');
 }
 
-export default function App({logo}: {logo: string}) {
+export default function App({logo, demo = false}: {logo: string; demo?: boolean}) {
   const [booted, setBooted] = useState(false);
 
   useEffect(() => {
     (async () => {
-      // Démonstration locale (données fictives) : uniquement en développement, avec ?demo dans l'adresse.
-      if (import.meta.env.DEV && new URLSearchParams(location.search).has('demo')) {
-        const {mockBackend} = await import('./mock');
-        setBackend(mockBackend);
+      // Démonstration (données fictives tirées au hasard, rien n'est enregistré) : page /espace-client/demo/,
+      // ou ?demo dans l'adresse en développement.
+      if (demo || (import.meta.env.DEV && new URLSearchParams(location.search).has('demo'))) {
+        const m = await import('./mock');
+        setBackend(m.createMockBackend(m.demoSeed()));
       }
       api.onAuthChange((event, signedIn) => {
         if (event === 'SIGNED_OUT' || !signedIn) {
@@ -176,6 +177,9 @@ function Login({logo}: {logo: string}) {
           )}
         </form>
         <p class="login-foot">
+          <a href="/espace-client/demo/">Découvrir LOYNA Business en démonstration →</a>
+        </p>
+        <p class="login-foot">
           Vous êtes client d’un commerce ? Vos préférences de messages se gèrent depuis le lien « Mes préférences » au dos de votre carte, dans votre Wallet.
         </p>
       </main>
@@ -286,6 +290,10 @@ function Shell({logo}: {logo: string}) {
   useEffect(() => setMore(false), [route.value]);
 
   const logout = async () => {
+    if (api.demo && !import.meta.env.DEV) {
+      location.href = '/'; // quitter la démonstration
+      return;
+    }
     try {
       await api.signOut();
     } catch (e) {
@@ -341,7 +349,7 @@ function Shell({logo}: {logo: string}) {
           </div>
           <button type="button" class="side-out" onClick={logout}>
             <Icon name="log-out" size={18} />
-            Se déconnecter
+            {api.demo ? 'Quitter la démo' : 'Se déconnecter'}
           </button>
         </div>
       </aside>
@@ -355,6 +363,7 @@ function Shell({logo}: {logo: string}) {
       </header>
 
       <main class="main" id="contenu">
+        {api.demo && <DemoBar />}
         {m.merchant_status === 'SUSPENDED' && (
           <div class="banner">
             <Icon name="triangle-alert" />
@@ -410,7 +419,7 @@ function Shell({logo}: {logo: string}) {
             </a>
             <button type="button" onClick={logout}>
               <Icon name="log-out" />
-              Se déconnecter ({m.display_name})
+              {api.demo ? 'Quitter la démo' : `Se déconnecter (${m.display_name})`}
             </button>
           </div>
         </div>
@@ -445,4 +454,27 @@ function View({view, id}: {view: string; id?: string}) {
     default:
       return <Dashboard />;
   }
+}
+
+/** Bandeau de la démonstration : données fictives, rien n'est enregistré. */
+function DemoBar() {
+  return (
+    <div class="demobar" role="note">
+      <span class="demobar-t">
+        <Icon name="sparkles" size={18} />
+        <span>
+          <strong>Démonstration</strong> · commerce et clients fictifs tirés au hasard, rien n’est enregistré.
+        </span>
+      </span>
+      <span class="demobar-a">
+        <button type="button" class="b b--sm b--ghost" onClick={() => import('./mock').then((m) => m.regenerateDemo())}>
+          <Icon name="refresh-cw" size={16} />
+          <span>Autres données</span>
+        </button>
+        <a class="b b--sm b--gold" href="/creer-ma-carte/">
+          <span>Créer ma carte</span>
+        </a>
+      </span>
+    </div>
+  );
 }

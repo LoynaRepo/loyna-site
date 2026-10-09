@@ -87,9 +87,10 @@ des Edge Functions (contrats : dépôt LOYNA, `docs/API.md` et `docs/WEWEB_SETUP
 | `/espace-client/mot-de-passe/` | choix du mot de passe depuis un lien d'activation (`/set-password` y est redirigé) |
 | `/join/<commerce>` | inscription d'un client final (réécrite vers `/join/index.html` par `.htaccess`) |
 | `/preferences/?t=…` | préférences et suppression des données d'un client final |
+| `/espace-client/demo/` | **démonstration publique** sans compte : commerce, clients, passages, récompenses, campagnes et équipe fictifs tirés au hasard (`src/app/mock.ts`, graine dans `?seed=` ou le navigateur, bouton « Autres données »), scan simulé ; `/join/demo-<graine>` montre la page d'inscription du même commerce. Rien n'est envoyé ni enregistré (téléphones en 06 39 98, tranche ARCEP réservée à la fiction ; e-mails en example.com) |
 
-- Démonstration locale sans réseau : `npx astro dev`, puis `http://127.0.0.1:4321/espace-client/?demo`
-  (données fictives de `src/app/mock.ts`, absentes de la version publiée) ; `/join/?slug=demo-loyna` en
+- Démonstration : `/espace-client/demo/` en ligne, ou `?demo` sur `/espace-client/` en développement
+  (même générateur `src/app/mock.ts`, chargé à part : absent des pages réelles) ; `/join/?slug=demo-loyna` en
   développement. Captures : `node tools/qa-app.mjs 1366 accueil scanner clients …` et `node tools/qa-flow.mjs`
   (serveur de développement sur le port 4322).
 - Les mentions « inclus dans la formule … » sont lues dans la table `plan_entitlements` (jamais en dur).

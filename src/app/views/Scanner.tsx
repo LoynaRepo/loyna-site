@@ -476,6 +476,12 @@ export function Scanner() {
             </div>
           )}
           <div class="scan-tools">
+            {api.demo && (
+              <button type="button" class="chip on" onClick={() => validate(`loyna:v1:demo-${uuid()}`, {})} disabled={busy}>
+                <Icon name="qr-code" size={18} />
+                Simuler un scan
+              </button>
+            )}
             {torch !== null && (
               <button type="button" class={`chip ${torch ? 'on' : ''}`} onClick={toggleTorch} aria-pressed={torch}>
                 <Icon name={torch ? 'flashlight-off' : 'flashlight'} size={18} />
