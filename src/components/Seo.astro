@@ -11,8 +11,11 @@ interface Props {
   jsonLd?: object | object[];
   breadcrumbs?: {name: string; url: string}[];
   published?: string;
+  googleVerification?: string;
+  bingVerification?: string;
+  sameAs?: string[];
 }
-const {title, description, noindex = false, ogImage, type = 'website', jsonLd = [], breadcrumbs, published} = Astro.props;
+const {title, description, noindex = false, ogImage, type = 'website', jsonLd = [], breadcrumbs, published, googleVerification, bingVerification, sameAs = []} = Astro.props;
 const canonical = new URL(Astro.url.pathname, SITE.url).href;
 const image = new URL(ogImage || '/og/default.png', SITE.url).href;
 const fullTitle = title.includes('LOYNA') ? title : `${title} | LOYNA`;
@@ -21,8 +24,12 @@ const organization = {
   '@type': 'Organization',
   '@id': `${SITE.url}/#organisation`,
   name: 'LOYNA',
+  alternateName: ['Loyna', 'LOYNA Business'],
+  description: SITE.description,
   url: SITE.url,
-  logo: `${SITE.url}/icon-512.png`,
+  logo: {'@type': 'ImageObject', url: `${SITE.url}/icon-512.png`, width: 512, height: 512},
+  ...(sameAs.length ? {sameAs} : {}),
+  knowsAbout: ['carte de fidélité', 'carte de fidélité digitale', 'programme de fidélité', 'Apple Wallet', 'Google Wallet', 'fidélisation client'],
   email: SITE.email,
   slogan: SITE.slogan,
   address: {
@@ -41,6 +48,8 @@ const website = {
   '@id': `${SITE.url}/#site`,
   url: SITE.url,
   name: 'LOYNA',
+  alternateName: 'Loyna',
+  description: SITE.slogan,
   inLanguage: 'fr-FR',
   publisher: {'@id': `${SITE.url}/#organisation`},
 };
@@ -55,6 +64,8 @@ const ld = JSON.stringify({'@context': 'https://schema.org', '@graph': graph}).r
 ---
 
 <title>{fullTitle}</title>
+{googleVerification && <meta name="google-site-verification" content={googleVerification} />}
+{bingVerification && <meta name="msvalidate.01" content={bingVerification} />}
 <meta name="description" content={description} />
 <link rel="canonical" href={canonical} />
 <meta name="robots" content={noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'} />

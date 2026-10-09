@@ -254,11 +254,11 @@ const softwareLd = {
       <div class="section-head">
         <p class="eyebrow">Secteurs</p>
         <h2>Pensé pour les commerces de proximité</h2>
-        <p>Coiffure, beauté, restauration rapide, boulangerie, café ou boutique : la carte s’adapte à votre rythme de visites et à vos récompenses.</p>
+        <p>Coiffure, beauté, restauration, boulangerie, café, fleuriste ou boutique : la carte s’adapte à votre rythme de visites et à vos récompenses.</p>
       </div>
       <div class="sectors">
         {
-          sectors.map((s) => (
+          sectors.slice(0, 5).map((s) => (
             <a class="sector" href={`/secteurs/${s.slug}/`}>
               <WalletCard
                 name={s.carte.nom}
@@ -278,6 +278,53 @@ const softwareLd = {
             </a>
           ))
         }
+      </div>
+      {
+        sectors.length > 5 && (
+          <p class="more-sectors">
+            <span>Aussi :</span>
+            {sectors.slice(5).map((s) => (
+              <a href={`/secteurs/${s.slug}/`}>{s.nom}</a>
+            ))}
+            <a href="/secteurs/">Tous les métiers →</a>
+          </p>
+        )
+      }
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container seo-text">
+      <div class="section-head">
+        <p class="eyebrow">L’essentiel</p>
+        <h2>La carte de fidélité digitale, en bref</h2>
+      </div>
+      <div class="seo-cols">
+        <div>
+          <h3>Qu’est-ce qu’une carte de fidélité digitale ?</h3>
+          <p>
+            C’est la version dématérialisée de la carte à tampons : au lieu d’un carton, la carte de fidélité vit dans le téléphone du client, dans Apple Wallet ou Google Wallet. Pas d’application à télécharger : le client scanne votre QR code et ajoute sa carte en un geste.
+            Pour comprendre le fonctionnement en détail, lisez notre <a href="/blog/carte-de-fidelite-digitale-guide/">guide de la carte de fidélité digitale</a>.
+          </p>
+        </div>
+        <div>
+          <h3>Pourquoi remplacer la carte papier ?</h3>
+          <p>
+            Une carte numérique ne se perd pas, ne s’imite pas et se met à jour toute seule. Surtout, elle vous permet de garder le contact : récompense disponible, anniversaire, client qui ne revient plus. Le <a href="/blog/carte-fidelite-papier-ou-digitale/">comparatif papier ou digitale</a> détaille les avantages et les limites de chaque solution.
+          </p>
+        </div>
+        <div>
+          <h3>Comment créer la carte de fidélité de votre commerce ?</h3>
+          <p>
+            Choisissez la mécanique (passages, points ou montant), une récompense qui donne envie et un seuil atteignable. Notre méthode pour <a href="/blog/creer-carte-de-fidelite/">créer une carte de fidélité</a> vous guide pas à pas, et le <a href="/creer-ma-carte/">configurateur</a> en montre l’aperçu à votre nom.
+          </p>
+        </div>
+        <div>
+          <h3>Un logiciel de fidélité simple et conforme</h3>
+          <p>
+            LOYNA réunit la carte, le scanner sur smartphone, les récompenses automatiques, les notifications et le tableau de bord, avec des consentements séparés et des données hébergées dans l’Union européenne. Les règles à connaître sont résumées dans notre article <a href="/blog/carte-de-fidelite-rgpd/">carte de fidélité et RGPD</a>.
+          </p>
+        </div>
       </div>
     </div>
   </section>
@@ -524,5 +571,33 @@ const softwareLd = {
     .feat-list .card p {
       font-size: 0.95rem;
     }
+  }
+  .more-sectors {
+    margin: 26px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 6px 18px;
+    color: var(--muted);
+  }
+  .more-sectors a {
+    font-weight: 700;
+    padding-block: 8px;
+  }
+  .seo-cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+    gap: clamp(20px, 3vw, 40px);
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .seo-cols h3 {
+    font-size: 1.15rem;
+    margin-bottom: 8px;
+  }
+  .seo-cols p {
+    color: var(--muted);
+    margin: 0;
   }
 </style>

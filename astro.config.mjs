@@ -7,7 +7,8 @@ import {fileURLToPath} from 'node:url';
 
 // Typographie française dans le HTML final : espace insécable avant « : ; ? ! » et à l'intérieur
 // des guillemets, pour qu'un signe ne se retrouve jamais seul en début de ligne. Seul le texte
-// visible est modifié (balises, attributs, scripts et styles restent intacts).
+// visible est modifié (balises, attributs, scripts et styles restent intacts). Les liens internes
+// reçoivent aussi leur « / » final (adresses canoniques, trailingSlash: 'always').
 function typoFr() {
   const walk = (d) => fs.readdirSync(d, {withFileTypes: true}).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
   const fix = (t) => t.replace(/ ([:;?!»])/g, ' $1').replace(/« /g, '« ');
@@ -17,7 +18,10 @@ function typoFr() {
       'astro:build:done': ({dir}) => {
         for (const f of walk(fileURLToPath(dir)).filter((f) => f.endsWith('.html'))) {
           const html = fs.readFileSync(f, 'utf8');
-          const out = html.replace(/(<(script|style|textarea|pre|code)\b[\s\S]*?<\/\2>)|(<[^>]*>)|([^<]+)/g, (m, block, _t, tag, text) => (text ? fix(text) : m));
+          const out = html
+            .replace(/(<(script|style|textarea|pre|code)\b[\s\S]*?<\/\2>)|(<[^>]*>)|([^<]+)/g, (m, block, _t, tag, text) => (text ? fix(text) : m))
+            // liens internes sans « / » final (contenus Builder) : adresse canonique directe, sans redirection 301
+            .replace(/href="(\/[a-z0-9\/_-]*[a-z0-9_-])([?#][^"]*)?"/g, (m, p, rest = '') => `href="${p}/${rest}"`);
           if (out !== html) fs.writeFileSync(f, out);
         }
       },
@@ -26,7 +30,7 @@ function typoFr() {
 }
 
 // Pages exclues du plan du site (sans intérêt pour les moteurs de recherche)
-const NOINDEX = ['/merci/', '/contact/envoye/', '/builder-preview/', '/404/', '/espace-client/mot-de-passe/', '/join/', '/preferences/'];
+const NOINDEX = ['/merci/', '/contact/envoye/', '/builder-preview/', '/404/', '/espace-client/mot-de-passe/', '/espace-client/demo/', '/join/', '/preferences/'];
 
 export default defineConfig({
   site: 'https://loyna.fr',

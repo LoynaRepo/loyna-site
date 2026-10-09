@@ -25,6 +25,11 @@ export const SITE = {
   address: {street: 'C 07, 137 rue Uderzo', postalCode: '34690', locality: 'Fabrègues', region: 'Occitanie', country: 'FR'},
   // Mesure d'audience Google Analytics 4 (« G-… ») : vide = aucun bandeau ni traceur. Modifiable dans Builder.
   ga4Id: '',
+  // Référencement : codes de vérification (Search Console, Bing) et profils officiels de la marque.
+  // Modifiables aussi dans Builder (site-settings : googleVerification, bingVerification, sameAs).
+  googleVerification: '',
+  bingVerification: '',
+  sameAs: [] as string[],
   // Espace commerçant (LOYNA Business) : laissé vide tant que l'application n'est pas en ligne.
   appUrl: '',
   // Portail Stripe (abonnement, factures, moyen de paiement) : rempli après création du portail.

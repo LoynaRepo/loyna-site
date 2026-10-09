@@ -12,7 +12,14 @@ const crumbs = [
 ];
 const bgs = CARD_BGS;
 const accents = CARD_ACCENTS;
-const activities = ['Coiffure', 'Barbier', 'Institut de beauté', 'Onglerie', 'Boulangerie', 'Café', 'Snack', 'Pizzeria', 'Boutique', 'Autre'];
+const activities = ['Coiffure', 'Barbier', 'Institut de beauté', 'Onglerie', 'Boulangerie', 'Café', 'Restaurant', 'Snack', 'Pizzeria', 'Fleuriste', 'Boucherie', 'Pressing', 'Boutique', 'Autre'];
+// Questions fréquentes de la page (affichées et décrites en données structurées FAQPage)
+const cfgFaq = [
+  {q: 'Créer l’aperçu de ma carte de fidélité est-il gratuit ?', a: 'Oui. Le configurateur est gratuit et sans inscription : vous voyez votre carte à votre nom, à vos couleurs et avec votre récompense. Vous ne payez que si vous décidez de lancer votre carte.'},
+  {q: 'Combien de temps faut-il pour que ma carte soit prête ?', a: 'Après votre commande, LOYNA crée votre carte et votre QR code d’inscription sous 24 h, hors personnalisation exceptionnelle.'},
+  {q: 'Mes clients doivent-ils télécharger une application ?', a: 'Non. La carte s’ajoute à Apple Wallet sur iPhone et à Google Wallet sur Android, déjà présents sur leur téléphone.'},
+  {q: 'Pourrai-je modifier ma carte plus tard ?', a: 'Oui. Couleurs, logo, nom du programme, récompense et seuil se modifient depuis votre espace client, et les cartes déjà installées chez vos clients se mettent à jour toutes seules.'},
+];
 const appLd = {
   '@type': 'WebApplication',
   name: 'Configurateur de carte de fidélité LOYNA',
@@ -24,11 +31,11 @@ const appLd = {
 ---
 
 <Base stickyCta={{primary: {href: '/tarifs/', label: 'Je veux cette carte'}, secondary: {href: '/demo/', label: 'Démo'}}}
-  title="Créer ma carte de fidélité : configurateur en ligne"
+  title="Créer une carte de fidélité en ligne : aperçu gratuit"
   description="Créez l'aperçu de votre carte de fidélité Apple Wallet et Google Wallet : nom, couleurs, logo, nombre de passages et récompense. Résultat en direct, gratuit."
   ogImage="/og/creer-ma-carte.png"
   breadcrumbs={crumbs}
-  jsonLd={appLd}
+  jsonLd={[appLd, {'@type': 'FAQPage', mainEntity: cfgFaq.map((f) => ({'@type': 'Question', name: f.q, acceptedAnswer: {'@type': 'Answer', text: f.a}}))}]}
 >
   <section class="page-hero compact">
     <div class="container">
@@ -150,6 +157,44 @@ const appLd = {
         <span class="icon"><Icon name="smartphone" /></span>
         <h2 class="h3">iPhone et Android</h2>
         <p>La même carte fonctionne dans Apple Wallet et Google Wallet. Vos clients n’ont aucune application à installer.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container narrow">
+      <div class="section-head">
+        <p class="eyebrow">Mode d’emploi</p>
+        <h2>Créer une carte de fidélité en 4 étapes</h2>
+      </div>
+      <ol class="how">
+        <li>
+          <strong>Choisissez le nom et l’activité</strong> affichés sur la carte, puis ajoutez votre logo si vous en avez un.
+        </li>
+        <li>
+          <strong>Choisissez vos couleurs</strong> : le fond de la carte et la couleur des tampons, pour retrouver l’identité de votre commerce.
+        </li>
+        <li>
+          <strong>Fixez la récompense et le nombre de passages</strong> : une récompense qui donne envie, un seuil que vos bons clients atteignent en quelques semaines.
+        </li>
+        <li>
+          <strong>Validez votre carte</strong> : choisissez votre formule, et votre carte et votre QR code d’inscription sont prêts sous 24&nbsp;h.
+        </li>
+      </ol>
+      <p class="how-more">
+        Besoin d’aide pour choisir la récompense ou le seuil ? Lisez notre méthode pour <a href="/blog/creer-carte-de-fidelite/">créer une carte de fidélité</a> et nos <a href="/blog/idees-recompenses-carte-fidelite/">30 idées de récompenses par métier</a>.
+      </p>
+      <div class="faq cfg-faq">
+        {
+          cfgFaq.map((f) => (
+            <details>
+              <summary>{f.q}</summary>
+              <div class="answer">
+                <p>{f.a}</p>
+              </div>
+            </details>
+          ))
+        }
       </div>
     </div>
   </section>
@@ -573,5 +618,19 @@ const appLd = {
       inset: auto;
       padding: 46px 14px 24px;
     }
+  }
+  .how {
+    margin: 0 0 22px;
+    padding-left: 1.4em;
+    display: grid;
+    gap: 14px;
+  }
+  .how li::marker {
+    font-weight: 800;
+    color: var(--gold-strong);
+  }
+  .how-more {
+    color: var(--muted);
+    margin: 0 0 30px;
   }
 </style>

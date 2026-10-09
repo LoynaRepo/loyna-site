@@ -77,14 +77,26 @@ export interface SiteSettings {
   appUrl: string;
   billingPortalUrl: string;
   ga4Id?: string;
+  /** Codes de vérification Google Search Console et Bing Webmaster Tools (balise meta). */
+  googleVerification?: string;
+  bingVerification?: string;
+  /** Profils officiels de la marque (LinkedIn, Instagram, Facebook…), un par ligne. */
+  sameAs?: string;
 }
 
 // Les listes Builder (champ « list ») arrivent sous forme d'objets { value } : on les aplatit.
 const flat = (v: unknown) => (Array.isArray(v) ? v.map((x) => (x && typeof x === 'object' && 'value' in x ? (x as {value: unknown}).value : x)) : v);
 
+/** Contenus du dépôt complétés par ceux de Builder : à slug égal, la version Builder l'emporte. */
+function merge<T extends {slug: string}>(seed: T[], remote: T[] | null): T[] {
+  const bySlug = new Map(seed.map((x) => [x.slug, x]));
+  for (const x of remote ?? []) if (x?.slug) bySlug.set(x.slug, x);
+  return [...bySlug.values()];
+}
+
 export async function getSectors(): Promise<Sector[]> {
   const remote = await fetchModel<Sector>('secteur');
-  const list = remote && remote.length ? remote : (sectorsSeed as Sector[]);
+  const list = merge(sectorsSeed as Sector[], remote);
   const order = (sectorsSeed as Sector[]).map((s) => s.slug);
   return list
     .map((s) => ({...s, recompenses: flat(s.recompenses) as string[], messages: flat(s.messages) as string[]}))
@@ -102,7 +114,7 @@ const articleFiles = import.meta.glob<{default: Article}>('../content-seed/artic
 export async function getArticles(): Promise<Article[]> {
   const remote = await fetchModel<Article>('article');
   const seed = Object.values(articleFiles).map((m) => m.default);
-  const list = remote && remote.length ? remote.map((a) => ({...a, tags: flat(a.tags) as string[]})) : seed;
+  const list = merge(seed, remote ? remote.map((a) => ({...a, tags: flat(a.tags) as string[]})) : null);
   return [...list].sort((a, b) => (a.date < b.date ? 1 : -1));
 }
 

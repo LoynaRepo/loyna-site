@@ -368,5 +368,317 @@
         "a": "Oui. Dans LOYNA Business, la liste de vos clients se filtre par actifs, inactifs, nouveaux ou récompense disponible. Chaque fiche affiche le solde, l’historique des passages, les récompenses et les consentements. Le tableau de bord résume l’évolution de votre activité : passages, nouveaux clients, récompenses débloquées et utilisées."
       }
     ]
+  },
+  {
+    "slug": "restaurant",
+    "nom": "Restaurants",
+    "metaTitle": "Carte de fidélité restaurant : digitale, sans appli",
+    "metaDescription": "Carte de fidélité digitale pour restaurant, bistrot ou brasserie : dans Apple Wallet et Google Wallet, validée d’un scan à l’addition, sans application.",
+    "h1": "Carte de fidélité restaurant, dans le téléphone de vos clients",
+    "intro": "<p>Un client qui a bien mangé chez vous a toutes les raisons de revenir. Pourtant, entre deux repas, il oublie, essaie une nouvelle adresse ou se laisse tenter par une offre ailleurs. Une carte de fidélité restaurant lui rappelle votre table au bon moment et transforme un bon souvenir en habitude.</p><p>Avec LOYNA, la carte de fidélité de votre restaurant, de votre bistrot ou de votre brasserie vit dans Apple Wallet ou Google Wallet, sans application à télécharger. À l’addition, vous scannez la carte avec votre smartphone : le passage est validé, la carte se met à jour toute seule et, au seuil choisi, la récompense se débloque automatiquement, par exemple un dessert ou un repas offert.</p>",
+    "enjeux": [
+      {
+        "titre": "Des clients qui ne reviennent pas d’eux-mêmes",
+        "texte": "Un repas réussi ne suffit pas toujours : sans rappel, le client attend une occasion et finit parfois par choisir une autre table."
+      },
+      {
+        "titre": "Une salle calme certains soirs",
+        "texte": "Le week-end est plein, les débuts de semaine beaucoup moins. Remplir ces services sans casser les prix ni imprimer de prospectus demande un moyen direct de joindre vos habitués."
+      },
+      {
+        "titre": "Des cartes papier qui encombrent la caisse",
+        "texte": "Tampons, cartes froissées, comptes à refaire au moment de l’addition : la carte en carton ralentit l’encaissement et se perd facilement."
+      }
+    ],
+    "benefices": [
+      {
+        "titre": "Validée à l’addition, en un scan",
+        "texte": "Un scan égale un passage validé : pas de recherche du client, pas de bouton +1. En cas d’erreur, un bouton « Annuler » reste disponible quelques secondes."
+      },
+      {
+        "titre": "Une carte toujours sur eux",
+        "texte": "La carte vit dans le Wallet du téléphone, à côté de la carte bancaire. Vos clients l’ajoutent en scannant votre QR code, depuis la table ou en attendant l’addition."
+      },
+      {
+        "titre": "Des messages pour vos services calmes",
+        "texte": "Envoyez une offre par notification Wallet, sans coût par message. Avec Growth et Pro, programmez vos campagnes et ciblez les clients qui ne sont pas revenus depuis un moment."
+      },
+      {
+        "titre": "Toute l’équipe peut scanner",
+        "texte": "Chaque serveur a son propre compte avec le rôle employé, et le journal d’audit garde la trace des passages ajoutés ou annulés et des récompenses utilisées."
+      }
+    ],
+    "recompenses": [
+      "Dessert offert au 5e repas",
+      "Repas offert au 10e passage",
+      "Apéritif sans alcool offert",
+      "Café gourmand offert"
+    ],
+    "messages": [
+      "Votre dessert offert vous attend ! Présentez votre carte lors de votre prochain repas.",
+      "Ce mardi soir, un café gourmand offert pour tout plat du jour commandé.",
+      "Cela fait un moment ! Votre table vous attend, à très bientôt."
+    ],
+    "carte": {
+      "nom": "Maison Basilic",
+      "activite": "Restaurant",
+      "couleurFond": "#14532D",
+      "couleurAccent": "#E9C46A",
+      "couleurTexte": "#FFFFFF",
+      "total": 10,
+      "recompense": "Repas offert au 10e passage"
+    },
+    "faq": [
+      {
+        "q": "Comment mes clients ajoutent-ils la carte de fidélité du restaurant ?",
+        "a": "Vous posez votre QR code sur les tables, près de la caisse ou sur l’addition. Le client le scanne avec l’appareil photo de son téléphone, indique son prénom et ajoute la carte dans Apple Wallet ou Google Wallet en un geste, sans application à télécharger."
+      },
+      {
+        "q": "Puis-je récompenser au repas plutôt qu’au montant dépensé ?",
+        "a": "Oui. Le programme peut compter les passages (un repas = un tampon), des points fixes par passage, ou des points selon le montant dépensé. Vous choisissez le seuil et la récompense, et vous pouvez prévoir plusieurs paliers, par exemple un dessert au 5e repas et un repas au 10e."
+      },
+      {
+        "q": "Faut-il un terminal ou une caisse spéciale ?",
+        "a": "Non. Un smartphone suffit : vous scannez la carte du client avec LOYNA Business. Aucun matériel à acheter, aucune installation sur votre caisse."
+      },
+      {
+        "q": "Puis-je prévenir mes clients d’une soirée spéciale ou d’un nouveau menu ?",
+        "a": "Oui, par notification Wallet, envoyée aux clients qui l’ont accepté, sans coût par message. Avec Growth et Pro, vous pouvez aussi envoyer des SMS (quota inclus) et programmer vos campagnes à l’avance."
+      }
+    ]
+  },
+  {
+    "slug": "fleuriste",
+    "nom": "Fleuristes",
+    "metaTitle": "Carte de fidélité fleuriste : digitale, dans le Wallet",
+    "metaDescription": "Carte de fidélité digitale pour fleuriste : dans Apple Wallet et Google Wallet, un scan par achat, récompense automatique et rappels avant les fêtes.",
+    "h1": "Carte de fidélité fleuriste, sans papier ni application",
+    "intro": "<p>Chez un fleuriste, beaucoup d’achats tombent à des moments précis : un anniversaire, la fête des mères, la Saint-Valentin, un remerciement. Entre deux occasions, il peut se passer des semaines, et c’est souvent l’enseigne la plus proche ou la plus visible qui l’emporte. Une carte de fidélité fleuriste vous garde dans la poche de vos clients toute l’année.</p><p>Avec LOYNA, la carte de fidélité de votre boutique de fleurs vit dans Apple Wallet ou Google Wallet, sans application à télécharger. À chaque achat, vous scannez la carte avec votre smartphone : le passage est validé et, au seuil choisi, la récompense se débloque toute seule, par exemple un bouquet offert. Et avant une fête, un message Wallet rappelle votre boutique au bon moment.</p>",
+    "enjeux": [
+      {
+        "titre": "Des achats liés aux occasions",
+        "texte": "Anniversaires, fêtes, cérémonies : vos clients achètent par vagues. Sans rappel, ils ne pensent pas forcément à vous le jour où l’occasion se présente."
+      },
+      {
+        "titre": "La concurrence des grandes surfaces et du web",
+        "texte": "Bouquets de supermarché, livraisons en ligne : vos clients ont le choix. Votre conseil et votre fraîcheur font la différence, à condition qu’ils reviennent vous voir."
+      },
+      {
+        "titre": "Des cartes papier vite oubliées",
+        "texte": "Une carte tamponnée tous les deux mois finit au fond d’un tiroir. Le client recommence à zéro ou n’y pense plus."
+      }
+    ],
+    "benefices": [
+      {
+        "titre": "Un rappel avant chaque fête",
+        "texte": "Préparez un message Wallet pour la fête des mères ou la Saint-Valentin. Avec Growth et Pro, programmez-le à l’avance pour qu’il parte au bon moment."
+      },
+      {
+        "titre": "La carte reste dans le téléphone",
+        "texte": "Rien à garder dans un portefeuille : la carte est dans Apple Wallet ou Google Wallet. Vos clients l’ajoutent en scannant votre QR code en caisse."
+      },
+      {
+        "titre": "Un scan par achat",
+        "texte": "Un scan égale un passage validé. La récompense se débloque automatiquement au seuil choisi, et le client reçoit une notification Wallet."
+      },
+      {
+        "titre": "Un petit mot pour les anniversaires",
+        "texte": "Avec Growth et Pro, un message d’anniversaire part tout seul aux clients qui ont indiqué leur date et accepté vos offres."
+      }
+    ],
+    "recompenses": [
+      "Bouquet offert au 10e achat",
+      "Plante verte offerte",
+      "Livraison offerte",
+      "-10 % sur votre prochain bouquet"
+    ],
+    "messages": [
+      "Dimanche, c’est la fête des mères : réservez votre bouquet dès maintenant à la boutique.",
+      "Votre bouquet offert vous attend ! Présentez votre carte lors de votre prochain passage.",
+      "Joyeux anniversaire ! Une jolie surprise florale vous attend à la boutique ce mois-ci."
+    ],
+    "carte": {
+      "nom": "Atelier Pivoine",
+      "activite": "Fleuriste",
+      "couleurFond": "#5B2A86",
+      "couleurAccent": "#F4A6C0",
+      "couleurTexte": "#FFFFFF",
+      "total": 10,
+      "recompense": "Bouquet offert au 10e achat"
+    },
+    "faq": [
+      {
+        "q": "Mes clients achètent rarement : la carte vaut-elle le coup ?",
+        "a": "C’est justement là qu’elle aide le plus : quand les achats sont espacés, le risque d’oubli est grand. La carte reste dans le téléphone, et vos messages Wallet rappellent votre boutique avant les fêtes. Choisissez un seuil adapté à votre rythme, par exemple une récompense au 5e ou au 6e achat."
+      },
+      {
+        "q": "Puis-je envoyer un message avant la Saint-Valentin ou la fête des mères ?",
+        "a": "Oui, par notification Wallet, aux clients qui l’ont accepté, sans coût par message. Avec Growth et Pro, vous pouvez programmer la campagne à l’avance et l’envoyer aussi par SMS (quota inclus)."
+      },
+      {
+        "q": "Comment mes clients s’inscrivent-ils ?",
+        "a": "Affichez votre QR code en caisse, sur vos emballages ou vos cartes de visite. Le client le scanne, indique son prénom, choisit ses consentements et ajoute la carte dans son Wallet, sans application."
+      },
+      {
+        "q": "Faut-il du matériel en boutique ?",
+        "a": "Non. Votre smartphone suffit pour scanner les cartes avec LOYNA Business."
+      }
+    ]
+  },
+  {
+    "slug": "boucherie-traiteur",
+    "nom": "Boucheries et traiteurs",
+    "metaTitle": "Carte de fidélité boucherie, charcuterie, traiteur",
+    "metaDescription": "Carte de fidélité digitale pour boucherie, charcuterie ou traiteur : dans Apple Wallet et Google Wallet, un scan à la caisse, récompense automatique.",
+    "h1": "Carte de fidélité boucherie, charcuterie et traiteur",
+    "intro": "<p>Une boucherie ou un traiteur vit de ses habitués : ceux qui passent chaque semaine, qui commandent pour les fêtes et qui recommandent votre maison. Ce lien se construit au comptoir, mais il se renforce quand vos clients se sentent reconnus et récompensés. Une carte de fidélité boucherie leur donne une raison de plus de rester fidèles à votre étal.</p><p>Avec LOYNA, la carte de fidélité de votre boucherie, charcuterie ou maison traiteur vit dans Apple Wallet ou Google Wallet, sans application à télécharger. À la caisse, vous scannez la carte avec votre smartphone : le passage ou le montant est enregistré, la carte se met à jour toute seule et la récompense se débloque au seuil choisi.</p>",
+    "enjeux": [
+      {
+        "titre": "Des clients sollicités par les grandes surfaces",
+        "texte": "Promotions, drive, horaires larges : les grandes surfaces attirent. Vos clients fidèles méritent une attention en retour pour continuer à choisir votre qualité."
+      },
+      {
+        "titre": "Des pics de commandes à anticiper",
+        "texte": "Fêtes de fin d’année, barbecues, plats du week-end : prévenir vos clients au bon moment vous aide à mieux préparer et à mieux vendre."
+      },
+      {
+        "titre": "Des tampons difficiles à gérer au comptoir",
+        "texte": "Les mains occupées, une file qui s’allonge : tamponner un carton et vérifier les cases n’est pas pratique derrière un étal."
+      }
+    ],
+    "benefices": [
+      {
+        "titre": "Au passage ou au montant",
+        "texte": "Récompensez chaque passage, ou attribuez des points selon le montant de l’achat : vous choisissez la règle qui correspond à votre clientèle."
+      },
+      {
+        "titre": "Un scan, et c’est enregistré",
+        "texte": "Un scan avec votre smartphone suffit, sans rechercher le client. En cas d’erreur, un bouton « Annuler » reste disponible quelques secondes."
+      },
+      {
+        "titre": "Vos offres de saison, au bon moment",
+        "texte": "Plateaux de fêtes, colis barbecue, plat du jour : prévenez vos clients par notification Wallet, sans coût par message. Avec Growth et Pro, programmez vos campagnes."
+      },
+      {
+        "titre": "Toute l’équipe au comptoir",
+        "texte": "Chaque vendeur a son propre compte, et le journal d’audit garde la trace des passages et des récompenses utilisées."
+      }
+    ],
+    "recompenses": [
+      "10 € offerts dès 10 achats",
+      "Merguez ou chipolatas offertes",
+      "Plat cuisiné offert",
+      "-10 % sur votre commande de fêtes"
+    ],
+    "messages": [
+      "Les commandes de fêtes sont ouvertes : réservez votre plateau à la boutique.",
+      "Votre récompense vous attend ! Présentez votre carte lors de votre prochain passage.",
+      "Ce week-end : colis barbecue disponible au comptoir, pensez à le réserver."
+    ],
+    "carte": {
+      "nom": "Maison Ambroise",
+      "activite": "Boucherie & traiteur",
+      "couleurFond": "#7A1F1F",
+      "couleurAccent": "#F2D0A4",
+      "couleurTexte": "#FFFFFF",
+      "total": 10,
+      "recompense": "Plat cuisiné offert"
+    },
+    "faq": [
+      {
+        "q": "Puis-je récompenser selon le montant dépensé ?",
+        "a": "Oui. Le programme peut attribuer des points selon le montant de l’achat : au moment du scan, vous saisissez le montant, et les points sont calculés automatiquement selon la règle que vous avez fixée."
+      },
+      {
+        "q": "Comment prévenir mes clients des commandes de fêtes ?",
+        "a": "Par notification Wallet, envoyée aux clients qui ont accepté vos offres, sans coût par message. Avec Growth et Pro, vous pouvez programmer la campagne à l’avance et cibler par exemple les clients venus récemment."
+      },
+      {
+        "q": "Mes clients doivent-ils télécharger une application ?",
+        "a": "Non. La carte s’ajoute à Apple Wallet ou Google Wallet, déjà présents sur leur téléphone, après avoir scanné votre QR code en boutique."
+      },
+      {
+        "q": "Faut-il changer de caisse ?",
+        "a": "Non. LOYNA fonctionne à côté de votre caisse : un smartphone suffit pour scanner les cartes."
+      }
+    ]
+  },
+  {
+    "slug": "pressing",
+    "nom": "Pressings et cordonneries",
+    "metaTitle": "Carte de fidélité pressing et cordonnerie, digitale",
+    "metaDescription": "Carte de fidélité digitale pour pressing, blanchisserie ou cordonnerie : dans Apple Wallet et Google Wallet, un scan au dépôt, récompense automatique.",
+    "h1": "Carte de fidélité pressing, blanchisserie et cordonnerie",
+    "intro": "<p>Un pressing ou une cordonnerie voit revenir ses clients au fil des saisons : la chemise du lundi, le manteau de l’automne, la couette du printemps, les chaussures à ressemeler. Ces clients ont souvent le choix entre plusieurs adresses sur leur trajet. Une carte de fidélité pressing leur donne une bonne raison de rester chez vous.</p><p>Avec LOYNA, la carte de fidélité de votre pressing, de votre blanchisserie ou de votre cordonnerie vit dans Apple Wallet ou Google Wallet, sans application à télécharger. Au dépôt ou au retrait, vous scannez la carte avec votre smartphone : le passage est validé et, au seuil choisi, la récompense se débloque automatiquement.</p>",
+    "enjeux": [
+      {
+        "titre": "Des passages réguliers mais discrets",
+        "texte": "Vos clients reviennent sans bruit, puis un jour testent l’adresse d’à côté. Sans lien direct avec eux, vous ne le voyez qu’après coup."
+      },
+      {
+        "titre": "Des besoins saisonniers",
+        "texte": "Couettes au printemps, manteaux à l’automne, cuir et chaussures avant l’hiver : rappeler le bon service au bon moment fait la différence."
+      },
+      {
+        "titre": "Des cartes papier perdues avec le ticket",
+        "texte": "Le carton tamponné se range avec le ticket de dépôt et disparaît. Le client recommence à zéro et la fidélité perd son sens."
+      }
+    ],
+    "benefices": [
+      {
+        "titre": "Validée au dépôt, en un scan",
+        "texte": "Un scan égale un passage validé, sans rechercher le client. En cas d’erreur, un bouton « Annuler » reste disponible quelques secondes."
+      },
+      {
+        "titre": "Des rappels de saison",
+        "texte": "Prévenez vos clients du bon moment pour les couettes ou les manteaux par notification Wallet, sans coût par message. Avec Growth et Pro, programmez vos campagnes."
+      },
+      {
+        "titre": "Au passage ou au montant",
+        "texte": "Comptez les dépôts, ou attribuez des points selon le montant : vous choisissez la règle adaptée à vos prestations."
+      },
+      {
+        "titre": "Les clients absents relancés",
+        "texte": "Avec Growth et Pro, ciblez les clients qui ne sont pas revenus depuis 30, 60 ou 90 jours, par notification Wallet ou par SMS."
+      }
+    ],
+    "recompenses": [
+      "Chemise offerte au 10e dépôt",
+      "-20 % sur une couette",
+      "Cirage offert",
+      "Une pièce nettoyée offerte"
+    ],
+    "messages": [
+      "C’est le moment de faire nettoyer vos couettes : -20 % cette semaine au pressing.",
+      "Votre récompense est disponible ! Présentez votre carte lors de votre prochain dépôt.",
+      "Avant l’hiver, pensez à faire entretenir vos chaussures et vos manteaux."
+    ],
+    "carte": {
+      "nom": "Pressing Lumen",
+      "activite": "Pressing & retouches",
+      "couleurFond": "#1E3A5F",
+      "couleurAccent": "#8ED1FC",
+      "couleurTexte": "#FFFFFF",
+      "total": 10,
+      "recompense": "Chemise offerte au 10e dépôt"
+    },
+    "faq": [
+      {
+        "q": "Quand faut-il scanner la carte : au dépôt ou au retrait ?",
+        "a": "Comme vous préférez : choisissez une règle simple et appliquez-la toujours. La protection anti double scan évite de compter deux fois le même passage dans le délai que vous fixez."
+      },
+      {
+        "q": "Puis-je compter au montant plutôt qu’au passage ?",
+        "a": "Oui. Le programme peut attribuer des points selon le montant : vous saisissez le montant au moment du scan et les points sont calculés automatiquement."
+      },
+      {
+        "q": "Comment mes clients s’inscrivent-ils ?",
+        "a": "Affichez votre QR code au comptoir ou sur vos tickets. Le client le scanne, indique son prénom et ajoute la carte dans Apple Wallet ou Google Wallet, sans application."
+      },
+      {
+        "q": "Faut-il du matériel ?",
+        "a": "Non, un smartphone suffit pour scanner les cartes avec LOYNA Business."
+      }
+    ]
   }
 ]

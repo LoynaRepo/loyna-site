@@ -97,6 +97,18 @@ des Edge Functions (contrats : dépôt LOYNA, `docs/API.md` et `docs/WEWEB_SETUP
 - `.htaccess` : caméra autorisée seulement sous `/espace-client/`, Supabase ajouté à `connect-src` et
   `img-src`, pages des cartes en `noindex` et sans référent.
 
+## Référencement (SEO)
+
+- Contrôle : `python tools/seo-audit.py` après `npx astro build` (titre, description, H1, mots, données structurées,
+  liens entrants de chaque page) ; `node tools/lh.mjs …` pour Lighthouse.
+- Contenus : `src/content-seed/` (articles, métiers) **fusionnés** avec Builder.io par `slug` (la version Builder
+  l'emporte) : un nouvel article ou métier ajouté au dépôt s'affiche même si Builder contient déjà d'autres entrées.
+- Les liens internes reçoivent leur « / » final au build (`astro.config.mjs`) : pas de redirection 301 inutile.
+- Vérification Search Console / Bing : `googleVerification` et `bingVerification` dans `src/data/site.ts` (ou
+  Builder `site-settings`) ; profils officiels de la marque dans `sameAs` (données structurées Organization).
+- IndexNow (Bing, Yandex…) : `python tools/indexnow.py` après chaque mise en ligne (clé publique
+  `public/<clé>.txt`). Google lit le plan du site `https://loyna.fr/sitemap.xml` déclaré dans la Search Console.
+
 ## Hébergement OVH
 
 `loynafb.cluster129.hosting.ovh.net` (offre gratuite 100 Mo, PHP), FTP `ftp.cluster129.hosting.ovh.net`,

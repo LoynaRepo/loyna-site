@@ -9,5 +9,8 @@
   "telephone": "",
   "appUrl": "",
   "billingPortalUrl": "https://billing.stripe.com/p/login/28E28u2vEcIt4tvbiw5Ne00",
-  "ga4Id": ""
+  "ga4Id": "",
+  "googleVerification": "",
+  "bingVerification": "",
+  "sameAs": ""
 }
