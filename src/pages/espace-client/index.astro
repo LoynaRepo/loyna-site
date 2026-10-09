@@ -1,0 +1,34 @@
+---
+// Espace client : LOYNA Business (scanner, clients, programme, campagnes, équipe, réglages,
+// abonnement). Application Preact chargée dans le navigateur ; données Supabase (RLS).
+import Base from '../../layouts/Base.astro';
+import App from '../../app/App';
+import {logoHtml} from '../../lib/logo-html';
+import '../../app/styles/base.css';
+import '../../app/styles/business.css';
+
+const logo = logoHtml('lg-app', 30);
+---
+
+<Base
+  bare
+  title="Espace client LOYNA : scanner, clients et abonnement"
+  description="Connectez-vous à LOYNA Business pour scanner les cartes de fidélité de vos clients, suivre vos statistiques, lancer une campagne et gérer votre abonnement."
+>
+  <App client:only="preact" logo={logo}>
+    <div slot="fallback" class="splash">
+      <div class="spin-wrap" role="status">
+        <span class="spin"></span>
+        <span class="sr-only">Ouverture de votre espace…</span>
+      </div>
+    </div>
+  </App>
+  <noscript>
+    <div class="center-screen">
+      <div class="center-card">
+        <h1>Activez JavaScript</h1>
+        <p>LOYNA Business a besoin de JavaScript pour fonctionner. Activez-le dans votre navigateur, puis rechargez la page.</p>
+      </div>
+    </div>
+  </noscript>
+</Base>

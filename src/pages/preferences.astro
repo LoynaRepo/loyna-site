@@ -1,0 +1,13 @@
+---
+// Préférences d'un client final (lien signé « Mes préférences » au dos de sa carte Wallet).
+import Base from '../layouts/Base.astro';
+import Preferences from '../app/Preferences';
+import '../app/styles/base.css';
+import '../app/styles/join.css';
+---
+
+<Base bare noindex title="Mes préférences · carte de fidélité" description="Gérez les messages reçus de votre commerce et vos données personnelles.">
+  <Preferences client:only="preact">
+    <div slot="fallback" class="spin-wrap" role="status"><span class="spin"></span><span class="sr-only">Chargement…</span></div>
+  </Preferences>
+</Base>

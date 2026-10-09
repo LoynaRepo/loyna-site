@@ -1,0 +1,13 @@
+---
+// Inscription d'un client final : loyna.fr/join/<commerce> est servi par cette page (.htaccess).
+import Base from '../layouts/Base.astro';
+import Join from '../app/Join';
+import '../app/styles/base.css';
+import '../app/styles/join.css';
+---
+
+<Base bare noindex title="Ma carte de fidélité" description="Ajoutez la carte de fidélité de votre commerce à Apple Wallet ou Google Wallet, sans application.">
+  <Join client:only="preact">
+    <div slot="fallback" class="spin-wrap" role="status"><span class="spin"></span><span class="sr-only">Chargement…</span></div>
+  </Join>
+</Base>

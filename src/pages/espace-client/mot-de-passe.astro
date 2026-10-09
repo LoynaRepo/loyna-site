@@ -1,0 +1,19 @@
+---
+// Choix du mot de passe depuis le lien d'activation ou de réinitialisation (Supabase Auth).
+// L'ancienne adresse /set-password y est redirigée par .htaccess.
+import Base from '../../layouts/Base.astro';
+import Password from '../../app/Password';
+import {logoHtml} from '../../lib/logo-html';
+import '../../app/styles/base.css';
+import '../../app/styles/business.css';
+
+const logo = logoHtml('lg-pw', 30);
+---
+
+<Base bare noindex title="Choisir mon mot de passe · LOYNA Business" description="Choisissez le mot de passe de votre compte LOYNA Business.">
+  <Password client:only="preact" logo={logo}>
+    <div slot="fallback" class="splash">
+      <div class="spin-wrap" role="status"><span class="spin"></span><span class="sr-only">Chargement…</span></div>
+    </div>
+  </Password>
+</Base>

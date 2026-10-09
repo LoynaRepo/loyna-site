@@ -1,5 +1,6 @@
 import {defineConfig} from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+import preact from '@astrojs/preact';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -25,7 +26,7 @@ function typoFr() {
 }
 
 // Pages exclues du plan du site (sans intérêt pour les moteurs de recherche)
-const NOINDEX = ['/merci/', '/contact/envoye/', '/builder-preview/', '/404/'];
+const NOINDEX = ['/merci/', '/contact/envoye/', '/builder-preview/', '/404/', '/espace-client/mot-de-passe/', '/join/', '/preferences/'];
 
 export default defineConfig({
   site: 'https://loyna.fr',
@@ -36,6 +37,8 @@ export default defineConfig({
   },
   prefetch: {prefetchAll: false, defaultStrategy: 'hover'},
   integrations: [
+    // LOYNA Business (espace client) et pages publiques des cartes : composants Preact
+    preact(),
     typoFr(),
     sitemap({
       filter: (page) => !NOINDEX.some((p) => page.endsWith(p)),

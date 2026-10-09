@@ -31,6 +31,10 @@ RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^(.+[^/])$ https://loyna.fr/$1/ [L,R=301]
 # /sitemap.xml (adresse standard) sert l'index généré par Astro
 RewriteRule ^sitemap\.xml$ /sitemap-index.xml [L]
+# Inscription d'un client : loyna.fr/join/<commerce> est servi par la page /join/ (lecture du commerce dans l'adresse)
+RewriteRule ^join/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?/?$ /join/index.html [L]
+# Lien d'activation ou de réinitialisation envoyé par Supabase Auth (…/set-password#jetons) : le navigateur garde le #
+RewriteRule ^set-password/?$ https://loyna.fr/espace-client/mot-de-passe/ [R=302,L]
 
 # --- Compression -------------------------------------------------------------------------------
 <IfModule mod_deflate.c>
@@ -66,7 +70,13 @@ RewriteRule ^sitemap\.xml$ /sitemap-index.xml [L]
   Header always set Strict-Transport-Security "max-age=31536000"
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
-  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+  # Caméra autorisée uniquement pour le scanner de l'espace client
+  <If "%{REQUEST_URI} =~ m#^/espace-client/#">
+    Header always set Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=(), usb=()"
+  </If>
+  <Else>
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+  </Else>
   Header always set Cross-Origin-Opener-Policy "same-origin"
   <If "%{REQUEST_URI} =~ m#^/builder-preview/#">
     # Page d'aperçu de l'éditeur visuel Builder.io : chargée dans l'éditeur, scripts Builder autorisés
@@ -74,11 +84,16 @@ RewriteRule ^sitemap\.xml$ /sitemap-index.xml [L]
     Header always set X-Robots-Tag "noindex, nofollow"
   </If>
   <Else>
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cdn.builder.io https://*.google-analytics.com https://*.googletagmanager.com; media-src 'self'; font-src 'self' data:; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self' https://builder.io https://*.builder.io; upgrade-insecure-requests"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cdn.builder.io https://alfxnoaxcmnbrqhlmmqq.supabase.co https://*.google-analytics.com https://*.googletagmanager.com; media-src 'self'; font-src 'self' data:; connect-src 'self' https://alfxnoaxcmnbrqhlmmqq.supabase.co https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self' https://builder.io https://*.builder.io; upgrade-insecure-requests"
   </Else>
   <FilesMatch "^(contact|elements)\.php$">
     Header always set X-Robots-Tag "noindex, nofollow"
   </FilesMatch>
+  # Pages des cartes (inscription, préférences) et choix du mot de passe : jamais indexées
+  <If "%{REQUEST_URI} =~ m#^/(join|preferences|espace-client/mot-de-passe)/#">
+    Header always set X-Robots-Tag "noindex, nofollow"
+    Header always set Referrer-Policy "no-referrer"
+  </If>
 </IfModule>
 
 # --- Fichiers jamais servis ---------------------------------------------------------------------

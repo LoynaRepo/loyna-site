@@ -1,0 +1,195 @@
+/* Pages publiques des cartes : inscription (/join/<commerce>) et préférences (/preferences). */
+body {
+  background:
+    radial-gradient(70% 100% at 50% 0%, rgba(230, 194, 122, 0.22), transparent 70%) top center / 100% 520px no-repeat,
+    var(--bg);
+}
+.j {
+  width: min(100% - 32px, 520px);
+  margin: 0 auto;
+  padding: 20px 0 32px;
+  display: grid;
+  gap: 18px;
+}
+.j h1 {
+  font-size: clamp(1.45rem, 5.5vw, 1.85rem);
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+.j h2 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+.j p {
+  margin: 0;
+}
+.j-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  background: var(--m-bg);
+  color: var(--m-fg);
+  box-shadow: var(--shadow);
+}
+.j-head > div {
+  display: grid;
+  min-width: 0;
+}
+.j-head strong {
+  font-size: 1.1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.j-head small {
+  opacity: 0.8;
+  font-size: 0.85rem;
+}
+.j-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  font-weight: 800;
+  background: color-mix(in srgb, var(--m-fg) 16%, transparent);
+}
+.j-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.j-hero {
+  display: grid;
+  justify-items: center;
+  padding: 6px 0;
+}
+.j-box {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  padding: clamp(20px, 5vw, 30px);
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 16px;
+}
+.j-rewards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.j-rewards li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--bg);
+}
+.j-rewards .ic {
+  color: var(--gold-strong);
+  margin-top: 2px;
+}
+.j-rewards small {
+  display: block;
+  color: var(--muted);
+}
+.j-form {
+  gap: 14px;
+}
+.consents-f {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--bg);
+}
+.hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.j-small {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.j-done {
+  justify-items: center;
+  text-align: center;
+}
+.j-wallets {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+.wallet-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 10px 20px;
+  border-radius: 14px;
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+  line-height: 1.1;
+}
+.wallet-btn:hover {
+  color: #fff;
+  background: #1c1b21;
+}
+.wallet-btn span:not(.ic) {
+  display: grid;
+  text-align: left;
+}
+.wallet-btn small {
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+.wallet-btn strong {
+  font-size: 1.15rem;
+  color: #fff;
+}
+.j-foot {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.j-foot a {
+  font-weight: 700;
+}
+.j-prefs .toggles {
+  margin: 0;
+}
+.danger-zone {
+  margin-top: 8px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+.danger-zone p {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.confirm-box {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #fff4f2;
+  border: 1px solid #f3d1cc;
+}
+.eyebrow {
+  margin: 0;
+}

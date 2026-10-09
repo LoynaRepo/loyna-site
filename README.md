@@ -74,6 +74,28 @@ mention dans les grilles et code prérempli sur les liens de paiement mensuels (
 6.5 des CGV. Après la date, le site retire tout seul ces mentions (au build et dans le navigateur) et Stripe
 refuse le code (expiration du coupon et du code promo).
 
+## Espace client : LOYNA Business (`src/app/`)
+
+L'application commerçante (anciennement prévue dans WeWeb) est servie par le site, en Preact
+(`@astrojs/preact`, composants `client:only`), et parle directement à Supabase (projet
+`alfxnoaxcmnbrqhlmmqq`) avec la **clé publishable** uniquement : la sécurité est la RLS et les contrôles
+des Edge Functions (contrats : dépôt LOYNA, `docs/API.md` et `docs/WEWEB_SETUP.md`).
+
+| Adresse | Contenu |
+|---|---|
+| `/espace-client/` | connexion puis accueil (indicateurs), scanner (caméra, BarcodeDetector ou jsQR), clients et fiche, programme et récompenses, campagnes Wallet/SMS, équipe, réglages (logo, couleurs, affiche du comptoir), abonnement (portail Stripe) — navigation `#/scanner`, `#/client/<id>`… |
+| `/espace-client/mot-de-passe/` | choix du mot de passe depuis un lien d'activation (`/set-password` y est redirigé) |
+| `/join/<commerce>` | inscription d'un client final (réécrite vers `/join/index.html` par `.htaccess`) |
+| `/preferences/?t=…` | préférences et suppression des données d'un client final |
+
+- Démonstration locale sans réseau : `npx astro dev`, puis `http://127.0.0.1:4321/espace-client/?demo`
+  (données fictives de `src/app/mock.ts`, absentes de la version publiée) ; `/join/?slug=demo-loyna` en
+  développement. Captures : `node tools/qa-app.mjs 1366 accueil scanner clients …` et `node tools/qa-flow.mjs`
+  (serveur de développement sur le port 4322).
+- Les mentions « inclus dans la formule … » sont lues dans la table `plan_entitlements` (jamais en dur).
+- `.htaccess` : caméra autorisée seulement sous `/espace-client/`, Supabase ajouté à `connect-src` et
+  `img-src`, pages des cartes en `noindex` et sans référent.
+
 ## Hébergement OVH
 
 `loynafb.cluster129.hosting.ovh.net` (offre gratuite 100 Mo, PHP), FTP `ftp.cluster129.hosting.ovh.net`,
