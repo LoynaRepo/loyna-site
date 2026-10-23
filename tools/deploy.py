@@ -34,6 +34,9 @@ MANIFESTE = ROOT / "out" / "deploy-manifest.json"  # empreintes des fichiers dé
 CLES_SERVEUR = ROOT / "tools" / "ovh_known_hosts"  # clé publique du serveur, vérifiée à chaque connexion
 # Fichiers propres à OVH à ne jamais supprimer dans www/
 GARDER = {".ovhconfig"}
+# Données chiffrées de l'espace commercial : déposées par _systeme/panel.py du coffre de prospection, jamais
+# envoyées depuis dist/ (la copie locale de développement) ni supprimées par la mise en ligne du site.
+DONNEES_COMMERCIALES = "espace-commercial/donnees.enc"
 
 
 def mot_de_passe() -> str:
@@ -130,6 +133,7 @@ def cmd_publier(essai: bool) -> int:
     if not (DIST / "index.html").is_file():
         sys.exit("dist/ est vide : lancer d'abord « npx astro build ».")
     locaux = {p.relative_to(DIST).as_posix(): p for p in DIST.rglob("*") if p.is_file()}
+    locaux.pop(DONNEES_COMMERCIALES, None)
     poids = sum(p.stat().st_size for p in locaux.values())
     print(f"dist/ : {len(locaux)} fichiers, {poids / 1024 / 1024:.1f} Mo (quota {QUOTA_OCTETS // 1024 // 1024} Mo)")
     if poids > QUOTA_OCTETS * 0.9:
@@ -144,7 +148,8 @@ def cmd_publier(essai: bool) -> int:
         h = empreinte(p)
         if rel not in distants or distants[rel] != p.stat().st_size or manifeste.get(rel) != h:
             a_envoyer.append((rel, p, h))
-    a_supprimer = sorted(k for k in distants if k not in locaux and posixpath.basename(k) not in GARDER)
+    a_supprimer = sorted(k for k in distants if k not in locaux and posixpath.basename(k) not in GARDER
+                         and k != DONNEES_COMMERCIALES and not posixpath.basename(k).startswith(".donnees.enc."))
 
     print(f"À envoyer : {len(a_envoyer)} · à supprimer : {len(a_supprimer)} · inchangés : {len(locaux) - len(a_envoyer)}")
     for rel, _, _ in a_envoyer[:40]:

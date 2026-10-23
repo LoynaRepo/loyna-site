@@ -29,8 +29,22 @@ function typoFr() {
   };
 }
 
-// Pages exclues du plan du site (sans intérêt pour les moteurs de recherche)
-const NOINDEX = ['/merci/', '/contact/envoye/', '/builder-preview/', '/404/', '/espace-client/mot-de-passe/', '/espace-client/demo/', '/join/', '/preferences/'];
+// Espace commercial : le fichier chiffré de développement (public/espace-commercial/donnees.enc, écrit par
+// « panel.py publier --local » du coffre) ne part jamais avec le site. Seul panel.py publie celui de production.
+function sansDonneesCommerciales() {
+  return {
+    name: 'sans-donnees-commerciales',
+    hooks: {
+      'astro:build:done': ({dir}) => {
+        const f = path.join(fileURLToPath(dir), 'espace-commercial', 'donnees.enc');
+        if (fs.existsSync(f)) fs.rmSync(f);
+      },
+    },
+  };
+}
+
+// Pages exclues du plan du site (sans intérêt pour les moteurs de recherche, ou privées)
+const NOINDEX = ['/merci/', '/contact/envoye/', '/builder-preview/', '/404/', '/espace-client/mot-de-passe/', '/espace-client/demo/', '/join/', '/preferences/', '/espace-commercial/'];
 
 export default defineConfig({
   site: 'https://loyna.fr',
@@ -44,6 +58,7 @@ export default defineConfig({
     // LOYNA Business (espace client) et pages publiques des cartes : composants Preact
     preact(),
     typoFr(),
+    sansDonneesCommerciales(),
     sitemap({
       filter: (page) => !NOINDEX.some((p) => page.endsWith(p)),
       changefreq: 'weekly',

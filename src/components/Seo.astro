@@ -6,6 +6,8 @@ interface Props {
   title: string;
   description: string;
   noindex?: boolean;
+  /** Avec noindex : « noindex, nofollow » (pages privées). */
+  nofollow?: boolean;
   ogImage?: string;
   type?: 'website' | 'article';
   jsonLd?: object | object[];
@@ -15,7 +17,7 @@ interface Props {
   bingVerification?: string;
   sameAs?: string[];
 }
-const {title, description, noindex = false, ogImage, type = 'website', jsonLd = [], breadcrumbs, published, googleVerification, bingVerification, sameAs = []} = Astro.props;
+const {title, description, noindex = false, nofollow = false, ogImage, type = 'website', jsonLd = [], breadcrumbs, published, googleVerification, bingVerification, sameAs = []} = Astro.props;
 const canonical = new URL(Astro.url.pathname, SITE.url).href;
 const image = new URL(ogImage || '/og/default.png', SITE.url).href;
 const fullTitle = title.includes('LOYNA') ? title : `${title} | LOYNA`;
@@ -68,7 +70,7 @@ const ld = JSON.stringify({'@context': 'https://schema.org', '@graph': graph}).r
 {bingVerification && <meta name="msvalidate.01" content={bingVerification} />}
 <meta name="description" content={description} />
 <link rel="canonical" href={canonical} />
-<meta name="robots" content={noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'} />
+<meta name="robots" content={noindex ? (nofollow ? 'noindex, nofollow' : 'noindex, follow') : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'} />
 <meta property="og:locale" content="fr_FR" />
 <meta property="og:site_name" content="LOYNA" />
 <meta property="og:type" content={type} />

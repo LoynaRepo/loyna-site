@@ -3,6 +3,7 @@ export function GET() {
 Allow: /
 Disallow: /merci/
 Disallow: /builder-preview/
+Disallow: /espace-commercial/
 Disallow: /contact.php
 Disallow: /elements.php
 

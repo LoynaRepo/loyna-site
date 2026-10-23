@@ -97,6 +97,44 @@ des Edge Functions (contrats : dépôt LOYNA, `docs/API.md` et `docs/WEWEB_SETUP
 - `.htaccess` : caméra autorisée seulement sous `/espace-client/`, Supabase ajouté à `connect-src` et
   `img-src`, pages des cartes en `noindex` et sans référent.
 
+## Espace commercial (`/espace-commercial/`, privé)
+
+Panel de prospection d'Ewan : tableau de bord, prospects (filtres, tri, fiche détaillée), liste « À appeler »
+avec ce qu'il faut dire, tarifs, réponses aux questions des commerçants, aide (déroulé d'un appel, modèles de
+mails, règles du démarchage B2B). Page `src/pages/espace-commercial/index.astro`, code `src/commercial/`
+(Preact, mêmes classes que LOYNA Business). **Aucune donnée de prospect dans le dépôt ni dans `dist/`.**
+
+- Données : le coffre `Documents\Loyna Prospection` les calcule (`_systeme/suivi.py`, lecture seule des fiches,
+  note `07 Tableaux/Suivi prospects.md` et `_systeme/suivi.json`), puis `_systeme/panel.py publier` les chiffre
+  (AES-256-GCM, clé PBKDF2-SHA256 de 600 000 itérations dérivée de l'identifiant et du mot de passe, sel
+  aléatoire, gzip) et dépose `www/espace-commercial/donnees.enc` en SFTP avec la connexion de `tools/deploy.py`.
+  Les agents le lancent à la fin de chaque passage.
+- La page télécharge ce fichier et le déchiffre dans le navigateur (WebCrypto, `src/commercial/crypto.ts`) :
+  identifiants faux → « Identifiant ou mot de passe incorrect. », rien d'autre. Option « Rester connecté dans
+  cet onglet » : seule la clé AES est gardée (sessionStorage), jamais le mot de passe ; « Verrouiller » l'efface.
+- Identifiants de production : choisis par Ewan avec `3 - Définir l'accès au panel commercial.cmd` (racine du
+  coffre), rangés dans le Gestionnaire d'identifiants Windows (service `loyna-panel-commercial`), jamais dans un
+  fichier. Pour les changer : relancer ce script, puis `panel.py publier`.
+- Confidentialité : `noindex, nofollow`, hors plan du site (`NOINDEX` dans `astro.config.mjs`),
+  `Disallow: /espace-commercial/` dans robots.txt, page « bare » (ni Google Analytics ni bandeau), `.htaccess` :
+  `X-Robots-Tag` et `Referrer-Policy: no-referrer`, `donnees.enc` jamais en cache. Aucun lien public vers la page.
+- `tools/deploy.py` n'envoie jamais `espace-commercial/donnees.enc` depuis `dist/` et ne le supprime jamais en
+  ligne ; `astro.config.mjs` retire de `dist/` la copie locale de développement (`public/`, ignorée par git).
+- Contenus : prix, formules et offre importés de `src/data/site.ts` ; FAQ du site (Builder ou `faq.json`) ;
+  réponses courtes et déroulé d'appel dans `src/commercial/contenu.ts` (brief, FAQ, pages du site, sources
+  citées) ; modèles de mails, FAQ et règles du coffre arrivent avec les données chiffrées.
+
+Essais en local (serveur de développement sur le port 4322) :
+```
+python "<coffre>\_systeme\tests\test_suivi.py" --exporter tools\commercial\exemple-suivi.json   # jeu fictif
+python "<coffre>\_systeme\panel.py" publier --local --exemple      # fictif → public/espace-commercial/donnees.enc
+python "<coffre>\_systeme\panel.py" publier --local --acces-test   # vraies données, identifiants de test
+node tools/commercial/verifier.mjs                                  # déchiffre avec le code du navigateur
+node tools/qa-commercial.mjs 390 1366                               # captures dans out/qa-commercial
+```
+Identifiants de test (localhost uniquement) : `tools/commercial/acces-local.exemple.json` ; `panel.py` refuse de
+publier en ligne avec eux. Après un essai sur les vraies données, remettre le jeu fictif (`--exemple`).
+
 ## Référencement (SEO)
 
 - Contrôle : `python tools/seo-audit.py` après `npx astro build` (titre, description, H1, mots, données structurées,

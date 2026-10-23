@@ -13,6 +13,7 @@ AddType font/woff2 .woff2
 AddType video/mp4 .mp4
 AddType application/manifest+json .webmanifest
 AddType application/xml .xml
+AddType application/octet-stream .enc
 <Files "rss.xml">
   ForceType "application/rss+xml; charset=utf-8"
 </Files>
@@ -55,6 +56,7 @@ RewriteRule ^set-password/?$ https://loyna.fr/espace-client/mot-de-passe/ [R=302
   ExpiresByType image/x-icon "access plus 30 days"
   ExpiresByType video/mp4 "access plus 30 days"
   ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType application/octet-stream "access plus 0 seconds"
 </IfModule>
 
 <IfModule mod_headers.c>
@@ -89,11 +91,17 @@ RewriteRule ^set-password/?$ https://loyna.fr/espace-client/mot-de-passe/ [R=302
   <FilesMatch "^(contact|elements)\.php$">
     Header always set X-Robots-Tag "noindex, nofollow"
   </FilesMatch>
-  # Pages des cartes (inscription, préférences) et choix du mot de passe : jamais indexées
-  <If "%{REQUEST_URI} =~ m#^/(join|preferences|espace-client/mot-de-passe)/#">
+  # Pages des cartes (inscription, préférences), choix du mot de passe et espace commercial privé : jamais indexés
+  <If "%{REQUEST_URI} =~ m#^/(join|preferences|espace-client/mot-de-passe|espace-commercial)/#">
     Header always set X-Robots-Tag "noindex, nofollow"
     Header always set Referrer-Policy "no-referrer"
   </If>
+  # Données chiffrées de l'espace commercial (déposées par panel.py du coffre) : jamais en cache, jamais indexées
+  <FilesMatch "\.enc$">
+    Header set Cache-Control "no-store, max-age=0"
+    Header unset Expires
+    Header always set X-Robots-Tag "noindex, nofollow"
+  </FilesMatch>
 </IfModule>
 
 # --- Fichiers jamais servis ---------------------------------------------------------------------

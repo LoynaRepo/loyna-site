@@ -1,0 +1,37 @@
+---
+// Espace commercial privé (prospection de LOYNA). Cette page ne contient aucune donnée de prospect : le coffre
+// « Loyna Prospection » publie les données chiffrées (`_systeme/panel.py publier`) dans
+// /espace-commercial/donnees.enc, que la page déchiffre dans le navigateur avec l'identifiant et le mot de passe.
+// Aucun lien public vers cette page, pas d'indexation (noindex, robots.txt, hors plan du site), pas de mesure
+// d'audience (page « bare » : ni bandeau cookies ni Google Analytics).
+import Base from '../../layouts/Base.astro';
+import Commercial from '../../commercial/Commercial';
+import {getFaq} from '../../lib/builder';
+import {logoHtml} from '../../lib/logo-html';
+import '../../app/styles/base.css';
+import '../../app/styles/business.css';
+import '../../commercial/commercial.css';
+
+// FAQ publique du site (Builder.io, ou src/content-seed/faq.json hors ligne) pour l'onglet « Questions clients »
+const faq = (await getFaq()).map(({q, a, categorie}) => ({q, a, categorie}));
+const logo = logoHtml('lg-cp', 30);
+---
+
+<Base bare noindex nofollow title="Espace commercial LOYNA" description="Espace privé de l'équipe LOYNA.">
+  <Commercial client:only="preact" logo={logo} faq={faq}>
+    <div slot="fallback" class="splash">
+      <div class="spin-wrap" role="status">
+        <span class="spin"></span>
+        <span class="sr-only">Ouverture du panel…</span>
+      </div>
+    </div>
+  </Commercial>
+  <noscript>
+    <div class="center-screen">
+      <div class="center-card">
+        <h1>Activez JavaScript</h1>
+        <p>Le panel commercial a besoin de JavaScript pour déchiffrer ses données. Activez-le, puis rechargez la page.</p>
+      </div>
+    </div>
+  </noscript>
+</Base>
