@@ -1,4 +1,4 @@
-// À appeler : liste priorisée (réponses à traiter, sans réponse après relance, mails non reçus, jamais écrits ;
+// À appeler : liste priorisée (réponses à traiter, mails non reçus, jamais écrits ;
 // mobiles 06/07 d'abord), avec le prénom du dirigeant et ce qu'il faut dire.
 import {useMemo, useState} from 'preact/hooks';
 import {dateCourte, fr, nombre} from '../format';
@@ -30,7 +30,7 @@ export function Appeler() {
         </span>
       </PageHead>
       <p class="lead-sm">
-        Ordre de priorité : réponses à traiter, puis sans réponse {d.regles.delai_appel_jours} jours après la relance, puis mails non reçus, puis commerces jamais écrits.
+        Ordre de priorité : réponses à traiter, puis mails non reçus, puis commerces jamais écrits. Sans réponse après la relance, le prospect est abandonné : il n’apparaît pas ici.
         Après l’appel, notez le résultat dans la fiche (Obsidian).
       </p>
 
@@ -62,7 +62,7 @@ export function Appeler() {
         <Empty icon="phone-call" title={tous.length ? 'Personne avec ces filtres' : 'Personne à appeler pour l’instant'}>
           {tous.length
             ? 'Changez de filtre pour voir les autres commerces.'
-            : 'Les prospects apparaissent ici 7 jours après leur relance sans réponse, quand un mail n’est pas arrivé, ou quand ils ont répondu.'}
+            : 'Les prospects apparaissent ici quand ils ont répondu, ou quand un mail n’est pas arrivé et qu’un numéro existe.'}
         </Empty>
       ) : (
         groupes.map((g) => (

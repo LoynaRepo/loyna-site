@@ -102,7 +102,7 @@ export interface Suivi {
   aujourdhui: string;
   coffre: string;
   exemple?: boolean;
-  regles: {delai_recu_jours: number; delai_relance_jours: number; delai_appel_jours: number};
+  regles: {delai_recu_jours: number; delai_relance_jours: number; delai_appel_jours: number; delai_abandon_jours?: number};
   totaux: Totaux;
   par_statut: {statut: string; nombre: number}[];
   par_action: {code: string; libelle: string; nombre: number}[];

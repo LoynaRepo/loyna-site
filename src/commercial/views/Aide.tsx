@@ -1,4 +1,4 @@
-// Aide à la prospection : déroulé d'un appel, processus (premier mail → relance J+7 → appel), modèles de
+// Aide à la prospection : déroulé d'un appel, processus (premier mail → relance J+7 → abandon), modèles de
 // mails du coffre, bonnes pratiques (horaires d'appel, règles du démarchage B2B, droit d'opposition).
 import {BONNES_PRATIQUES, derouleAppel, HORAIRES, LIENS, REGLES_B2B, SOURCES_CNIL} from '../contenu';
 import {fr} from '../format';
@@ -96,7 +96,7 @@ export function Aide() {
         </p>
       </Panel>
 
-      <Panel title="Le processus" id="aide-processus" sub="Premier mail, relance 7 jours plus tard, appel 7 jours après la relance.">
+      <Panel title="Le processus" id="aide-processus" sub="Premier mail, relance 7 jours plus tard, abandon 7 jours après la relance sans réponse.">
         <ol class="cp-frise">
           <li>
             <strong>J 0 · Premier mail</strong>
@@ -107,15 +107,15 @@ export function Aide() {
             <span>{fr('Une seule relance, dans le fil du premier mail, si aucune réponse.')}</span>
           </li>
           <li>
-            <strong>J + {d.regles.delai_relance_jours + d.regles.delai_appel_jours} · Appel</strong>
-            <span>{fr(`Toujours sans réponse ${d.regles.delai_appel_jours} jours après la relance : le prospect passe dans « À appeler ». C’est votre tour.`)}</span>
+            <strong>J + {d.regles.delai_relance_jours + (d.regles.delai_abandon_jours ?? d.regles.delai_appel_jours)} · Abandon</strong>
+            <span>{fr(`Toujours sans réponse ${d.regles.delai_abandon_jours ?? d.regles.delai_appel_jours} jours après la relance : le prospect est abandonné, plus aucun contact. Pas d’appel obligatoire : un commerce sans numéro se traite entièrement par mail.`)}</span>
           </li>
         </ol>
         <ul class="cp-points">
           <li>{fr('Réponses : relevées par l’agent Trieur ; il répond seul avec la FAQ du coffre, fixe les RDV, gère rebonds et oppositions. Le reste arrive dans « À traiter par Ewan » et en tête de « À appeler ».')}</li>
           <li>
             {fr(
-              `Mail non reçu (rebond, adresse refusée ou écartée) : l’agent Prospecteur cherche une autre adresse ; vous pouvez appeler sans attendre.`,
+              `Mail non reçu (rebond, adresse refusée ou écartée) : l’agent Prospecteur cherche une autre adresse ; si un numéro existe, vous pouvez aussi appeler.`,
             )}
           </li>
           {env.heure_debut && env.heure_fin && (

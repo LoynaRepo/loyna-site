@@ -12,6 +12,7 @@ const TON_STATUT: Record<string, Tone> = {
   'contacté': 'neutral',
   'relancé': 'neutral',
   'sans réponse': 'amber',
+  'abandonné': 'dark',
   'intéressé': 'gold',
   'rdv fixé': 'green',
   'à traiter par ewan': 'red',
