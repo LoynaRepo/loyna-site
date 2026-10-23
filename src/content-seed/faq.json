@@ -73,19 +73,19 @@
   },
   {
     "q": "Combien coûte LOYNA ?",
-    "a": "Trois formules, prix HT par mois, TVA non applicable. Essentiel, 29 € : Apple Wallet, Google Wallet, notifications Wallet, QR code d’inscription, points ou passages, récompenses, scanner et tableau de bord. Growth, 49 € : tout Essentiel, plus 200 SMS par mois, segmentation, anniversaires, clients inactifs, campagnes Wallet programmées et statistiques avancées. Pro, 79 € : tout Growth, plus 500 SMS par mois, intégrations compatibles, automatisations avancées, API et webhooks, support prioritaire.",
+    "a": "Trois formules, prix par mois sans TVA (TVA non applicable : le prix affiché est le prix payé). Essentiel, 29 € : Apple Wallet, Google Wallet, notifications Wallet, QR code d’inscription, points ou passages, récompenses, scanner et tableau de bord. Growth, 49 € : tout Essentiel, plus 200 SMS par mois, segmentation, anniversaires, clients inactifs, campagnes Wallet programmées et statistiques avancées. Pro, 79 € : tout Growth, plus 500 SMS par mois, intégrations compatibles, automatisations avancées, API et webhooks, support prioritaire.",
     "categorie": "Tarifs et abonnement",
     "ordre": 13
   },
   {
     "q": "Y a-t-il des frais de mise en service ?",
-    "a": "Oui, des frais de mise en service de 49 € HT, facturés une seule fois au démarrage. Ils sont offerts si vous choisissez le paiement annuel. Aucun matériel n’est à acheter en plus : un smartphone suffit pour scanner les cartes de vos clients.",
+    "a": "Oui, 49 €, facturés une seule fois au démarrage. Ils sont offerts en paiement annuel et, pendant l’offre de lancement annoncée en haut des pages, aussi en paiement mensuel. Aucun matériel n’est à acheter en plus : un smartphone suffit pour scanner les cartes de vos clients.",
     "categorie": "Tarifs et abonnement",
     "ordre": 14
   },
   {
     "q": "Le paiement annuel est-il plus avantageux ?",
-    "a": "Oui. En payant à l’année, vous bénéficiez de 15 % de réduction et la mise en service de 49 € HT est offerte. L’abonnement revient à 295,80 € HT par an pour Essentiel, 499,80 € pour Growth et 805,80 € pour Pro, au lieu de 348 €, 588 € et 948 € sur douze mois en paiement mensuel. L’abonnement annuel est conclu pour 12 mois.",
+    "a": "Oui. En payant à l’année, vous bénéficiez de 15 % de réduction et la mise en service de 49 € est offerte. L’abonnement revient à 295,80 € par an pour Essentiel, 499,80 € pour Growth et 805,80 € pour Pro, au lieu de 348 €, 588 € et 948 € sur douze mois en paiement mensuel. L’abonnement annuel est conclu pour 12 mois.",
     "categorie": "Tarifs et abonnement",
     "ordre": 15
   },
@@ -103,13 +103,13 @@
   },
   {
     "q": "Comment se fait le paiement, et où trouver mes factures ?",
-    "a": "Le paiement se fait en ligne, par carte bancaire, de façon sécurisée via Stripe. Vos factures sont disponibles dans votre espace client, prêtes pour votre comptabilité. Pour rappel, la TVA n’est pas applicable : le montant facturé correspond au prix HT de votre formule.",
+    "a": "Le paiement se fait en ligne, par carte bancaire, de façon sécurisée via Stripe. Vos factures sont disponibles dans votre espace client, prêtes pour votre comptabilité. Pour rappel, la TVA n’est pas applicable : le montant facturé est exactement le prix affiché de votre formule.",
     "categorie": "Tarifs et abonnement",
     "ordre": 18
   },
   {
     "q": "Pourquoi la TVA n’apparaît-elle pas sur les prix ?",
-    "a": "LOYNA est une micro-entreprise qui relève de la franchise en base de TVA : « TVA non applicable, art. 293 B du CGI ». Concrètement, aucune TVA ne s’ajoute à nos prix : le prix HT affiché est le prix que vous payez. Essentiel vous revient donc à 29 € par mois, Growth à 49 € et Pro à 79 €.",
+    "a": "LOYNA est une micro-entreprise qui relève de la franchise en base de TVA : « TVA non applicable, art. 293 B du CGI ». Concrètement, aucune TVA ne s’ajoute à nos prix : le prix affiché, sans TVA, est le prix que vous payez. Essentiel vous revient donc à 29 € par mois, Growth à 49 € et Pro à 79 €.",
     "categorie": "Tarifs et abonnement",
     "ordre": 19
   },

@@ -21,10 +21,10 @@ const text = announcement.trim();
           <p>
             <Icon name="gift" size={16} />
             <span class="ob-long">
-              <strong>Offre de lancement</strong> : mise en service ({euro(SETUP_FEE)} HT) offerte avec le code <b class="code">{LAUNCH_OFFER.code}</b>, jusqu’au {LAUNCH_OFFER.untilLabel}
+              <strong>Offre de lancement</strong> : mise en service offerte (au lieu de {euro(SETUP_FEE)}) jusqu’au {LAUNCH_OFFER.untilLabel}, en mensuel comme en annuel · code <b class="code">{LAUNCH_OFFER.code}</b>
             </span>
             <span class="ob-short">
-              Mise en service offerte : <b class="code">{LAUNCH_OFFER.code}</b>
+              Mise en service offerte jusqu’au {LAUNCH_OFFER.untilLabel}
             </span>
             <a href="/tarifs/"><span class="ob-long">J’en profite</span> →</a>
           </p>

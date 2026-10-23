@@ -7,7 +7,7 @@ export const SITE = {
   slogan: 'Faites revenir vos clients, sans complexité.',
   tagline: 'Loyal customers. Brighter tomorrows.',
   description:
-    "LOYNA crée la carte de fidélité digitale de votre commerce dans Apple Wallet et Google Wallet, dès 29 € HT/mois : sans application, prête sous 24 h.",
+    "LOYNA crée la carte de fidélité digitale de votre commerce dans Apple Wallet et Google Wallet, dès 29 €/mois sans TVA : sans application, prête sous 24 h.",
   email: 'contact@loyna.fr',
   city: 'Montpellier',
   region: 'Occitanie',
@@ -41,8 +41,8 @@ export type PlanId = 'essentiel' | 'growth' | 'pro';
 export interface Plan {
   id: PlanId;
   name: string;
-  monthly: number; // € HT par mois
-  yearly: number; // € HT par an (-15 %)
+  monthly: number; // € par mois (sans TVA : franchise en base, art. 293 B du CGI)
+  yearly: number; // € par an (-15 %), sans TVA
   pitch: string;
   intro?: string;
   features: string[];

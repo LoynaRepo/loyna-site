@@ -1,5 +1,5 @@
 // Résumé du site pour les moteurs de réponse IA (convention llms.txt).
-import {PLANS, SITE, SETUP_FEE} from '../data/site';
+import {LAUNCH_OFFER, PLANS, SITE, SETUP_FEE, offerActive} from '../data/site';
 import {getArticles, getSectors} from '../lib/builder';
 
 export async function GET() {
@@ -11,9 +11,10 @@ export async function GET() {
 
 LOYNA est un logiciel français (Montpellier) de carte de fidélité digitale pour les commerces indépendants : la carte est ajoutée à Apple Wallet ou Google Wallet sans application, le commerçant valide chaque passage en un scan, les récompenses et les notifications Wallet sont automatiques.
 
-## Offres (prix HT par mois, ${SITE.vatNote})
+## Offres (prix par mois, sans TVA : ${SITE.vatNote})
 ${PLANS.map((p) => `- ${p.name} : ${p.monthly} € par mois ou ${p.yearly.toFixed(2).replace('.', ',')} € par an — ${p.pitch}`).join('\n')}
-- Mise en service : ${SETUP_FEE} € HT, offerte en paiement annuel.
+- Paiement mensuel : engagement de 12 mois, puis résiliable à la fin de n’importe quel mois, sans frais. Paiement annuel : 12 mois payés en une fois, −15 %.
+- Mise en service : ${SETUP_FEE} € une seule fois, offerte en paiement annuel${offerActive() ? ` (et en mensuel jusqu’au ${LAUNCH_OFFER.untilLabel}, offre de lancement)` : ''}.
 
 ## Pages principales
 - [Fonctionnalités](${SITE.url}/fonctionnalites/)

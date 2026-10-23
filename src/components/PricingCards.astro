@@ -35,35 +35,35 @@ const buy = (link: string, promo = false) =>
           <p class="pitch">{p.pitch}</p>
           <div class="price only-m">
             <span class="amount">{euro(p.monthly)}</span>
-            <span class="per">HT / mois</span>
+            <span class="per">/ mois, sans TVA</span>
           </div>
           {
             offer ? (
               <>
                 <p class="offer-tag only-m" data-offer>
-                  Mise en service <s>{euro(SETUP_FEE)} HT</s> offerte avec le code <b>{LAUNCH_OFFER.code}</b>
+                  Mise en service <s>{euro(SETUP_FEE)}</s> offerte jusqu’au {LAUNCH_OFFER.untilLabel}
                 </p>
-                <p class="note only-m">
-                  <span data-offer-off hidden>+ {euro(SETUP_FEE)} HT de mise en service · </span>engagement 12 mois, puis résiliable chaque mois
-                </p>
+                <p class="note only-m" data-offer-off hidden>+ {euro(SETUP_FEE)} de mise en service, une seule fois</p>
               </>
             ) : (
-              <p class="note only-m">+ {euro(SETUP_FEE)} HT de mise en service · engagement 12 mois, puis résiliable chaque mois</p>
+              <p class="note only-m">+ {euro(SETUP_FEE)} de mise en service, une seule fois</p>
             )
           }
           <div class="price only-y">
             <span class="amount">{euro(p.yearly)}</span>
-            <span class="per">HT / an</span>
+            <span class="per">/ an, sans TVA</span>
           </div>
           <p class="note only-y">
-            soit {euro(Math.round((p.yearly / 12) * 100) / 100)} HT / mois · <strong>mise en service offerte</strong>
+            soit {euro(Math.round((p.yearly / 12) * 100) / 100)} / mois · <strong>mise en service offerte</strong>
           </p>
           <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-m`} href={buy(p.links.monthly, true) || fallback(p.id, 'mensuel')} rel="nofollow" data-loading={p.links.monthly ? 'Redirection vers le paiement…' : undefined} data-plan={`${p.id}-mensuel`}>
             Choisir {p.name}
           </a>
+          <p class="engage only-m"><strong>Engagement de 12 mois</strong>, réglés chaque mois, puis résiliable à la fin de n’importe quel mois, sans frais.</p>
           <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-y`} href={buy(p.links.yearly) || fallback(p.id, 'annuel')} rel="nofollow" data-loading={p.links.yearly ? 'Redirection vers le paiement…' : undefined} data-plan={`${p.id}-annuel`}>
             Choisir {p.name} en annuel
           </a>
+          <p class="engage only-y">12 mois payés en une fois, renouvelables.</p>
           {!compact && (
             <>
               {p.intro && <p class="intro">{p.intro}</p>}
@@ -82,11 +82,11 @@ const buy = (link: string, promo = false) =>
     {
       offer && (
         <span data-offer>
-          Offre de lancement : mise en service offerte en mensuel avec le code {LAUNCH_OFFER.code}, jusqu’au {LAUNCH_OFFER.untilLabel} (code déjà appliqué via ces boutons).{' '}
+          Offre de lancement : mise en service offerte jusqu’au {LAUNCH_OFFER.untilLabel}, en mensuel comme en annuel (code {LAUNCH_OFFER.code}, déjà appliqué par ces boutons).{' '}
         </span>
       )
     }
-    Prix en euros hors taxes. {SITE.vatNote} : le prix affiché est le prix payé. Paiement sécurisé par Stripe au nom de KOVA Elec, l’entreprise qui édite LOYNA ; factures dans votre espace client.
+    Prix en euros, sans TVA ({SITE.vatNote}) : le prix affiché est le prix payé. Paiement sécurisé par Stripe au nom de KOVA Elec, l’entreprise qui édite LOYNA ; factures dans votre espace client.
   </p>
 </div>
 
@@ -237,6 +237,22 @@ const buy = (link: string, promo = false) =>
     font-size: 0.92rem;
     color: var(--muted);
     margin: 0 0 6px;
+  }
+  .engage {
+    margin: -4px 0 0;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    text-align: center;
+    color: var(--muted);
+  }
+  .engage strong {
+    color: var(--ink);
+  }
+  .plan--hl .engage {
+    color: #b9b3a7;
+  }
+  .plan--hl .engage strong {
+    color: #faf7f0;
   }
   .intro {
     font-weight: 700;

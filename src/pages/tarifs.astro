@@ -47,8 +47,8 @@ const faqLd = {
 ---
 
 <Base stickyCta={{primary: {href: '/creer-ma-carte/', label: 'Créer ma carte'}, secondary: {href: '/contact/', label: 'Une question ?'}}}
-  title="Tarifs : carte de fidélité digitale dès 29 € HT/mois"
-  description="Essentiel 29 €, Growth 49 €, Pro 79 € HT par mois. -15 % et mise en service offerte en paiement annuel. Paiement sécurisé en ligne par Stripe."
+  title="Tarifs : carte de fidélité digitale dès 29 €/mois"
+  description="Essentiel 29 €, Growth 49 €, Pro 79 € par mois, sans TVA. −15 % et mise en service offerte en paiement annuel. Paiement sécurisé par Stripe."
   ogImage="/og/tarifs.png"
   breadcrumbs={crumbs}
   jsonLd={[offersLd, faqLd]}
@@ -57,7 +57,7 @@ const faqLd = {
     <div class="container">
       <Breadcrumbs items={crumbs} />
       <p class="eyebrow">Tarifs</p>
-      <h1>Des formules simples, dès 29&nbsp;€ HT par mois</h1>
+      <h1>Des formules simples, dès 29&nbsp;€ par mois</h1>
       <p class="lead">Toutes les formules incluent la carte Apple Wallet et Google Wallet, les notifications Wallet et le scanner. Payez en ligne, votre carte est prête sous 24&nbsp;h.</p>
     </div>
   </section>
@@ -89,7 +89,7 @@ const faqLd = {
                 PLANS.map((p) => (
                   <th scope="col">
                     {p.name}
-                    <span>{euro(p.monthly)} HT/mois</span>
+                    <span>{euro(p.monthly)}/mois</span>
                   </th>
                 ))
               }
@@ -128,8 +128,8 @@ const faqLd = {
     <div class="container grid grid-3">
       <div class="card">
         <span class="icon"><Icon name="rocket" /></span>
-        <h2 class="h3">Mise en service : {euro(SETUP_FEE)} HT</h2>
-        <p>Création de votre carte à vos couleurs, de votre QR code d’inscription et de votre espace commerçant. Offerte en paiement annuel{offerActive() && <span data-offer>, et aussi en mensuel avec le code <strong>{LAUNCH_OFFER.code}</strong> jusqu’au {LAUNCH_OFFER.untilLabel}</span>}.</p>
+        <h2 class="h3">Mise en service : {euro(SETUP_FEE)}, une seule fois</h2>
+        <p>Création de votre carte à vos couleurs, de votre QR code d’inscription et de votre espace commerçant. {offerActive() ? <><span data-offer><strong>Offerte jusqu’au {LAUNCH_OFFER.untilLabel}</strong>, en mensuel comme en annuel (code <strong>{LAUNCH_OFFER.code}</strong>, déjà appliqué par nos boutons). Ensuite : </span>offerte en paiement annuel.</> : <>Offerte en paiement annuel.</>}</p>
       </div>
       <div class="card">
         <span class="icon"><Icon name="sparkles" /></span>
@@ -146,7 +146,7 @@ const faqLd = {
 
   <section class="section section--dark">
     <div class="container">
-      <CallbackForm title="Un doute sur la formule à choisir ?" text="Laissez votre numéro : on vous rappelle au créneau de votre choix pour trouver la formule adaptée à votre commerce. Sans engagement." />
+      <CallbackForm title="Un doute sur la formule à choisir ?" text="Laissez votre numéro : on vous rappelle au créneau de votre choix pour trouver la formule adaptée à votre commerce. Ce rappel ne vous engage à rien." />
     </div>
   </section>
 

@@ -38,7 +38,7 @@ const offer = offerActive();
       {
         offer && (
           <a class="offer-pill" href="/tarifs/" data-offer>
-            <Icon name="gift" size={15} /> Offre de lancement · mise en service offerte avec <b>{LAUNCH_OFFER.code}</b>
+            <Icon name="gift" size={15} /> Offre de lancement · mise en service offerte jusqu’au {LAUNCH_OFFER.untilLabel}
           </a>
         )
       }
@@ -89,7 +89,7 @@ const offer = offerActive();
       <ul class="hero-points">
         <li><Icon name="smartphone" size={18} /> Sans application</li>
         <li><Icon name="zap" size={18} /> Prête sous 24&nbsp;h</li>
-        <li><Icon name="credit-card" size={18} /> Dès 29&nbsp;€ HT/mois</li>
+        <li><Icon name="credit-card" size={18} /> Dès 29&nbsp;€/mois, sans TVA</li>
       </ul>
     </div>
   </div>
