@@ -1,6 +1,7 @@
 // Composants d'interface du panel commercial : mêmes classes et même rendu que LOYNA Business
 // (src/app/ui.tsx, styles src/app/styles/base.css et business.css), sans dépendre de son état ni de Supabase.
 import type {ComponentChildren} from 'preact';
+import {useEffect, useRef} from 'preact/hooks';
 import {Icon} from './icons';
 import {copier, fr, lienSur} from './format';
 import {toast, toasts} from './store';
@@ -127,6 +128,39 @@ export function Toasts() {
         </div>
       ))}
     </div>
+  );
+}
+
+/** Fenêtre modale (élément <dialog> natif : focus et touche Échap gérés par le navigateur), comme LOYNA Business. */
+export function Modal(props: {open: boolean; onClose: () => void; title: string; children: ComponentChildren; class?: string}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (props.open && !d.open) d.showModal();
+    if (!props.open && d.open) d.close();
+  }, [props.open]);
+  return (
+    <dialog
+      ref={ref}
+      class={`mdl ${props.class ?? ''}`}
+      onClose={props.onClose}
+      onClick={(e) => {
+        if (e.target === ref.current) props.onClose();
+      }}
+    >
+      {props.open && (
+        <div class="mdl-c">
+          <div class="mdl-h">
+            <h2>{props.title}</h2>
+            <button type="button" class="mdl-x" onClick={props.onClose} aria-label="Fermer">
+              <Icon name="x" />
+            </button>
+          </div>
+          <div class="mdl-b">{props.children}</div>
+        </div>
+      )}
+    </dialog>
   );
 }
 

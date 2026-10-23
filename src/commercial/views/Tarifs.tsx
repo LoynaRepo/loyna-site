@@ -1,6 +1,8 @@
 // Tarifs : formules, mensuel et annuel, mise en service, offre de lancement, contenu de chaque formule et
-// liens de paiement. Tout vient de src/data/site.ts (importé, jamais recopié).
-import {COMPARISON, LAUNCH_OFFER, PLANS, SETUP_FEE, SITE, euro, offerActive} from '../../data/site';
+// liens de paiement. Prix et offre importés de src/data/site.ts ; formulation validée par Ewan (contenu.ts) :
+// jamais « HT » (TVA non applicable), engagement en clair, un seul message sur la mise en service.
+import {COMPARISON, LAUNCH_OFFER, PLANS, SETUP_FEE, euro, offerActive} from '../../data/site';
+import {ENGAGEMENT_ANNUEL, ENGAGEMENT_MENSUEL, KOVA, MENTION_PRIX, phraseMiseEnService} from '../contenu';
 import {fr} from '../format';
 import {Icon} from '../icons';
 import {Badge, Btn, Copier, PageHead, Panel} from '../ui';
@@ -22,16 +24,15 @@ export function Tarifs() {
         <div class="cp-offre">
           <Icon name="ticket" size={22} />
           <div>
-            <strong>Offre de lancement : mise en service offerte en mensuel</strong>
-            <p>
-              {fr(`Avec le code ${LAUNCH_OFFER.code}, jusqu’au ${LAUNCH_OFFER.untilLabel} : ${euro(SETUP_FEE)} HT de moins sur la première facture. Le code est déjà appliqué dans les liens de paiement mensuels ci-dessous.`)}
-            </p>
+            <strong>Offre de lancement</strong>
+            <p>{fr(phraseMiseEnService())}</p>
+            <p>{fr('Le code est aussi déjà appliqué dans les liens de paiement ci-dessous.')}</p>
           </div>
         </div>
       ) : (
         <div class="banner">
           <Icon name="info" />
-          {fr(`L’offre de lancement (code ${LAUNCH_OFFER.code}) est terminée depuis le ${LAUNCH_OFFER.untilLabel}.`)}
+          {fr(`L’offre de lancement (code ${LAUNCH_OFFER.code}) est terminée depuis le ${LAUNCH_OFFER.untilLabel}. ${phraseMiseEnService()}`)}
         </div>
       )}
 
@@ -51,15 +52,17 @@ export function Tarifs() {
                 <div>
                   <dt>Mensuel</dt>
                   <dd>
-                    <b>{euro(p.monthly)}</b> HT / mois
-                    <small>{fr(offre ? `mise en service ${euro(SETUP_FEE)} HT offerte avec ${LAUNCH_OFFER.code}` : `+ ${euro(SETUP_FEE)} HT de mise en service`)}</small>
+                    <b>{euro(p.monthly)}</b> {fr('/ mois, sans TVA')}
+                    <small>{fr(offre ? `Mise en service offerte jusqu’au ${LAUNCH_OFFER.untilLabel}` : `+ ${euro(SETUP_FEE)} de mise en service, une seule fois`)}</small>
+                    <small>{fr(ENGAGEMENT_MENSUEL)}</small>
                   </dd>
                 </div>
                 <div>
                   <dt>{fr('Annuel (−15 %)')}</dt>
                   <dd>
-                    <b>{euro(p.yearly)}</b> HT / an
-                    <small>{fr(`soit ${euro(Math.round((p.yearly / 12) * 100) / 100)} HT / mois, au lieu de ${euro(douzeMois)} en mensuel sur 12 mois ; mise en service offerte`)}</small>
+                    <b>{euro(p.yearly)}</b> {fr('/ an, sans TVA')}
+                    <small>{fr(`soit ${euro(Math.round((p.yearly / 12) * 100) / 100)} / mois, au lieu de ${euro(douzeMois)} en mensuel sur 12 mois ; mise en service offerte`)}</small>
+                    <small>{fr(ENGAGEMENT_ANNUEL)}</small>
                   </dd>
                 </div>
               </dl>
@@ -119,10 +122,11 @@ export function Tarifs() {
 
       <Panel title="Conditions à connaître">
         <ul class="cp-points">
-          <li>{fr(`Mise en service : ${euro(SETUP_FEE)} HT, facturée une seule fois au démarrage, offerte en paiement annuel.`)}</li>
-          <li>{fr('Engagement : 12 mois au départ. En mensuel, 12 mois minimum réglés mois par mois, puis résiliable à la fin de n’importe quel mois, sans frais. En annuel, 12 mois réglés d’avance, reconduit pour 12 mois sauf résiliation avant l’échéance.')}</li>
-          <li>{fr(`${SITE.vatNote} : le prix HT affiché est le prix payé.`)}</li>
-          <li>{fr('Paiement en ligne par carte bancaire, sécurisé par Stripe, au nom de KOVA ELEC ; factures dans l’espace client.')}</li>
+          <li>{fr(phraseMiseEnService())}</li>
+          <li>{fr(`Mensuel : ${ENGAGEMENT_MENSUEL.charAt(0).toLowerCase()}${ENGAGEMENT_MENSUEL.slice(1)} Annuel : ${ENGAGEMENT_ANNUEL.charAt(0).toLowerCase()}${ENGAGEMENT_ANNUEL.slice(1)}`)}</li>
+          <li>{fr(MENTION_PRIX)}</li>
+          <li>{fr('Paiement en ligne par carte bancaire, sécurisé par Stripe, au nom de KOVA Elec, l’entreprise qui édite LOYNA ; factures dans l’espace client.')}</li>
+          <li>{fr(`Si on vous demande qui est KOVA Elec : « ${KOVA} »`)}</li>
           <li>{fr('Carte prête sous 24 h, hors personnalisation exceptionnelle. Aucun matériel : un smartphone suffit pour scanner.')}</li>
         </ul>
         <p class="muted small cp-m0">Sources : src/data/site.ts (prix, formules, offre), docs/BRIEF.md (engagement), FAQ du site.</p>

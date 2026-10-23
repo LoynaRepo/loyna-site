@@ -70,4 +70,11 @@ export default defineConfig({
     // Builder.io sert les images de ses contenus depuis son CDN
     domains: ['cdn.builder.io'],
   },
+  vite: {
+    server: {
+      // Essais locaux du panel commercial : le serveur de développement n'exécute pas PHP ; les requêtes des notes
+      // vont au serveur local qui reproduit notes.php (python tools/commercial/notes_local.py, port 4330).
+      proxy: {'/espace-commercial/notes.php': {target: 'http://127.0.0.1:4330', changeOrigin: false}},
+    },
+  },
 });

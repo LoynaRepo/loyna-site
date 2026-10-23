@@ -9,6 +9,7 @@ import type {Prospect} from '../types';
 import {Badge, Empty, PageHead} from '../ui';
 import {BadgeCible, Tel} from './commun';
 import {ADire} from './Fiche';
+import {BoutonNotes, MarqueNotes} from './Notes';
 
 const TON_GROUPE = {1: 'red', 2: 'gold', 3: 'amber', 4: 'blue'} as const;
 
@@ -103,8 +104,13 @@ function CarteAppel({p}: {p: Prospect}) {
         </div>
         <BadgeCible p={p} />
       </div>
-      <p class="cp-motif">{fr(a.motif)}</p>
-      <Tel p={p} gros />
+      <p class="cp-motif">
+        {fr(a.motif)} <MarqueNotes p={p} />
+      </p>
+      <div class="cp-appel-actions">
+        <Tel p={p} gros />
+        <BoutonNotes p={p} />
+      </div>
       <ADire p={p} />
       {HORAIRES[p.famille] && (
         <p class="cp-horaire">

@@ -10,3 +10,4 @@ out/
 # Espace commercial : données chiffrées (panel.py du coffre) et jeu fictif généré localement
 public/espace-commercial/donnees.enc
 tools/commercial/exemple-suivi.json
+__pycache__/

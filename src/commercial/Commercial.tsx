@@ -2,7 +2,8 @@
 // dans le navigateur, puis six onglets. Aucune donnée de prospect n'est dans le code ni dans le HTML de la page.
 import type {ComponentChildren} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
-import {cleMemorisee, deriverCle, ErreurAcces, memoriserCle, oublierCle, ouvrir, sessionOuverte, telecharger} from './crypto';
+import {accesMemorise, deriverAcces, ErreurAcces, memoriserAcces, oublierCle, ouvrir, sessionOuverte, telecharger, type Acces} from './crypto';
+import {initialiserNotes, oublierNotes, type Note} from './notes';
 import {dateHeure} from './format';
 import {Icon} from './icons';
 import {aller, donnees, filtres, FILTRES_VIDES, route} from './store';
@@ -31,6 +32,14 @@ const NAV: NavItem[] = [
   {vue: 'aide', label: 'Aide à la prospection', court: 'Aide', icon: 'book-open'},
 ];
 
+/** Après déchiffrement : les notes se chargent en arrière-plan (celles de la publication servent de secours). */
+function demarrerNotes(d: Suivi, acces: Acces) {
+  const publiees: Record<string, Note[]> = {};
+  for (const p of d.prospects) if (p.notes?.length) publiees[p.id] = p.notes;
+  for (const o of d.notes_orphelines ?? []) publiees[o.prospect] = o.notes;
+  initialiserNotes(d.notes_panel?.cle, acces.jeton, publiees).catch(() => {});
+}
+
 function logoFor(logo: string, where: string): string {
   return logo.replace(/id="([^"]+)"/, `id="$1-${where}"`).replace(/url\(#([^)]+)\)/, `url(#$1-${where})`);
 }
@@ -44,9 +53,12 @@ export default function Commercial({logo, faq}: {logo: string; faq: FaqSite[]}) 
       if (sessionOuverte()) {
         try {
           const e = await telecharger();
-          const cle = await cleMemorisee(e);
-          if (cle) donnees.value = await ouvrir<Suivi>(e, cle);
-          else oublierCle();
+          const acces = await accesMemorise(e);
+          if (acces) {
+            const d = await ouvrir<Suivi>(e, acces.cle);
+            donnees.value = d;
+            demarrerNotes(d, acces);
+          } else oublierCle();
         } catch {
           oublierCle();
         }
@@ -87,12 +99,13 @@ function Connexion({logo}: {logo: string}) {
     setBusy(true);
     try {
       const e = await telecharger();
-      const cle = await deriverCle(identifiant, mdp, e, rester);
-      const d = await ouvrir<Suivi>(e, cle);
-      if (rester) await memoriserCle(cle, e);
+      const acces = await deriverAcces(identifiant, mdp, e);
+      const d = await ouvrir<Suivi>(e, acces.cle);
+      if (rester) memoriserAcces(acces, e);
       setMdp('');
       filtres.value = {...FILTRES_VIDES};
       donnees.value = d;
+      demarrerNotes(d, acces);
       if (!route.value.vue) aller('tableau');
     } catch (err) {
       setErreur(err instanceof ErreurAcces ? err.message : 'Ouverture impossible : réessayez.');
@@ -184,6 +197,7 @@ function Coque({logo, faq}: {logo: string; faq: FaqSite[]}) {
 
   const verrouiller = () => {
     oublierCle();
+    oublierNotes();
     donnees.value = null;
     filtres.value = {...FILTRES_VIDES};
     history.replaceState(null, '', location.pathname);

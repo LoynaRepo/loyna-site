@@ -6,6 +6,7 @@ import {donnees} from '../store';
 import type {Prospect} from '../types';
 import {Badge, Btn, Empty, Lien, PageHead, Panel, TexteLie} from '../ui';
 import {Action, BadgeCible, BadgeStatut, Recu} from './commun';
+import {MarqueNotes, NotesProspect} from './Notes';
 
 export function Fiche({id}: {id: string}) {
   const d = donnees.value!;
@@ -30,6 +31,7 @@ export function Fiche({id}: {id: string}) {
           <BadgeStatut statut={p.statut} />
           <BadgeCible p={p} />
           {p.liste_stop && <Badge tone="red">Liste STOP</Badge>}
+          <MarqueNotes p={p} />
           {p.score !== null && <Badge tone="gold">score {p.score}</Badge>}
         </span>
       </PageHead>
@@ -74,6 +76,10 @@ export function Fiche({id}: {id: string}) {
                 </Btn>
               )}
             </div>
+          </Panel>
+
+          <Panel title="Notes" sub="Chiffrées dans ce navigateur avant l’envoi : le serveur ne peut pas les lire." id="notes" class="cp-pnl-notes">
+            <NotesProspect p={p} />
           </Panel>
 
           {p.appel && (

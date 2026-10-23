@@ -7,6 +7,8 @@ import {donnees, filtres, FILTRES_VIDES, type Filtres} from '../store';
 import type {Prospect} from '../types';
 import {Btn, Empty, PageHead} from '../ui';
 import {Action, actionCorrespond, BadgeCible, BadgeStatut, Envoye, GROUPES_ACTION, Recu, Reponse, Suite, Tel} from './commun';
+import {notesEtat} from '../notes';
+import {MarqueNotes} from './Notes';
 
 const PAS = 50;
 
@@ -102,6 +104,7 @@ export function Prospects() {
     setLimite(PAS);
   };
 
+  const blocsNotes = notesEtat.value.blocs;
   const textes = useMemo(() => {
     const m = new Map<string, string>();
     for (const p of d.prospects)
@@ -109,10 +112,12 @@ export function Prospects() {
         p.id,
         cle([p.nom, p.ville, p.secteur, p.famille, p.dirigeant, p.prenom, p.email, p.statut, p.action.libelle, p.adresse].join(' ')) +
           ' ' +
-          p.telephones.map((t) => t.affiche.replace(/\s/g, '')).join(' '),
+          p.telephones.map((t) => t.affiche.replace(/\s/g, '')).join(' ') +
+          ' ' +
+          cle((blocsNotes[p.id]?.notes ?? []).map((n) => n.texte).join(' ')), // la recherche porte aussi sur les notes
       );
     return m;
-  }, [d]);
+  }, [d, blocsNotes]);
   const villes = useMemo(() => compter(d.prospects, (p) => p.ville), [d]);
   const familles = useMemo(() => compter(d.prospects, (p) => p.famille), [d]);
   const actions = useMemo(() => compter(d.prospects, (p) => p.action.code), [d]);
@@ -145,7 +150,7 @@ export function Prospects() {
           <label class="search">
             <Icon name="search" size={18} />
             <span class="sr-only">Rechercher un prospect</span>
-            <input type="search" placeholder="Commerce, ville, dirigeant, téléphone, e-mail…" value={f.q} onInput={(e) => maj({q: (e.target as HTMLInputElement).value})} />
+            <input type="search" placeholder="Commerce, ville, dirigeant, téléphone, e-mail, note…" value={f.q} onInput={(e) => maj({q: (e.target as HTMLInputElement).value})} />
           </label>
           <button type="button" class={`chip cp-filtres-btn ${ouvert || actifs ? 'on' : ''}`} onClick={() => setOuvert(!ouvert)} aria-expanded={ouvert}>
             <Icon name="list-filter" size={16} />
@@ -217,6 +222,7 @@ export function Prospects() {
                       <span class="cp-badges">
                         <BadgeStatut statut={p.statut} />
                         <BadgeCible p={p} />
+                        <MarqueNotes p={p} />
                       </span>
                     </td>
                     <td class="cp-ville">
@@ -266,7 +272,10 @@ export function Prospects() {
                 <a class="cp-carte-lien" href={`#/prospect/${p.id}`}>
                   {p.nom}
                 </a>
-                <BadgeStatut statut={p.statut} />
+                <span class="cp-badges cp-badges--carte">
+                  <MarqueNotes p={p} />
+                  <BadgeStatut statut={p.statut} />
+                </span>
               </div>
               <p class="cp-carte-s">{[p.ville, p.secteur, p.prenom || p.dirigeant].filter(Boolean).join(' · ')}</p>
               <dl class="cp-etapes">

@@ -56,6 +56,14 @@ import ticket from 'lucide-static/icons/ticket.svg?raw';
 import listChecks from 'lucide-static/icons/list-checks.svg?raw';
 import logOut from 'lucide-static/icons/log-out.svg?raw';
 import messageSquareQuote from 'lucide-static/icons/message-square-quote.svg?raw';
+import pencil from 'lucide-static/icons/pencil.svg?raw';
+import trash2 from 'lucide-static/icons/trash-2.svg?raw';
+import plus from 'lucide-static/icons/plus.svg?raw';
+import notebookPen from 'lucide-static/icons/notebook-pen.svg?raw';
+import notebookText from 'lucide-static/icons/notebook-text.svg?raw';
+import save from 'lucide-static/icons/save.svg?raw';
+import wifiOff from 'lucide-static/icons/wifi-off.svg?raw';
+import gitMerge from 'lucide-static/icons/git-merge.svg?raw';
 
 const RAW: Record<string, string> = {
   'layout-dashboard': layoutDashboard,
@@ -113,6 +121,14 @@ const RAW: Record<string, string> = {
   'list-checks': listChecks,
   'log-out': logOut,
   'message-square-quote': messageSquareQuote,
+  pencil,
+  'trash-2': trash2,
+  plus,
+  'notebook-pen': notebookPen,
+  'notebook-text': notebookText,
+  save,
+  'wifi-off': wifiOff,
+  'git-merge': gitMerge,
 };
 
 const cache = new Map<string, string>();

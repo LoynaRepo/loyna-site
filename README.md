@@ -100,8 +100,8 @@ des Edge Functions (contrats : dépôt LOYNA, `docs/API.md` et `docs/WEWEB_SETUP
 ## Espace commercial (`/espace-commercial/`, privé)
 
 Panel de prospection d'Ewan : tableau de bord, prospects (filtres, tri, fiche détaillée), liste « À appeler »
-avec ce qu'il faut dire, tarifs, réponses aux questions des commerçants, aide (déroulé d'un appel, modèles de
-mails, règles du démarchage B2B). Page `src/pages/espace-commercial/index.astro`, code `src/commercial/`
+avec ce qu'il faut dire, notes par prospect, tarifs, réponses aux questions des commerçants, aide (déroulé d'un
+appel, modèles de mails, règles du démarchage B2B). Page `src/pages/espace-commercial/index.astro`, code `src/commercial/`
 (Preact, mêmes classes que LOYNA Business). **Aucune donnée de prospect dans le dépôt ni dans `dist/`.**
 
 - Données : le coffre `Documents\Loyna Prospection` les calcule (`_systeme/suivi.py`, lecture seule des fiches,
@@ -111,7 +111,8 @@ mails, règles du démarchage B2B). Page `src/pages/espace-commercial/index.astr
   Les agents le lancent à la fin de chaque passage.
 - La page télécharge ce fichier et le déchiffre dans le navigateur (WebCrypto, `src/commercial/crypto.ts`) :
   identifiants faux → « Identifiant ou mot de passe incorrect. », rien d'autre. Option « Rester connecté dans
-  cet onglet » : seule la clé AES est gardée (sessionStorage), jamais le mot de passe ; « Verrouiller » l'efface.
+  cet onglet » : seuls la clé AES et le jeton d'écriture sont gardés (sessionStorage), jamais le mot de passe ;
+  « Verrouiller » les efface.
 - Identifiants de production : choisis par Ewan avec `3 - Définir l'accès au panel commercial.cmd` (racine du
   coffre), rangés dans le Gestionnaire d'identifiants Windows (service `loyna-panel-commercial`), jamais dans un
   fichier. Pour les changer : relancer ce script, puis `panel.py publier`.
@@ -122,7 +123,45 @@ mails, règles du démarchage B2B). Page `src/pages/espace-commercial/index.astr
   ligne ; `astro.config.mjs` retire de `dist/` la copie locale de développement (`public/`, ignorée par git).
 - Contenus : prix, formules et offre importés de `src/data/site.ts` ; FAQ du site (Builder ou `faq.json`) ;
   réponses courtes et déroulé d'appel dans `src/commercial/contenu.ts` (brief, FAQ, pages du site, sources
-  citées) ; modèles de mails, FAQ et règles du coffre arrivent avec les données chiffrées.
+  citées ; formulation validée : jamais « HT », engagement en clair, « LOYNA, une marque de KOVA Elec ») ;
+  modèles de mails, FAQ et règles du coffre arrivent avec les données chiffrées.
+
+### Notes par prospect (chiffrées de bout en bout)
+
+Dans la fiche d'un prospect et par le bouton « Note » des cartes « À appeler » : notes datées (la plus récente
+en haut), ajout (Ctrl+Entrée), modification, suppression confirmée dans l'interface ; « n notes » sur les lignes ;
+la recherche porte aussi sur les notes. Code : `src/commercial/notes.ts`, `notes-crypto.ts`, `views/Notes.tsx`.
+
+- Le navigateur chiffre chaque bloc (les notes d'un prospect) en AES-256-GCM, données associées
+  `loyna-notes/v1/<prospect>` : le serveur ne voit jamais le texte. Identifiant du prospect : 10 caractères tirés du
+  nom de sa fiche (`identifiant_fiche` de `suivi.py`).
+- Clés : `panel.py` dérive 512 bits par PBKDF2 (mêmes identifiants et sel) : les 256 premiers sont la clé de
+  `donnees.enc` (format inchangé), les 256 suivants le jeton d'écriture. Le serveur ne garde que le SHA-256 du
+  jeton (`jeton.sha256`, déposé par `panel.py publier`). La clé des notes est tirée au hasard une fois
+  (Gestionnaire d'identifiants, compte `cle-notes`) et voyage dans `donnees.enc` : changer d'identifiants ne
+  change pas cette clé, donc les anciennes notes restent lisibles sans rien rechiffrer ; l'ancien jeton est refusé
+  dès la publication suivante. Si la clé manque alors que des notes existent, `panel.py` la récupère dans le
+  `donnees.enc` en ligne, et ne publie rien plutôt que d'en tirer une nouvelle.
+- `public/espace-commercial/notes.php` (PHP 7.4 à 8.x, publié avec `dist/`) : `GET` et `POST` exigent l'en-tête
+  `X-Panel-Jeton` (401 sans jeton, 403 jeton faux, 429 après 20 jetons faux par heure et par adresse) ; `POST
+  {prospect, iv, donnees, modifie_le_precedent}` → 409 avec la version actuelle si elle a changé (le navigateur
+  refait un ajout tout seul, et fait choisir pour une note modifiée ou supprimée ailleurs) ; bloc de 64 Ko au plus ;
+  réponses JSON sans détail d'erreur, `no-store`, `noindex`. Stockage **hors de `www/`** : `~/panel-commercial/`
+  (`notes.json` écrit sous `flock`, `sauvegardes/` = 50 dernières copies datées, `essais.json`, `jeton.sha256`),
+  lu depuis `__DIR__/../../panel-commercial`. `deploy.py` ne travaille que dans `www/` et n'y touche jamais.
+- Retour vers le coffre : `panel.py publier` (et `panel.py notes`, sans publier) télécharge les notes, les déchiffre
+  et les recopie dans chaque fiche (section « Notes d'Ewan (panel) » placée avant l'historique, propriété
+  `notes_panel`, rien d'autre n'est réécrit), dans `_systeme/notes_panel.json`, `suivi.json` et
+  `07 Tableaux/Suivi prospects.md`. Une note dont la fiche a disparu est signalée (sortie de `panel.py`, tableau de
+  bord du panel), jamais supprimée.
+
+Essais en ligne, sans rien écrire (PowerShell) :
+```
+curl.exe -i https://loyna.fr/espace-commercial/notes.php                       # 401 jeton_absent
+curl.exe -i -H "X-Panel-Jeton: 0000000000000000000000000000000000000000000000000000000000000000" https://loyna.fr/espace-commercial/notes.php   # 403 jeton_refuse
+```
+503 `non_active` : l'empreinte du jeton n'est pas encore déposée (`panel.py publier`) ; 503 `stockage` : le dossier
+`~/panel-commercial` est hors d'atteinte de PHP.
 
 Essais en local (serveur de développement sur le port 4322) :
 ```
@@ -131,7 +170,14 @@ python "<coffre>\_systeme\panel.py" publier --local --exemple      # fictif → 
 python "<coffre>\_systeme\panel.py" publier --local --acces-test   # vraies données, identifiants de test
 node tools/commercial/verifier.mjs                                  # déchiffre avec le code du navigateur
 node tools/qa-commercial.mjs 390 1366                               # captures dans out/qa-commercial
+python tools/commercial/test_notes_serveur.py                       # serveur des notes : codes, 409, limites
+node tools/commercial/test_notes_crypto.mjs                         # notes : navigateur ↔ panel.py, jeton
+node tools/qa-notes.mjs 390 1366                                    # notes de bout en bout (ajout, réseau, conflit)
 ```
+Ce PC n'a pas PHP : `tools/commercial/notes_local.py` reproduit `notes.php` à l'identique (stockage
+`out/notes-local`, port 4330) et le serveur de développement lui transmet `/espace-commercial/notes.php`
+(`vite.server.proxy` dans `astro.config.mjs`) ; `qa-notes.mjs` le lance et l'arrête lui-même. Toute différence
+entre les deux est un défaut.
 Identifiants de test (localhost uniquement) : `tools/commercial/acces-local.exemple.json` ; `panel.py` refuse de
 publier en ligne avec eux. Après un essai sur les vraies données, remettre le jeu fictif (`--exemple`).
 

@@ -1,5 +1,6 @@
 // Tableau de bord : indicateurs de la prospection, parcours des mails, actions suivantes, statuts.
-import {dateCourte, dateHeure, nombre, pluriel, pourcent} from '../format';
+import {dateCourte, dateHeure, fr, moment, nombre, pluriel, pourcent} from '../format';
+import {notesEtat} from '../notes';
 import {Icon} from '../icons';
 import {aller, donnees, voirProspects, type Filtres} from '../store';
 import {Badge, PageHead, Panel} from '../ui';
@@ -36,6 +37,9 @@ export function Tableau() {
   const max = Math.max(1, ...etapes.map((e) => e.v));
   const maxAction = Math.max(1, ...d.par_action.map((a) => a.nombre));
   const maxStatut = Math.max(1, ...d.par_statut.map((a) => a.nombre));
+  // notes dont la fiche a disparu (renommée ou supprimée) : jamais perdues, signalées ici
+  const ids = new Set(d.prospects.map((p) => p.id));
+  const orphelines = Object.entries(notesEtat.value.blocs).filter(([id, b]) => !ids.has(id) && b.notes.length);
 
   return (
     <div class="page">
@@ -150,6 +154,22 @@ export function Tableau() {
               {k.premiers_mails_a_ecrire > 1 ? `${nombre(k.premiers_mails_a_ecrire)} prospects qualifiés attendent leur premier mail.` : `${nombre(k.premiers_mails_a_ecrire)} prospect qualifié attend son premier mail.`}
             </p>
           </Panel>
+          {orphelines.length > 0 && (
+            <Panel title="Notes sans fiche" sub="Notes écrites pour un prospect dont la fiche a été renommée ou supprimée : elles restent sur le serveur. Redonner son nom à la fiche, ou recopier la note.">
+              <ul class="cp-hors">
+                {orphelines.flatMap(([id, b]) =>
+                  b.notes.map((n) => (
+                    <li>
+                      <strong>{fr(n.texte.length > 140 ? n.texte.slice(0, 139) + '…' : n.texte)}</strong>
+                      <small>
+                        {moment(n.cree_le)} · prospect {id}
+                      </small>
+                    </li>
+                  )),
+                )}
+              </ul>
+            </Panel>
+          )}
           {d.hors_fiches.length > 0 && (
             <Panel title="Contactés sans fiche" sub="Adresses du journal des envois rattachées à aucune fiche (surtout la campagne Gmail de septembre) : elles ne sont pas suivies ici.">
               <details class="more cp-more">

@@ -33,6 +33,14 @@ export function dateHeure(iso: string | null | undefined): string {
   return `${dateCourte(iso)} à ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+/** Date ISO complète (notes : « 2026-10-23T12:05:00.000Z ») → « 23 oct. à 14:05 », heure locale. */
+export function moment(iso: string | null | undefined): string {
+  const d = new Date(iso || '');
+  if (Number.isNaN(d.getTime())) return '';
+  const an = d.getFullYear() === new Date().getFullYear() ? '' : ` ${d.getFullYear()}`;
+  return `${d.getDate()} ${MOIS_COURTS[d.getMonth()]}${an} à ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 /** Nombre de jours entre une date et aujourd'hui (positif dans le passé). */
 export function joursDepuis(iso: string | null | undefined): number | null {
   const d = enDate(iso);

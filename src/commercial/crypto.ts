@@ -81,11 +81,26 @@ function secret(identifiant: string, motDePasse: string) {
   return new TextEncoder().encode(id + '\u0000' + motDePasse.normalize('NFC'));
 }
 
-/** Clé AES dérivée des identifiants (≈ 1 s sur téléphone : c'est voulu, chaque essai coûte cher). */
-export async function deriverCle(identifiant: string, motDePasse: string, e: Enveloppe, exportable = false): Promise<CryptoKey> {
+/** Accès dérivé des identifiants : clé AES des données et jeton d'écriture des notes. */
+export interface Acces {
+  cle: CryptoKey; // déchiffre donnees.enc
+  brut: Uint8Array; // la même clé, pour l'option « Rester connecté »
+  jeton: string; // 64 caractères hexadécimaux, envoyé à notes.php (le serveur n'en garde que le SHA-256)
+}
+
+/**
+ * PBKDF2-SHA256 sur 512 bits (≈ 1 s sur téléphone : c'est voulu, chaque essai coûte cher). Les 256 premiers
+ * bits sont exactement la clé AES historique (PBKDF2 calcule ses blocs de 32 octets indépendamment) ; les
+ * 256 suivants forment le jeton d'écriture, qui ne permet pas de retrouver la clé, ni l'inverse.
+ */
+export async function deriverAcces(identifiant: string, motDePasse: string, e: Enveloppe): Promise<Acces> {
   const s = subtle();
-  const base = await s.importKey('raw', secret(identifiant, motDePasse), 'PBKDF2', false, ['deriveKey']);
-  return s.deriveKey({name: 'PBKDF2', hash: 'SHA-256', salt: deB64(e.sel), iterations: e.iterations}, base, {name: 'AES-GCM', length: 256}, exportable, ['decrypt']);
+  const base = await s.importKey('raw', secret(identifiant, motDePasse), 'PBKDF2', false, ['deriveBits']);
+  const bits = new Uint8Array(await s.deriveBits({name: 'PBKDF2', hash: 'SHA-256', salt: deB64(e.sel), iterations: e.iterations}, base, 512));
+  const brut = bits.slice(0, 32);
+  const jeton = Array.from(bits.slice(32), (b) => b.toString(16).padStart(2, '0')).join('');
+  const cle = await s.importKey('raw', brut, {name: 'AES-GCM'}, false, ['decrypt']);
+  return {cle, brut, jeton};
 }
 
 /** Déchiffre et décompresse ; identifiants faux → ErreurAcces('identifiants'). */
@@ -105,23 +120,23 @@ export async function ouvrir<T = unknown>(e: Enveloppe, cle: CryptoKey): Promise
   }
 }
 
-// Option « Rester connecté dans cet onglet » : la clé AES (jamais le mot de passe) est gardée dans le
-// sessionStorage de l'onglet, effacée quand l'onglet se ferme ou au verrouillage. Le sel ne change qu'avec
-// les identifiants (script 3) : la clé reste valable d'une publication des données à l'autre.
-export async function memoriserCle(cle: CryptoKey, e: Enveloppe): Promise<void> {
+// Option « Rester connecté dans cet onglet » : la clé AES et le jeton d'écriture (jamais le mot de passe) sont
+// gardés dans le sessionStorage de l'onglet, effacés quand l'onglet se ferme ou au verrouillage. Le sel ne change
+// qu'avec les identifiants (script 3) : l'accès reste valable d'une publication des données à l'autre.
+export function memoriserAcces(acces: Acces, e: Enveloppe): void {
   try {
-    const brut = new Uint8Array(await subtle().exportKey('raw', cle));
-    sessionStorage.setItem(CLE_SESSION, JSON.stringify({sel: e.sel, cle: versB64(brut)}));
+    sessionStorage.setItem(CLE_SESSION, JSON.stringify({sel: e.sel, cle: versB64(acces.brut), jeton: acces.jeton}));
   } catch {
     /* stockage indisponible (navigation privée) : il faudra se reconnecter */
   }
 }
 
-export async function cleMemorisee(e: Enveloppe): Promise<CryptoKey | null> {
+export async function accesMemorise(e: Enveloppe): Promise<Acces | null> {
   try {
     const s = JSON.parse(sessionStorage.getItem(CLE_SESSION) || 'null');
-    if (!s || s.sel !== e.sel || !s.cle) return null;
-    return await subtle().importKey('raw', deB64(s.cle), {name: 'AES-GCM'}, false, ['decrypt']);
+    if (!s || s.sel !== e.sel || !s.cle || !/^[0-9a-f]{64}$/.test(s.jeton || '')) return null;
+    const brut = deB64(s.cle);
+    return {cle: await subtle().importKey('raw', brut, {name: 'AES-GCM'}, false, ['decrypt']), brut, jeton: s.jeton};
   } catch {
     return null;
   }

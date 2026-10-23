@@ -27,6 +27,8 @@ PORT = 22
 UTILISATEUR = "loynafb"
 SERVICE_KEYRING = "loyna-site-ftp"
 DOSSIER_DISTANT = "www"  # relatif au dossier personnel de l'hébergement
+# Le dossier personnel contient aussi « panel-commercial » (notes chiffrées du panel commercial, écrites par
+# www/espace-commercial/notes.php) : il est hors de www/, et ce script ne lit, n'envoie et ne supprime que dans www/.
 QUOTA_OCTETS = 100 * 1024 * 1024  # hébergement gratuit OVH : 100 Mo
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"

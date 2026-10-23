@@ -1,5 +1,6 @@
 {
-  "_usage": "Identifiants de TEST du panel commercial, pour le serveur de développement (localhost) uniquement. panel.py refuse de publier en ligne avec eux. Les identifiants de production sont choisis par Ewan (script « 3 - Définir l'accès au panel commercial.cmd » du coffre) et ne sont écrits dans aucun fichier.",
+  "_usage": "Identifiants et clé des notes de TEST du panel commercial, pour le serveur de développement (localhost) uniquement. panel.py refuse de publier en ligne avec eux. Les identifiants de production sont choisis par Ewan (script « 3 - Définir l'accès au panel commercial.cmd » du coffre) et ne sont écrits dans aucun fichier.",
   "identifiant": "essai-local",
-  "mot_de_passe": "mistral-rasoir-garrigue-7974"
+  "mot_de_passe": "mistral-rasoir-garrigue-7974",
+  "cle_notes": "EdMs+JwlviUGo0pdzyS6S7kBMyj9ARWb/HeNMXdoKvI="
 }

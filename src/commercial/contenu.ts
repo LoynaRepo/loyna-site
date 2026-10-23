@@ -2,6 +2,9 @@
 // docs/BRIEF.md, de la FAQ du site (src/content-seed/faq.json / Builder), de la FAQ du coffre (05 Règles/FAQ Loyna.md),
 // des pages du site ou de src/data/site.ts (prix importés, jamais recopiés). Les « repères » d'horaires d'appel
 // sont des conseils pratiques, signalés comme tels. Règles de démarchage : pages CNIL citées (lues le 23/10/2026).
+// Formulation validée par Ewan (relecture du site, 23/10/2026) : jamais « HT » (TVA non applicable) ; engagement du
+// mensuel dit en clair ; un seul message sur la mise en service ; « LOYNA, une marque de KOVA Elec », Ewan « fondateur
+// de LOYNA » (jamais « société Loyna »).
 import {COMPARISON, LAUNCH_OFFER, PLANS, SETUP_FEE, SITE, euro, offerActive} from '../data/site';
 
 export interface Reponse {
@@ -42,25 +45,28 @@ function smsInclus(): {growth: string; pro: string} {
   return {growth: String(ligne?.values[1] ?? ''), pro: String(ligne?.values[2] ?? '')};
 }
 
-/** Phrase de l'offre de lancement, ou chaîne vide si elle est terminée. */
-export function phraseOffre(): string {
+/** Le seul message sur la mise en service : offerte pendant l'offre de lancement, sinon 49 € une fois. */
+export function phraseMiseEnService(): string {
   return offerActive()
-    ? `Jusqu’au ${LAUNCH_OFFER.untilLabel}, la mise en service est aussi offerte en mensuel avec le code ${LAUNCH_OFFER.code}.`
-    : '';
+    ? `Mise en service offerte jusqu’au ${LAUNCH_OFFER.untilLabel}, en mensuel comme en annuel (code ${LAUNCH_OFFER.code}, déjà appliqué par nos boutons).`
+    : `Mise en service : ${euro(SETUP_FEE)} une seule fois, offerte en paiement annuel.`;
 }
+export const MENTION_PRIX = `Prix en euros, sans TVA (${SITE.vatNote}) : le prix affiché est le prix payé.`;
+export const ENGAGEMENT_MENSUEL = 'Engagement de 12 mois, réglés chaque mois, puis résiliable à la fin de n’importe quel mois, sans frais.';
+export const ENGAGEMENT_ANNUEL = '12 mois payés en une fois, renouvelables.';
+export const KOVA = 'KOVA Elec est l’entreprise individuelle d’Ewan qui édite LOYNA ; c’est pour cela que le paiement et les factures sont à ce nom.';
 
 /** Réponses courtes aux questions et objections probables (onglet « Questions clients »). */
 export function objections(): Reponse[] {
   const sms = smsInclus();
-  const offre = phraseOffre();
   return [
     {
       id: 'prix',
       q: 'C’est combien ?',
       r: [
-        `Trois formules, prix hors taxes par mois : ${listePrix('monthly')}. ${SITE.vatNote} : le prix affiché est le prix payé.`,
-        `Mise en service : ${euro(SETUP_FEE)} HT une seule fois, offerte en paiement annuel. En annuel, 15 % de réduction : ${listePrix('yearly')} HT par an.`,
-        ...(offre ? [offre] : []),
+        `Trois formules, par mois, sans TVA : ${listePrix('monthly')}. ${MENTION_PRIX}`,
+        `En paiement annuel, 15 % de réduction : ${listePrix('yearly')} par an, sans TVA.`,
+        phraseMiseEnService(),
       ],
       liens: [LIENS.tarifs],
       sources: [S.tarifs, S.brief, S.faqCoffre],
@@ -70,7 +76,7 @@ export function objections(): Reponse[] {
       q: 'C’est trop cher / ça va me rapporter quoi ?',
       r: [
         'Faisons le calcul avec vos chiffres : divisez l’abonnement par votre marge moyenne sur une visite. Vous obtenez le nombre de visites en plus qu’il faut chaque mois pour rentrer dans vos frais.',
-        `Exemple purement indicatif, repris du site : avec 6 € de marge par visite, ${euro(prixMin())} HT par mois correspondent à environ ${Math.round(prixMin() / 6)} visites supplémentaires dans le mois, tous clients confondus.`,
+        `Exemple purement indicatif, repris du site : avec 6 € de marge par visite, un abonnement à ${euro(prixMin())} par mois correspond à environ ${Math.round(prixMin() / 6)} visites supplémentaires dans le mois, tous clients confondus.`,
         'Pas de matériel à acheter, et les notifications Wallet sont incluses dans toutes les formules, sans coût par message.',
       ],
       attention: 'Ne promettez aucun résultat chiffré : aucune statistique de résultat n’est publiée. Le simulateur de l’accueil fait le calcul avec ses propres chiffres.',
@@ -120,8 +126,8 @@ export function objections(): Reponse[] {
       id: 'engagement',
       q: 'Je suis engagé combien de temps ?',
       r: [
-        '12 mois au départ. En mensuel : 12 mois minimum réglés mois par mois, puis résiliable à la fin de n’importe quel mois, sans frais.',
-        'En annuel : 12 mois réglés d’avance, avec 15 % de réduction et la mise en service offerte, reconduit pour 12 mois sauf résiliation avant l’échéance.',
+        `En mensuel : ${ENGAGEMENT_MENSUEL.charAt(0).toLowerCase()}${ENGAGEMENT_MENSUEL.slice(1)}`,
+        `En annuel : ${ENGAGEMENT_ANNUEL.replace(/\.$/, '')}, avec 15 % de réduction et la mise en service offerte.`,
       ],
       attention: 'La FAQ du coffre n’a pas de réponse validée sur l’engagement : le Trieur ne répond pas seul à cette question par mail.',
       sources: [S.brief, S.faq],
@@ -190,10 +196,16 @@ export function objections(): Reponse[] {
       id: 'paiement',
       q: 'Comment je paie ? Et les factures ?',
       r: [
-        'En ligne, par carte bancaire, de façon sécurisée via Stripe ; les paiements apparaissent au nom de KOVA ELEC, l’entreprise qui édite LOYNA.',
-        `Les factures sont dans votre espace client. ${SITE.vatNote} : le montant facturé est le prix HT de la formule.`,
+        'En ligne, par carte bancaire, de façon sécurisée via Stripe, au nom de KOVA Elec, l’entreprise qui édite LOYNA. Les factures sont dans votre espace client.',
+        MENTION_PRIX,
       ],
       sources: [S.faq, S.brief],
+    },
+    {
+      id: 'kova',
+      q: 'C’est qui, KOVA Elec ? (paiement, facture)',
+      r: [KOVA, 'LOYNA est une marque de KOVA Elec ; Ewan en est le fondateur.'],
+      sources: [S.brief, 'Mentions légales (loyna.fr/mentions-legales/)'],
     },
     {
       id: 'changer',
@@ -227,7 +239,7 @@ export function derouleAppel(): {titre: string; duree?: string; points: string[]
       titre: 'Accroche',
       duree: '15 secondes',
       points: [
-        '« Bonjour {Prénom}, c’est Ewan, de LOYNA, à Montpellier. Je vous ai écrit au sujet d’une carte de fidélité digitale pour {Commerce}. Avez-vous deux minutes ? »',
+        '« Bonjour {Prénom}, c’est Ewan, fondateur de LOYNA, à Montpellier. Je vous ai écrit au sujet d’une carte de fidélité digitale pour {Commerce}. Avez-vous deux minutes ? »',
         'Sans prénom : demander le ou la responsable du commerce (le dirigeant du registre est dans la fiche).',
         'Pas le moment : « Quand puis-je vous rappeler ? », puis noter le créneau dans la fiche.',
       ],
@@ -249,7 +261,7 @@ export function derouleAppel(): {titre: string; duree?: string; points: string[]
         '« Vos clients scannent un QR code au comptoir et ajoutent votre carte dans Apple Wallet ou Google Wallet, sans application. »',
         '« À chaque visite, vous scannez leur carte avec votre téléphone : un scan, un passage validé. »',
         '« Au seuil que vous choisissez, la récompense se débloque toute seule et le client reçoit une notification sur son téléphone. »',
-        `« Votre carte est prête sous 24 h, à partir de ${euro(prixMin())} HT par mois. »`,
+        `« Votre carte est prête sous 24 h, à partir de ${euro(prixMin())} par mois, sans TVA. »`,
       ],
     },
     {

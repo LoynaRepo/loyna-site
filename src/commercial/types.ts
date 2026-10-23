@@ -1,6 +1,8 @@
 // Données du panel commercial : contenu de _systeme/suivi.json (coffre « Loyna Prospection », script suivi.py),
 // reçu chiffré (donnees.enc) et déchiffré dans le navigateur. Rien de tout cela n'est dans le dépôt du site.
 
+import type {Note} from './notes-crypto';
+
 export type EtatReception = 'oui' | 'non' | 'en attente' | '—';
 
 export interface Telephone {
@@ -60,6 +62,7 @@ export interface Prospect {
   derniere_activite: string;
   historique: string[];
   sources: string[];
+  notes?: Note[]; // notes du panel recopiées à la dernière publication (secours en lecture seule)
 }
 
 export interface Totaux {
@@ -82,6 +85,8 @@ export interface Totaux {
   premiers_mails_a_ecrire: number;
   file_envoi: {en_file: number; en_file_premiers: number; en_file_relances: number; a_verifier: number; refuses: number};
   contacts_hors_fiches: number;
+  notes?: number;
+  prospects_avec_notes?: number;
 }
 
 export interface BlocModele {
@@ -105,6 +110,8 @@ export interface Suivi {
   groupes_appel: {groupe: number; libelle: string}[];
   prospects: Prospect[];
   hors_fiches: {prospect: string; email: string; premier_mail: string; relance: string; echec: string; detail: string}[];
+  notes_orphelines?: {prospect: string; notes: Note[]}[];
+  notes_panel?: {cle: string; version: number}; // clé des notes, ajoutée par panel.py au moment du chiffrement
   ressources: {
     modeles: {titre: string; fichier: string; blocs: BlocModele[]}[];
     faq_coffre: {q: string; r: string; pieces: string[]}[];
