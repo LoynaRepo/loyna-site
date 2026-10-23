@@ -74,6 +74,26 @@ export const CARD_ACCENTS = [
   {c: '#121216', nom: 'Noir'},
 ];
 
+// Configurateur (/creer-ma-carte/) : activités proposées, avec la récompense et les couleurs de départ de chacune.
+// Le lien ?activite=… et le choix d'une activité dans la liste les appliquent, sauf ce que le visiteur a déjà
+// modifié lui-même. Couleurs prises dans CARD_BGS / CARD_ACCENTS quand c'est possible (pastille enfoncée).
+export const CARD_ACTIVITES: {nom: string; recompense: string; fond: string; tampons: string}[] = [
+  {nom: 'Coiffure', recompense: 'Brushing offert', fond: '#1f1c17', tampons: '#d9b27a'},
+  {nom: 'Barbier', recompense: 'Taille de barbe offerte', fond: '#121216', tampons: '#d9b27a'},
+  {nom: 'Institut de beauté', recompense: 'Soin du visage offert', fond: '#5b2a86', tampons: '#f4a3b5'},
+  {nom: 'Onglerie', recompense: 'Pose de vernis offerte', fond: '#121216', tampons: '#f4a3b5'}, // fond clair + rose : initiales illisibles
+  {nom: 'Boulangerie', recompense: 'Viennoiserie offerte', fond: '#7a3d1c', tampons: '#f2c879'},
+  {nom: 'Café', recompense: 'Café offert', fond: '#f5efe4', tampons: '#7a3d1c'},
+  {nom: 'Restaurant', recompense: 'Dessert offert', fond: '#14532d', tampons: '#d9b27a'},
+  {nom: 'Snack', recompense: 'Menu offert', fond: '#121216', tampons: '#ffd166'},
+  {nom: 'Pizzeria', recompense: 'Pizza offerte', fond: '#9b1c1c', tampons: '#ffd166'},
+  {nom: 'Fleuriste', recompense: 'Bouquet offert', fond: '#14532d', tampons: '#f4a3b5'},
+  {nom: 'Boucherie', recompense: 'Brochettes offertes', fond: '#9b1c1c', tampons: '#d9b27a'},
+  {nom: 'Pressing', recompense: 'Chemise nettoyée offerte', fond: '#1e3a5f', tampons: '#7dd3fc'},
+  {nom: 'Boutique', recompense: '10 % sur le prochain achat', fond: '#121216', tampons: '#e9d5ff'},
+  {nom: 'Autre', recompense: 'Cadeau offert', fond: '#1f1c17', tampons: '#d9b27a'},
+];
+
 export const SETUP_FEE = 49;
 
 // Offre de lancement (décision d'Ewan du 2026-10-09) : mise en service offerte en mensuel avec un code promo

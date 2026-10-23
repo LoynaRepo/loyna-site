@@ -1,0 +1,158 @@
+// Essais du configurateur (/creer-ma-carte/) : réglages passés dans le lien, priorité sur le brouillon enregistré,
+// récompense et couleurs par activité, modifications du visiteur respectées.
+// node tools/qa-configurateur.mjs   (serveur de développement sur le port 4322) → captures dans out/qa/
+import puppeteer from 'puppeteer-core';
+import fs from 'node:fs';
+
+const CH = 'C:/Users/vaiko/Documents/LOYNA-Motion/node_modules/.remotion/chrome-headless-shell/win64/chrome-headless-shell-win64/chrome-headless-shell.exe';
+const BASE = process.env.BASE || 'http://127.0.0.1:4322';
+fs.mkdirSync('out/qa', {recursive: true});
+const browser = await puppeteer.launch({executablePath: CH, headless: 'shell', args: ['--disable-gpu']});
+let echecs = 0;
+const verifier = (nom, obtenu, attendu) => {
+  const ok = JSON.stringify(obtenu) === JSON.stringify(attendu);
+  if (!ok) echecs++;
+  console.log(`${ok ? 'OK  ' : 'ÉCHEC'} ${nom}${ok ? '' : ` : obtenu ${JSON.stringify(obtenu)}, attendu ${JSON.stringify(attendu)}`}`);
+};
+
+// État du formulaire, de la carte et des pastilles
+const etat = (page) =>
+  page.evaluate(() => {
+    const v = (s) => document.querySelector(s).value;
+    const card = document.querySelector('#card-slot .wcard');
+    const enfoncee = (cible) => document.querySelector(`.swatches[data-target="${cible}"] .sw[aria-pressed="true"]`)?.dataset.color || null;
+    const roue = (cible) => document.querySelector(`.swatches[data-target="${cible}"] .custom`).classList.contains('is-picked');
+    let brouillon = null;
+    try {
+      brouillon = JSON.parse(localStorage.getItem('loyna-config'));
+    } catch {}
+    return {
+      nom: v('#c-name'), activite: v('#c-activity'), recompense: v('#c-reward'), fond: v('#c-bg'), tampons: v('#c-accent'),
+      carte: {nom: card.querySelector('.wc-name strong').textContent, activite: card.querySelector('.wc-name small').textContent,
+        recompense: card.querySelector('.wc-reward span').textContent, fond: card.style.getPropertyValue('--bg'), tampons: card.style.getPropertyValue('--accent')},
+      pastilles: {fond: enfoncee('bg'), tampons: enfoncee('accent'), roueFond: roue('bg'), roueTampons: roue('accent')},
+      brouillon,
+    };
+  });
+
+// Nouvelle page dans un contexte vierge (localStorage vide), avec un brouillon éventuel
+async function ouvrir(chemin, brouillon) {
+  const ctx = browser.createBrowserContext ? await browser.createBrowserContext() : await browser.createIncognitoBrowserContext();
+  const page = await ctx.newPage();
+  await page.setViewport({width: 1280, height: 1000});
+  if (brouillon) {
+    await page.goto(BASE + '/creer-ma-carte/', {waitUntil: 'networkidle0'});
+    await page.evaluate((b) => localStorage.setItem('loyna-config', JSON.stringify(b)), brouillon);
+  }
+  await page.goto(BASE + chemin, {waitUntil: 'networkidle0'});
+  return {page, ctx};
+}
+const choisirActivite = (page, nom) =>
+  page.evaluate((n) => {
+    const s = document.querySelector('#c-activity');
+    s.value = n;
+    s.dispatchEvent(new Event('input', {bubbles: true}));
+    s.dispatchEvent(new Event('change', {bubbles: true}));
+  }, nom);
+
+const BROUILLON = {name: 'Mon Salon', activity: 'Coiffure', bg: '#14532d', accent: '#ffd166', total: 8, filled: 3, reward: 'Coupe offerte', variant: 'google', touche: {reward: true, bg: true, accent: true}};
+
+// 1. Lien Boulangerie (activité seule) : récompense et couleurs de l'activité
+{
+  const {page, ctx} = await ouvrir('/creer-ma-carte/?nom=La%20P%C3%A2tisserie%20des%20Marseillais&activite=Boulangerie');
+  const e = await etat(page);
+  verifier('lien 1 : nom', e.nom, 'La Pâtisserie des Marseillais');
+  verifier('lien 1 : activité', e.activite, 'Boulangerie');
+  verifier('lien 1 : récompense de l’activité', e.recompense, 'Viennoiserie offerte');
+  verifier('lien 1 : couleurs de l’activité', [e.fond, e.tampons], ['#7a3d1c', '#f2c879']);
+  verifier('lien 1 : carte à jour', e.carte, {nom: 'La Pâtisserie des Marseillais', activite: 'Boulangerie', recompense: 'Viennoiserie offerte', fond: '#7a3d1c', tampons: '#f2c879'});
+  verifier('lien 1 : pastilles enfoncées (Cognac, Miel)', e.pastilles, {fond: '#7a3d1c', tampons: '#f2c879', roueFond: false, roueTampons: false});
+  await page.$eval('#cfg', (el) => el.scrollIntoView());
+  await (await page.$('.configurator')).screenshot({path: 'out/qa/configurateur-lien1-boulangerie.png'});
+  // le visiteur change d'activité sans rien avoir modifié : tout suit
+  await choisirActivite(page, 'Pressing');
+  const e2 = await etat(page);
+  verifier('lien 1 → Pressing : récompense et couleurs suivent', [e2.recompense, e2.fond, e2.tampons], ['Chemise nettoyée offerte', '#1e3a5f', '#7dd3fc']);
+  // il modifie la récompense, puis change d'activité : la récompense reste, les couleurs suivent
+  await page.$eval('#c-reward', (el) => { el.focus(); el.select(); });
+  await page.type('#c-reward', 'Repassage offert');
+  await choisirActivite(page, 'Fleuriste');
+  const e3 = await etat(page);
+  verifier('récompense modifiée puis Fleuriste : récompense gardée, couleurs suivent', [e3.recompense, e3.fond, e3.tampons], ['Repassage offert', '#14532d', '#f4a3b5']);
+  // il choisit une couleur de carte, puis change d'activité : la carte reste, les tampons suivent
+  await page.click('.swatches[data-target="bg"] .sw[data-color="#5b2a86"]');
+  await choisirActivite(page, 'Café');
+  const e4 = await etat(page);
+  verifier('fond choisi puis Café : fond gardé, tampons suivent', [e4.recompense, e4.fond, e4.tampons], ['Repassage offert', '#5b2a86', '#7a3d1c']);
+  verifier('Café : tampons hors palette → roue marquée', [e4.pastilles.tampons, e4.pastilles.roueTampons, e4.carte.tampons], [null, true, '#7a3d1c']);
+  verifier('brouillon enregistré avec les marques de modification', e4.brouillon.touche, {reward: true, bg: true, accent: false});
+  await ctx.close();
+}
+
+// 2. Lien Pizzeria avec récompense et couleurs libres
+{
+  const {page, ctx} = await ouvrir('/creer-ma-carte/?nom=Pizza%20Roma&activite=Pizzeria&recompense=10e%20pizza%20offerte&fond=1f3a2a&tampons=e8503a');
+  const e = await etat(page);
+  verifier('lien 2 : nom, activité, récompense', [e.nom, e.activite, e.recompense], ['Pizza Roma', 'Pizzeria', '10e pizza offerte']);
+  verifier('lien 2 : couleurs du lien', [e.fond, e.tampons], ['#1f3a2a', '#e8503a']);
+  verifier('lien 2 : carte à jour', e.carte, {nom: 'Pizza Roma', activite: 'Pizzeria', recompense: '10e pizza offerte', fond: '#1f3a2a', tampons: '#e8503a'});
+  verifier('lien 2 : couleurs libres → roues marquées, aucune pastille', e.pastilles, {fond: null, tampons: null, roueFond: true, roueTampons: true});
+  await page.$eval('#cfg', (el) => el.scrollIntoView());
+  await (await page.$('.configurator')).screenshot({path: 'out/qa/configurateur-lien2-pizzeria.png'});
+  await ctx.close();
+}
+
+// 3. Le lien passe avant le brouillon enregistré
+{
+  const {page, ctx} = await ouvrir('/creer-ma-carte/?nom=La%20P%C3%A2tisserie%20des%20Marseillais&activite=Boulangerie', BROUILLON);
+  const e = await etat(page);
+  verifier('lien > brouillon : activité, récompense, couleurs du lien', [e.activite, e.recompense, e.fond, e.tampons], ['Boulangerie', 'Viennoiserie offerte', '#7a3d1c', '#f2c879']);
+  verifier('lien > brouillon : le reste du brouillon est gardé (passages, style)', [e.brouillon.total, e.brouillon.filled, e.brouillon.variant], [8, 3, 'google']);
+  await ctx.close();
+}
+
+// 4. Sans réglages : comme avant
+{
+  const {page, ctx} = await ouvrir('/creer-ma-carte/');
+  const e = await etat(page);
+  verifier('sans lien ni brouillon : valeurs de départ', [e.nom, e.activite, e.recompense, e.fond, e.tampons], ['Maison Lumière', 'Coiffure', 'Brushing offert', '#1f1c17', '#d9b27a']);
+  verifier('sans lien ni brouillon : pastilles Noir chaud et Or', [e.pastilles.fond, e.pastilles.tampons], ['#1f1c17', '#d9b27a']);
+  await ctx.close();
+}
+{
+  const {page, ctx} = await ouvrir('/creer-ma-carte/', BROUILLON);
+  const e = await etat(page);
+  verifier('brouillon seul : repris tel quel', [e.nom, e.activite, e.recompense, e.fond, e.tampons], ['Mon Salon', 'Coiffure', 'Coupe offerte', '#14532d', '#ffd166']);
+  await ctx.close();
+}
+{
+  const {page, ctx} = await ouvrir('/creer-ma-carte/?nom=Chez%20Nina', BROUILLON);
+  const e = await etat(page);
+  verifier('brouillon + ?nom seul : nom remplacé, reste du brouillon', [e.nom, e.activite, e.recompense, e.fond, e.tampons], ['Chez Nina', 'Coiffure', 'Coupe offerte', '#14532d', '#ffd166']);
+  await ctx.close();
+}
+
+// 5. Couleurs invalides ignorées, activité inconnue ajoutée, accents et majuscules tolérés
+{
+  const {page, ctx} = await ouvrir('/creer-ma-carte/?activite=boulangerie&fond=zzz123&tampons=12345');
+  const e = await etat(page);
+  verifier('couleurs invalides ignorées (couleurs de l’activité)', [e.activite, e.fond, e.tampons], ['Boulangerie', '#7a3d1c', '#f2c879']);
+  await ctx.close();
+}
+{
+  const {page, ctx} = await ouvrir('/creer-ma-carte/?activite=Cafe&tampons=%23E8503A');
+  const e = await etat(page);
+  verifier('« Cafe » → Café ; « #E8503A » accepté', [e.activite, e.recompense, e.fond, e.tampons], ['Café', 'Café offert', '#f5efe4', '#e8503a']);
+  await ctx.close();
+}
+{
+  const {page, ctx} = await ouvrir('/creer-ma-carte/?activite=Toiletteur&recompense=' + encodeURIComponent('Un toilettage offert, et même plus que ça, vraiment'));
+  const e = await etat(page);
+  verifier('activité inconnue ajoutée et choisie', e.activite, 'Toiletteur');
+  verifier('récompense coupée à 40 caractères', [e.recompense, e.recompense.length], ['Un toilettage offert, et même plus que ç', 40]);
+  await ctx.close();
+}
+
+await browser.close();
+console.log(echecs ? `${echecs} échec(s)` : 'Tous les essais passent.');
+process.exit(echecs ? 1 : 0);

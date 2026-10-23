@@ -4,7 +4,7 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 import Phone from '../components/Phone.astro';
 import WalletCard from '../components/WalletCard.astro';
 import Icon from '../components/Icon.astro';
-import {CARD_ACCENTS, CARD_BGS, SITE} from '../data/site';
+import {CARD_ACCENTS, CARD_ACTIVITES, CARD_BGS, SITE} from '../data/site';
 
 const crumbs = [
   {name: 'Accueil', url: '/'},
@@ -12,7 +12,7 @@ const crumbs = [
 ];
 const bgs = CARD_BGS;
 const accents = CARD_ACCENTS;
-const activities = ['Coiffure', 'Barbier', 'Institut de beauté', 'Onglerie', 'Boulangerie', 'Café', 'Restaurant', 'Snack', 'Pizzeria', 'Fleuriste', 'Boucherie', 'Pressing', 'Boutique', 'Autre'];
+const activities = CARD_ACTIVITES.map((a) => a.nom);
 // Questions fréquentes de la page (affichées et décrites en données structurées FAQPage)
 const cfgFaq = [
   {q: 'Créer l’aperçu de ma carte de fidélité est-il gratuit ?', a: 'Oui. Le configurateur est gratuit et sans inscription : vous voyez votre carte à votre nom, à vos couleurs et avec votre récompense. Vous ne payez que si vous décidez de lancer votre carte.'},
@@ -202,12 +202,28 @@ const appLd = {
 
 <script>
   import {marquerCouleurs} from '../lib/carte-live';
+  import {CARD_ACTIVITES} from '../data/site';
 
-  type Cfg = {name: string; activity: string; bg: string; accent: string; total: number; filled: number; reward: string; variant: 'apple' | 'google'};
+  type Touche = {reward: boolean; bg: boolean; accent: boolean};
+  type Cfg = {name: string; activity: string; bg: string; accent: string; total: number; filled: number; reward: string; variant: 'apple' | 'google'; touche?: Touche};
   const $ = <T extends HTMLElement>(s: string) => document.querySelector<T>(s)!;
   const card = document.querySelector<HTMLElement>('#card-slot .wcard')!;
   const KEY = 'loyna-config';
   let logoUrl = '';
+
+  // Récompense et couleurs suivent l'activité choisie, sauf celles que le visiteur a modifiées lui-même
+  // (ces marques sont gardées avec le brouillon, pour être respectées à la visite suivante).
+  const touche: Touche = {reward: false, bg: false, accent: false};
+  const simplifier = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+  const defautsActivite = (nom: string) => CARD_ACTIVITES.find((a) => simplifier(a.nom) === simplifier(nom));
+  function appliquerActivite(nom: string) {
+    const d = defautsActivite(nom);
+    if (!d) return;
+    if (!touche.reward) $<HTMLInputElement>('#c-reward').value = d.recompense;
+    if (!touche.bg) $<HTMLInputElement>('#c-bg').value = d.fond;
+    if (!touche.accent) $<HTMLInputElement>('#c-accent').value = d.tampons;
+    marquerCouleurs(document);
+  }
 
   const read = (): Cfg => ({
     name: $<HTMLInputElement>('#c-name').value.trim() || 'Votre commerce',
@@ -277,7 +293,7 @@ const appLd = {
     card.querySelector('.wc-reward span')!.textContent = c.reward;
     $('#wallet-title').textContent = c.variant === 'apple' ? 'Wallet' : 'Google Wallet';
     try {
-      localStorage.setItem(KEY, JSON.stringify(c));
+      localStorage.setItem(KEY, JSON.stringify({...c, touche}));
     } catch {
       /* stockage indisponible : sans conséquence */
     }
@@ -291,17 +307,28 @@ const appLd = {
   // Couleurs : pastilles et sélecteur libre (roue des couleurs, couleur choisie affichée au centre)
   document.querySelectorAll<HTMLElement>('.swatches').forEach((group) => {
     const input = group.querySelector<HTMLInputElement>('input[type=color]')!;
+    const cible = group.dataset.target as 'bg' | 'accent';
     group.querySelectorAll<HTMLButtonElement>('.sw[data-color]').forEach((b) =>
       b.addEventListener('click', () => {
         input.value = b.dataset.color!;
+        touche[cible] = true;
         marquerCouleurs(group);
         render();
       }),
     );
     input.addEventListener('input', () => {
+      touche[cible] = true;
       marquerCouleurs(group);
       render();
     });
+  });
+  $<HTMLInputElement>('#c-reward').addEventListener('input', () => {
+    touche.reward = true;
+  });
+  // Changement d'activité : la récompense et les couleurs de l'activité, sauf ce que le visiteur a modifié
+  $<HTMLSelectElement>('#c-activity').addEventListener('input', () => {
+    appliquerActivite($<HTMLSelectElement>('#c-activity').value);
+    render();
   });
 
   $<HTMLInputElement>('#c-logo').addEventListener('change', (e) => {
@@ -311,7 +338,7 @@ const appLd = {
     $('#file-name').textContent = f ? f.name : 'Aucun fichier choisi';
     render();
   });
-  document.querySelectorAll('#cfg input:not([type=file]):not([type=color]), #cfg select').forEach((el) => el.addEventListener('input', render));
+  document.querySelectorAll('#cfg input:not([type=file]):not([type=color])').forEach((el) => el.addEventListener('input', render));
 
   ($<HTMLFormElement>('#send-preview').elements.namedItem('t') as HTMLInputElement).value = String(Date.now());
   $<HTMLFormElement>('#send-preview').addEventListener('submit', (e) => {
@@ -333,14 +360,56 @@ const appLd = {
       $<HTMLInputElement>('#c-filled').value = String(saved.filled);
       $<HTMLInputElement>('#c-reward').value = saved.reward;
       $<HTMLInputElement>(saved.variant === 'google' ? '#v-google' : '#v-apple').checked = true;
+      if (saved.touche) Object.assign(touche, saved.touche);
     }
   } catch {
     /* rien */
   }
+
+  // Réglages passés dans le lien, prioritaires sur le brouillon enregistré :
+  // ?nom=…&activite=Boulangerie&recompense=Viennoiserie%20offerte&fond=5b3a21&tampons=d9b27a
+  // (nom : celui tapé dans le haut de la page d'accueil, ou un lien envoyé à un commerçant)
+  const lien = new URLSearchParams(location.search);
+  const hexa = (v: string | null) => {
+    const h = (v || '').trim().replace(/^#/, '').toLowerCase();
+    return /^[0-9a-f]{6}$/.test(h) ? `#${h}` : ''; // couleur invalide : ignorée
+  };
+  const nomLien = (lien.get('nom') || '').trim();
+  const activiteLien = (lien.get('activite') || '').trim().slice(0, 40);
+  const recompenseLien = (lien.get('recompense') || '').trim().slice(0, 40);
+  const fondLien = hexa(lien.get('fond'));
+  const tamponsLien = hexa(lien.get('tampons'));
+  if (nomLien) $<HTMLInputElement>('#c-name').value = nomLien.slice(0, 40);
+  if (activiteLien) {
+    const act = $<HTMLSelectElement>('#c-activity');
+    const option = [...act.options].find((o) => simplifier(o.value) === simplifier(activiteLien));
+    if (option) act.value = option.value;
+    else {
+      act.add(new Option(activiteLien, activiteLien));
+      act.value = activiteLien;
+    }
+    // l'activité du lien apporte sa récompense et ses couleurs, sauf celles que le lien précise lui-même
+    const d = defautsActivite(act.value);
+    if (d) {
+      if (!recompenseLien) $<HTMLInputElement>('#c-reward').value = d.recompense;
+      if (!fondLien) $<HTMLInputElement>('#c-bg').value = d.fond;
+      if (!tamponsLien) $<HTMLInputElement>('#c-accent').value = d.tampons;
+      Object.assign(touche, {reward: false, bg: false, accent: false});
+    }
+  }
+  if (recompenseLien) {
+    $<HTMLInputElement>('#c-reward').value = recompenseLien;
+    touche.reward = false;
+  }
+  if (fondLien) {
+    $<HTMLInputElement>('#c-bg').value = fondLien;
+    touche.bg = false;
+  }
+  if (tamponsLien) {
+    $<HTMLInputElement>('#c-accent').value = tamponsLien;
+    touche.accent = false;
+  }
   marquerCouleurs(document);
-  // Nom tapé dans le haut de la page d'accueil (?nom=…)
-  const nomParam = new URLSearchParams(location.search).get('nom');
-  if (nomParam) $<HTMLInputElement>('#c-name').value = nomParam.slice(0, 40);
   render();
 </script>
 
