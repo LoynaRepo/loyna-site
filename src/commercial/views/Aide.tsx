@@ -1,4 +1,4 @@
-// Aide à la prospection : déroulé d'un appel, processus (premier mail → relance J+7 → abandon), modèles de
+// Aide à la prospection : déroulé d'un appel, processus (premier mail → relance J+7 → 7 jours ouvrés → appel ou sortie du fichier), modèles de
 // mails du coffre, bonnes pratiques (horaires d'appel, règles du démarchage B2B, droit d'opposition).
 import {BONNES_PRATIQUES, derouleAppel, HORAIRES, LIENS, REGLES_B2B, SOURCES_CNIL} from '../contenu';
 import {fr} from '../format';
@@ -96,7 +96,7 @@ export function Aide() {
         </p>
       </Panel>
 
-      <Panel title="Le processus" id="aide-processus" sub="Premier mail, relance 7 jours plus tard, abandon 7 jours après la relance sans réponse.">
+      <Panel title="Le processus" id="aide-processus" sub="Premier mail, relance 7 jours plus tard, puis 7 jours ouvrés : appel s’il y a un numéro, sinon sortie du fichier.">
         <ol class="cp-frise">
           <li>
             <strong>J 0 · Premier mail</strong>
@@ -107,8 +107,8 @@ export function Aide() {
             <span>{fr('Une seule relance, dans le fil du premier mail, si aucune réponse.')}</span>
           </li>
           <li>
-            <strong>J + {d.regles.delai_relance_jours + (d.regles.delai_abandon_jours ?? d.regles.delai_appel_jours)} · Abandon</strong>
-            <span>{fr(`Toujours sans réponse ${d.regles.delai_abandon_jours ?? d.regles.delai_appel_jours} jours après la relance : le prospect est abandonné, plus aucun contact. Pas d’appel obligatoire : un commerce sans numéro se traite entièrement par mail.`)}</span>
+            <strong>Relance + {d.regles.delai_abandon_jours ?? d.regles.delai_appel_jours} jours ouvrés · Fin du parcours</strong>
+            <span>{fr(`Toujours sans réponse : avec un numéro, le prospect passe dans « À appeler » (plus aucun mail) ; sans numéro, il est abandonné et sort complètement du fichier des prospects.`)}</span>
           </li>
         </ol>
         <ul class="cp-points">
