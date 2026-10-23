@@ -99,8 +99,21 @@ const rows = [
     outline-offset: 3px;
   }
   .custom {
-    background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+    background: var(--roue-couleur);
     overflow: hidden;
+  }
+  .custom.is-picked {
+    background:
+      radial-gradient(circle closest-side, var(--pick) 0 50%, #fff 54% 63%, rgb(255 255 255 / 0) 67%),
+      var(--roue-arc);
+    box-shadow:
+      0 0 0 2px var(--bg),
+      0 0 0 4px var(--ink);
+  }
+  .card-sw--dark .custom.is-picked {
+    box-shadow:
+      0 0 0 2px #17151a,
+      0 0 0 4px #e6c27a;
   }
   .custom input {
     position: absolute;

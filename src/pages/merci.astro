@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
-import {PLANS, SETUP_FEE, offerActive} from '../data/site';
+import {CARD_ACCENTS, CARD_BGS, PLANS, SETUP_FEE, offerActive} from '../data/site';
 // Montant du premier paiement par offre, pour la mesure de conversion (sans donnée personnelle).
 const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.monthly + (offerActive() ? 0 : SETUP_FEE)], [`${p.id}-annuel`, p.yearly]]));
 ---
@@ -77,23 +77,31 @@ const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.
             <input id="el-email" name="email" type="email" required maxlength="120" autocomplete="email" />
             <p class="err">Indiquez une adresse e-mail valide.</p>
           </div>
-          <div class="row row-3">
+          <div class="row">
             <div class="field">
-              <label for="el-fond">Couleur de la carte</label>
-              <input id="el-fond" name="fond" type="color" value="#1f1c17" />
+              <span class="flabel" id="lbl-fond">Couleur de la carte</span>
+              <div class="swatches" data-target="bg" role="group" aria-labelledby="lbl-fond">
+                {CARD_BGS.map((c, i) => <button type="button" class="sw" style={`--c:${c.c}`} data-color={c.c} aria-label={c.nom} title={c.nom} aria-pressed={i === 0 ? 'true' : 'false'} />)}
+                <label class="sw custom" title="Couleur personnalisée"><input id="el-fond" name="fond" type="color" value={CARD_BGS[0].c} aria-label="Couleur de carte personnalisée" /></label>
+              </div>
             </div>
             <div class="field">
-              <label for="el-accent">Couleur des tampons</label>
-              <input id="el-accent" name="accent" type="color" value="#d9b27a" />
+              <span class="flabel" id="lbl-accent">Couleur des tampons</span>
+              <div class="swatches" data-target="accent" role="group" aria-labelledby="lbl-accent">
+                {CARD_ACCENTS.map((c, i) => <button type="button" class="sw" style={`--c:${c.c}`} data-color={c.c} aria-label={c.nom} title={c.nom} aria-pressed={i === 0 ? 'true' : 'false'} />)}
+                <label class="sw custom" title="Couleur personnalisée"><input id="el-accent" name="accent" type="color" value={CARD_ACCENTS[0].c} aria-label="Couleur des tampons personnalisée" /></label>
+              </div>
             </div>
+          </div>
+          <div class="row row-pr">
             <div class="field">
               <label for="el-passages">Passages pour la récompense</label>
               <input id="el-passages" name="passages" type="number" min="2" max="50" value="10" />
             </div>
-          </div>
-          <div class="field">
-            <label for="el-recompense">Récompense</label>
-            <input id="el-recompense" name="recompense" type="text" maxlength="120" placeholder="Ex. : un café offert, -10 % sur la prochaine prestation" />
+            <div class="field">
+              <label for="el-recompense">Récompense</label>
+              <input id="el-recompense" name="recompense" type="text" maxlength="120" placeholder="Ex. : un café offert, -10 % sur la prochaine prestation" />
+            </div>
           </div>
           <div class="field">
             <span class="flabel">Votre logo <span class="opt">(PNG, JPG, SVG ou PDF, 5 Mo au plus)</span></span>
@@ -118,8 +126,12 @@ const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.
 </Base>
 
 <script>
+  import {brancherCouleurs, marquerCouleurs} from '../lib/carte-live';
+
   const q = new URLSearchParams(location.search);
   const form = document.getElementById('elements-form') as HTMLFormElement;
+  // Ronds de couleur : la valeur part dans les champs « fond » et « accent » du formulaire
+  brancherCouleurs(form, () => {});
   const set = (name: string, v: string) => {
     const el = form.elements.namedItem(name) as HTMLInputElement | null;
     if (el && v) el.value = v;
@@ -168,6 +180,7 @@ const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.
   } catch {
     /* stockage indisponible */
   }
+  marquerCouleurs(form);
   // Mesure de conversion (seulement si la mesure d'audience a été acceptée)
   window.addEventListener('load', () => {
     const offre = q.get('offre') || '';
@@ -241,10 +254,10 @@ const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.
     grid-template-columns: 1fr 1fr;
     gap: 14px;
   }
-  .row-3 {
-    grid-template-columns: 1fr 1fr 1fr;
+  .row-pr {
+    grid-template-columns: minmax(150px, 0.6fr) 1.4fr;
   }
-  .field label {
+  .field label:not(.sw) {
     display: block;
     font-weight: 600;
     font-size: 0.95rem;
@@ -265,13 +278,51 @@ const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.
     background: #fff;
     font: inherit;
   }
-  .field input[type='color'] {
+  /* Ronds de couleur, comme le configurateur : pastilles prédéfinies + roue des couleurs */
+  .swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sw {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    background: var(--c);
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+  }
+  .sw[aria-pressed='true'] {
+    box-shadow:
+      0 0 0 2px var(--card),
+      0 0 0 4px var(--ink);
+  }
+  .sw:focus-visible,
+  .custom:focus-within {
+    outline: 3px solid rgba(201, 150, 63, 0.55);
+    outline-offset: 3px;
+  }
+  .custom {
+    background: var(--roue-couleur);
+    overflow: hidden;
+  }
+  .custom.is-picked {
+    background:
+      radial-gradient(circle closest-side, var(--pick) 0 50%, #fff 54% 63%, rgb(255 255 255 / 0) 67%),
+      var(--roue-arc);
+    box-shadow:
+      0 0 0 2px var(--card),
+      0 0 0 4px var(--ink);
+  }
+  .custom input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
     width: 100%;
-    height: 46px;
-    padding: 4px;
-    border-radius: 12px;
-    border: 1px solid var(--line);
-    background: #fff;
+    height: 100%;
   }
   .flabel {
     display: block;
@@ -328,7 +379,7 @@ const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.
   }
   @media (max-width: 560px) {
     .row,
-    .row-3 {
+    .row-pr {
       grid-template-columns: 1fr;
     }
   }

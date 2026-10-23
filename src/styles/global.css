@@ -646,3 +646,12 @@ p {
     padding: 22px;
   }
 }
+
+/* --- Rond « couleur personnalisée » : roue des couleurs à centre blanc ------------------------- */
+/* Accueil, configurateur, formulaire après achat et espace client. Une fois une couleur libre choisie,
+   le rond prend la classe is-picked et affiche cette couleur au centre (variable --pick posée par le script,
+   écrite directement dans la règle du composant : une variable qui en contient une autre se résout ici). */
+:root {
+  --roue-arc: conic-gradient(#ff453a, #ff9f0a, #ffd60a, #30d158, #40c8e0, #0a84ff, #5e5ce6, #bf5af2, #ff375f, #ff453a);
+  --roue-couleur: radial-gradient(circle closest-side, #fff 0, rgb(255 255 255 / 0.92) 16%, rgb(255 255 255 / 0) 78%), var(--roue-arc);
+}

@@ -68,15 +68,34 @@ export function brancherCouleurs(root: HTMLElement, changer: (cible: 'bg' | 'acc
     const boutons = [...groupe.querySelectorAll<HTMLButtonElement>('.sw[data-color]')];
     boutons.forEach((b) =>
       b.addEventListener('click', () => {
-        boutons.forEach((x) => x.setAttribute('aria-pressed', 'false'));
-        b.setAttribute('aria-pressed', 'true');
         if (libre) libre.value = b.dataset.color!;
+        marquerCouleurs(groupe);
         changer(cible, b.dataset.color!);
       }),
     );
     libre?.addEventListener('input', () => {
-      boutons.forEach((x) => x.setAttribute('aria-pressed', 'false'));
+      marquerCouleurs(groupe);
       changer(cible, libre.value);
     });
+  });
+}
+
+/** Remet l'état des ronds d'après la valeur du sélecteur libre : rond prédéfini enfoncé s'il correspond,
+ *  sinon roue des couleurs marquée (classe is-picked) avec la couleur choisie au centre. */
+export function marquerCouleurs(root: ParentNode): void {
+  const groupes = root instanceof HTMLElement && root.matches('.swatches') ? [root] : [...root.querySelectorAll<HTMLElement>('.swatches')];
+  groupes.forEach((groupe) => {
+    const libre = groupe.querySelector<HTMLInputElement>('input[type=color]');
+    if (!libre) return;
+    const v = libre.value.toLowerCase();
+    let predefini = false;
+    groupe.querySelectorAll<HTMLElement>('.sw[data-color]').forEach((b) => {
+      const on = b.dataset.color!.toLowerCase() === v;
+      predefini ||= on;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    const rond = libre.closest<HTMLElement>('.sw');
+    rond?.classList.toggle('is-picked', !predefini);
+    rond?.style.setProperty('--pick', libre.value);
   });
 }

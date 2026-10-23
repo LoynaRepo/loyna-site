@@ -201,6 +201,8 @@ const appLd = {
 </Base>
 
 <script>
+  import {marquerCouleurs} from '../lib/carte-live';
+
   type Cfg = {name: string; activity: string; bg: string; accent: string; total: number; filled: number; reward: string; variant: 'apple' | 'google'};
   const $ = <T extends HTMLElement>(s: string) => document.querySelector<T>(s)!;
   const card = document.querySelector<HTMLElement>('#card-slot .wcard')!;
@@ -286,19 +288,18 @@ const appLd = {
       `${c.name} (${c.activity}) · fond ${c.bg} · tampons ${c.accent} · ${c.total} passages · récompense : ${c.reward} · style ${c.variant === 'google' ? 'Google Wallet' : 'Apple Wallet'}`;
   }
 
-  // Couleurs : pastilles et sélecteur libre
+  // Couleurs : pastilles et sélecteur libre (roue des couleurs, couleur choisie affichée au centre)
   document.querySelectorAll<HTMLElement>('.swatches').forEach((group) => {
     const input = group.querySelector<HTMLInputElement>('input[type=color]')!;
     group.querySelectorAll<HTMLButtonElement>('.sw[data-color]').forEach((b) =>
       b.addEventListener('click', () => {
-        group.querySelectorAll('.sw[data-color]').forEach((x) => x.setAttribute('aria-pressed', 'false'));
-        b.setAttribute('aria-pressed', 'true');
         input.value = b.dataset.color!;
+        marquerCouleurs(group);
         render();
       }),
     );
     input.addEventListener('input', () => {
-      group.querySelectorAll('.sw[data-color]').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+      marquerCouleurs(group);
       render();
     });
   });
@@ -336,6 +337,7 @@ const appLd = {
   } catch {
     /* rien */
   }
+  marquerCouleurs(document);
   // Nom tapé dans le haut de la page d'accueil (?nom=…)
   const nomParam = new URLSearchParams(location.search).get('nom');
   if (nomParam) $<HTMLInputElement>('#c-name').value = nomParam.slice(0, 40);
@@ -467,8 +469,16 @@ const appLd = {
       0 0 0 5px var(--ink);
   }
   .custom {
-    background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+    background: var(--roue-couleur);
     overflow: hidden;
+  }
+  .custom.is-picked {
+    background:
+      radial-gradient(circle closest-side, var(--pick) 0 50%, #fff 54% 63%, rgb(255 255 255 / 0) 67%),
+      var(--roue-arc);
+    box-shadow:
+      0 0 0 3px var(--bg),
+      0 0 0 5px var(--ink);
   }
   .custom input {
     position: absolute;

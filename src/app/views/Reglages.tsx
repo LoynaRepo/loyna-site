@@ -184,7 +184,7 @@ function Branding({initial}: {initial: Merchant}) {
               {CARD_BGS.map((c) => (
                 <button type="button" class={`sw ${f.primary_color.toLowerCase() === c.c ? 'on' : ''}`} style={{'--c': c.c} as any} title={c.nom} aria-label={c.nom} aria-pressed={f.primary_color.toLowerCase() === c.c} onClick={() => set('primary_color', c.c)} />
               ))}
-              <label class="sw sw--custom" title="Couleur personnalisée">
+              <label class={`sw sw--custom ${CARD_BGS.some((c) => c.c === f.primary_color.toLowerCase()) ? '' : 'is-picked'}`} style={{'--pick': f.primary_color} as any} title="Couleur personnalisée">
                 <input type="color" value={f.primary_color} onInput={(e) => set('primary_color', (e.target as HTMLInputElement).value)} aria-label="Couleur de la carte personnalisée" />
               </label>
             </div>
@@ -195,7 +195,7 @@ function Branding({initial}: {initial: Merchant}) {
               {TEXT_COLORS.map((c) => (
                 <button type="button" class={`sw ${f.secondary_color.toLowerCase() === c ? 'on' : ''}`} style={{'--c': c} as any} aria-label={c} aria-pressed={f.secondary_color.toLowerCase() === c} onClick={() => set('secondary_color', c)} />
               ))}
-              <label class="sw sw--custom" title="Couleur personnalisée">
+              <label class={`sw sw--custom ${TEXT_COLORS.includes(f.secondary_color.toLowerCase()) ? '' : 'is-picked'}`} style={{'--pick': f.secondary_color} as any} title="Couleur personnalisée">
                 <input type="color" value={f.secondary_color} onInput={(e) => set('secondary_color', (e.target as HTMLInputElement).value)} aria-label="Couleur du texte personnalisée" />
               </label>
             </div>
