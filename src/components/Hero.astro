@@ -6,7 +6,7 @@ import Icon from './Icon.astro';
 import Phone from './Phone.astro';
 import WalletCard from './WalletCard.astro';
 import CardSwatches from './CardSwatches.astro';
-import {LAUNCH_OFFER, offerActive} from '../data/site';
+import {LAUNCH_OFFER, PLANS, euro, offerActive} from '../data/site';
 import type {Sector} from '../lib/builder';
 
 interface Props {
@@ -61,7 +61,7 @@ const offer = offerActive();
           </div>
           <div class="toast">
             <span class="t-icon" data-initials>ML</span>
-            <span class="t-text"><b data-name>{first.name}</b><span>Plus que 3 passages avant votre récompense&nbsp;: <span data-reward>{first.reward}</span></span></span>
+            <span class="t-text"><span class="t-head"><b data-name>{first.name}</b><small><Icon name="map-pin" size={11} /> À proximité</small></span><span>Vous passez près de <span data-name>{first.name}</span> : votre carte est prête.</span></span>
           </div>
         </Phone>
         <div class="pill pill-scan"><span class="ok">✓</span> Passage validé</div>
@@ -88,8 +88,9 @@ const offer = offerActive();
       <p class="hero-alt">Gratuit, sans inscription · <a href="/tarifs/">voir les tarifs</a> · <a href="#rappel">être rappelé</a></p>
       <ul class="hero-points">
         <li><Icon name="smartphone" size={18} /> Sans application</li>
+        <li><Icon name="map-pin" size={18} /> Notification de proximité</li>
         <li><Icon name="zap" size={18} /> Prête sous 24&nbsp;h</li>
-        <li><Icon name="credit-card" size={18} /> Dès 29&nbsp;€/mois, sans TVA</li>
+        <li><Icon name="credit-card" size={18} /> Dès {euro(Math.min(...PLANS.map((p) => p.monthly)))} par mois, sans TVA</li>
       </ul>
     </div>
   </div>
@@ -369,6 +370,21 @@ const offer = offerActive();
   }
   .t-text {
     display: grid;
+  }
+  .t-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .t-head small {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #7a5418;
+    white-space: nowrap;
   }
   .pill {
     position: absolute;

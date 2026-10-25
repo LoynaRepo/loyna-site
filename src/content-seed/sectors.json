@@ -35,7 +35,7 @@
       },
       {
         "titre": "Des messages pour faire revenir",
-        "texte": "Annoncez une offre ou une nouveauté par notification Wallet, sans coût par message. Avec les formules Growth et Pro, relancez automatiquement les clients inactifs et souhaitez les anniversaires."
+        "texte": "Annoncez une offre ou une nouveauté par notification Wallet, sans coût par message. Avec les formules Premium et Pro, relancez automatiquement les clients inactifs, souhaitez les anniversaires et demandez un avis Google après la 3e visite."
       }
     ],
     "recompenses": [
@@ -69,7 +69,7 @@
       },
       {
         "q": "Puis-je relancer un client qui n’est pas revenu depuis longtemps ?",
-        "a": "Oui, avec les formules Growth et Pro. Vous ciblez les clients inactifs depuis 30, 60 ou 90 jours et leur envoyez une notification Wallet, sans coût par message, ou un SMS s’ils ont accepté d’en recevoir. Vous pouvez aussi automatiser cette relance pour ne plus avoir à y penser."
+        "a": "Oui, avec les formules Premium et Pro. Vous ciblez les clients inactifs depuis 30, 60 ou 90 jours et leur envoyez une notification Wallet, sans coût par message. Vous pouvez aussi automatiser cette relance, après 60 jours d’absence par défaut (réglable), pour ne plus avoir à y penser."
       }
     ]
   },
@@ -109,7 +109,7 @@
       },
       {
         "titre": "Des attentions personnalisées",
-        "texte": "Annoncez une nouveauté ou une offre par notification Wallet, sans coût par message. Avec Growth et Pro, souhaitez automatiquement les anniversaires et relancez les clientes absentes depuis 30, 60 ou 90 jours."
+        "texte": "Annoncez une nouveauté ou une offre par notification Wallet, sans coût par message. Avec Premium et Pro, souhaitez automatiquement les anniversaires et relancez les clientes absentes depuis 30, 60 ou 90 jours."
       }
     ],
     "recompenses": [
@@ -135,7 +135,7 @@
     "faq": [
       {
         "q": "Comment souhaiter l’anniversaire de mes clientes ?",
-        "a": "Avec les formules Growth et Pro, l’automatisation des anniversaires envoie un message le moment venu, par notification Wallet ou par SMS aux personnes qui ont accepté d’en recevoir. Vous pouvez aussi cibler le segment « anniversaire du mois » dans une campagne, pour proposer une attention à vos clientes."
+        "a": "Avec les formules Premium et Pro, l’automatisation des anniversaires envoie une notification Wallet le jour J, avec la surprise que vous avez choisie. Vous pouvez aussi cibler le groupe « anniversaires du mois » dans une campagne, pour proposer une attention à vos clientes."
       },
       {
         "q": "Mon institut compte plusieurs praticiennes : comment ça se passe ?",
@@ -183,7 +183,7 @@
       },
       {
         "titre": "Des offres pour vos heures calmes",
-        "texte": "Envoyez une offre par notification Wallet, sans coût par message. Avec Growth et Pro, programmez vos campagnes à l’avance et ciblez les clients inactifs, en Wallet ou par SMS."
+        "texte": "Envoyez une offre par notification Wallet, sans coût par message. Avec Premium et Pro, programmez vos campagnes à l’avance, ciblez les clients inactifs et faites compter double les passages aux heures creuses."
       }
     ],
     "recompenses": [
@@ -248,8 +248,8 @@
         "texte": "Un scan égale un passage validé : pas de recherche du client, pas de bouton +1, pas de seconde confirmation. La file continue d’avancer."
       },
       {
-        "titre": "Une carte qui ne se perd plus",
-        "texte": "La carte est dans le téléphone de votre client, dans Apple Wallet ou Google Wallet. Elle se met à jour toute seule après chaque passage."
+        "titre": "Une carte qui s’affiche devant la boutique",
+        "texte": "La carte est dans le téléphone de votre client, dans Apple Wallet ou Google Wallet, et se met à jour toute seule. Quand il passe devant votre boulangerie, elle s’affiche sur l’écran de verrouillage : c’est la notification de proximité, incluse dans toutes les formules."
       },
       {
         "titre": "La récompense, automatiquement",
@@ -257,7 +257,7 @@
       },
       {
         "titre": "Vos nouveautés, directement sur leur téléphone",
-        "texte": "Annoncez une nouveauté ou une offre par notification Wallet, sans coût par message. Avec Growth et Pro, programmez vos campagnes et souhaitez automatiquement les anniversaires."
+        "texte": "Annoncez une nouveauté ou une offre par notification Wallet, sans coût par message. Avec Premium et Pro, programmez vos campagnes et souhaitez automatiquement les anniversaires."
       }
     ],
     "recompenses": [
@@ -291,7 +291,7 @@
       },
       {
         "q": "Comment annoncer une nouveauté ou une offre du moment ?",
-        "a": "Envoyez une notification Wallet aux clients qui ont accepté de recevoir vos offres : elle est incluse dans toutes les formules, sans coût par message. Avec Growth et Pro, vous pouvez aussi programmer la campagne à l’avance, cibler un segment ou envoyer des SMS. LOYNA privilégie les messages utiles, pour ne pas lasser vos habitués."
+        "a": "Envoyez une notification Wallet aux clients qui ont accepté de recevoir vos offres, sans coût par message : chaque formule comprend un volume mensuel de notifications. Avec Premium et Pro, vous pouvez aussi programmer la campagne à l’avance et cibler un groupe de clients. Un client reçoit au plus un message commercial toutes les 48 h, pour ne pas lasser vos habitués."
       }
     ]
   },
@@ -331,7 +331,7 @@
       },
       {
         "titre": "Des messages qui donnent envie de revenir",
-        "texte": "Prévenez vos clients d’un arrivage ou d’une offre par notification Wallet, sans coût par message. Avec Growth, ajoutez 200 SMS par mois, la segmentation et la relance des clients inactifs."
+        "texte": "Prévenez vos clients d’un arrivage ou d’une offre par notification Wallet, sans coût par message. Avec Premium, ajoutez les groupes de clients, la relance des inactifs et la demande d’avis Google."
       }
     ],
     "recompenses": [
@@ -401,7 +401,7 @@
       },
       {
         "titre": "Des messages pour vos services calmes",
-        "texte": "Envoyez une offre par notification Wallet, sans coût par message. Avec Growth et Pro, programmez vos campagnes et ciblez les clients qui ne sont pas revenus depuis un moment."
+        "texte": "Envoyez une offre par notification Wallet, sans coût par message. Avec Premium et Pro, programmez vos campagnes et ciblez les clients qui ne sont pas revenus depuis un moment."
       },
       {
         "titre": "Toute l’équipe peut scanner",
@@ -443,7 +443,7 @@
       },
       {
         "q": "Puis-je prévenir mes clients d’une soirée spéciale ou d’un nouveau menu ?",
-        "a": "Oui, par notification Wallet, envoyée aux clients qui l’ont accepté, sans coût par message. Avec Growth et Pro, vous pouvez aussi envoyer des SMS (quota inclus) et programmer vos campagnes à l’avance."
+        "a": "Oui, par notification Wallet, envoyée aux clients qui l’ont accepté, sans coût par message. Avec Premium et Pro, vous pouvez aussi programmer vos campagnes à l’avance et cibler un groupe de clients."
       }
     ]
   },
@@ -471,7 +471,7 @@
     "benefices": [
       {
         "titre": "Un rappel avant chaque fête",
-        "texte": "Préparez un message Wallet pour la fête des mères ou la Saint-Valentin. Avec Growth et Pro, programmez-le à l’avance pour qu’il parte au bon moment."
+        "texte": "Préparez un message Wallet pour la fête des mères ou la Saint-Valentin. Avec Premium et Pro, programmez-le à l’avance pour qu’il parte au bon moment."
       },
       {
         "titre": "La carte reste dans le téléphone",
@@ -483,7 +483,7 @@
       },
       {
         "titre": "Un petit mot pour les anniversaires",
-        "texte": "Avec Growth et Pro, un message d’anniversaire part tout seul aux clients qui ont indiqué leur date et accepté vos offres."
+        "texte": "Avec Premium et Pro, un message d’anniversaire part tout seul aux clients qui ont indiqué leur date et accepté vos offres."
       }
     ],
     "recompenses": [
@@ -513,7 +513,7 @@
       },
       {
         "q": "Puis-je envoyer un message avant la Saint-Valentin ou la fête des mères ?",
-        "a": "Oui, par notification Wallet, aux clients qui l’ont accepté, sans coût par message. Avec Growth et Pro, vous pouvez programmer la campagne à l’avance et l’envoyer aussi par SMS (quota inclus)."
+        "a": "Oui, par notification Wallet, aux clients qui l’ont accepté, sans coût par message. Avec Premium et Pro, vous pouvez programmer la campagne à l’avance pour qu’elle parte au bon moment."
       },
       {
         "q": "Comment mes clients s’inscrivent-ils ?",
@@ -557,7 +557,7 @@
       },
       {
         "titre": "Vos offres de saison, au bon moment",
-        "texte": "Plateaux de fêtes, colis barbecue, plat du jour : prévenez vos clients par notification Wallet, sans coût par message. Avec Growth et Pro, programmez vos campagnes."
+        "texte": "Plateaux de fêtes, colis barbecue, plat du jour : prévenez vos clients par notification Wallet, sans coût par message. Avec Premium et Pro, programmez vos campagnes."
       },
       {
         "titre": "Toute l’équipe au comptoir",
@@ -591,7 +591,7 @@
       },
       {
         "q": "Comment prévenir mes clients des commandes de fêtes ?",
-        "a": "Par notification Wallet, envoyée aux clients qui ont accepté vos offres, sans coût par message. Avec Growth et Pro, vous pouvez programmer la campagne à l’avance et cibler par exemple les clients venus récemment."
+        "a": "Par notification Wallet, envoyée aux clients qui ont accepté vos offres, sans coût par message. Avec Premium et Pro, vous pouvez programmer la campagne à l’avance et cibler un groupe de clients."
       },
       {
         "q": "Mes clients doivent-ils télécharger une application ?",
@@ -631,7 +631,7 @@
       },
       {
         "titre": "Des rappels de saison",
-        "texte": "Prévenez vos clients du bon moment pour les couettes ou les manteaux par notification Wallet, sans coût par message. Avec Growth et Pro, programmez vos campagnes."
+        "texte": "Prévenez vos clients du bon moment pour les couettes ou les manteaux par notification Wallet, sans coût par message. Avec Premium et Pro, programmez vos campagnes."
       },
       {
         "titre": "Au passage ou au montant",
@@ -639,7 +639,7 @@
       },
       {
         "titre": "Les clients absents relancés",
-        "texte": "Avec Growth et Pro, ciblez les clients qui ne sont pas revenus depuis 30, 60 ou 90 jours, par notification Wallet ou par SMS."
+        "texte": "Avec Premium et Pro, ciblez les clients qui ne sont pas revenus depuis 30, 60 ou 90 jours, ou laissez la relance automatique s’en charger."
       }
     ],
     "recompenses": [

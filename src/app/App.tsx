@@ -2,8 +2,9 @@
 import type {ComponentChildren} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
 import {Icon} from './icons';
-import {api, can, go, loadPlans, merchant, rememberMerchant, rememberedMerchant, route, session, setBackend, staffCtx, toastError, type Membership, type StaffContext} from './state';
+import {api, can, go, loadPlans, merchant, PLAN_ORDER, planLabel, rememberMerchant, rememberedMerchant, route, session, setBackend, staffCtx, toastError, type Membership, type StaffContext} from './state';
 import {Btn, Field, Spinner, Toasts} from './ui';
+import {frenchTypography} from './util';
 
 // Écrans chargés à la demande : le téléphone ne télécharge que la page ouverte (le scanner en premier).
 type ViewComp = (props: any) => any;
@@ -12,8 +13,10 @@ const LOADERS: Record<string, () => Promise<ViewComp>> = {
   scanner: () => import('./views/Scanner').then((m) => m.Scanner),
   clients: () => import('./views/Clients').then((m) => m.Clients),
   client: () => import('./views/ClientDetail').then((m) => m.ClientDetail),
+  automatisations: () => import('./views/Automatisations').then((m) => m.Automatisations),
   programme: () => import('./views/Programme').then((m) => m.Programme),
   campagnes: () => import('./views/Campagnes').then((m) => m.Campagnes),
+  rapport: () => import('./views/Rapport').then((m) => m.Rapport),
   equipe: () => import('./views/Equipe').then((m) => m.Equipe),
   reglages: () => import('./views/Reglages').then((m) => m.Reglages),
   abonnement: () => import('./views/Abonnement').then((m) => m.Abonnement),
@@ -24,7 +27,6 @@ function loadView(name: string): Promise<ViewComp> {
 }
 
 const PORTAL = 'https://billing.stripe.com/p/login/28E28u2vEcIt4tvbiw5Ne00';
-const PLAN_LABEL = {ESSENTIEL: 'Essentiel', GROWTH: 'Growth', PRO: 'Pro'} as const;
 const ROLE_LABEL = {OWNER: 'Propriétaire', ADMIN: 'Responsable', STAFF: 'Employé'} as const;
 
 interface NavItem {
@@ -32,13 +34,17 @@ interface NavItem {
   label: string;
   icon: string;
   show: () => boolean;
+  highlight?: boolean; // mis en avant (icône dorée) : les automatisations, demande d'Ewan du 2026-10-25
 }
+// Ordre du menu ; sur téléphone, les trois premiers (hors scanner) sont dans la barre du bas.
 const NAV: NavItem[] = [
   {view: 'accueil', label: 'Accueil', icon: 'layout-dashboard', show: () => can('analytics.read')},
   {view: 'scanner', label: 'Scanner', icon: 'scan-line', show: () => can('scan.validate')},
   {view: 'clients', label: 'Clients', icon: 'users', show: () => can('customers.read_basic')},
-  {view: 'programme', label: 'Programme', icon: 'gift', show: () => can('program.manage') || can('rewards.manage')},
+  {view: 'automatisations', label: 'Automatisations', icon: 'zap', show: () => can('settings.manage'), highlight: true},
   {view: 'campagnes', label: 'Campagnes', icon: 'megaphone', show: () => can('campaigns.manage')},
+  {view: 'rapport', label: 'Rapport', icon: 'file-chart-column', show: () => can('analytics.read')},
+  {view: 'programme', label: 'Programme', icon: 'gift', show: () => can('program.manage') || can('rewards.manage')},
   {view: 'equipe', label: 'Équipe', icon: 'users-round', show: () => can('team.manage')},
   {view: 'reglages', label: 'Réglages', icon: 'settings', show: () => can('settings.manage')},
   {view: 'abonnement', label: 'Abonnement', icon: 'credit-card', show: () => can('settings.manage')},
@@ -56,6 +62,7 @@ function defaultView(): string {
 export default function App({logo, demo = false, staticSide = false}: {logo: string; demo?: boolean; staticSide?: boolean}) {
   const [booted, setBooted] = useState(false);
 
+  useEffect(() => frenchTypography(), []);
   useEffect(() => {
     (async () => {
       // Démonstration (données fictives tirées au hasard, rien n'est enregistré) : page /espace-client/demo/,
@@ -297,7 +304,7 @@ function MerchantPicker({logo, list}: {logo: string; list: Membership[]}) {
             <span>
               <strong>{m.merchant_name}</strong>
               <small>
-                {ROLE_LABEL[m.role]} · LOYNA {PLAN_LABEL[m.subscription_plan]}
+                {ROLE_LABEL[m.role]} · LOYNA {planLabel(m.subscription_plan)}
               </small>
             </span>
             <Icon name="chevron-right" />
@@ -355,13 +362,13 @@ function Shell({logo}: {logo: string}) {
           </span>
           <span class="side-m-t">
             <strong>{m.merchant_name}</strong>
-            <small>LOYNA {PLAN_LABEL[m.subscription_plan]}</small>
+            <small>LOYNA {planLabel(m.subscription_plan)}</small>
           </span>
           {multi && <Icon name="chevron-down" size={16} />}
         </button>
         <nav class="side-nav" aria-label="LOYNA Business">
           {items.map((n) => (
-            <a href={`#/${n.view}`} class={active(n.view) ? 'on' : ''} aria-current={active(n.view) ? 'page' : undefined}>
+            <a href={`#/${n.view}`} class={`${active(n.view) ? 'on' : ''} ${n.highlight ? 'hl' : ''}`} aria-current={active(n.view) ? 'page' : undefined}>
               <Icon name={n.icon} />
               {n.label}
             </a>
@@ -403,7 +410,7 @@ function Shell({logo}: {logo: string}) {
 
       <nav class="tabbar" aria-label="Navigation">
         {left.map((n) => (
-          <a href={`#/${n.view}`} class={active(n.view) ? 'on' : ''}>
+          <a href={`#/${n.view}`} class={`${active(n.view) ? 'on' : ''} ${n.highlight ? 'hl' : ''}`}>
             <Icon name={n.icon} size={22} />
             <span>{n.label}</span>
           </a>
@@ -416,7 +423,7 @@ function Shell({logo}: {logo: string}) {
           </a>
         )}
         {right.map((n) => (
-          <a href={`#/${n.view}`} class={active(n.view) ? 'on' : ''}>
+          <a href={`#/${n.view}`} class={`${active(n.view) ? 'on' : ''} ${n.highlight ? 'hl' : ''}`}>
             <Icon name={n.icon} size={22} />
             <span>{n.label}</span>
           </a>
@@ -430,7 +437,7 @@ function Shell({logo}: {logo: string}) {
         <div class="sheet-bg" onClick={() => setMore(false)}>
           <div class="sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Plus">
             {rest.map((n) => (
-              <a href={`#/${n.view}`} class={active(n.view) ? 'on' : ''}>
+              <a href={`#/${n.view}`} class={`${active(n.view) ? 'on' : ''} ${n.highlight ? 'hl' : ''}`}>
                 <Icon name={n.icon} />
                 {n.label}
               </a>
@@ -496,8 +503,14 @@ function View({view, id}: {view: string; id?: string}) {
   return C ? <C {...props} /> : <Spinner />;
 }
 
-/** Bandeau de la démonstration : données fictives, rien n'est enregistré. */
+/** Bandeau de la démonstration : données fictives, rien n'est enregistré ; l'offre affichée se change ici. */
 function DemoBar() {
+  const plan = merchant.value?.subscription_plan ?? 'PRO';
+  const switchPlan = (p: string) =>
+    import('./mock').then((m) => {
+      const seed = Number(merchant.value?.merchant_slug.replace(/^demo-/, '')) || m.demoSeed();
+      m.setDemoPlan(p as typeof plan, seed);
+    });
   return (
     <div class="demobar" role="note">
       <span class="demobar-t">
@@ -507,6 +520,14 @@ function DemoBar() {
         </span>
       </span>
       <span class="demobar-a">
+        <label class="demobar-plan">
+          <span>Offre</span>
+          <select class="sel-sm" value={plan} onChange={(e) => switchPlan((e.target as HTMLSelectElement).value)} aria-label="Offre affichée dans la démonstration">
+            {PLAN_ORDER.map((p) => (
+              <option value={p}>{planLabel(p)}</option>
+            ))}
+          </select>
+        </label>
         <button type="button" class="b b--sm b--ghost" onClick={() => import('./mock').then((m) => m.regenerateDemo())}>
           <Icon name="refresh-cw" size={16} />
           <span>Autres données</span>

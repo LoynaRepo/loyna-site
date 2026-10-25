@@ -26,7 +26,6 @@ CROPS = [
     ("recompense", 31.0, (130, 380, 950, 1480)),
     ("notifications", 37.2, (235, 388, 844, 1550)),
     ("tableau-de-bord", 47.2, (60, 410, 1020, 1320)),
-    ("sms", 50.4, (60, 600, 1020, 1380)),
     ("automatisations", 41.0, (40, 600, 1040, 1300)),
 ]
 for name, t, box in CROPS:

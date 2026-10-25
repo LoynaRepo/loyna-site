@@ -944,6 +944,40 @@ button.cp-kpi:hover {
 .cp-plan .feat-list {
   margin: 0;
 }
+.cp-quota {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  font-weight: 700;
+  color: var(--ink);
+}
+.cp-quota > .ic {
+  flex-shrink: 0;
+  color: var(--gold);
+}
+.cp-focus {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--bg);
+}
+.cp-focus .fld-l {
+  margin: 0;
+}
+.cp-comparatif .cp-comp-groupe th {
+  padding-top: 16px;
+  text-align: left;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
 .cp-liens-paiement {
   display: grid;
   gap: 8px;

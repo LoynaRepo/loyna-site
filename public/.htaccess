@@ -85,6 +85,10 @@ RewriteRule ^set-password/?$ https://loyna.fr/espace-client/mot-de-passe/ [R=302
     Header always set Content-Security-Policy "frame-ancestors 'self' https://builder.io https://*.builder.io"
     Header always set X-Robots-Tag "noindex, nofollow"
   </If>
+  <ElseIf "%{REQUEST_URI} =~ m#^/espace-client/#">
+    # Espace client : même politique, plus la Base adresse nationale (placement de la boutique, notification de proximité)
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cdn.builder.io https://alfxnoaxcmnbrqhlmmqq.supabase.co https://*.google-analytics.com https://*.googletagmanager.com; media-src 'self'; font-src 'self' data:; connect-src 'self' https://alfxnoaxcmnbrqhlmmqq.supabase.co https://data.geopf.fr https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self' https://builder.io https://*.builder.io; upgrade-insecure-requests"
+  </ElseIf>
   <Else>
     Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cdn.builder.io https://alfxnoaxcmnbrqhlmmqq.supabase.co https://*.google-analytics.com https://*.googletagmanager.com; media-src 'self'; font-src 'self' data:; connect-src 'self' https://alfxnoaxcmnbrqhlmmqq.supabase.co https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self' https://builder.io https://*.builder.io; upgrade-insecure-requests"
   </Else>

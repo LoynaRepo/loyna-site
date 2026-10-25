@@ -2,8 +2,11 @@
 import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
 import {CARD_ACCENTS, CARD_BGS, PLANS, SETUP_FEE, offerActive} from '../data/site';
+// Stripe revient ici avec ?offre=starter-mensuel|starter-annuel|premium-mensuel|premium-annuel|pro-mensuel|pro-annuel
+// &session_id=… (liens de paiement de src/data/site.ts).
 // Montant du premier paiement par offre, pour la mesure de conversion (sans donnée personnelle).
 const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.monthly + (offerActive() ? 0 : SETUP_FEE)], [`${p.id}-annuel`, p.yearly]]));
+const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
 ---
 
 <Base stickyCta={false} title="Merci pour votre commande" description="Votre abonnement LOYNA est confirmé. Envoyez les éléments de votre carte : elle est prête sous 24 h." noindex>
@@ -11,7 +14,9 @@ const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.
     <div class="narrow">
       <span class="done"><Icon name="check" size={34} /></span>
       <h1>Merci, votre abonnement est confirmé&nbsp;!</h1>
-      <p class="lead">Vous allez recevoir un reçu par e-mail, au nom de KOVA Elec (l’entreprise qui édite LOYNA). Plus qu’une étape pour lancer votre carte.</p>
+      <p class="lead">
+        <span id="offre-payee" hidden></span>Vous allez recevoir un reçu par e-mail, au nom de KOVA Elec (LOYNA est une marque de KOVA Elec). Plus qu’une étape pour lancer votre carte.
+      </p>
     </div>
   </section>
 
@@ -21,12 +26,23 @@ const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.
         <h2 class="h3">La suite, en 4 étapes</h2>
         <ol class="next">
           <li><strong>Envoyez vos éléments</strong> avec le formulaire : logo, couleurs, récompense. Deux minutes suffisent.</li>
-          <li><strong>Votre carte est prête sous 24&nbsp;h</strong>, avec votre QR code d’inscription à imprimer ou à partager.</li>
+          <li><strong>Votre carte est prête sous 24&nbsp;h</strong>, avec votre QR code d’inscription et l’affiche du comptoir à imprimer ou à partager.</li>
           <li><strong>Vous recevez votre accès à LOYNA Business</strong> pour scanner les cartes depuis votre téléphone.</li>
           <li><strong>Vous lancez votre programme</strong> : QR code au comptoir, vos clients s’inscrivent en quelques secondes.</li>
         </ol>
+        <div class="suite" data-suite="premium" hidden>
+          <h2 class="h3">Avec Premium</h2>
+          <p>Vos automatisations (anniversaire, relance des inactifs, « Plus qu’un passage&nbsp;! », avis Google, double tampon aux heures creuses) se règlent dans LOYNA Business, et votre rapport mensuel arrive le 1er de chaque mois. Pour la demande d’avis Google, vous pouvez indiquer le lien de votre page d’avis dans «&nbsp;Précisions&nbsp;».</p>
+        </div>
+        <div class="suite" data-suite="pro" hidden>
+          <h2 class="h3">Avec Pro</h2>
+          <p>Nous fixons ensemble votre premier point mensuel de 30&nbsp;minutes, nous préparons vos premières campagnes (elles ne partent qu’après votre validation) et votre kit comptoir imprimé (chevalet QR code et vitrophanie) est envoyé à votre commerce. Indiquez vos disponibilités dans «&nbsp;Précisions&nbsp;».</p>
+        </div>
         <p class="small">
-          Rappel de votre engagement : en mensuel, 12 mois minimum, puis résiliable à la fin de chaque mois, sans frais ; en annuel, 12 mois réglés d’avance. Factures et
+          Notification de proximité : elle utilise l’adresse de votre boutique. Si elle diffère de votre adresse de facturation, indiquez-la dans «&nbsp;Précisions&nbsp;» (jusqu’à 3 boutiques avec Pro).
+        </p>
+        <p class="small">
+          Rappel de votre engagement : en mensuel, 12 mois réglés chaque mois, puis résiliable à la fin de n’importe quel mois, sans frais ; en annuel, 12 mois payés d’avance. Factures et
           abonnement se gèrent depuis votre <a href="/espace-client/">espace client</a>.
         </p>
       </div>
@@ -122,7 +138,7 @@ const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.
     </div>
   </section>
 
-  <div id="merci-data" data-montants={JSON.stringify(montants)} hidden></div>
+  <div id="merci-data" data-montants={JSON.stringify(montants)} data-noms={JSON.stringify(noms)} hidden></div>
 </Base>
 
 <script>
@@ -165,6 +181,15 @@ const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.
   });
   set('t', String(Date.now()));
   set('offre', /^[a-z-]{3,30}$/.test(q.get('offre') || '') ? q.get('offre')! : '');
+  // Offre payée (?offre=premium-mensuel…) : rappel de l'offre et étapes propres à Premium ou Pro
+  const offrePayee = /^([a-z]+)-(mensuel|annuel)$/.exec(q.get('offre') || '');
+  const nomsOffres = JSON.parse(document.getElementById('merci-data')?.dataset.noms || '{}') as Record<string, string>;
+  if (offrePayee && nomsOffres[offrePayee[1]]) {
+    const el = document.getElementById('offre-payee') as HTMLElement;
+    el.textContent = `Offre ${nomsOffres[offrePayee[1]]}, paiement ${offrePayee[2]}. `;
+    el.hidden = false;
+    document.querySelectorAll<HTMLElement>('[data-suite]').forEach((s) => (s.hidden = s.dataset.suite !== offrePayee[1]));
+  }
   set('session', /^cs_[A-Za-z0-9_]{10,200}$/.test(q.get('session_id') || '') ? q.get('session_id')! : '');
   // Préremplissage avec l'aperçu préparé dans le configurateur (même navigateur)
   try {
@@ -230,6 +255,22 @@ const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.
   .small {
     color: var(--muted);
     font-size: 0.92rem;
+  }
+  .suite {
+    margin: 0 0 18px;
+    padding: 16px 18px;
+    border-radius: 18px;
+    background: var(--gold-soft);
+    border: 1px solid rgba(201, 150, 63, 0.35);
+  }
+  .suite[hidden] {
+    display: none;
+  }
+  .suite h2 {
+    margin: 0 0 6px;
+  }
+  .suite p {
+    margin: 0;
   }
   .center {
     text-align: center;

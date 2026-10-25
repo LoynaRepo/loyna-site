@@ -44,7 +44,7 @@ await clickText('dialog button', 'Enregistrer');
 await wait(1200);
 console.log('solde après +1 :', await page.evaluate(() => document.querySelector('.cd-balance b')?.textContent));
 
-// 2. aperçu d'une campagne SMS
+// 2. aperçu d'une campagne
 await page.goto(B + '#/campagne/c2', {waitUntil: 'networkidle0'});
 await wait(1200);
 await clickText('button', 'Vérifier les destinataires');

@@ -117,6 +117,32 @@ body {
   height: 1px;
   overflow: hidden;
 }
+/* Inscriptions complètes (toutes les cartes de l'offre utilisées) et encart de parrainage */
+.j-full,
+.j-ref {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 16px;
+}
+.j-full {
+  background: #fff4e0;
+  border: 1px solid #f1d9a8;
+  color: #6b4500;
+}
+.j .j-full p {
+  margin-top: 4px;
+}
+.j-ref {
+  background: var(--gold-soft);
+  border: 1px solid #e8cf9c;
+  color: #5a3d10;
+}
+.j-full .ic,
+.j-ref .ic {
+  margin-top: 1px;
+}
 .j-small {
   font-size: 0.82rem;
   color: var(--muted);

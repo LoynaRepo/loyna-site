@@ -48,7 +48,7 @@ const RTYPES: Record<Reward['reward_type'], string> = {FREE_ITEM: 'Produit ou se
 const PROGRAM_STATUS: Record<string, string> = {
   PROGRAM_HAS_ACTIVITY: 'Le type et le fonctionnement ne sont modifiables qu’avant le premier passage.',
   REWARD_THRESHOLD_ABOVE_CYCLE: 'Une récompense active a un seuil plus élevé que la longueur de la carte : baissez son seuil d’abord.',
-  FEATURE_NOT_AVAILABLE: 'Ce type de programme n’est pas inclus dans votre formule.',
+  FEATURE_NOT_AVAILABLE: 'Ce type de programme n’est pas inclus dans votre offre.',
   FORBIDDEN: 'Vous n’avez pas l’autorisation de modifier le programme.',
   INVALID_STATUS: 'Statut invalide.',
   NOT_FOUND: 'Programme introuvable.',

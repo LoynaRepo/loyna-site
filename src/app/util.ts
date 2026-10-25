@@ -2,9 +2,12 @@
 import qrcode from 'qrcode-generator';
 
 const nf = new Intl.NumberFormat('fr-FR');
-export const num = (n: number | null | undefined) => (n === null || n === undefined ? '–' : nf.format(n));
+// Séparateur des milliers : espace insécable normale (l'espace fine d'Intl est presque invisible avec la police
+// du site), comme nombre() de src/data/site.ts : « 24 000 ».
+const nbsp = (s: string) => s.replace(/[  ]/g, ' ');
+export const num = (n: number | null | undefined) => (n === null || n === undefined ? '–' : nbsp(nf.format(n)));
 export const euros = (n: number | null | undefined) =>
-  n === null || n === undefined ? '–' : new Intl.NumberFormat('fr-FR', {style: 'currency', currency: 'EUR'}).format(n);
+  n === null || n === undefined ? '–' : nbsp(new Intl.NumberFormat('fr-FR', {style: 'currency', currency: 'EUR'}).format(n));
 
 export function date(iso: string | null | undefined, withYear = true): string {
   if (!iso) return '–';
@@ -93,3 +96,93 @@ export async function copy(text: string): Promise<boolean> {
 
 /** Adresse publique de l'inscription des clients d'un commerce. */
 export const joinUrl = (slug: string) => `https://loyna.fr/join/${slug}`;
+
+/** « 1er novembre » : jour de recharge du quota de notifications (heure de Paris). */
+export function resetDay(iso: string | null | undefined): string {
+  if (!iso) return 'le 1er du mois';
+  const s = new Date(iso).toLocaleDateString('fr-FR', {day: 'numeric', month: 'long', timeZone: 'Europe/Paris'});
+  return s.replace(/^1 /, '1er ');
+}
+
+/** Valeur d'un champ datetime-local à l'heure du navigateur (« 2026-10-29T10:00 »). */
+export function localInput(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/**
+ * Aperçu d'un message automatique, comme le serveur le compose (renderTemplate des Edge Functions) :
+ * {prenom}, {commerce}, {reste}, {unite}, {recompense}, {niveau}.
+ */
+export function renderTemplate(t: string, v: {prenom?: string; commerce?: string; reste?: number | string; unite?: string; recompense?: string; niveau?: string}): string {
+  const clean = (x: unknown) => String(x ?? '').replace(/[\r\n\t]+/g, ' ').trim();
+  const out = (t || '')
+    .replace(/\{\s*pr[ée]nom\s*\}/gi, clean(v.prenom))
+    .replace(/\{\s*commerce\s*\}/gi, clean(v.commerce))
+    .replace(/\{\s*reste\s*\}/gi, clean(v.reste))
+    .replace(/\{\s*unit[ée]\s*\}/gi, clean(v.unite))
+    .replace(/\{\s*r[ée]compense\s*\}/gi, clean(v.recompense))
+    .replace(/\{\s*niveau\s*\}/gi, clean(v.niveau))
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/^[\s,;:.-]+/, '')
+    .trim();
+  return out.charAt(0).toUpperCase() + out.slice(1);
+}
+
+/** Créneaux du double tampon, comme au dos de la carte : « Du mardi au jeudi, de 14 h à 16 h ». */
+export interface HappySlot {
+  days: number[]; // 1 = lundi … 7 = dimanche
+  start: string; // HH:MM
+  end: string; // HH:MM ou 24:00
+}
+export const DAY_NAMES = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+export function formatHappyHours(slots: HappySlot[]): string {
+  const heure = (hhmm: string) => {
+    const [h, m] = hhmm.split(':');
+    return `${Number(h)} h${m === '00' ? '' : ` ${m}`}`;
+  };
+  return slots
+    .map((slot) => {
+      const days = [...new Set(slot.days)].filter((d) => d >= 1 && d <= 7).sort((a, b) => a - b);
+      const consecutive = days.length > 2 && days.every((d, i) => i === 0 || d === days[i - 1] + 1);
+      const list = days.map((d) => DAY_NAMES[d - 1]).join(', ').replace(/, ([^,]*)$/, ' et $1');
+      const when = days.length === 7 ? 'Tous les jours' : consecutive ? `Du ${DAY_NAMES[days[0] - 1]} au ${DAY_NAMES[days[days.length - 1] - 1]}` : list.charAt(0).toUpperCase() + list.slice(1);
+      const hours = slot.start === '00:00' && slot.end === '24:00' ? 'toute la journée' : `de ${heure(slot.start)} à ${heure(slot.end === '24:00' ? '00:00' : slot.end)}`;
+      return `${when}, ${hours}`;
+    })
+    .join('\n');
+}
+
+/**
+ * Typographie française du texte affiché (le site le fait au moment de la construction, astro.config.mjs) :
+ * espace insécable avant « : ; ? ! % € », à l'intérieur des guillemets et entre un nombre et « h », « min »
+ * ou « j », pour qu'un signe ou une unité ne se retrouve jamais seul en début de ligne. Les écrans Preact (et les textes venus du serveur) sont composés dans le
+ * navigateur : seuls les nœuds texte sont retouchés, jamais les champs de saisie.
+ */
+export function frenchTypography(root: Node = document.body): () => void {
+  const SKIP = /^(SCRIPT|STYLE|TEXTAREA|CODE|PRE)$/;
+  const fix = (n: Node) => {
+    const v = (n as Text).data;
+    if (!v || !/ [:;?!»%€]|« |\d (h|min|j)\b/.test(v) || SKIP.test(n.parentElement?.tagName ?? '')) return;
+    const out = v
+      .replace(/ ([:;?!»%€])/g, ' $1')
+      .replace(/« /g, '« ')
+      .replace(/(\d) (h|min|j)(?=$|[\s.,;:!?)])/g, '$1 $2'); // « 10 h », « 30 min », « 30 j » jamais coupés
+    if (out !== v) (n as Text).data = out;
+  };
+  const walk = (n: Node) => {
+    if (n.nodeType === Node.TEXT_NODE) return fix(n);
+    if (n.nodeType !== Node.ELEMENT_NODE || SKIP.test((n as Element).tagName)) return;
+    const w = document.createTreeWalker(n, NodeFilter.SHOW_TEXT);
+    for (let t = w.nextNode(); t; t = w.nextNode()) fix(t);
+  };
+  walk(root);
+  const mo = new MutationObserver((list) => {
+    for (const m of list) {
+      if (m.type === 'characterData') fix(m.target);
+      else m.addedNodes.forEach(walk);
+    }
+  });
+  mo.observe(root, {subtree: true, childList: true, characterData: true});
+  return () => mo.disconnect();
+}

@@ -69,6 +69,17 @@ import userRound from 'lucide-static/icons/user-round.svg?raw';
 import rotateCcw from 'lucide-static/icons/rotate-ccw.svg?raw';
 import ticket from 'lucide-static/icons/ticket.svg?raw';
 import keyRound from 'lucide-static/icons/key-round.svg?raw';
+import zap from 'lucide-static/icons/zap.svg?raw';
+import crown from 'lucide-static/icons/crown.svg?raw';
+import mapPin from 'lucide-static/icons/map-pin.svg?raw';
+import mapPinCheck from 'lucide-static/icons/map-pin-check.svg?raw';
+import calendarHeart from 'lucide-static/icons/calendar-heart.svg?raw';
+import calendarCheck from 'lucide-static/icons/calendar-check.svg?raw';
+import fileChartColumn from 'lucide-static/icons/file-chart-column.svg?raw';
+import hourglass from 'lucide-static/icons/hourglass.svg?raw';
+import share2 from 'lucide-static/icons/share-2.svg?raw';
+import lightbulb from 'lucide-static/icons/lightbulb.svg?raw';
+import badgeCheck from 'lucide-static/icons/badge-check.svg?raw';
 
 const RAW: Record<string, string> = {
   'layout-dashboard': layoutDashboard,
@@ -140,6 +151,17 @@ const RAW: Record<string, string> = {
   'rotate-ccw': rotateCcw,
   'ticket': ticket,
   'key-round': keyRound,
+  'zap': zap,
+  'crown': crown,
+  'map-pin': mapPin,
+  'map-pin-check': mapPinCheck,
+  'calendar-heart': calendarHeart,
+  'calendar-check': calendarCheck,
+  'file-chart-column': fileChartColumn,
+  'hourglass': hourglass,
+  'share-2': share2,
+  'lightbulb': lightbulb,
+  'badge-check': badgeCheck,
 };
 
 export type IconName = keyof typeof RAW;

@@ -1,17 +1,19 @@
-// Campagnes Wallet et SMS : brouillons dans la table campaigns (RLS), aperçu, envoi et suivi
-// par la fonction campaign-send. Le texte SMS optimisé n'est jamais appliqué sans confirmation.
+// Campagnes de notifications Wallet : brouillons dans la table campaigns (RLS), aperçu, envoi et suivi par
+// la fonction campaign-send. Quota mensuel de notifications (une par carte destinataire) affiché avant
+// l'envoi ; au-delà, le serveur refuse (QUOTA_EXCEEDED). Pro : calendrier des temps forts et campagnes
+// préparées par LOYNA (prepared_by_loyna), qui ne partent jamais sans la validation du commerçant.
 import {useEffect, useState} from 'preact/hooks';
 import {Icon} from '../icons';
-import {api, can, feature, featureLimit, go, includedIn, merchant, toast, toastError} from '../state';
-import {Badge, Btn, Empty, ErrorBox, Field, Modal, PageHead, Panel, Segmented, Spinner, useBusy, useLoad} from '../ui';
-import {date, dateTime, num} from '../util';
+import {api, can, feature, go, includedIn, loadUsage, merchant, toast, toastError, type PlanUsage} from '../state';
+import {campaignName, sendAt, tempsForts, type TempsFort} from '../temps-forts';
+import {Badge, Btn, Empty, ErrorBox, Field, LockBadge, Modal, NotifPreview, OffersLink, PageHead, Panel, Spinner, useBusy, useLoad} from '../ui';
+import {date, dateTime, localInput, num, plural, resetDay} from '../util';
 
-type Channel = 'WALLET' | 'SMS';
 type Audience = 'ALL' | 'ACTIVE' | 'INACTIVE_30' | 'INACTIVE_60' | 'INACTIVE_90' | 'BIRTHDAY' | 'REWARD_AVAILABLE' | 'CUSTOM';
 interface Campaign {
   id: string;
   name: string;
-  channel: Channel;
+  channel: 'WALLET';
   audience_type: Audience;
   audience_filter: Record<string, any>;
   message_title: string | null;
@@ -22,6 +24,13 @@ interface Campaign {
   stats: Record<string, any>;
   error: string | null;
   created_at: string;
+  prepared_by_loyna?: boolean;
+}
+interface Quota {
+  limit: number | null;
+  used: number;
+  remaining: number | null;
+  resets_at: string;
 }
 const STATUS: Record<Campaign['status'], [string, 'neutral' | 'blue' | 'amber' | 'green' | 'red' | 'gold']> = {
   DRAFT: ['Brouillon', 'neutral'],
@@ -44,10 +53,22 @@ const AUDIENCES: {value: Audience; label: string; segment?: boolean}[] = [
 const SKIPS: Record<string, string> = {
   NO_CONSENT: 'sans accord pour recevoir des offres',
   NO_WALLET: 'sans carte installée dans le Wallet',
-  NO_PHONE: 'sans numéro de téléphone',
-  SMS_OPT_OUT: 'désinscrits des SMS (STOP)',
   FREQUENCY_CAP: 'déjà sollicités récemment',
 };
+const FEATURES: Record<string, string> = {
+  segmentation: 'groupes de clients',
+  'campaigns.scheduled': 'campagnes programmées',
+  'campaigns.wallet': 'campagnes',
+  'wallet.notifications': 'notifications Wallet',
+};
+const MAX_LEN = 300;
+const prepared = (c: Pick<Campaign, 'prepared_by_loyna' | 'status'>) => !!c.prepared_by_loyna && c.status === 'DRAFT';
+
+/** « 1 240 / 2 000 notifications ce mois-ci · il en reste 760 · recharge le 1er novembre » */
+function quotaText(q: Quota): string {
+  if (q.limit === null) return `${num(q.used)} notifications ce mois-ci · illimitées avec votre offre`;
+  return `${num(q.used)} / ${num(q.limit)} notifications ce mois-ci · il en reste ${num(q.remaining ?? 0)} · recharge le ${resetDay(q.resets_at)}`;
+}
 
 export function Campagnes({id}: {id?: string}) {
   if (id) return <Editor id={id} />;
@@ -57,7 +78,9 @@ export function Campagnes({id}: {id?: string}) {
 function List() {
   const m = merchant.value!;
   const list = useLoad(() => api.select<Campaign>('campaigns', {eq: {merchant_id: m.merchant_id}, order: ['created_at', false], limit: 100}), [m.merchant_id]);
-  const enabled = feature('campaigns.wallet') || feature('sms');
+  const usage = useLoad(() => loadUsage().catch(() => null), [m.merchant_id]);
+  const enabled = feature('campaigns.wallet');
+  const toValidate = (list.data ?? []).filter(prepared);
   return (
     <div class="page">
       <PageHead eyebrow={m.merchant_name} title="Campagnes">
@@ -67,16 +90,28 @@ function List() {
           </Btn>
         )}
       </PageHead>
+      {usage.data && enabled && (
+        <p class="quota-line">
+          <Icon name="bell" size={16} />
+          {quotaText(usage.data.notifications)}
+        </p>
+      )}
       {!enabled && (
         <div class="upsell upsell--wide">
           <Icon name="megaphone" size={26} />
           <p>Campagnes : un message affiché sur le téléphone de vos clients, via leur carte. {includedIn('campaigns.wallet')}</p>
-          {can('settings.manage') && (
-            <Btn kind="ghost" small href="#/abonnement" icon="arrow-right">
-              Voir mon abonnement
-            </Btn>
-          )}
+          <OffersLink label="Voir mon abonnement" />
         </div>
+      )}
+      {toValidate.length > 0 && (
+        <a class="validate-bar" href={`#/campagne/${toValidate[0].id}`}>
+          <Icon name="badge-check" />
+          <span>
+            <strong>{toValidate.length > 1 ? `${toValidate.length} campagnes préparées par LOYNA attendent votre validation` : 'Une campagne préparée par LOYNA attend votre validation'}</strong>
+            <small>Relisez-la puis validez : elle ne part jamais sans votre accord.</small>
+          </span>
+          <Icon name="arrow-right" size={18} />
+        </a>
       )}
       {list.error ? (
         <ErrorBox error={list.error} retry={list.reload} />
@@ -92,24 +127,27 @@ function List() {
         <ul class="camps">
           {list.data.map((c) => (
             <li>
-              <a href={`#/campagne/${c.id}`} class="camp">
-                <span class={`camp-i camp-i--${c.channel.toLowerCase()}`}>
-                  <Icon name={c.channel === 'SMS' ? 'message-square' : 'bell'} />
+              <a href={`#/campagne/${c.id}`} class={`camp ${prepared(c) ? 'camp--todo' : ''}`}>
+                <span class="camp-i">
+                  <Icon name={c.prepared_by_loyna ? 'badge-check' : 'bell'} />
                 </span>
                 <span class="camp-t">
                   <strong>{c.name}</strong>
                   <small>
-                    {c.channel === 'SMS' ? 'SMS' : 'Notification Wallet'} · {AUDIENCES.find((a) => a.value === c.audience_type)?.label ?? c.audience_type}
+                    {AUDIENCES.find((a) => a.value === c.audience_type)?.label ?? c.audience_type}
+                    {c.prepared_by_loyna && !prepared(c) ? ' · préparée par LOYNA' : ''}
                   </small>
                 </span>
                 <span class="camp-s">
-                  <Badge tone={STATUS[c.status][1]}>{STATUS[c.status][0]}</Badge>
+                  {prepared(c) ? <Badge tone="gold">Préparée par LOYNA · à valider</Badge> : <Badge tone={STATUS[c.status][1]}>{STATUS[c.status][0]}</Badge>}
                   <small>
                     {c.status === 'SENT' && c.sent_at
                       ? `Envoyée le ${date(c.sent_at)}${typeof c.stats?.sent === 'number' ? ` · ${num(c.stats.sent)} destinataires` : ''}`
                       : c.status === 'SCHEDULED' && c.scheduled_at
                         ? `Prévue le ${dateTime(c.scheduled_at)}`
-                        : `Créée le ${date(c.created_at)}`}
+                        : c.status === 'DRAFT' && c.scheduled_at
+                          ? `Proposée pour le ${dateTime(c.scheduled_at)}`
+                          : `Créée le ${date(c.created_at)}`}
                   </small>
                 </span>
                 <Icon name="chevron-right" size={18} />
@@ -118,10 +156,103 @@ function List() {
           ))}
         </ul>
       )}
+      {enabled && list.data && (feature('campaigns.prepared') ? <Calendar campaigns={list.data} onCreated={list.reload} /> : <ProTeaser />)}
     </div>
   );
 }
 
+// --- Pro : calendrier des temps forts des 60 prochains jours ------------------------------------------------
+function Calendar({campaigns, onCreated}: {campaigns: Campaign[]; onCreated: () => void}) {
+  const m = merchant.value!;
+  const [busy, run] = useBusy();
+  const [doing, setDoing] = useState('');
+  const items = tempsForts(new Date(), 60);
+  const existing = (t: TempsFort) => campaigns.find((c) => c.status !== 'CANCELLED' && c.name === campaignName(t));
+
+  const prepare = (t: TempsFort) =>
+    run(async () => {
+      setDoing(t.key);
+      try {
+        const at = sendAt(t);
+        const created = await api.insert<Campaign>('campaigns', {
+          merchant_id: m.merchant_id,
+          name: campaignName(t),
+          channel: 'WALLET',
+          audience_type: 'ALL',
+          audience_filter: {},
+          message_title: t.title,
+          message_body: t.message,
+          scheduled_at: at && feature('campaigns.scheduled') ? at.toISOString() : null,
+        });
+        toast(at ? `Brouillon prêt : envoi proposé le ${dateTime(at.toISOString())}` : 'Brouillon prêt : relisez-le et envoyez-le dès que possible');
+        onCreated();
+        go(`campagne/${created.id}`);
+      } catch (e) {
+        toastError(e);
+      } finally {
+        setDoing('');
+      }
+    });
+
+  return (
+    <Panel title="Vos temps forts des 60 prochains jours" sub="Fêtes, saisons, soldes et événements : chaque temps fort a un message prêt. « Préparer » crée un brouillon programmé deux jours avant, à 10 h, que vous relisez avant de valider.">
+      {items.length ? (
+        <ul class="tf">
+          {items.map((t) => {
+            const done = existing(t);
+            const days = Math.round((t.date.getTime() - new Date(new Date().toDateString()).getTime()) / 86400000);
+            return (
+              <li class="tf-i">
+                <span class="tf-d">
+                  <b>{t.date.getDate()}</b>
+                  <small>{t.date.toLocaleDateString('fr-FR', {month: 'short'})}</small>
+                </span>
+                <span class="tf-t">
+                  <strong>{t.label}</strong>
+                  <small>
+                    {t.date.toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long'})} · {days === 0 ? 'aujourd’hui' : days === 1 ? 'demain' : `dans ${days} jours`}
+                  </small>
+                  <span class="tf-m">« {t.message.replace(/\{prenom\}/g, 'Léa').replace(/\{commerce\}/g, m.merchant_name)} »</span>
+                  {t.hint && <small class="tf-h">{t.hint}</small>}
+                </span>
+                {done ? (
+                  <Btn kind="ghost" small icon="check" href={`#/campagne/${done.id}`}>
+                    Déjà préparée
+                  </Btn>
+                ) : (
+                  <Btn kind="primary" small icon="calendar-heart" busy={busy && doing === t.key} disabled={busy} onClick={() => prepare(t)}>
+                    Préparer
+                  </Btn>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p class="muted">Aucun temps fort dans les 60 prochains jours.</p>
+      )}
+      <p class="muted small">LOYNA prépare aussi vos campagnes : elles apparaissent dans la liste ci-dessus, avec la mention « Préparée par LOYNA · à valider ».</p>
+    </Panel>
+  );
+}
+
+function ProTeaser() {
+  return (
+    <div class="upsell upsell--wide upsell--pro">
+      <Icon name="calendar-heart" size={26} />
+      <p>
+        <strong>Avec Pro, LOYNA prépare vos campagnes.</strong> Le calendrier des temps forts (fêtes, saisons, soldes, événements) est préparé pour vous : les campagnes sont rédigées et programmées,
+        puis vous les validez en un clic. Une campagne préparée par LOYNA ne part jamais sans votre validation.
+      </p>
+      <div class="btn-row">
+        <LockBadge feature="campaigns.prepared" />
+        <OffersLink />
+      </div>
+    </div>
+  );
+}
+
+// --- Éditeur -------------------------------------------------------------------------------------------------
 const EMPTY: Omit<Campaign, 'id' | 'created_at'> = {
   name: '',
   channel: 'WALLET',
@@ -134,12 +265,14 @@ const EMPTY: Omit<Campaign, 'id' | 'created_at'> = {
   status: 'DRAFT',
   stats: {},
   error: null,
+  prepared_by_loyna: false,
 };
 
 function Editor({id}: {id: string}) {
   const m = merchant.value!;
   const isNew = id === 'nouvelle';
   const load = useLoad(async () => (isNew ? null : ((await api.select<Campaign>('campaigns', {eq: {id}}))[0] ?? null)), [id]);
+  const usage = useLoad<PlanUsage | null>(() => loadUsage().catch(() => null), [m.merchant_id]);
   const [c, setC] = useState<Omit<Campaign, 'id' | 'created_at'> & {id?: string}>(EMPTY);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -152,9 +285,13 @@ function Editor({id}: {id: string}) {
     if (load.data) {
       setC(load.data);
       setSaved(true);
+      // brouillon programmé (temps fort, campagne préparée par LOYNA) : date proposée reprise si elle est à venir
+      const at = load.data.scheduled_at ? new Date(load.data.scheduled_at) : null;
+      setWhen(at && at.getTime() > Date.now() + 10 * 60000 ? localInput(at) : '');
     } else if (isNew) {
-      setC({...EMPTY, channel: feature('campaigns.wallet') ? 'WALLET' : 'SMS'});
+      setC({...EMPTY});
       setSaved(false);
+      setWhen('');
     }
     setPreview(null);
   }, [load.data, isNew]);
@@ -169,13 +306,14 @@ function Editor({id}: {id: string}) {
     );
 
   const draft = c.status === 'DRAFT';
+  const byLoyna = !!c.prepared_by_loyna;
   const set = <K extends keyof Campaign>(k: K, v: Campaign[K]) => {
     setC((x) => ({...x, [k]: v}));
     setSaved(false);
     setPreview(null);
   };
   const setFilter = (k: string, v: any) => set('audience_filter', {...c.audience_filter, [k]: v === '' || v === null ? undefined : v});
-  const maxLen = c.channel === 'SMS' ? 1000 : 300;
+  const pastProposal = !!c.scheduled_at && !when && new Date(c.scheduled_at).getTime() <= Date.now() + 10 * 60000;
 
   const save = async (): Promise<string | null> => {
     setError('');
@@ -189,10 +327,10 @@ function Editor({id}: {id: string}) {
     }
     const row = {
       name: c.name.trim(),
-      channel: c.channel,
+      channel: 'WALLET',
       audience_type: c.audience_type,
       audience_filter: Object.fromEntries(Object.entries(c.audience_filter).filter(([, v]) => v !== undefined)),
-      message_title: c.channel === 'WALLET' ? c.message_title?.trim() || null : null,
+      message_title: c.message_title?.trim() || null,
       message_body: c.message_body.trim(),
     };
     try {
@@ -231,9 +369,13 @@ function Editor({id}: {id: string}) {
         if (when) body.scheduled_at = new Date(when).toISOString();
         const r = await api.edge('campaign-send', body);
         setConfirm(false);
-        if (r.status === 'SENDING') toast(`Envoi lancé à ${num(r.eligible ?? 0)} clients`);
+        if (r.status === 'SENDING') toast(`Envoi lancé à ${plural(r.eligible ?? 0, 'client', 'clients')}`);
         else if (r.status === 'SCHEDULED') toast(`Campagne programmée le ${dateTime(r.scheduled_at)}`);
-        else if (r.status === 'FEATURE_NOT_AVAILABLE') return setError('Cette campagne utilise une fonction non incluse dans votre formule.');
+        else if (r.status === 'QUOTA_EXCEEDED')
+          return setError(
+            `Quota de notifications insuffisant : cette campagne en demande ${num(r.needed)}, il en reste ${num(r.remaining ?? 0)} sur ${num(r.limit)} ce mois-ci. Le quota se recharge le ${resetDay(r.resets_at)} ; vous pouvez aussi choisir un groupe de clients plus petit, ou passer à l’offre supérieure.`,
+          );
+        else if (r.status === 'FEATURE_NOT_AVAILABLE') return setError(`Cette campagne utilise une fonction non incluse dans votre offre${FEATURES[r.feature] ? ` (${FEATURES[r.feature]})` : ''}.`);
         else return setError('Envoi impossible : la campagne n’est plus un brouillon.');
         go('campagnes');
       } catch (e) {
@@ -266,7 +408,9 @@ function Editor({id}: {id: string}) {
     });
 
   const sample = (t: string) => t.replace(/\{prenom\}/g, 'Léa').replace(/\{commerce\}/g, m.merchant_name);
-  const insert = (token: string) => set('message_body', (c.message_body + (c.message_body && !/\s$/.test(c.message_body) ? ' ' : '') + token).slice(0, maxLen));
+  const insert = (token: string) => set('message_body', (c.message_body + (c.message_body && !/\s$/.test(c.message_body) ? ' ' : '') + token).slice(0, MAX_LEN));
+  const q: Quota | null = preview?.notifications_quota ?? usage.data?.notifications ?? null;
+  const sendLabel = byLoyna ? (when ? 'Valider et programmer' : 'Valider et envoyer') : when ? 'Programmer l’envoi' : 'Envoyer maintenant';
 
   return (
     <div class="page">
@@ -283,6 +427,17 @@ function Editor({id}: {id: string}) {
         )}
       </PageHead>
 
+      {draft && byLoyna && (
+        <div class="validate-note">
+          <Badge tone="gold">
+            <Icon name="badge-check" size={14} /> Préparée par LOYNA · à valider
+          </Badge>
+          <p>
+            LOYNA a rédigé cette campagne pour vous{c.scheduled_at ? ` et propose de l’envoyer le ${dateTime(c.scheduled_at)}` : ''}. Relisez le message et les destinataires, modifiez-les si besoin, puis validez : elle ne part jamais sans votre accord.
+          </p>
+        </div>
+      )}
+
       {!draft ? (
         <Sent c={c as Campaign} />
       ) : (
@@ -292,24 +447,7 @@ function Editor({id}: {id: string}) {
               <Field label="Nom de la campagne" hint="Pour vous retrouver : il n’est pas montré aux clients.">
                 <input type="text" maxLength={120} value={c.name} onInput={(e) => set('name', (e.target as HTMLInputElement).value)} />
               </Field>
-              <div class="fld">
-                <span class="fld-l">Canal</span>
-                <Segmented
-                  label="Canal"
-                  value={c.channel}
-                  onChange={(v) => set('channel', v)}
-                  options={[
-                    {value: 'WALLET', label: 'Notification Wallet', disabled: !feature('campaigns.wallet')},
-                    {value: 'SMS', label: 'SMS', disabled: !feature('sms')},
-                  ]}
-                />
-                <span class="fld-h">
-                  {c.channel === 'WALLET'
-                    ? 'Gratuit et illimité : le message s’affiche sur l’écran du téléphone, via la carte de fidélité.'
-                    : `Décompté de votre quota de SMS${featureLimit('sms.monthly_quota') ? ` (${num(featureLimit('sms.monthly_quota'))} par mois)` : ''}. Mention STOP ajoutée automatiquement.`}
-                </span>
-              </div>
-              <Field label="Destinataires" hint={feature('segmentation') ? undefined : `Ciblage par segment. ${includedIn('segmentation')}`}>
+              <Field label="Destinataires" hint={feature('segmentation') ? undefined : `Ciblage par groupe de clients. ${includedIn('segmentation')}`}>
                 <select value={c.audience_type} onChange={(e) => set('audience_type', (e.target as HTMLSelectElement).value as Audience)}>
                   {AUDIENCES.filter((a) => !a.segment || feature('segmentation') || a.value === c.audience_type).map((a) => (
                     <option value={a.value}>{a.label}</option>
@@ -318,7 +456,7 @@ function Editor({id}: {id: string}) {
               </Field>
               {c.audience_type === 'BIRTHDAY' && (
                 <Field label="Période">
-                  <select value={c.audience_filter.birthday_window ?? 'THIS_WEEK'} onChange={(e) => setFilter('birthday_window', (e.target as HTMLSelectElement).value)}>
+                  <select value={c.audience_filter.birthday_window ?? 'THIS_MONTH'} onChange={(e) => setFilter('birthday_window', (e.target as HTMLSelectElement).value)}>
                     <option value="TODAY">Aujourd’hui</option>
                     <option value="THIS_WEEK">Cette semaine</option>
                     <option value="THIS_MONTH">Ce mois-ci</option>
@@ -348,13 +486,11 @@ function Editor({id}: {id: string}) {
                   </label>
                 </div>
               )}
-              {c.channel === 'WALLET' && (
-                <Field label="Titre (facultatif)" hint={`${(c.message_title ?? '').length} / 60`}>
-                  <input type="text" maxLength={60} value={c.message_title ?? ''} onInput={(e) => set('message_title', (e.target as HTMLInputElement).value)} />
-                </Field>
-              )}
-              <Field label="Message" hint={`${c.message_body.length} / ${maxLen} · {prenom} et {commerce} sont remplacés automatiquement`}>
-                <textarea rows={5} maxLength={maxLen} value={c.message_body} onInput={(e) => set('message_body', (e.target as HTMLTextAreaElement).value)} />
+              <Field label="Titre (facultatif)" hint={`${(c.message_title ?? '').length} / 60`}>
+                <input type="text" maxLength={60} value={c.message_title ?? ''} onInput={(e) => set('message_title', (e.target as HTMLInputElement).value)} />
+              </Field>
+              <Field label="Message" hint={`${c.message_body.length} / ${MAX_LEN} · {prenom} et {commerce} sont remplacés automatiquement`}>
+                <textarea rows={5} maxLength={MAX_LEN} value={c.message_body} onInput={(e) => set('message_body', (e.target as HTMLTextAreaElement).value)} />
               </Field>
               <div class="btn-row">
                 <button type="button" class="chip" onClick={() => insert('{prenom}')}>
@@ -364,7 +500,14 @@ function Editor({id}: {id: string}) {
                   + nom du commerce
                 </button>
               </div>
-              {c.channel === 'SMS' && <SmsTools text={c.message_body} onReplace={(t) => set('message_body', t)} />}
+              {q && (
+                <p class="quota-line">
+                  <Icon name="bell" size={16} />
+                  <span>
+                    {q.limit === null ? 'Notifications illimitées avec votre offre.' : `${quotaText(q)}. Chaque client destinataire compte une notification ; les messages automatiques ne sont jamais décomptés.`}
+                  </span>
+                </p>
+              )}
               {error && (
                 <p class="form-err" role="alert">
                   {error}
@@ -383,27 +526,7 @@ function Editor({id}: {id: string}) {
 
           <div class="stack">
             <Panel title="Aperçu" class="msg-preview">
-              {c.channel === 'WALLET' ? (
-                <div class="notif">
-                  <span class="notif-app" style={{background: m.primary_color, color: m.secondary_color}}>
-                    {m.logo_url ? <img src={m.logo_url} alt="" /> : m.merchant_name.slice(0, 1)}
-                  </span>
-                  <span class="notif-t">
-                    <strong>{c.message_title ? sample(c.message_title) : m.merchant_name}</strong>
-                    <span>{c.message_body ? sample(c.message_body) : 'Votre message apparaîtra ici.'}</span>
-                  </span>
-                  <small>maintenant</small>
-                </div>
-              ) : (
-                <div class="sms">
-                  <span class="sms-from">{m.merchant_name}</span>
-                  <p class="sms-bubble">
-                    {c.message_body ? sample(c.message_body) : 'Votre message apparaîtra ici.'}
-                    <br />
-                    STOP 00000
-                  </p>
-                </div>
-              )}
+              <NotifPreview title={c.message_title ? sample(c.message_title) : null} body={c.message_body ? sample(c.message_body) : 'Votre message apparaîtra ici.'} />
               <p class="muted small">Exemple avec la cliente « Léa ».</p>
             </Panel>
 
@@ -411,9 +534,13 @@ function Editor({id}: {id: string}) {
               <Panel title="Destinataires">
                 <div class="pv-big">
                   <b>{num(preview.eligible)}</b>
-                  <span>client{preview.eligible > 1 ? 's' : ''} recevr{preview.eligible > 1 ? 'ont' : 'a'} ce message</span>
+                  <span>
+                    client{preview.eligible > 1 ? 's' : ''} recevr{preview.eligible > 1 ? 'ont' : 'a'} ce message
+                  </span>
                 </div>
-                <p class="muted small">Sur {num(preview.audience_total)} client{preview.audience_total > 1 ? 's' : ''} dans la sélection.</p>
+                <p class="muted small">
+                  Sur {num(preview.audience_total)} client{preview.audience_total > 1 ? 's' : ''} dans la sélection.
+                </p>
                 {Object.entries(preview.skipped ?? {}).filter(([, n]) => Number(n) > 0).length > 0 && (
                   <ul class="plain small">
                     {Object.entries(preview.skipped ?? {})
@@ -425,34 +552,49 @@ function Editor({id}: {id: string}) {
                       ))}
                   </ul>
                 )}
-                {preview.sms && (
+                {preview.notifications_quota && (
                   <dl class="totals totals--small">
                     <div>
-                      <dt>SMS par destinataire</dt>
-                      <dd>{num(preview.sms.segments_per_recipient)}</dd>
+                      <dt>Notifications de cet envoi</dt>
+                      <dd>{num(preview.eligible)}</dd>
                     </div>
                     <div>
-                      <dt>SMS au total</dt>
-                      <dd>{num(preview.sms.total_sms_estimated)}</dd>
+                      <dt>Restantes ce mois-ci</dt>
+                      <dd>{preview.notifications_quota.remaining === null ? 'illimitées' : num(preview.notifications_quota.remaining)}</dd>
                     </div>
-                    <div>
-                      <dt>Quota restant ce mois-ci</dt>
-                      <dd>{preview.sms.quota_remaining === null ? 'illimité' : num(preview.sms.quota_remaining)}</dd>
-                    </div>
+                    {preview.notifications_quota.limit !== null && (
+                      <div>
+                        <dt>Quota du mois</dt>
+                        <dd>{num(preview.notifications_quota.limit)}</dd>
+                      </div>
+                    )}
                   </dl>
                 )}
-                {preview.sms && !preview.sms.quota_ok && <p class="form-err">Quota de SMS insuffisant pour cet envoi.</p>}
-                {preview.sms && !preview.sms.within_sending_hours && <p class="note">Hors des horaires d’envoi autorisés pour les SMS commerciaux : l’envoi sera décalé ou programmez-le.</p>}
-                {preview.feature_missing && <p class="form-err">Fonction non incluse dans votre formule : {String(preview.feature_missing)}.</p>}
+                {preview.quota_ok === false && (
+                  <div class="form-err" role="alert">
+                    <span>
+                      Quota de notifications insuffisant : cet envoi en compte {num(preview.eligible)}, il en reste {num(preview.notifications_quota?.remaining ?? 0)} jusqu’au {resetDay(preview.notifications_quota?.resets_at)}.
+                      Choisissez un groupe de clients plus petit, attendez la recharge, ou passez à l’offre supérieure.
+                    </span>
+                  </div>
+                )}
+                {preview.quota_ok === false && (
+                  <div class="btn-row pv-cta">
+                    <OffersLink />
+                  </div>
+                )}
+                {preview.feature_missing && (
+                  <p class="form-err">Fonction non incluse dans votre offre : {FEATURES[String(preview.feature_missing)] ?? String(preview.feature_missing)}.</p>
+                )}
                 {can('campaigns.send') ? (
                   <div class="form">
                     {feature('campaigns.scheduled') && (
-                      <Field label="Programmer (facultatif)" hint="Vide = envoi immédiat.">
-                        <input type="datetime-local" value={when} min={new Date(Date.now() + 10 * 60000).toISOString().slice(0, 16)} onInput={(e) => setWhen((e.target as HTMLInputElement).value)} />
+                      <Field label={byLoyna ? 'Envoi proposé (modifiable)' : 'Programmer (facultatif)'} hint={pastProposal ? 'La date proposée est passée : vide = envoi immédiat, ou choisissez une nouvelle date.' : 'Vide = envoi immédiat.'}>
+                        <input type="datetime-local" value={when} min={localInput(new Date(Date.now() + 10 * 60000))} onInput={(e) => setWhen((e.target as HTMLInputElement).value)} />
                       </Field>
                     )}
-                    <Btn kind="gold" icon="send" block disabled={!preview.eligible || !!preview.feature_missing || (preview.sms && !preview.sms.quota_ok)} onClick={() => setConfirm(true)}>
-                      {when ? 'Programmer l’envoi' : 'Envoyer maintenant'}
+                    <Btn kind="gold" icon={when ? 'calendar-clock' : 'send'} block disabled={!preview.eligible || !!preview.feature_missing || preview.quota_ok === false} onClick={() => setConfirm(true)}>
+                      {sendLabel}
                     </Btn>
                   </div>
                 ) : (
@@ -474,14 +616,16 @@ function Editor({id}: {id: string}) {
               Annuler
             </Btn>
             <Btn kind="gold" icon="send" busy={busy} onClick={launch}>
-              {when ? 'Programmer' : 'Envoyer'}
+              {byLoyna ? 'Je valide' : when ? 'Programmer' : 'Envoyer'}
             </Btn>
           </>
         }
       >
         <p>
-          {c.channel === 'SMS' ? 'Le SMS' : 'La notification'} « {c.name} » sera envoyé{c.channel === 'SMS' ? '' : 'e'} à <strong>{num(preview?.eligible ?? 0)} client{(preview?.eligible ?? 0) > 1 ? 's' : ''}</strong>
-          {when ? ` le ${dateTime(new Date(when).toISOString())}` : ' immédiatement'}. Un envoi ne peut pas être rappelé.
+          La notification « {c.name} » sera envoyée à <strong>{plural(preview?.eligible ?? 0, 'client', 'clients')}</strong>
+          {when ? ` le ${dateTime(new Date(when).toISOString())}` : ' immédiatement'}.
+          {q && q.limit !== null ? ` Elle compte ${plural(preview?.eligible ?? 0, 'notification', 'notifications')} de votre quota du mois.` : ''} Un envoi ne peut pas être rappelé
+          {when ? ' (une campagne programmée peut être annulée jusqu’à son envoi)' : ''}.
         </p>
       </Modal>
     </div>
@@ -493,112 +637,6 @@ function numOrNull(e: Event): number | null {
   return v === '' ? null : Number(v);
 }
 
-function SmsTools({text, onReplace}: {text: string; onReplace: (t: string) => void}) {
-  const [a, setA] = useState<any>(null);
-  const [opt, setOpt] = useState<any>(null);
-  const [busy, run] = useBusy();
-  useEffect(() => {
-    if (!text.trim()) return setA(null);
-    const t = setTimeout(() => {
-      api.edge('sms-send', {action: 'analyze', text}).then(setA, () => setA(null));
-    }, 400);
-    return () => clearTimeout(t);
-  }, [text]);
-  return (
-    <div class="smsbox">
-      {a && (
-        <>
-          <p class="smsbox-s">
-            <Icon name="message-square" size={16} />
-            <strong>{a.summary}</strong> <span class="muted">({a.encoding === 'GSM7' ? 'caractères standards' : 'Unicode'})</span>
-          </p>
-          {a.warnings?.length > 0 && (
-            <ul class="plain small warn">
-              {a.warnings.map((w: string) => (
-                <li>{w}</li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
-      <Btn
-        kind="ghost"
-        small
-        icon="sparkles"
-        busy={busy}
-        disabled={!text.trim()}
-        onClick={() =>
-          run(async () => {
-            try {
-              setOpt(await api.edge('sms-send', {action: 'optimize', text}));
-            } catch (e) {
-              toastError(e);
-            }
-          })
-        }
-      >
-        Optimiser le message
-      </Btn>
-      <Modal
-        open={!!opt}
-        onClose={() => setOpt(null)}
-        title="Version optimisée"
-        wide
-        footer={
-          opt?.changed ? (
-            <>
-              <Btn kind="ghost" onClick={() => setOpt(null)}>
-                Garder mon texte
-              </Btn>
-              <Btn
-                kind="gold"
-                icon="check"
-                onClick={() => {
-                  onReplace(opt.optimized);
-                  setOpt(null);
-                }}
-              >
-                Remplacer mon texte
-              </Btn>
-            </>
-          ) : (
-            <Btn onClick={() => setOpt(null)}>Fermer</Btn>
-          )
-        }
-      >
-        {opt && !opt.changed ? (
-          <p>Votre message est déjà optimisé : {opt.before?.summary?.toLowerCase()}</p>
-        ) : (
-          opt && (
-            <>
-              <div class="row2">
-                <div>
-                  <p class="eyebrow">Avant · {opt.before.segments} SMS</p>
-                  <p class="sms-bubble">{opt.original}</p>
-                </div>
-                <div>
-                  <p class="eyebrow">Après · {opt.after.segments} SMS</p>
-                  <p class="sms-bubble">{opt.optimized}</p>
-                </div>
-              </div>
-              {opt.changes?.length > 0 && (
-                <ul class="plain small">
-                  {opt.changes.map((ch: any) => (
-                    <li>
-                      « {ch.from} » → « {ch.to} » ({ch.count}×) : {ch.reason}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {opt.savedSegmentsPerRecipient > 0 && <p class="note">Économie : {opt.savedSegmentsPerRecipient} SMS par destinataire.</p>}
-            </>
-          )
-        )}
-      </Modal>
-    </div>
-  );
-}
-
 function Sent({c}: {c: Campaign}) {
   const perf = useLoad(() => (c.status === 'SENT' || c.status === 'SENDING' ? api.edge('campaign-send', {action: 'performance', campaign_id: c.id}) : Promise.resolve(null)), [c.id]);
   const s = c.stats ?? {};
@@ -608,10 +646,11 @@ function Sent({c}: {c: Campaign}) {
         {c.message_title && <p class="eyebrow">{c.message_title}</p>}
         <p class="sent-msg">{c.message_body}</p>
         <p class="muted small">
-          {c.channel === 'SMS' ? 'SMS' : 'Notification Wallet'} · {AUDIENCES.find((a) => a.value === c.audience_type)?.label}
+          Notification Wallet · {AUDIENCES.find((a) => a.value === c.audience_type)?.label}
           {c.sent_at ? ` · envoyée le ${dateTime(c.sent_at)}` : c.scheduled_at ? ` · prévue le ${dateTime(c.scheduled_at)}` : ''}
+          {c.prepared_by_loyna ? ' · préparée par LOYNA' : ''}
         </p>
-        {c.error && <p class="form-err">{c.error}</p>}
+        {c.error && <p class="form-err">{c.error === 'QUOTA_EXCEEDED' ? 'Non envoyée : le quota de notifications du mois était atteint à l’heure prévue.' : c.error}</p>}
       </Panel>
       <Panel title="Résultats">
         <dl class="totals">

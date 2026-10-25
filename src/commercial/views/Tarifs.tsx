@@ -1,7 +1,8 @@
-// Tarifs : formules, mensuel et annuel, mise en service, offre de lancement, contenu de chaque formule et
-// liens de paiement. Prix et offre importés de src/data/site.ts ; formulation validée par Ewan (contenu.ts) :
-// jamais « HT » (TVA non applicable), engagement en clair, un seul message sur la mise en service.
-import {COMPARISON, LAUNCH_OFFER, PLANS, SETUP_FEE, euro, offerActive} from '../../data/site';
+// Tarifs : formules, mensuel et annuel, mise en service, offre de lancement, quotas, contenu de chaque formule et
+// liens de paiement. Prix, quotas et offre importés de src/data/site.ts (source : docs/OFFRES.md du dépôt LOYNA) ;
+// formulation validée par Ewan (contenu.ts) : jamais « HT » (TVA non applicable), engagement en clair, un seul message
+// sur la mise en service.
+import {COMPARISON, LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, euro, offerActive, quotas} from '../../data/site';
 import {ENGAGEMENT_ANNUEL, ENGAGEMENT_MENSUEL, KOVA, MENTION_PRIX, phraseMiseEnService} from '../contenu';
 import {fr} from '../format';
 import {Icon} from '../icons';
@@ -66,12 +67,29 @@ export function Tarifs() {
                   </dd>
                 </div>
               </dl>
+              <p class="cp-quota">
+                <Icon name="users" size={18} />
+                <span>{fr(quotas(p))}</span>
+              </p>
               {p.intro && <p class="cp-plan-intro">{p.intro}</p>}
+              {p.focus && (
+                <div class="cp-focus">
+                  <p class="fld-l">{p.focus.title}</p>
+                  <ul class="feat-list">
+                    {p.focus.items.map((f) => (
+                      <li>
+                        <Icon name="check" size={18} />
+                        <span>{fr(f)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <ul class="feat-list">
                 {p.features.map((f) => (
                   <li>
                     <Icon name="check" size={18} />
-                    <span>{f}</span>
+                    <span>{fr(f)}</span>
                   </li>
                 ))}
               </ul>
@@ -107,17 +125,29 @@ export function Tarifs() {
               </tr>
             </thead>
             <tbody>
-              {COMPARISON.map((l) => (
+              {COMPARISON.flatMap((l) => [
+                ...(l.group
+                  ? [
+                      <tr class="cp-comp-groupe">
+                        <th colSpan={PLANS.length + 1}>{l.group}</th>
+                      </tr>,
+                    ]
+                  : []),
                 <tr>
-                  <td>{l.label}</td>
+                  <td>{fr(l.label)}</td>
                   {l.values.map((v) => (
-                    <td class="r">{v === true ? <Icon name="check" size={18} class="cp-ok" /> : v === false ? <span class="muted">—</span> : <strong>{v}</strong>}</td>
+                    <td class="r">{v === true ? <Icon name="check" size={18} class="cp-ok" /> : v === false ? <span class="muted">—</span> : <strong>{fr(v)}</strong>}</td>
                   ))}
-                </tr>
-              ))}
+                </tr>,
+              ])}
             </tbody>
           </table>
         </div>
+        <p class="muted small cp-m0">
+          {fr(
+            `Une notification = un message de campagne reçu par une carte. Les messages automatiques et les notifications de proximité ne sont jamais décomptés ; un client reçoit au plus un message commercial toutes les ${MARKETING_INTERVAL_HOURS} h (réglable).`,
+          )}
+        </p>
       </Panel>
 
       <Panel title="Conditions à connaître">
@@ -125,11 +155,12 @@ export function Tarifs() {
           <li>{fr(phraseMiseEnService())}</li>
           <li>{fr(`Mensuel : ${ENGAGEMENT_MENSUEL.charAt(0).toLowerCase()}${ENGAGEMENT_MENSUEL.slice(1)} Annuel : ${ENGAGEMENT_ANNUEL.charAt(0).toLowerCase()}${ENGAGEMENT_ANNUEL.slice(1)}`)}</li>
           <li>{fr(MENTION_PRIX)}</li>
-          <li>{fr('Paiement en ligne par carte bancaire, sécurisé par Stripe, au nom de KOVA Elec, l’entreprise qui édite LOYNA ; factures dans l’espace client.')}</li>
+          <li>{fr('Paiement en ligne par carte bancaire, sécurisé par Stripe, au nom de KOVA Elec (LOYNA, une marque de KOVA Elec) ; factures dans l’espace client.')}</li>
           <li>{fr(`Si on vous demande qui est KOVA Elec : « ${KOVA} »`)}</li>
           <li>{fr('Carte prête sous 24 h, hors personnalisation exceptionnelle. Aucun matériel : un smartphone suffit pour scanner.')}</li>
+          <li>{fr('Notification de proximité dans les trois formules : dire « la carte s’affiche », jamais « à chaque passage » (localisation activée et Wallet autorisé sur l’écran verrouillé). LOYNA ne reçoit jamais la position du client.')}</li>
         </ul>
-        <p class="muted small cp-m0">Sources : src/data/site.ts (prix, formules, offre), docs/BRIEF.md (engagement), FAQ du site.</p>
+        <p class="muted small cp-m0">Sources : src/data/site.ts (prix, quotas, formules, offre), docs/OFFRES.md du dépôt LOYNA (offres du 25/10/2026), docs/BRIEF.md (engagement), FAQ du site.</p>
       </Panel>
     </div>
   );

@@ -2,9 +2,10 @@
 // Simulateur de rentabilité : uniquement de l'arithmétique sur les chiffres saisis par le commerçant
 // (aucune statistique inventée). Le gain net, le graphique et le multiple dépendent de la formule choisie.
 // Résultat calculé côté serveur pour les valeurs par défaut, puis en direct.
-import {PLANS, euro} from '../data/site';
-const defaults = {clients: 200, panier: 25, pct: 10, plan: 'growth'};
+import {PLANS, euro, type PlanId} from '../data/site';
+const defaults: {clients: number; panier: number; pct: number; plan: PlanId} = {clients: 200, panier: 25, pct: 10, plan: 'premium'};
 const prix = Object.fromEntries(PLANS.map((p) => [p.id, p.monthly]));
+const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
 const calc = (clients: number, panier: number, pct: number, p: number) => {
   const visites = Math.round((clients * pct) / 100);
   const ca = visites * panier;
@@ -15,7 +16,7 @@ const fmtMult = (m: number) => (m >= 10 ? Math.round(m) : Math.round(m * 10) / 1
 const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - min)) * 100}%`;
 ---
 
-<div class="roi" id="roi" data-prix={JSON.stringify(prix)}>
+<div class="roi" id="roi" data-prix={JSON.stringify(prix)} data-noms={JSON.stringify(noms)} data-defaut={defaults.plan}>
   <form class="roi-inputs" aria-label="Vos chiffres">
     <div class="roi-field">
       <label for="roi-clients">Clients différents par mois <output for="roi-clients" data-out="clients">{defaults.clients}</output></label>
@@ -45,7 +46,7 @@ const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - mi
   </form>
 
   <div class="roi-result" aria-live="polite">
-    <p class="roi-kicker">Gain estimé chaque mois avec <b data-out="plan-name">Growth</b> :</p>
+    <p class="roi-kicker">Gain estimé chaque mois avec <b data-out="plan-name">{noms[defaults.plan]}</b> :</p>
     <p class="roi-big"><span data-out="net">{r.net >= 0 ? '+ ' : '− '}{euro(Math.abs(r.net))}</span><small>de chiffre d’affaires en plus, abonnement déduit</small></p>
 
     <div class="roi-chart" aria-hidden="true">
@@ -78,8 +79,13 @@ const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - mi
   const root = document.getElementById('roi');
   if (root) {
     const prix = JSON.parse(root.dataset.prix || '{}') as Record<string, number>;
-    const noms: Record<string, string> = {essentiel: 'Essentiel', growth: 'Growth', pro: 'Pro'};
-    const fmt = (n: number) => Math.round(n).toLocaleString('fr-FR') + ' €';
+    const noms = JSON.parse(root.dataset.noms || '{}') as Record<string, string>;
+    const defaut = root.dataset.defaut || '';
+    // Même format que euro() de src/data/site.ts : « 39,99 € », « 1 250 € » (espaces insécables)
+    const fmt = (n: number) =>
+      n
+        .toLocaleString('fr-FR', {minimumFractionDigits: Number.isInteger(Math.round(n * 100) / 100) ? 0 : 2, maximumFractionDigits: 2})
+        .replace(/[  ]/g, ' ') + ' €';
     const out = (k: string, v: string) => root.querySelectorAll(`[data-out="${k}"]`).forEach((el) => (el.textContent = v));
     const form = root.querySelector('form')!;
     const cost = root.querySelector<HTMLElement>('[data-bar="cost"]')!;
@@ -91,7 +97,7 @@ const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - mi
       const panier = Number(f.get('panier'));
       const pct = Number(f.get('pct'));
       const plan = String(f.get('plan'));
-      const p = prix[plan] ?? 49;
+      const p = prix[plan] ?? prix[defaut] ?? 0;
       const visites = Math.round((clients * pct) / 100);
       const ca = visites * panier;
       const net = ca - p;

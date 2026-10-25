@@ -2,8 +2,8 @@
 import type {ComponentChildren} from 'preact';
 import {useEffect, useRef, useState} from 'preact/hooks';
 import {Icon} from './icons';
-import {toast, toasts} from './state';
-import {copy, qrSvg} from './util';
+import {can, lockLabel, merchant, toast, toasts} from './state';
+import {copy, num, qrSvg} from './util';
 
 type BtnKind = 'primary' | 'gold' | 'ghost' | 'danger' | 'quiet';
 export function Btn(props: {
@@ -220,6 +220,94 @@ export function LinkBox({url, qr = true, note}: {url: string; qr?: boolean; note
 }
 
 export {CardPreview} from './card';
+
+/** Indicateur chiffré comparé à la période précédente (« +12 % vs 30 j précédents »). */
+export function Kpi({label, def, cur, prev, pct, vs}: {label: string; def?: string; cur: number | null; prev: number | null; pct?: boolean; vs: string}) {
+  const value = cur === null || cur === undefined ? '–' : pct ? `${num(cur)} %` : num(cur);
+  let delta: {up: boolean; text: string} | null = null;
+  if (cur !== null && cur !== undefined && prev !== null && prev !== undefined) {
+    if (pct) {
+      const d = Math.round((cur - prev) * 10) / 10;
+      if (d !== 0) delta = {up: d > 0, text: `${d > 0 ? '+' : ''}${num(d)} pt`};
+    } else if (prev > 0) {
+      const d = Math.round(((cur - prev) / prev) * 100);
+      if (d !== 0) delta = {up: d > 0, text: `${d > 0 ? '+' : ''}${d} %`};
+    } else if (cur > 0) delta = {up: true, text: 'nouveau'};
+  }
+  return (
+    <div class="kpi" title={def}>
+      <span class="kpi-l">{label}</span>
+      <strong class="kpi-v">{value}</strong>
+      <span class="kpi-d">
+        {delta ? (
+          <span class={delta.up ? 'up' : 'down'}>
+            <Icon name={delta.up ? 'trending-up' : 'trending-down'} size={15} />
+            {delta.text}
+          </span>
+        ) : (
+          <span class="flat">stable</span>
+        )}{' '}
+        {vs}
+      </span>
+    </div>
+  );
+}
+
+/** Jauge de consommation de l'offre (cartes, notifications du mois) : limite null = illimité. */
+export function UsageMeter({label, used, limit, extra}: {label: string; used: number; limit: number | null; extra?: ComponentChildren}) {
+  const p = limit ? Math.min(100, Math.round((used / limit) * 100)) : null;
+  return (
+    <div class={`meter ${p === null ? '' : p >= 100 ? 'is-full' : p >= 80 ? 'is-high' : ''}`}>
+      <p class="meter-t">
+        {label} : <b>{num(used)}</b>
+        {limit === null ? ' · illimitées' : ` / ${num(limit)}`}
+        {extra}
+      </p>
+      {p !== null && (
+        <div class="meter-b" role="progressbar" aria-valuemin={0} aria-valuemax={limit ?? undefined} aria-valuenow={used} aria-label={label}>
+          <span style={{width: `${Math.max(p, used > 0 ? 2 : 0)}%`}} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Pastille d'une fonction absente de l'offre : « Inclus dans Premium », « Inclus dans Pro ». */
+export function LockBadge({feature}: {feature: string}) {
+  return (
+    <span class="bdg bdg--lock">
+      <Icon name="lock" size={13} />
+      {lockLabel(feature)}
+    </span>
+  );
+}
+
+/** Lien vers la page Abonnement (réservée aux profils qui gèrent les réglages). */
+export function OffersLink({label = 'Voir les offres'}: {label?: string}) {
+  if (!can('settings.manage')) return null;
+  return (
+    <Btn kind="ghost" small href="#/abonnement" icon="arrow-right">
+      {label}
+    </Btn>
+  );
+}
+
+/** Notification telle qu'elle s'affiche sur le téléphone du client (aux couleurs du commerce). */
+export function NotifPreview({title, body, when = 'maintenant'}: {title?: string | null; body: string; when?: string}) {
+  const m = merchant.value!;
+  return (
+    <div class="notif">
+      <span class="notif-app" style={{background: m.primary_color, color: m.secondary_color}}>
+        {m.logo_url ? <img src={m.logo_url} alt="" /> : m.merchant_name.slice(0, 1)}
+      </span>
+      <span class="notif-t">
+        <strong>{title || m.merchant_name}</strong>
+        <span>{body}</span>
+      </span>
+      <small>{when}</small>
+    </div>
+  );
+}
 
 /** Déclenche une action asynchrone en gérant l'état « en cours ». */
 export function useBusy(): [boolean, <T>(fn: () => Promise<T>) => Promise<T | undefined>] {

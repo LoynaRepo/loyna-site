@@ -26,6 +26,9 @@ interface ScanResult {
   transaction_id?: string;
   customer?: {id: string; first_name: string};
   display: Display;
+  happy_hour?: boolean; // double tampon aux heures creuses (Premium et Pro)
+  referral_bonus?: {bonus: number; referrer_credited: boolean} | null; // première visite d'un ami parrainé (Pro)
+  program?: {unit_singular: string; unit_plural: string};
   // contexte local (pour rejouer un scan : montant, forçage)
   qr?: string;
   at: number;
@@ -328,6 +331,8 @@ export function Scanner() {
   const d = result?.display;
   const actions = d?.actions.filter((a) => a.type !== 'UNDO' || (a.until && new Date(a.until).getTime() > Date.now())) ?? [];
   const live = cam === 'live';
+  const bonus = result?.status === 'OK' ? result.referral_bonus : null;
+  const unit = (n: number) => (n > 1 ? (result?.program?.unit_plural ?? 'passages') : (result?.program?.unit_singular ?? 'passage'));
 
   return (
     <div class="scan">
@@ -421,6 +426,23 @@ export function Scanner() {
                   {d.subtitle && <span class="result-sub">{d.subtitle}</span>}
                 </div>
               </div>
+              {result?.status === 'OK' && (result.happy_hour || bonus) && (
+                <div class="result-tags">
+                  {result.happy_hour && (
+                    <span class="result-tag">
+                      <Icon name="zap" size={16} />
+                      Double tampon !
+                    </span>
+                  )}
+                  {bonus && (
+                    <span class="result-tag">
+                      <Icon name="share-2" size={16} />
+                      Bonus de parrainage : +{bonus.bonus} {unit(bonus.bonus)}
+                      {bonus.referrer_credited ? ' (son parrain aussi)' : ''}
+                    </span>
+                  )}
+                </div>
+              )}
               {d.lines.length > 0 && (
                 <ul class="result-lines">
                   {d.lines.map((l) => (

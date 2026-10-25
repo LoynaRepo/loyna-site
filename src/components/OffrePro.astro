@@ -1,0 +1,109 @@
+---
+// Offre Pro : ce que LOYNA fait avec le commerçant (docs/OFFRES.md du dépôt LOYNA, § 3), en tuiles. Illustration
+// sans capture d'écran : rien n'y imite l'application.
+import Icon from './Icon.astro';
+
+interface Props {
+  class?: string;
+}
+const {class: cls = ''} = Astro.props;
+const items = [
+  {icon: 'calendar-check', t: 'Point mensuel de 30 min'},
+  {icon: 'megaphone', t: 'Campagnes clés en main'},
+  {icon: 'store', t: 'Jusqu’à 3 boutiques'},
+  {icon: 'crown', t: 'Niveaux VIP'},
+  {icon: 'users', t: 'Parrainage'},
+  {icon: 'printer', t: 'Kit comptoir imprimé'},
+];
+---
+
+<div class={`pro-tiles ${cls}`} role="img" aria-label={`Offre Pro : ${items.map((i) => i.t).join(', ')} et support prioritaire`}>
+  <p class="pt-head"><span class="pt-badge">Pro</span> LOYNA travaille avec vous</p>
+  <ul>
+    {
+      items.map((i) => (
+        <li>
+          <span class="pt-ic">
+            <Icon name={i.icon} size={20} />
+          </span>
+          {i.t}
+        </li>
+      ))
+    }
+  </ul>
+  <p class="pt-foot"><Icon name="badge-check" size={18} /> Vos campagnes ne partent qu’avec votre accord, validé en un clic</p>
+</div>
+
+<style>
+  .pro-tiles {
+    width: min(400px, 100%);
+    padding: 22px;
+    border-radius: 26px;
+    background:
+      radial-gradient(90% 60% at 100% 0%, rgba(230, 194, 122, 0.22), transparent 70%),
+      linear-gradient(160deg, #2a2419, #17151a);
+    border: 1px solid rgba(230, 194, 122, 0.3);
+    color: #e9e5dc;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.35);
+  }
+  .pt-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 16px;
+    font-weight: 750;
+    color: #faf7f0;
+  }
+  .pt-badge {
+    padding: 4px 11px;
+    border-radius: 999px;
+    background: var(--grad-gold);
+    color: #121216;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  li {
+    display: grid;
+    gap: 8px;
+    align-content: start;
+    padding: 14px;
+    border-radius: 16px;
+    background: rgba(250, 247, 240, 0.05);
+    border: 1px solid rgba(250, 247, 240, 0.1);
+    font-weight: 650;
+    font-size: 0.92rem;
+    line-height: 1.3;
+    color: #faf7f0;
+  }
+  .pt-ic {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: rgba(230, 194, 122, 0.14);
+    color: #e6c27a;
+  }
+  .pt-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 14px 0 0;
+    font-size: 0.86rem;
+    color: #c9c2b4;
+  }
+  .pt-foot :global(svg) {
+    flex-shrink: 0;
+    color: #86efac;
+  }
+</style>

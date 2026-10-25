@@ -1,10 +1,13 @@
-// Réglages : identité du commerce (cartes mises à jour automatiquement), formulaire d'inscription,
-// messages automatiques, dos de la carte, et affiche du comptoir avec le QR code d'inscription.
+// Réglages : identité du commerce (cartes mises à jour automatiquement), boutique(s) et notification de
+// proximité (adresse placée grâce à la Base adresse nationale, table merchant_locations), affiche du
+// comptoir avec le QR code d'inscription, formulaire d'inscription, dos de la carte et scanner.
+// Les messages automatiques sont dans le menu Automatisations.
 import {useEffect, useState} from 'preact/hooks';
 import {CARD_BGS} from '../../data/site';
+import type {GeoResult} from '../backend';
 import {Icon} from '../icons';
-import {api, feature, includedIn, merchant, staffCtx, toast} from '../state';
-import {Btn, CardPreview, ErrorBox, Field, LinkBox, PageHead, Panel, Spinner, Toggle, useBusy, useLoad} from '../ui';
+import {api, feature, featureLimit, lowestPlanAbove, maxAnyPlan, merchant, staffCtx, toast, toastError} from '../state';
+import {Badge, Btn, CardPreview, ErrorBox, Field, LinkBox, LockBadge, Modal, PageHead, Panel, Segmented, Spinner, Toggle, useBusy, useLoad} from '../ui';
 import {contrast, download, joinUrl, qrSvg} from '../util';
 
 interface Merchant {
@@ -18,6 +21,8 @@ interface Merchant {
   address: string | null;
   postal_code: string | null;
   city: string | null;
+  latitude: number | null;
+  longitude: number | null;
   phone: string | null;
   website: string | null;
 }
@@ -30,25 +35,36 @@ interface Settings {
   terms_url: string | null;
   privacy_url: string | null;
   wallet_back_text: string | null;
-  notify_balance_updates: boolean;
-  birthday_enabled: boolean;
-  birthday_channel: 'WALLET' | 'SMS';
-  birthday_message: string;
-  inactive_enabled: boolean;
-  inactive_after_days: number;
-  inactive_channel: 'WALLET' | 'SMS';
-  inactive_message: string;
-  reengagement_cooldown_days: number;
-  marketing_min_interval_hours: number;
   scan_undo_window_seconds: number;
+  proximity_message: string | null;
+}
+interface Shop {
+  id?: string;
+  label: string;
+  address: string | null;
+  postal_code: string | null;
+  city: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  sort_order?: number;
+}
+interface Program {
+  type: 'VISITS' | 'POINTS' | 'SPEND';
+  unit_label_plural: string;
+  status: string;
 }
 const TEXT_COLORS = ['#ffffff', '#f8f4ec', '#121216', '#d9b27a'];
 
 export function Reglages() {
   const m = merchant.value!;
   const data = useLoad(async () => {
-    const [mer, set] = await Promise.all([api.select<Merchant>('merchants', {eq: {id: m.merchant_id}}), api.select<Settings>('merchant_settings', {eq: {merchant_id: m.merchant_id}})]);
-    return {merchant: mer[0], settings: set[0]};
+    const [mer, set, shops, progs] = await Promise.all([
+      api.select<Merchant>('merchants', {eq: {id: m.merchant_id}}),
+      api.select<Settings>('merchant_settings', {eq: {merchant_id: m.merchant_id}}),
+      api.select<Shop>('merchant_locations', {eq: {merchant_id: m.merchant_id}, order: ['sort_order', true]}).catch(() => [] as Shop[]),
+      api.select<Program>('loyalty_programs', {eq: {merchant_id: m.merchant_id}}),
+    ]);
+    return {merchant: mer[0], settings: set[0], shops, program: progs.find((p) => p.status === 'ACTIVE') ?? progs[0] ?? null};
   }, [m.merchant_id]);
 
   if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
@@ -60,20 +76,24 @@ export function Reglages() {
         <a href="#/reglages" onClick={jump('r-commerce')}>
           Commerce
         </a>
+        <a href="#/reglages" onClick={jump('r-boutique')}>
+          Boutique et proximité
+        </a>
         <a href="#/reglages" onClick={jump('r-affiche')}>
           Affiche du comptoir
         </a>
         <a href="#/reglages" onClick={jump('r-inscription')}>
           Inscription
         </a>
-        <a href="#/reglages" onClick={jump('r-messages')}>
-          Messages automatiques
-        </a>
         <a href="#/reglages" onClick={jump('r-carte')}>
           Carte et scanner
         </a>
+        <a href="#/automatisations" class="anchors-go">
+          Messages automatiques →
+        </a>
       </nav>
       <Branding initial={data.data.merchant} />
+      {data.data.settings && <Boutique merchant={data.data.merchant} shops={data.data.shops} message={data.data.settings.proximity_message} program={data.data.program} />}
       <Poster slug={data.data.merchant.slug} name={data.data.merchant.name} />
       {data.data.settings && <SettingsForm initial={data.data.settings} />}
     </div>
@@ -88,12 +108,14 @@ function jump(id: string) {
 }
 
 function Branding({initial}: {initial: Merchant}) {
-  const [f, setF] = useState(initial);
+  const pick = (x: Merchant) => ({name: x.name, business_type: x.business_type, logo_url: x.logo_url, primary_color: x.primary_color, secondary_color: x.secondary_color, phone: x.phone, website: x.website});
+  const [f, setF] = useState(() => pick(initial));
+  const [base, setBase] = useState(() => pick(initial));
   const [error, setError] = useState('');
   const [busy, run] = useBusy();
-  const set = <K extends keyof Merchant>(k: K, v: Merchant[K]) => setF((x) => ({...x, [k]: v}));
+  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({...x, [k]: v}));
   const ratio = contrast(f.primary_color, f.secondary_color);
-  const dirty = JSON.stringify(f) !== JSON.stringify(initial);
+  const dirty = JSON.stringify(f) !== JSON.stringify(base);
 
   const upload = (file: File | undefined) =>
     file &&
@@ -102,7 +124,7 @@ function Branding({initial}: {initial: Merchant}) {
       if (file.type !== 'image/png') return setError('Le logo doit être une image PNG (fond transparent conseillé).');
       if (file.size > 2 * 1024 * 1024) return setError('Logo trop lourd : 2 Mo maximum.');
       try {
-        const url = await api.uploadPublic('merchant-assets', `${f.id}/logo.png`, file);
+        const url = await api.uploadPublic('merchant-assets', `${initial.id}/logo.png`, file);
         set('logo_url', url.startsWith('http') ? `${url}?v=${Date.now()}` : url); // ?v : contourne le cache des cartes
         toast('Logo envoyé : enregistrez pour l’appliquer aux cartes.', 'info');
       } catch (e) {
@@ -118,22 +140,19 @@ function Branding({initial}: {initial: Merchant}) {
       try {
         const saved = await api.update<Merchant>(
           'merchants',
-          {id: f.id},
+          {id: initial.id},
           {
             name: f.name.trim(),
             business_type: f.business_type?.trim() || null,
             logo_url: f.logo_url,
             primary_color: f.primary_color,
             secondary_color: f.secondary_color,
-            address: f.address?.trim() || null,
-            postal_code: f.postal_code?.trim() || null,
-            city: f.city?.trim() || null,
             phone: f.phone?.trim() || null,
             website: f.website?.trim() || null,
           },
         );
-        setF(saved);
-        Object.assign(initial, saved);
+        setF(pick(saved));
+        setBase(pick(saved));
         // Le menu affiche aussitôt le nouveau nom, logo et couleurs
         const cur = merchant.value!;
         const next = {...cur, merchant_name: saved.name, logo_url: saved.logo_url, primary_color: saved.primary_color, secondary_color: saved.secondary_color};
@@ -147,7 +166,7 @@ function Branding({initial}: {initial: Merchant}) {
   };
 
   return (
-    <Panel title="Votre commerce" sub="Nom, logo et couleurs affichés sur les cartes de vos clients." class="anchor" >
+    <Panel title="Votre commerce" sub="Nom, logo et couleurs affichés sur les cartes de vos clients." class="anchor">
       <span id="r-commerce" class="anchor-t" />
       <form class="prog" onSubmit={save}>
         <div class="form">
@@ -206,19 +225,6 @@ function Branding({initial}: {initial: Merchant}) {
             )}
           </div>
           <div class="row2">
-            <Field label="Adresse">
-              <input type="text" maxLength={200} value={f.address ?? ''} onInput={(e) => set('address', (e.target as HTMLInputElement).value)} />
-            </Field>
-            <div class="row2 row2--tight">
-              <Field label="Code postal">
-                <input type="text" maxLength={20} value={f.postal_code ?? ''} onInput={(e) => set('postal_code', (e.target as HTMLInputElement).value)} />
-              </Field>
-              <Field label="Ville">
-                <input type="text" maxLength={100} value={f.city ?? ''} onInput={(e) => set('city', (e.target as HTMLInputElement).value)} />
-              </Field>
-            </div>
-          </div>
-          <div class="row2">
             <Field label="Téléphone">
               <input type="tel" maxLength={30} value={f.phone ?? ''} onInput={(e) => set('phone', (e.target as HTMLInputElement).value)} />
             </Field>
@@ -226,6 +232,9 @@ function Branding({initial}: {initial: Merchant}) {
               <input type="url" placeholder="https://" value={f.website ?? ''} onInput={(e) => set('website', (e.target as HTMLInputElement).value)} />
             </Field>
           </div>
+          <p class="fld-h">
+            L’adresse se règle dans la section <a href="#/reglages" onClick={jump('r-boutique')}>Boutique et proximité</a>.
+          </p>
           {error && (
             <p class="form-err" role="alert">
               {error}
@@ -243,6 +252,426 @@ function Branding({initial}: {initial: Merchant}) {
         </div>
       </form>
     </Panel>
+  );
+}
+
+// --- Boutique(s) et notification de proximité ------------------------------------------------------------
+const osm = (lat: number, lon: number) => `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=18/${lat}/${lon}`;
+const placed = (s: Shop) => s.latitude !== null && s.longitude !== null;
+const line = (s: Pick<Shop, 'address' | 'postal_code' | 'city'>) => [s.address, [s.postal_code, s.city].filter(Boolean).join(' ')].filter((x) => x && x.trim()).join(', ');
+
+function Boutique({merchant: initialMer, shops: initialShops, message, program}: {merchant: Merchant; shops: Shop[]; message: string | null; program: Program | null}) {
+  // Rechargement limité à cette section : les modifications en cours ailleurs dans la page sont gardées
+  const [mer, setMer] = useState(initialMer);
+  const [shops, setShops] = useState(initialShops);
+  const [editing, setEditing] = useState<number | 'new' | null>(null);
+  const [removing, setRemoving] = useState<Shop | null>(null);
+  const [busy, run] = useBusy();
+  const limit = featureLimit('locations.max') ?? 1;
+  const on = feature('wallet.proximity');
+  const active = on && (shops.length > 0 || (mer.latitude !== null && mer.longitude !== null));
+  const many = limit > 1;
+  const refresh = async () => setShops(await api.select<Shop>('merchant_locations', {eq: {merchant_id: mer.id}, order: ['sort_order', true]}));
+
+  /** Boutique n° 1 : adresse du commerce + première ligne de merchant_locations ; les autres : merchant_locations seule. */
+  const saveShop = async (index: number | 'new', s: Shop) => {
+    const row = {label: s.label.trim().slice(0, 60) || mer.name.slice(0, 60), address: s.address, postal_code: s.postal_code, city: s.city, latitude: s.latitude, longitude: s.longitude};
+    const first = index === 0 || (index === 'new' && shops.length === 0);
+    if (first) setMer(await api.update<Merchant>('merchants', {id: mer.id}, {address: s.address, postal_code: s.postal_code, city: s.city, latitude: s.latitude, longitude: s.longitude}));
+    const existing = typeof index === 'number' ? shops[index] : undefined;
+    if (existing?.id) await api.update('merchant_locations', {id: existing.id}, row);
+    else await api.insert('merchant_locations', {...row, merchant_id: mer.id, sort_order: shops.length});
+    toast(first ? 'Adresse enregistrée : la notification de proximité est active sur les cartes.' : 'Boutique enregistrée');
+    setEditing(null);
+    await refresh().catch(() => {});
+  };
+
+  const remove = () =>
+    run(async () => {
+      if (!removing?.id) return;
+      try {
+        await api.remove('merchant_locations', {id: removing.id});
+        toast('Boutique retirée');
+        setRemoving(null);
+        await refresh();
+      } catch (e) {
+        toastError(e);
+      }
+    });
+
+  return (
+    <Panel title="Votre boutique et la notification de proximité" sub="Quand un client passe près de votre boutique, sa carte s’affiche sur l’écran de verrouillage de son téléphone, avec un court message.">
+      <span id="r-boutique" class="anchor-t" />
+      <div class="prox-state">
+        {!on ? (
+          <LockBadge feature="wallet.proximity" />
+        ) : active ? (
+          <Badge tone="green">
+            <Icon name="map-pin-check" size={14} /> Notification de proximité active
+          </Badge>
+        ) : (
+          <Badge tone="amber">
+            <Icon name="map-pin" size={14} /> Adresse à placer
+          </Badge>
+        )}
+        <span class="muted small">
+          {active
+            ? `${shops.length > 1 ? `${shops.length} boutiques placées` : 'Boutique placée'} sur les cartes de vos clients${many ? ` (${limit} au plus avec votre offre)` : ''}.`
+            : 'Saisissez l’adresse de la boutique : LOYNA la place sur les cartes de vos clients.'}
+        </span>
+      </div>
+
+      {shops.length === 0 ? (
+        <AddressEditor
+          shop={{label: mer.name.slice(0, 60), address: mer.address, postal_code: mer.postal_code, city: mer.city, latitude: mer.latitude, longitude: mer.longitude}}
+          withLabel={many}
+          onSave={(s) => saveShop('new', s)}
+        />
+      ) : (
+        <ul class="shops">
+          {shops.map((s, i) =>
+            editing === i ? (
+              <li class="shop shop--edit">
+                <AddressEditor shop={s} withLabel={many} onSave={(x) => saveShop(i, x)} onCancel={() => setEditing(null)} />
+              </li>
+            ) : (
+              <li class="shop">
+                <span class="shop-i">
+                  <Icon name={placed(s) ? 'map-pin-check' : 'map-pin'} />
+                </span>
+                <span class="shop-t">
+                  <strong>
+                    {many ? s.label : 'Adresse de la boutique'}
+                    {many && i === 0 && <small> · boutique principale</small>}
+                  </strong>
+                  <span>{line(s) || 'Adresse non renseignée'}</span>
+                  {placed(s) && (
+                    <a href={osm(s.latitude!, s.longitude!)} target="_blank" rel="noopener" class="small">
+                      Vérifier sur la carte
+                    </a>
+                  )}
+                </span>
+                <span class="shop-a">
+                  <Btn kind="ghost" small icon="pencil" onClick={() => setEditing(i)}>
+                    Modifier
+                  </Btn>
+                  {i > 0 && <Btn kind="quiet" small icon="trash-2" title={`Retirer ${s.label}`} onClick={() => setRemoving(s)} />}
+                </span>
+              </li>
+            ),
+          )}
+          {editing === 'new' && (
+            <li class="shop shop--edit">
+              <AddressEditor shop={{label: '', address: '', postal_code: '', city: mer.city, latitude: null, longitude: null}} withLabel onSave={(x) => saveShop('new', x)} onCancel={() => setEditing(null)} />
+            </li>
+          )}
+        </ul>
+      )}
+      {shops.length > 0 && editing === null && (
+        <div class="btn-row">
+          {shops.length < limit ? (
+            <Btn kind="ghost" small icon="plus" onClick={() => setEditing('new')}>
+              Ajouter une boutique ({shops.length} / {limit})
+            </Btn>
+          ) : !many ? (
+            <p class="muted small shops-more">
+              {lowestPlanAbove('locations.max', 1) ? (
+                <span class="bdg bdg--lock">
+                  <Icon name="lock" size={13} />
+                  Inclus dans {lowestPlanAbove('locations.max', 1)}
+                </span>
+              ) : null}{' '}
+              Plusieurs adresses ? Avec {lowestPlanAbove('locations.max', 1) || 'l’offre supérieure'} : jusqu’à {maxAnyPlan('locations.max') ?? 3} boutiques, chacune avec sa notification de proximité.
+            </p>
+          ) : (
+            <p class="muted small">Votre offre inclut {limit} boutiques au plus.</p>
+          )}
+        </div>
+      )}
+
+      <ProximityMessage initial={message} program={program} />
+
+      <p class="note prox-privacy">
+        <Icon name="shield-check" size={18} />
+        <span>
+          LOYNA ne reçoit jamais la position de vos clients : c’est leur téléphone qui détecte qu’il est près de la boutique. La carte s’affiche si le client a activé la localisation et autorisé Wallet sur l’écran
+          verrouillé : elle n’apparaît donc pas forcément à chaque passage.
+        </span>
+      </p>
+
+      <Modal
+        open={!!removing}
+        onClose={() => setRemoving(null)}
+        title="Retirer cette boutique ?"
+        footer={
+          <>
+            <Btn kind="ghost" onClick={() => setRemoving(null)}>
+              Annuler
+            </Btn>
+            <Btn kind="danger" icon="trash-2" busy={busy} onClick={remove}>
+              Retirer
+            </Btn>
+          </>
+        }
+      >
+        <p>
+          « {removing?.label} » ne déclenchera plus la notification de proximité. Les cartes de vos clients se mettent à jour ; vous pourrez l’ajouter de nouveau.
+        </p>
+      </Modal>
+    </Panel>
+  );
+}
+
+/** Saisie d'une adresse : recherche dans la Base adresse nationale, choix parmi les résultats, ou position saisie à la main. */
+function AddressEditor({shop, withLabel, onSave, onCancel}: {shop: Shop; withLabel: boolean; onSave: (s: Shop) => Promise<void>; onCancel?: () => void}) {
+  const [s, setS] = useState<Shop>(shop);
+  const [q, setQ] = useState(() => line(shop));
+  const [results, setResults] = useState<GeoResult[] | null>(null);
+  const [manual, setManual] = useState(false);
+  const [lat, setLat] = useState(shop.latitude === null ? '' : String(shop.latitude));
+  const [lon, setLon] = useState(shop.longitude === null ? '' : String(shop.longitude));
+  const [error, setError] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [busy, run] = useBusy();
+
+  const search = async () => {
+    setError('');
+    if (q.trim().length < 3) return setError('Saisissez le numéro, la rue et la ville de la boutique.');
+    setSearching(true);
+    try {
+      const r = await api.geocode(q);
+      setResults(r);
+      if (r.length === 1) choose(r[0]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Recherche impossible.');
+      setManual(true);
+    } finally {
+      setSearching(false);
+    }
+  };
+  const choose = (r: GeoResult) => {
+    setS((x) => ({...x, address: r.address, postal_code: r.postal_code, city: r.city, latitude: r.latitude, longitude: r.longitude}));
+    setLat(String(r.latitude));
+    setLon(String(r.longitude));
+  };
+  // « 43.6108, 3.8767 » collé dans le champ latitude : les deux valeurs sont réparties
+  const onLat = (v: string) => {
+    const two = v.match(/^\s*(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)\s*$/);
+    if (two && v.includes(' ')) {
+      setLat(two[1].replace(',', '.'));
+      setLon(two[2].replace(',', '.'));
+    } else setLat(v);
+  };
+  const toNum = (v: string) => (v.trim() === '' ? NaN : Number(v.trim().replace(',', '.')));
+
+  const save = () =>
+    run(async () => {
+      setError('');
+      const la = toNum(lat);
+      const lo = toNum(lon);
+      if (!Number.isFinite(la) || !Number.isFinite(lo)) return setError('Choisissez une adresse dans la liste, ou saisissez la latitude et la longitude de la boutique.');
+      if (la < -90 || la > 90 || lo < -180 || lo > 180) return setError('Latitude entre -90 et 90, longitude entre -180 et 180.');
+      if (withLabel && !s.label.trim()) return setError('Donnez un nom à la boutique (par exemple le quartier).');
+      try {
+        await onSave({...s, address: s.address?.trim() || null, postal_code: s.postal_code?.trim() || null, city: s.city?.trim() || null, latitude: la, longitude: lo});
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Enregistrement impossible.');
+      }
+    });
+
+  const la = toNum(lat);
+  const lo = toNum(lon);
+  return (
+    <div class="geo form">
+      {withLabel && (
+        <Field label="Nom de la boutique" hint="Affiché au dos de la carte quand vous avez plusieurs boutiques.">
+          <input type="text" maxLength={60} value={s.label} onInput={(e) => setS((x) => ({...x, label: (e.target as HTMLInputElement).value}))} />
+        </Field>
+      )}
+      <div class="fld">
+        <label class="fld-l" for="geo-q">
+          Adresse de la boutique
+        </label>
+        <div class="geo-q">
+          <input
+            id="geo-q"
+            type="search"
+            autoComplete="street-address"
+            placeholder="12 rue de la République, Montpellier"
+            value={q}
+            onInput={(e) => setQ((e.target as HTMLInputElement).value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                search();
+              }
+            }}
+          />
+          <Btn kind="primary" icon="search" busy={searching} onClick={search}>
+            Chercher
+          </Btn>
+        </div>
+        <span class="fld-h">Numéro, rue et ville, puis choisissez la bonne adresse dans la liste (Base adresse nationale).</span>
+      </div>
+      {results &&
+        (results.length ? (
+          <ul class="geo-r" role="listbox" aria-label="Adresses trouvées">
+            {results.map((r) => {
+              const on = s.latitude === r.latitude && s.longitude === r.longitude;
+              return (
+                <li>
+                  <button type="button" role="option" aria-selected={on} class={on ? 'on' : ''} onClick={() => choose(r)}>
+                    <Icon name={on ? 'circle-check' : 'map-pin'} size={18} />
+                    <span>
+                      <strong>{r.label}</strong>
+                      <small>{Math.round(r.score * 100)} % de correspondance</small>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p class="muted small">Aucune adresse trouvée : vérifiez la saisie, ou placez la boutique à la main ci-dessous.</p>
+        ))}
+      {results && api.demo && <p class="muted small">Démonstration : suggestions fictives, aucune adresse n’est envoyée.</p>}
+      {Number.isFinite(la) && Number.isFinite(lo) && (
+        <p class="geo-pos">
+          <Icon name="map-pin-check" size={18} />
+          <span>
+            {line(s) || 'Position saisie à la main'} ·{' '}
+            <a href={osm(la, lo)} target="_blank" rel="noopener">
+              vérifier sur la carte
+            </a>
+          </span>
+        </p>
+      )}
+      <details class="help" open={manual} onToggle={(e) => setManual((e.target as HTMLDetailsElement).open)}>
+        <summary>Adresse introuvable ? Placer la boutique à la main</summary>
+        <div class="form">
+          <div class="row2">
+            <Field label="Adresse">
+              <input type="text" maxLength={200} value={s.address ?? ''} onInput={(e) => setS((x) => ({...x, address: (e.target as HTMLInputElement).value}))} />
+            </Field>
+            <div class="row2 row2--tight">
+              <Field label="Code postal">
+                <input type="text" maxLength={20} value={s.postal_code ?? ''} onInput={(e) => setS((x) => ({...x, postal_code: (e.target as HTMLInputElement).value}))} />
+              </Field>
+              <Field label="Ville">
+                <input type="text" maxLength={100} value={s.city ?? ''} onInput={(e) => setS((x) => ({...x, city: (e.target as HTMLInputElement).value}))} />
+              </Field>
+            </div>
+          </div>
+          <div class="row2">
+            <Field label="Latitude" hint="Exemple : 43.6108">
+              <input type="text" inputMode="decimal" value={lat} onInput={(e) => onLat((e.target as HTMLInputElement).value)} />
+            </Field>
+            <Field label="Longitude" hint="Exemple : 3.8767">
+              <input type="text" inputMode="decimal" value={lon} onInput={(e) => setLon((e.target as HTMLInputElement).value)} />
+            </Field>
+          </div>
+          <p class="fld-h">Dans Google Maps sur ordinateur, faites un clic droit sur votre boutique : la première ligne du menu donne la latitude et la longitude. Cliquez dessus pour les copier, puis collez-les dans le champ Latitude.</p>
+        </div>
+      </details>
+      {error && (
+        <p class="form-err" role="alert">
+          {error}
+        </p>
+      )}
+      <div class="btn-row">
+        <Btn kind="gold" icon="check" busy={busy} onClick={save}>
+          Enregistrer l’adresse
+        </Btn>
+        {onCancel && (
+          <Btn kind="ghost" onClick={onCancel}>
+            Annuler
+          </Btn>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Message de l'écran verrouillé : même règle que le serveur (proximityText, carte Wallet). */
+function ProximityMessage({initial, program}: {initial: string | null; program: Program | null}) {
+  const m = merchant.value!;
+  const [v, setV] = useState(initial ?? '');
+  const [base, setBase] = useState(initial ?? '');
+  const [state, setState] = useState<'reward' | 'near' | 'other'>('other');
+  const [error, setError] = useState('');
+  const [busy, run] = useBusy();
+  useEffect(() => {
+    setV(initial ?? '');
+    setBase(initial ?? '');
+  }, [initial]);
+  const spend = program?.type === 'SPEND';
+  const unit = program?.unit_label_plural ?? 'passages';
+  const text =
+    state === 'reward'
+      ? `Votre récompense vous attend chez ${m.merchant_name} !`
+      : state === 'near' && !spend
+        ? `Plus que 2 ${unit} avant votre récompense chez ${m.merchant_name} !`
+        : v.trim() || `Vous passez près de ${m.merchant_name} : votre carte est prête.`;
+  const now = new Date();
+
+  const save = () =>
+    run(async () => {
+      setError('');
+      try {
+        const r = await api.update<Settings>('merchant_settings', {merchant_id: m.merchant_id}, {proximity_message: v.trim() || null});
+        setV(r.proximity_message ?? '');
+        setBase(r.proximity_message ?? '');
+        toast('Message enregistré : les cartes de vos clients se mettent à jour.');
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Enregistrement impossible.');
+      }
+    });
+
+  return (
+    <div class="prox-msg">
+      <div class="form">
+        <Field label="Votre message de proximité (facultatif)" hint={`${v.trim().length} / 90 · vide : « Vous passez près de ${m.merchant_name} : votre carte est prête. »`}>
+          <input type="text" maxLength={90} placeholder="Envie d’une pause ? Votre carte est prête." value={v} onInput={(e) => setV((e.target as HTMLInputElement).value)} />
+        </Field>
+        <p class="fld-h">Le message suit la carte du client : s’il a une récompense à utiliser, ou s’il ne lui manque qu’un ou deux {unit}, la carte le lui dit à la place de votre message.</p>
+        {error && (
+          <p class="form-err" role="alert">
+            {error}
+          </p>
+        )}
+        <div class="btn-row">
+          <Btn kind="gold" small icon="check" busy={busy} disabled={v.trim() === base.trim()} onClick={save}>
+            Enregistrer le message
+          </Btn>
+        </div>
+      </div>
+      <div class="lock">
+        <div class="lock-screen" style={{'--m-bg': m.primary_color, '--m-fg': m.secondary_color} as any}>
+          <span class="lock-time">{now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</span>
+          <span class="lock-date">{now.toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long'})}</span>
+          <div class="lock-card">
+            <span class="notif-app" style={{background: m.primary_color, color: m.secondary_color}}>
+              {m.logo_url ? <img src={m.logo_url} alt="" /> : m.merchant_name.slice(0, 1)}
+            </span>
+            <span class="notif-t">
+              <strong>{m.merchant_name}</strong>
+              <span>{text}</span>
+            </span>
+          </div>
+        </div>
+        <Segmented
+          label="Situation du client"
+          value={state}
+          onChange={setState}
+          options={[
+            {value: 'reward', label: 'Récompense prête'},
+            ...(spend ? [] : [{value: 'near' as const, label: `À 2 ${unit}`}]),
+            {value: 'other', label: 'Autres jours'},
+          ]}
+        />
+        <p class="muted small">Aperçu de l’écran verrouillé, près de la boutique.</p>
+      </div>
+    </div>
   );
 }
 
@@ -284,70 +713,46 @@ function Poster({slug, name}: {slug: string; name: string}) {
 
 function SettingsForm({initial}: {initial: Settings & {merchant_id?: string}}) {
   const m = merchant.value!;
-  const [s, setS] = useState(initial);
-  const [saved, setSaved] = useState(initial);
+  const pick = (x: Settings) => ({
+    enrollment_collect_last_name: x.enrollment_collect_last_name,
+    enrollment_collect_phone: x.enrollment_collect_phone,
+    enrollment_require_phone: x.enrollment_require_phone,
+    enrollment_collect_email: x.enrollment_collect_email,
+    enrollment_collect_birthday: x.enrollment_collect_birthday,
+    terms_url: x.terms_url,
+    privacy_url: x.privacy_url,
+    wallet_back_text: x.wallet_back_text,
+    scan_undo_window_seconds: x.scan_undo_window_seconds,
+  });
+  const [s, setS] = useState(() => pick(initial));
+  const [saved, setSaved] = useState(() => pick(initial));
   const [error, setError] = useState('');
   const [busy, run] = useBusy();
   useEffect(() => {
-    setS(initial);
-    setSaved(initial);
+    setS(pick(initial));
+    setSaved(pick(initial));
   }, [initial]);
-  const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((x) => ({...x, [k]: v}));
+  const set = <K extends keyof typeof s>(k: K, v: (typeof s)[K]) => setS((x) => ({...x, [k]: v}));
   const dirty = JSON.stringify(s) !== JSON.stringify(saved);
 
   const save = () =>
     run(async () => {
       setError('');
       for (const k of ['terms_url', 'privacy_url'] as const) if (s[k] && !/^https:\/\//.test(s[k]!)) return setError('Les liens des conditions doivent commencer par https://');
-      const {
-        enrollment_collect_last_name,
-        enrollment_collect_phone,
-        enrollment_require_phone,
-        enrollment_collect_email,
-        enrollment_collect_birthday,
-        terms_url,
-        privacy_url,
-        wallet_back_text,
-        notify_balance_updates,
-        birthday_enabled,
-        birthday_channel,
-        birthday_message,
-        inactive_enabled,
-        inactive_after_days,
-        inactive_channel,
-        inactive_message,
-        reengagement_cooldown_days,
-        marketing_min_interval_hours,
-        scan_undo_window_seconds,
-      } = s;
       try {
         const r = await api.update<Settings>(
           'merchant_settings',
           {merchant_id: m.merchant_id},
           {
-            enrollment_collect_last_name,
-            enrollment_collect_phone,
-            enrollment_require_phone: enrollment_collect_phone && enrollment_require_phone,
-            enrollment_collect_email,
-            enrollment_collect_birthday,
-            terms_url: terms_url?.trim() || null,
-            privacy_url: privacy_url?.trim() || null,
-            wallet_back_text: wallet_back_text?.trim() || null,
-            notify_balance_updates,
-            birthday_enabled,
-            birthday_channel,
-            birthday_message,
-            inactive_enabled,
-            inactive_after_days,
-            inactive_channel,
-            inactive_message,
-            reengagement_cooldown_days,
-            marketing_min_interval_hours,
-            scan_undo_window_seconds,
+            ...s,
+            enrollment_require_phone: s.enrollment_collect_phone && s.enrollment_require_phone,
+            terms_url: s.terms_url?.trim() || null,
+            privacy_url: s.privacy_url?.trim() || null,
+            wallet_back_text: s.wallet_back_text?.trim() || null,
           },
         );
-        setS(r);
-        setSaved(r);
+        setS(pick(r));
+        setSaved(pick(r));
         toast('Réglages enregistrés');
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Enregistrement impossible.');
@@ -370,10 +775,10 @@ function SettingsForm({initial}: {initial: Settings & {merchant_id?: string}}) {
         <div class="toggles">
           <Toggle checked label="Prénom" hint="Toujours demandé" disabled onChange={() => {}} />
           <Toggle checked={s.enrollment_collect_last_name} onChange={(v) => set('enrollment_collect_last_name', v)} label="Nom" />
-          <Toggle checked={s.enrollment_collect_phone} onChange={(v) => set('enrollment_collect_phone', v)} label="Téléphone" hint="Nécessaire pour les SMS" />
+          <Toggle checked={s.enrollment_collect_phone} onChange={(v) => set('enrollment_collect_phone', v)} label="Téléphone" hint="Pour retrouver un client et éviter les doublons." />
           {s.enrollment_collect_phone && <Toggle checked={s.enrollment_require_phone} onChange={(v) => set('enrollment_require_phone', v)} label="Téléphone obligatoire" />}
           <Toggle checked={s.enrollment_collect_email} onChange={(v) => set('enrollment_collect_email', v)} label="E-mail" />
-          <Toggle checked={s.enrollment_collect_birthday} onChange={(v) => set('enrollment_collect_birthday', v)} label="Date d’anniversaire" hint="Pour un message le jour J" />
+          <Toggle checked={s.enrollment_collect_birthday} onChange={(v) => set('enrollment_collect_birthday', v)} label="Date d’anniversaire" hint="Pour le message d’anniversaire (menu Automatisations)." />
         </div>
         <div class="row2">
           <Field label="Lien de vos conditions du programme (facultatif)" hint="https://…">
@@ -386,67 +791,6 @@ function SettingsForm({initial}: {initial: Settings & {merchant_id?: string}}) {
         {bar}
       </Panel>
 
-      <Panel title="Messages automatiques">
-        <span id="r-messages" class="anchor-t" />
-        <div class="toggles">
-          <Toggle checked={s.notify_balance_updates} onChange={(v) => set('notify_balance_updates', v)} label="Notification après chaque passage" hint="Le client voit son nouveau solde s’afficher sur son téléphone." />
-          <Toggle
-            checked={s.birthday_enabled}
-            disabled={!feature('automation.birthday')}
-            onChange={(v) => set('birthday_enabled', v)}
-            label="Message d’anniversaire"
-            hint={feature('automation.birthday') ? 'Envoyé le jour de l’anniversaire du client.' : includedIn('automation.birthday')}
-          />
-        </div>
-        {s.birthday_enabled && feature('automation.birthday') && (
-          <div class="sub-form">
-            <Field label="Canal">
-              <select value={s.birthday_channel} onChange={(e) => set('birthday_channel', (e.target as HTMLSelectElement).value as any)}>
-                <option value="WALLET">Notification Wallet</option>
-                {feature('sms') && <option value="SMS">SMS</option>}
-              </select>
-            </Field>
-            <Field label="Message" hint={`${s.birthday_message.length} / 500 · {prenom} et {commerce} sont remplacés`}>
-              <textarea rows={2} maxLength={500} value={s.birthday_message} onInput={(e) => set('birthday_message', (e.target as HTMLTextAreaElement).value)} />
-            </Field>
-          </div>
-        )}
-        <div class="toggles">
-          <Toggle
-            checked={s.inactive_enabled}
-            disabled={!feature('automation.inactive')}
-            onChange={(v) => set('inactive_enabled', v)}
-            label="Relance des clients absents"
-            hint={feature('automation.inactive') ? 'Un message quand un client ne revient plus.' : includedIn('automation.inactive')}
-          />
-        </div>
-        {s.inactive_enabled && feature('automation.inactive') && (
-          <div class="sub-form">
-            <div class="row2">
-              <Field label="Après combien de jours d’absence">
-                <input type="number" min={14} max={365} value={s.inactive_after_days} onInput={(e) => set('inactive_after_days', Number((e.target as HTMLInputElement).value) || 60)} />
-              </Field>
-              <Field label="Canal">
-                <select value={s.inactive_channel} onChange={(e) => set('inactive_channel', (e.target as HTMLSelectElement).value as any)}>
-                  <option value="WALLET">Notification Wallet</option>
-                  {feature('sms') && <option value="SMS">SMS</option>}
-                </select>
-              </Field>
-            </div>
-            <Field label="Message" hint={`${s.inactive_message.length} / 500`}>
-              <textarea rows={2} maxLength={500} value={s.inactive_message} onInput={(e) => set('inactive_message', (e.target as HTMLTextAreaElement).value)} />
-            </Field>
-            <Field label="Pas de nouvelle relance avant (jours)">
-              <input type="number" min={7} max={365} value={s.reengagement_cooldown_days} onInput={(e) => set('reengagement_cooldown_days', Number((e.target as HTMLInputElement).value) || 30)} />
-            </Field>
-          </div>
-        )}
-        <Field label="Délai minimum entre deux messages commerciaux à un même client" hint="En heures (protège vos clients des sollicitations répétées).">
-          <input type="number" min={0} max={720} value={s.marketing_min_interval_hours} onInput={(e) => set('marketing_min_interval_hours', Number((e.target as HTMLInputElement).value) || 0)} />
-        </Field>
-        {bar}
-      </Panel>
-
       <Panel title="Carte et scanner">
         <span id="r-carte" class="anchor-t" />
         <Field label="Texte au dos de la carte" hint={`${(s.wallet_back_text ?? '').length} / 1000 · horaires, conditions, adresse…`}>
@@ -455,6 +799,9 @@ function SettingsForm({initial}: {initial: Settings & {merchant_id?: string}}) {
         <Field label="Délai pour annuler un passage après un scan" hint="En secondes (bouton « Annuler » du scanner).">
           <input type="number" min={0} max={3600} value={s.scan_undo_window_seconds} onInput={(e) => set('scan_undo_window_seconds', Number((e.target as HTMLInputElement).value) || 0)} />
         </Field>
+        <p class="note">
+          Notification après chaque passage, anniversaire, relances, avis Google, double tampon… : tout se règle dans le menu <a href="#/automatisations">Automatisations</a>.
+        </p>
         {bar}
       </Panel>
     </>

@@ -14,8 +14,21 @@ export interface SelectOptions {
   limit?: number;
 }
 
+/** Adresse proposée par la Base adresse nationale (géocodage de la boutique). */
+export interface GeoResult {
+  label: string;
+  address: string;
+  postal_code: string;
+  city: string;
+  latitude: number;
+  longitude: number;
+  score: number;
+}
+
 export interface Backend {
   demo: boolean;
+  /** Base adresse nationale (géocodage de la Géoplateforme de l'IGN, data.geopf.fr : gratuit et sans clé), appelée depuis le navigateur. */
+  geocode(query: string): Promise<GeoResult[]>;
   getSession(): Promise<{email: string} | null>;
   onAuthChange(cb: (event: string, signedIn: boolean) => void): void;
   signIn(email: string, password: string): Promise<void>;
@@ -45,12 +58,43 @@ const SQL_MESSAGES: Record<string, string> = {
   LAST_OWNER: 'Le commerce doit garder au moins un propriétaire actif.',
   REWARD_THRESHOLD_ABOVE_CYCLE: 'En mode carte à tampons, le seuil d’une récompense ne peut pas dépasser la longueur de la carte.',
   INVALID_PERMISSIONS: 'Permission inconnue : rechargez la page.',
+  FEATURE_NOT_AVAILABLE: 'Cette fonction n’est pas incluse dans votre offre.',
+  LOCATIONS_LIMIT: 'Votre offre ne permet pas d’ajouter une autre boutique.',
+  HAPPY_HOURS_INVALID: 'Créneau du double tampon non valide : vérifiez les jours et les heures.',
+  TIER_PERKS_INVALID: 'Avantages des niveaux VIP non valides (80 caractères au plus).',
 };
+// Erreurs dont le serveur donne l'explication en français dans `hint`
+const HINTED = new Set(['LOCATIONS_LIMIT', 'HAPPY_HOURS_INVALID', 'TIER_PERKS_INVALID']);
 
 function pgError(e: {code?: string; message?: string; details?: string | null; hint?: string | null}): ApiError {
   const msg = e.message ?? '';
-  const known = SQL_MESSAGES[msg] ?? PG_MESSAGES[e.code ?? ''];
-  return new ApiError(msg && SQL_MESSAGES[msg] ? msg : e.code ?? 'ERROR', known ?? 'L’opération n’a pas abouti. Réessayez dans un instant.', 0, e);
+  const known = (HINTED.has(msg) && e.hint) || SQL_MESSAGES[msg] || PG_MESSAGES[e.code ?? ''];
+  return new ApiError(msg && SQL_MESSAGES[msg] ? msg : e.code ?? 'ERROR', known || 'L’opération n’a pas abouti. Réessayez dans un instant.', 0, e);
+}
+
+/** Recherche d'adresse dans la Base adresse nationale : 5 propositions au plus, la plus probable d'abord. */
+async function banSearch(query: string): Promise<GeoResult[]> {
+  const q = query.trim();
+  if (q.length < 3) return [];
+  let res: Response;
+  try {
+    res = await fetch(`https://data.geopf.fr/geocodage/search/?q=${encodeURIComponent(q)}&limit=5`);
+  } catch {
+    throw new ApiError('NETWORK', 'Recherche d’adresse impossible : vérifiez votre accès à Internet, ou saisissez la position à la main.');
+  }
+  if (!res.ok) throw new ApiError('GEOCODE', 'La recherche d’adresse ne répond pas : réessayez, ou saisissez la position à la main.', res.status);
+  const data: any = await res.json().catch(() => null);
+  return (data?.features ?? [])
+    .filter((f: any) => Array.isArray(f?.geometry?.coordinates) && f.geometry.coordinates.length >= 2)
+    .map((f: any) => ({
+      label: String(f.properties?.label ?? ''),
+      address: String(f.properties?.name ?? f.properties?.label ?? ''),
+      postal_code: String(f.properties?.postcode ?? ''),
+      city: String(f.properties?.city ?? ''),
+      longitude: Number(f.geometry.coordinates[0]),
+      latitude: Number(f.geometry.coordinates[1]),
+      score: Number(f.properties?.score ?? 0),
+    }));
 }
 
 function authMessage(raw: string): string {
@@ -74,6 +118,7 @@ function sb(): SupabaseClient {
 
 export const supabaseBackend: Backend = {
   demo: false,
+  geocode: banSearch,
   async getSession() {
     const {data} = await sb().auth.getSession();
     return data.session ? {email: data.session.user.email ?? ''} : null;

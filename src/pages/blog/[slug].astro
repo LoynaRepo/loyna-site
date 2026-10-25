@@ -4,7 +4,7 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Icon from '../../components/Icon.astro';
 import CtaBand from '../../components/CtaBand.astro';
 import {getArticles, type Article} from '../../lib/builder';
-import {SITE} from '../../data/site';
+import {PLANS, SITE, euro} from '../../data/site';
 import {ogImage} from '../../lib/og';
 
 export async function getStaticPaths() {
@@ -74,7 +74,7 @@ if (a.faq?.length) {
     <aside class="narrow box">
       <p class="eyebrow">LOYNA</p>
       <p class="box-title">Votre carte de fidélité dans Apple Wallet et Google Wallet</p>
-      <p>Sans application, prête sous 24&nbsp;h, récompenses et relances automatiques. Dès 29&nbsp;€ par mois, sans TVA.</p>
+      <p>Sans application, prête sous 24&nbsp;h, avec récompenses automatiques et notification de proximité. Dès {euro(Math.min(...PLANS.map((p) => p.monthly)))} par mois, sans TVA.</p>
       <div class="btn-row">
         <a class="btn btn--primary" href="/creer-ma-carte/">Créer ma carte</a>
         <a class="btn btn--ghost" href="/tarifs/">Voir les tarifs</a>

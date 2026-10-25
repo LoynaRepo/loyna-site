@@ -1,4 +1,4 @@
-<!-- Projet à faire valider par le dirigeant — date : 2026-10-08 -->
+<!-- Projet à faire valider par le dirigeant — date : 2026-10-08 ; offres Starter, Premium, Pro et notification de proximité : 2026-10-25 (docs/OFFRES.md du dépôt LOYNA) -->
 <p>La présente politique explique comment LOYNA traite les données personnelles des visiteurs du site loyna.fr, des personnes qui nous contactent, des professionnels que nous prospectons et des commerçants clients, ainsi que le rôle de LOYNA pour les données des clients de ces commerçants (porteurs de carte). Elle est établie conformément au règlement (UE) 2016/679 du 27 avril 2016 (RGPD) et à la loi n° 78-17 du 6 janvier 1978 modifiée (loi Informatique et Libertés).</p>
 
 <h2>1. Qui est responsable de vos données ?</h2>
@@ -24,18 +24,18 @@
   <li>vos données d'identification et de contact : nom, prénom, nom du commerce, adresse, adresse e-mail, téléphone ;</li>
   <li>les données de votre abonnement : formule, périodicité, dates, historique des changements ;</li>
   <li>vos données de facturation et de paiement : factures, montants, historique des paiements. Les données de carte bancaire sont traitées directement par Stripe : LOYNA n'a jamais accès au numéro complet de votre carte ;</li>
-  <li>les éléments de personnalisation de votre carte (logo, couleurs, nom du programme, récompense) ;</li>
-  <li>vos échanges avec nous (assistance, demandes) ;</li>
+  <li>les éléments de personnalisation de votre carte (logo, couleurs, nom du programme, récompense) et l'adresse de votre boutique (jusqu'à 3 avec la formule Pro), utilisée pour la notification de proximité ;</li>
+  <li>vos échanges avec nous (assistance, demandes et, avec la formule Pro, points mensuels de suivi) ;</li>
   <li>pour chaque Utilisateur de l'application LOYNA Business : identité, adresse e-mail, rôle, données de connexion et actions enregistrées dans le journal d'audit.</li>
 </ul>
 
 <h3>2.5. Clients des commerçants (porteurs de carte)</h3>
 <p>Si vous êtes client d'un commerce qui utilise LOYNA, c'est <strong>ce commerce</strong> qui est responsable de traitement de vos données. LOYNA agit seulement en qualité de <strong>sous-traitant</strong> : il traite vos données pour le compte du commerce, selon ses instructions et uniquement pour faire fonctionner son programme de fidélité. LOYNA n'utilise jamais ces données à des fins commerciales.</p>
-<p>Les données concernées sont : prénom, et selon le choix du commerce et le vôtre, nom, téléphone, e-mail et date de naissance (facultatifs) ; historique de fidélité (passages, solde, récompenses) ; consentements (adhésion au programme, offres par notification Wallet, offres par SMS). Elles sont hébergées dans l'Union européenne. Leur durée de conservation est définie par le commerce ; elles sont supprimées au plus tard 30 jours après la fin de l'abonnement du commerce.</p>
+<p>Les données concernées sont : prénom, et selon le choix du commerce et le vôtre, nom, téléphone, e-mail et date de naissance (facultatifs) ; historique de fidélité (passages, solde, récompenses et, selon le programme du commerce, niveau VIP et parrainage) ; consentements (adhésion au programme, offres par notification Wallet). Elles sont hébergées dans l'Union européenne. Leur durée de conservation est définie par le commerce ; elles sont supprimées au plus tard 30 jours après la fin de l'abonnement du commerce.</p>
+<p>La notification de proximité ne transmet aucune position à LOYNA. L'adresse de la boutique est enregistrée dans votre carte, et c'est votre téléphone qui détecte que vous êtes à proximité, puis affiche la carte : ni LOYNA ni le commerce ne reçoivent votre localisation. Vous pouvez désactiver cet affichage à tout moment dans les réglages de votre téléphone (localisation, notifications de la carte).</p>
 <p>Pour exercer vos droits, vous pouvez :</p>
 <ul>
   <li>utiliser la page « Préférences », accessible par le lien figurant au dos de votre carte, pour gérer vos consentements aux offres ou supprimer vos données ;</li>
-  <li>répondre « STOP » à un SMS d'offre pour ne plus en recevoir ;</li>
   <li>vous adresser directement au commerce ;</li>
   <li>écrire à <a href="mailto:{{EMAIL}}">{{EMAIL}}</a> : nous transmettrons votre demande au commerce concerné.</li>
 </ul>
@@ -126,8 +126,7 @@
     <tr data-if="analytics"><td>Google Ireland Limited</td><td>Google Analytics : mesure d'audience du site, uniquement avec votre accord</td></tr>
     <tr><td>Apple</td><td>Apple Wallet : cartes de fidélité et notifications sur iPhone</td></tr>
     <tr><td>Google</td><td>Google Wallet : cartes de fidélité et notifications sur Android</td></tr>
-    <tr><td>smsmode</td><td>Envoi des SMS (France)</td></tr>
-    <tr><td>WeWeb</td><td>Interface de l'application commerçant LOYNA Business</td></tr>
+    <tr><td>Base adresse nationale, service de géocodage de l'IGN (data.geopf.fr)</td><td>Position de l'adresse de la boutique d'un commerçant, pour la notification de proximité (aucune donnée des porteurs de carte)</td></tr>
   </tbody>
 </table>
 <p>Stripe agit également en qualité de responsable de traitement pour ses propres obligations, notamment la prévention de la fraude et le respect de la réglementation financière. Ces traitements sont décrits dans la <a href="https://stripe.com/fr/privacy">politique de confidentialité de Stripe</a>.</p>
@@ -143,6 +142,7 @@
   <li>le cloisonnement strict des données de chaque commerce ;</li>
   <li>des comptes personnels pour chaque Utilisateur, avec des rôles et des droits ;</li>
   <li>des cartes dont le QR code ne contient aucune donnée personnelle (jeton opaque et révocable) ;</li>
+  <li>une notification de proximité déclenchée par le téléphone du porteur de carte, sans que LOYNA reçoive jamais sa position ;</li>
   <li>un journal d'audit des actions sensibles ;</li>
   <li>la minimisation des données : seul le prénom est obligatoire pour s'inscrire à un programme de fidélité.</li>
 </ul>
@@ -171,4 +171,4 @@
 <h2>10. Mise à jour de la présente politique</h2>
 <p>Cette politique peut être mise à jour, notamment en cas d'évolution du service ou de la réglementation. La date de la dernière mise à jour figure ci-dessous.</p>
 
-<p><em>Dernière mise à jour : 9 octobre 2026</em></p>
+<p><em>Dernière mise à jour : 25 octobre 2026</em></p>

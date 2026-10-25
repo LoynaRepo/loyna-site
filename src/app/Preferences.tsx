@@ -1,17 +1,16 @@
 // Préférences d'un client final (lien signé « Mes préférences » au dos de sa carte Wallet) :
-// accords Wallet / SMS et suppression de ses données, sans compte ni mot de passe.
+// accord pour les offres dans le Wallet et suppression de ses données, sans compte ni mot de passe.
 import type {ComponentChildren} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
 import {publicEdge} from './http';
 import {Icon} from './icons';
+import {frenchTypography} from './util';
 
 interface Prefs {
   status: 'OK' | 'NOT_FOUND';
   first_name: string;
   merchant_name: string;
-  sms_available: boolean;
   marketing_wallet: boolean;
-  marketing_sms: boolean;
 }
 
 export default function Preferences() {
@@ -30,6 +29,7 @@ export default function Preferences() {
   const [saving, setSaving] = useState(false);
   const [confirm, setConfirm] = useState(0);
 
+  useEffect(() => frenchTypography(), []);
   const load = () => {
     if (token.length < 20) return setState('invalid');
     setState('loading');
@@ -53,7 +53,7 @@ export default function Preferences() {
   };
   useEffect(load, []);
 
-  const update = async (changes: {marketing_wallet?: boolean; marketing_sms?: boolean; delete_account?: boolean}) => {
+  const update = async (changes: {marketing_wallet?: boolean; delete_account?: boolean}) => {
     setSaving(true);
     setMsg('');
     try {
@@ -116,15 +116,6 @@ export default function Preferences() {
               <input type="checkbox" role="switch" checked={p.marketing_wallet} disabled={saving} onChange={(e) => update({marketing_wallet: (e.target as HTMLInputElement).checked})} />
               <span class="tgl-s" aria-hidden="true" />
             </label>
-            {p.sms_available && (
-              <label class="tgl">
-                <span class="tgl-t">
-                  <span class="tgl-l">Offres par SMS</span>
-                </span>
-                <input type="checkbox" role="switch" checked={p.marketing_sms} disabled={saving} onChange={(e) => update({marketing_sms: (e.target as HTMLInputElement).checked})} />
-                <span class="tgl-s" aria-hidden="true" />
-              </label>
-            )}
           </div>
           {msg && (
             <p class="note" role="status">

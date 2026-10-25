@@ -1,10 +1,10 @@
-// Fiche client : solde, récompenses, historique, carte Wallet, consentements et RGPD.
-// Les boutons suivent les droits renvoyés par le serveur (permissions de la fiche).
+// Fiche client : solde, récompenses, niveau VIP et parrainage (Pro), historique, carte Wallet,
+// consentements et RGPD. Les boutons suivent les droits renvoyés par le serveur (permissions de la fiche).
 import {useState} from 'preact/hooks';
 import {Icon} from '../icons';
-import {api, go, toast, toastError} from '../state';
+import {api, feature, go, merchant, toast, toastError} from '../state';
 import {Badge, Btn, ErrorBox, Field, LinkBox, Modal, PageHead, Panel, Spinner, Toggle, useBusy, useLoad} from '../ui';
-import {ago, date, dateTime, download, euros, initials, num, shortDateTime, uuid} from '../util';
+import {ago, copy, date, dateTime, download, euros, initials, joinUrl, num, plural, shortDateTime, uuid} from '../util';
 
 interface Detail {
   status: 'OK' | 'NOT_FOUND';
@@ -19,14 +19,17 @@ interface Detail {
     next_reward: null | {name: string; remaining: number};
     available_rewards: {customer_reward_id: string; name: string; expires_at: string | null}[];
   };
+  tier?: null | {level: 1 | 2 | 3; name: string; reached_at: string | null};
+  referral?: null | {code: string | null; referred_by: {id: string; first_name: string} | null; referrals: number; rewarded_at: string | null};
   transactions: {id: string; type: string; source: string; points_delta: number; balance_after: number; amount: number | null; note: string | null; created_at: string; staff_name: string | null; reversed: boolean}[];
   rewards: {id: string; name: string; status: string; earned_at: string; redeemed_at: string | null; expires_at: string | null}[];
-  consents: null | {loyalty_terms: boolean; marketing_wallet: boolean; marketing_sms: boolean; consent_timestamp: string | null; consent_version: string | null};
+  consents: null | {loyalty_terms: boolean; marketing_wallet: boolean; consent_timestamp: string | null; consent_version: string | null};
   wallet: {pass_status: string | null; apple_devices: number; google_object: boolean; google_has_users: boolean | null};
   permissions: {can_adjust: boolean; can_reverse_any: boolean; can_manage: boolean; can_redeem: boolean; can_reissue_card: boolean};
 }
 
 const TX: Record<string, string> = {EARN: 'Passage', REDEEM: 'Récompense utilisée', REVERSAL: 'Annulation', ADJUSTMENT: 'Ajustement manuel'};
+const txLabel = (t: {type: string; source: string}) => (t.source === 'REFERRAL' ? 'Bonus de parrainage' : (TX[t.type] ?? t.type));
 const REWARD_STATUS: Record<string, [string, 'gold' | 'green' | 'neutral' | 'red']> = {
   AVAILABLE: ['À utiliser', 'gold'],
   REDEEMED: ['Utilisée', 'green'],
@@ -89,6 +92,12 @@ export function ClientDetail({id}: {id: string}) {
                 Inscrit le {date(c.created_at)} · dernière visite {ago(c.last_activity_at)}
               </small>
             </div>
+            {d.data.tier && feature('loyalty.tiers') && (
+              <span class={`vip vip--${d.data.tier.level}`} title={d.data.tier.reached_at ? `Niveau atteint le ${date(d.data.tier.reached_at)}` : undefined}>
+                <Icon name="crown" size={15} />
+                Niveau {d.data.tier.name}
+              </span>
+            )}
             {c.status !== 'ACTIVE' && <Badge tone="red">{c.status === 'BLOCKED' ? 'Bloqué' : 'Supprimé'}</Badge>}
           </div>
           {a ? (
@@ -162,7 +171,7 @@ export function ClientDetail({id}: {id: string}) {
                     <tr class={t.reversed ? 'is-rev' : ''}>
                       <td class="nowrap">{shortDateTime(t.created_at)}</td>
                       <td>
-                        {TX[t.type] ?? t.type}
+                        {txLabel(t)}
                         {t.amount ? ` · ${euros(t.amount)}` : ''}
                         {t.reversed && <Badge tone="neutral">annulé</Badge>}
                         {t.note && <small class="tx-note">{t.note}</small>}
@@ -238,6 +247,8 @@ export function ClientDetail({id}: {id: string}) {
             {d.data.wallet.pass_status === 'VOIDED' && <p class="muted small">Cette carte a été désactivée.</p>}
           </Panel>
 
+          {d.data.referral && feature('referral') && <Referral r={d.data.referral} />}
+
           {d.data.consents && <Consents id={c.id} consents={d.data.consents} canManage={p.can_manage} reload={d.reload} />}
 
           {p.can_manage && (
@@ -277,24 +288,65 @@ export function ClientDetail({id}: {id: string}) {
   );
 }
 
+/** Parrainage (Pro) : code du client, ses filleuls, son parrain éventuel. */
+function Referral({r}: {r: NonNullable<Detail['referral']>}) {
+  const m = merchant.value!;
+  const link = r.code ? `${joinUrl(m.merchant_slug)}?parrain=${r.code}` : null;
+  return (
+    <Panel title="Parrainage">
+      <ul class="contact">
+        {r.code && (
+          <li>
+            <Icon name="share-2" size={18} />
+            <span>
+              Code <code class="code">{r.code}</code>
+            </span>
+            {link && (
+              <button type="button" class="linkish small" onClick={async () => toast((await copy(link)) ? 'Lien de parrainage copié' : 'Copie impossible : le lien est au dos de la carte du client.', 'info')}>
+                Copier le lien
+              </button>
+            )}
+          </li>
+        )}
+        <li>
+          <Icon name="users" size={18} />
+          {r.referrals > 0 ? `${plural(r.referrals, 'ami parrainé', 'amis parrainés')}` : 'Aucun ami parrainé pour le moment'}
+        </li>
+        {r.referred_by && (
+          <li>
+            <Icon name="user-plus" size={18} />
+            <span>
+              Parrainé par <a href={`#/client/${r.referred_by.id}`}>{r.referred_by.first_name}</a>
+              {r.rewarded_at ? ` · bonus versé le ${date(r.rewarded_at)}` : ' · bonus versé à sa première visite'}
+            </span>
+          </li>
+        )}
+      </ul>
+      <p class="muted small">Le lien de parrainage est au dos de la carte du client.</p>
+    </Panel>
+  );
+}
+
 function Consents({id, consents: k, canManage, reload}: {id: string; consents: NonNullable<Detail['consents']>; canManage: boolean; reload: () => void}) {
   const [busy, run] = useBusy();
-  const withdraw = (field: 'marketing_wallet' | 'marketing_sms') =>
+  // Le commerce peut retirer un accord, jamais en donner un : RPC update_customer_consents (2 arguments)
+  const withdraw = () =>
     run(async () => {
       try {
-        await api.edge('customer-privacy', {action: 'update_consents', customer_id: id, [field]: false});
+        const r = await api.rpc<{status: string; hint?: string}>('update_customer_consents', {p_customer_id: id, p_marketing_wallet: false});
+        if (r?.status && r.status !== 'OK') return toast(r.status === 'FORBIDDEN' ? 'Vous n’avez pas l’autorisation de modifier ce client.' : (r.hint ?? 'Retrait impossible.'), 'error');
         toast('Consentement retiré');
         reload();
       } catch (e) {
         toastError(e);
       }
     });
-  const row = (label: string, on: boolean, field?: 'marketing_wallet' | 'marketing_sms') => (
+  const row = (label: string, on: boolean, removable = false) => (
     <li>
       <Icon name={on ? 'circle-check' : 'circle-x'} size={18} class={on ? 'ok' : 'off'} />
       <span>{label}</span>
-      {on && field && canManage && (
-        <button type="button" class="linkish small" disabled={busy} onClick={() => withdraw(field)}>
+      {on && removable && canManage && (
+        <button type="button" class="linkish small" disabled={busy} onClick={withdraw}>
           Retirer
         </button>
       )}
@@ -304,8 +356,7 @@ function Consents({id, consents: k, canManage, reload}: {id: string; consents: N
     <Panel title="Consentements">
       <ul class="contact consents">
         {row('Programme de fidélité', k.loyalty_terms)}
-        {row('Offres dans le Wallet', k.marketing_wallet, 'marketing_wallet')}
-        {row('Offres par SMS', k.marketing_sms, 'marketing_sms')}
+        {row('Offres dans le Wallet', k.marketing_wallet, true)}
       </ul>
       {k.consent_timestamp && (
         <p class="muted small">

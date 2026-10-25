@@ -5,7 +5,8 @@ import PricingCards from '../components/PricingCards.astro';
 import Icon from '../components/Icon.astro';
 import CtaBand from '../components/CtaBand.astro';
 import CallbackForm from '../components/CallbackForm.astro';
-import {COMPARISON, LAUNCH_OFFER, PLANS, SETUP_FEE, SITE, euro, offerActive} from '../data/site';
+import Proximite from '../components/Proximite.astro';
+import {COMPARISON, LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, nombre, offerActive} from '../data/site';
 import {getFaq} from '../lib/builder';
 
 const crumbs = [
@@ -44,11 +45,16 @@ const faqLd = {
   '@type': 'FAQPage',
   mainEntity: faq.map((f) => ({'@type': 'Question', name: f.q, acceptedAnswer: {'@type': 'Answer', text: f.a}})),
 };
+const prixMin = Math.min(...PLANS.map((p) => p.monthly));
+const starter = PLANS[0];
+const premium = PLANS[1];
+// Groupes du comparatif : une ligne de titre avant la première ligne de chaque groupe
+const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
 ---
 
 <Base stickyCta={{primary: {href: '/creer-ma-carte/', label: 'Créer ma carte'}, secondary: {href: '/contact/', label: 'Une question ?'}}}
-  title="Tarifs : carte de fidélité digitale dès 29 €/mois"
-  description="Essentiel 29 €, Growth 49 €, Pro 79 € par mois, sans TVA. −15 % et mise en service offerte en paiement annuel. Paiement sécurisé par Stripe."
+  title={`Tarifs : carte de fidélité digitale dès ${euro(prixMin)} par mois`}
+  description={`${PLANS.map((p) => `${p.name} ${euro(p.monthly)}`).join(', ')} par mois, sans TVA. Notification de proximité incluse. ${offerActive() ? `Mise en service offerte jusqu’au ${LAUNCH_OFFER.untilLabel}.` : '−15 % et mise en service offerte en annuel.'}`}
   ogImage="/og/tarifs.png"
   breadcrumbs={crumbs}
   jsonLd={[offersLd, faqLd]}
@@ -57,8 +63,8 @@ const faqLd = {
     <div class="container">
       <Breadcrumbs items={crumbs} />
       <p class="eyebrow">Tarifs</p>
-      <h1>Des formules simples, dès 29&nbsp;€ par mois</h1>
-      <p class="lead">Toutes les formules incluent la carte Apple Wallet et Google Wallet, les notifications Wallet et le scanner. Payez en ligne, votre carte est prête sous 24&nbsp;h.</p>
+      <h1>Des formules simples, dès {euro(prixMin)} par mois</h1>
+      <p class="lead">Toutes les formules incluent la carte Apple Wallet et Google Wallet, la notification de proximité, les campagnes de notifications et le scanner. Premium ajoute les automatisations, Pro le suivi par LOYNA. Votre carte est prête sous 24&nbsp;h.</p>
     </div>
   </section>
 
@@ -97,7 +103,15 @@ const faqLd = {
           </thead>
           <tbody>
             {
-              COMPARISON.map((row) => (
+              lignes.map((row) => (
+                <>
+                  {row.group && (
+                    <tr class="grp">
+                      <th scope="colgroup" colspan={4}>
+                        {row.group}
+                      </th>
+                    </tr>
+                  )}
                 <tr>
                   <th scope="row">{row.label}</th>
                   {row.values.map((v) => (
@@ -116,10 +130,67 @@ const faqLd = {
                     </td>
                   ))}
                 </tr>
+                </>
               ))
             }
           </tbody>
         </table>
+      </div>
+      <p class="table-note">
+        Une notification correspond à un message de campagne reçu par une carte&nbsp;: une campagne envoyée à 300 clients compte 300 notifications. Les messages automatiques et les notifications de proximité ne sont jamais décomptés.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" id="quotas">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Ce que comptent les quotas</p>
+        <h2>Des limites claires, pensées pour vos clients</h2>
+        <p>Chaque formule fixe un nombre de cartes et de notifications par mois. Pro n’a aucune limite.</p>
+      </div>
+      <div class="grid grid-3">
+        <div class="card">
+          <span class="icon"><Icon name="wallet" /></span>
+          <h3>Cartes</h3>
+          <p>
+            Une carte, c’est un client inscrit à votre programme&nbsp;: {nombre(starter.cards ?? 0)} avec Starter, {nombre(premium.cards ?? 0)} avec Premium, sans limite avec Pro. Vous êtes prévenu dans votre espace à 80&nbsp;% et à 100&nbsp;%&nbsp;; au-delà, les nouvelles inscriptions sont refusées et le client voit un message d’attente. Un client supprimé ne compte plus.
+          </p>
+        </div>
+        <div class="card">
+          <span class="icon"><Icon name="megaphone" /></span>
+          <h3>Notifications</h3>
+          <p>
+            Une notification, c’est un message de campagne reçu par une carte&nbsp;: {nombre(starter.notifications ?? 0)} par mois avec Starter (une par semaine et par client), {nombre(premium.notifications ?? 0)} avec Premium (douze par client et par mois), sans limite avec Pro. Le quota se recharge le 1er de chaque mois.
+          </p>
+        </div>
+        <div class="card">
+          <span class="icon"><Icon name="bell-ring" /></span>
+          <h3>Jamais décomptés</h3>
+          <p>
+            Les messages automatiques (passage validé, récompense débloquée, anniversaire, relance, «&nbsp;Plus qu’un passage&nbsp;!&nbsp;», avis, parrainage, niveau VIP) et les notifications de proximité. Et pour ne pas lasser vos clients, chacun reçoit au plus un message commercial toutes les {MARKETING_INTERVAL_HOURS}&nbsp;h (réglable).
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--dark" id="proximite">
+    <div class="container prox-grid">
+      <div>
+        <p class="eyebrow">Dans toutes les formules</p>
+        <h2>La notification de proximité, incluse dès Starter</h2>
+        <p class="lead">Quand un client passe près de votre boutique, sa carte s’affiche sur l’écran de verrouillage de son téléphone, avec un court message&nbsp;: sa récompense qui l’attend, les passages qui restent, ou votre propre message.</p>
+        <ul class="checks prox-checks">
+          <li>iPhone&nbsp;: la carte s’affiche sur l’écran de verrouillage. Android&nbsp;: une notification apparaît quand le client s’attarde près de la boutique.</li>
+          <li>Jamais décomptée de vos notifications, sans coût par message.</li>
+          <li>LOYNA ne reçoit jamais la position de vos clients&nbsp;: c’est leur téléphone qui détecte la proximité.</li>
+          <li>Avec Pro, jusqu’à 3 boutiques, chacune avec sa notification de proximité.</li>
+        </ul>
+        <p class="prox-note">Fonctionne quand le client a activé la localisation et laissé Wallet s’afficher sur l’écran verrouillé.</p>
+      </div>
+      <div class="prox-visual">
+        <Proximite width={260} />
       </div>
     </div>
   </section>
@@ -265,6 +336,53 @@ const faqLd = {
   .compare tbody th {
     text-align: left;
     font-weight: 600;
+  }
+  .compare tbody .grp th {
+    padding-top: 22px;
+    padding-bottom: 10px;
+    background: var(--bg);
+    color: var(--gold-strong);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .table-note {
+    margin: 18px auto 0;
+    max-width: 860px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+  .prox-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: clamp(32px, 6vw, 90px);
+    align-items: center;
+  }
+  .prox-checks {
+    margin: 26px 0 18px;
+  }
+  .prox-checks li {
+    color: #e9e5dc;
+  }
+  .prox-checks li::before {
+    background-color: rgba(230, 194, 122, 0.2);
+  }
+  .prox-note {
+    font-size: 0.92rem;
+    color: #a8a194 !important;
+    margin: 0;
+  }
+  .prox-visual {
+    display: grid;
+    place-items: center;
+    padding: 10px 30px;
+  }
+  @media (max-width: 920px) {
+    .prox-grid {
+      grid-template-columns: 1fr;
+    }
   }
   .compare tbody tr:last-child > * {
     border-bottom: 0;

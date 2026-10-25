@@ -1,11 +1,12 @@
-// Contenus d'aide à la vente du panel commercial. Règle : rien d'inventé. Chaque réponse est tirée de
-// docs/BRIEF.md, de la FAQ du site (src/content-seed/faq.json / Builder), de la FAQ du coffre (05 Règles/FAQ Loyna.md),
-// des pages du site ou de src/data/site.ts (prix importés, jamais recopiés). Les « repères » d'horaires d'appel
-// sont des conseils pratiques, signalés comme tels. Règles de démarchage : pages CNIL citées (lues le 23/10/2026).
+// Contenus d'aide à la vente du panel commercial. Règle : rien d'inventé. Chaque réponse est tirée des offres du
+// 2026-10-25 (dépôt LOYNA, docs/OFFRES.md), de docs/BRIEF.md, de la FAQ du site (src/content-seed/faq.json / Builder),
+// de la FAQ du coffre (05 Règles/FAQ Loyna.md), des pages du site ou de src/data/site.ts (prix et quotas importés, jamais
+// recopiés). Les « repères » d'horaires d'appel sont des conseils pratiques, signalés comme tels. Règles de démarchage :
+// pages CNIL citées (lues le 23/10/2026).
 // Formulation validée par Ewan (relecture du site, 23/10/2026) : jamais « HT » (TVA non applicable) ; engagement du
 // mensuel dit en clair ; un seul message sur la mise en service ; « LOYNA, une marque de KOVA Elec », Ewan « fondateur
-// de LOYNA » (jamais « société Loyna »).
-import {COMPARISON, LAUNCH_OFFER, PLANS, SETUP_FEE, SITE, euro, offerActive} from '../data/site';
+// de LOYNA » (jamais « société Loyna »). Proximité : dire « s'affiche », jamais « à chaque passage ».
+import {LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, nombre, offerActive, quotas} from '../data/site';
 
 export interface Reponse {
   id: string;
@@ -17,6 +18,7 @@ export interface Reponse {
 }
 
 const S = {
+  offres: 'Offres LOYNA du 25/10/2026 (dépôt LOYNA, docs/OFFRES.md)',
   brief: 'Brief produit (docs/BRIEF.md)',
   faq: 'FAQ du site (loyna.fr/faq/)',
   faqCoffre: 'FAQ Loyna du coffre (05 Règles)',
@@ -40,10 +42,9 @@ export const LIENS = {
 
 const prixMin = () => Math.min(...PLANS.map((p) => p.monthly));
 const listePrix = (cle: 'monthly' | 'yearly') => PLANS.map((p) => `${p.name} ${euro(p[cle])}`).join(', ');
-function smsInclus(): {growth: string; pro: string} {
-  const ligne = COMPARISON.find((l) => /SMS/i.test(l.label));
-  return {growth: String(ligne?.values[1] ?? ''), pro: String(ligne?.values[2] ?? '')};
-}
+const offre = (id: string) => PLANS.find((p) => p.id === id)!;
+/** « Starter : 500 cartes et 2 000 notifications par mois ; Premium : … ; Pro : cartes et notifications illimitées » */
+const listeQuotas = () => PLANS.map((p) => `${p.name} : ${quotas(p).charAt(0).toLowerCase()}${quotas(p).slice(1)}`).join(' ; ');
 
 /** Le seul message sur la mise en service : offerte pendant l'offre de lancement, sinon 49 € une fois. */
 export function phraseMiseEnService(): string {
@@ -56,20 +57,80 @@ export const ENGAGEMENT_MENSUEL = 'Engagement de 12 mois, réglés chaque mois, 
 export const ENGAGEMENT_ANNUEL = '12 mois payés en une fois, renouvelables.';
 export const KOVA = 'KOVA Elec est l’entreprise individuelle d’Ewan qui édite LOYNA ; c’est pour cela que le paiement et les factures sont à ce nom.';
 
+/** « a, b et c », premières lettres en minuscule (listes tirées de src/data/site.ts). */
+function enListe(items: string[]): string {
+  const l = items.map((x) => x.charAt(0).toLowerCase() + x.slice(1));
+  return l.length > 1 ? `${l.slice(0, -1).join(', ')} et ${l[l.length - 1]}` : (l[0] ?? '');
+}
+
 /** Réponses courtes aux questions et objections probables (onglet « Questions clients »). */
 export function objections(): Reponse[] {
-  const sms = smsInclus();
+  const premium = offre('premium');
+  const pro = offre('pro');
   return [
     {
       id: 'prix',
       q: 'C’est combien ?',
       r: [
         `Trois formules, par mois, sans TVA : ${listePrix('monthly')}. ${MENTION_PRIX}`,
+        `${listeQuotas()}. La notification de proximité est incluse dans les trois.`,
         `En paiement annuel, 15 % de réduction : ${listePrix('yearly')} par an, sans TVA.`,
         phraseMiseEnService(),
       ],
       liens: [LIENS.tarifs],
-      sources: [S.tarifs, S.brief, S.faqCoffre],
+      sources: [S.tarifs, S.offres],
+    },
+    {
+      id: 'proximite',
+      q: 'C’est quoi, la notification de proximité ?',
+      r: [
+        'Quand un client passe près de votre boutique, sa carte s’affiche sur l’écran de verrouillage de son téléphone, avec un court message : « Votre récompense vous attend chez … ! », « Plus que 2 passages avant votre récompense chez … », ou votre propre message.',
+        'Exemple : votre client passe devant votre boulangerie, et sa carte s’affiche en notification.',
+        'Sur iPhone, la carte s’affiche sur l’écran de verrouillage ; sur Android, une notification apparaît quand le client s’attarde près de la boutique. C’est inclus dans les trois formules et jamais décompté des notifications.',
+      ],
+      attention: 'Dites « s’affiche », jamais « à chaque passage » : il faut que le client ait activé la localisation et laissé Wallet s’afficher sur l’écran verrouillé, et c’est le téléphone qui décide de l’affichage.',
+      sources: [S.offres],
+    },
+    {
+      id: 'premium',
+      q: 'Qu’est-ce que Premium apporte de plus ?',
+      r: [
+        `Les automatisations qui font revenir vos clients, pour ${euro(premium.monthly)} par mois, sans TVA : ${enListe(premium.focus?.items ?? [])}.`,
+        'Ces messages partent tout seuls : vous choisissez le texte et la surprise, et ils ne sont jamais décomptés des notifications.',
+        `Et plus de place : ${quotas(premium)}.`,
+      ],
+      liens: [LIENS.tarifs],
+      sources: [S.offres, S.tarifs],
+    },
+    {
+      id: 'pro',
+      q: 'Que comprend Pro ?',
+      r: [
+        `Avec Pro, LOYNA travaille avec vous, pour ${euro(pro.monthly)} par mois, sans TVA : un point mensuel de 30 minutes (chiffres, objectifs, réglages de la récompense) et un plan d’action.`,
+        'Des campagnes clés en main : nous préparons le calendrier des temps forts (fêtes, saisons, soldes, événements), nous rédigeons et programmons les campagnes, et vous les validez en un clic. Rien ne part sans votre validation.',
+        `Jusqu’à ${pro.shops} boutiques, niveaux VIP bronze, argent et or, parrainage, kit comptoir imprimé (chevalet QR code et vitrophanie), ${quotas(pro).toLowerCase()} et support prioritaire.`,
+      ],
+      sources: [S.offres],
+    },
+    {
+      id: 'notifications',
+      q: 'Les notifications, c’est compris ? Combien ?',
+      r: [
+        'Oui, sans coût par message. Dans toutes les formules, le client est prévenu automatiquement à chaque passage et quand sa récompense est débloquée.',
+        `Pour vos campagnes (offres, nouveautés), un quota par mois : ${PLANS.map((p) => `${p.notifications === null ? 'illimité' : nombre(p.notifications)} avec ${p.name}`).join(', ')}. Une notification, c’est un message de campagne reçu par une carte : une campagne envoyée à 300 clients compte 300 notifications.`,
+        `Les messages automatiques et les notifications de proximité ne sont jamais décomptés. Et un client reçoit au plus un message commercial toutes les ${MARKETING_INTERVAL_HOURS} h, pour ne pas le lasser (délai réglable).`,
+      ],
+      sources: [S.offres, S.tarifs],
+    },
+    {
+      id: 'quotas',
+      q: 'Et si j’ai plus de clients que prévu ?',
+      r: [
+        `Une carte, c’est un client inscrit à votre programme. ${listeQuotas()}.`,
+        'Vous êtes prévenu dans votre espace à 80 % et à 100 %. Une fois la limite atteinte, les nouvelles inscriptions sont refusées et le client voit un message d’attente : c’est le moment de passer à la formule supérieure. Les clients supprimés ne comptent plus.',
+        'Le quota de notifications se recharge le 1er de chaque mois.',
+      ],
+      sources: [S.offres],
     },
     {
       id: 'cher',
@@ -77,7 +138,7 @@ export function objections(): Reponse[] {
       r: [
         'Faisons le calcul avec vos chiffres : divisez l’abonnement par votre marge moyenne sur une visite. Vous obtenez le nombre de visites en plus qu’il faut chaque mois pour rentrer dans vos frais.',
         `Exemple purement indicatif, repris du site : avec 6 € de marge par visite, un abonnement à ${euro(prixMin())} par mois correspond à environ ${Math.round(prixMin() / 6)} visites supplémentaires dans le mois, tous clients confondus.`,
-        'Pas de matériel à acheter, et les notifications Wallet sont incluses dans toutes les formules, sans coût par message.',
+        'Pas de matériel à acheter, et les notifications Wallet n’ont aucun coût par message.',
       ],
       attention: 'Ne promettez aucun résultat chiffré : aucune statistique de résultat n’est publiée. Le simulateur de l’accueil fait le calcul avec ses propres chiffres.',
       liens: [LIENS.simulateur],
@@ -88,7 +149,7 @@ export function objections(): Reponse[] {
       q: 'J’ai déjà une carte papier, ça marche très bien.',
       r: [
         'La carte papier se perd, s’imite facilement et ne permet pas de relancer un client qui ne vient plus.',
-        'La carte LOYNA est dans le téléphone du client : elle ne se perd pas, se met à jour toute seule, limite la fraude (un scan par passage, protection anti double scan, historique) et prévient le client quand sa récompense l’attend.',
+        'La carte LOYNA est dans le téléphone du client : elle ne se perd pas, se met à jour toute seule, limite la fraude (un scan par passage, protection anti double scan, historique), prévient le client quand sa récompense l’attend et s’affiche sur son téléphone quand il passe près de votre boutique.',
         'Pour passer au digital, vous reprenez les tampons de l’ancienne carte au moment de l’inscription : un ajustement manuel motivé et tracé.',
       ],
       attention: 'Pour les clients sans smartphone, il faut prévoir une alternative (le site le dit honnêtement).',
@@ -154,19 +215,16 @@ export function objections(): Reponse[] {
       q: 'Et les données de mes clients ? Le RGPD ?',
       r: [
         'Les données sont hébergées dans l’Union européenne, protégées, chiffrées et jamais utilisées à des fins commerciales.',
-        'À l’inscription, vos clients donnent des consentements séparés (fidélité, offres Wallet, SMS), jamais cochés d’avance. Sur demande d’un client, vous exportez ou supprimez ses données.',
+        'À l’inscription, vos clients donnent des consentements séparés (fidélité, offres par notification Wallet), jamais cochés d’avance. Sur demande d’un client, vous exportez ou supprimez ses données.',
         'Le QR code de la carte ne contient aucune donnée personnelle : seulement un jeton opaque, révocable.',
       ],
       sources: [S.faq, S.brief, S.faqCoffre],
     },
     {
-      id: 'sms',
-      q: 'Les SMS et les notifications, c’est compris ?',
-      r: [
-        'Les notifications Wallet sont incluses dans toutes les formules, sans coût par message.',
-        `Les SMS sont compris dans un volume mensuel : ${sms.growth} avec Growth, ${sms.pro} avec Pro. Essentiel n’inclut pas de SMS.`,
-      ],
-      sources: [S.faq, S.tarifs],
+      id: 'position',
+      q: 'Vous savez où sont mes clients ? (notification de proximité)',
+      r: ['Non. LOYNA ne reçoit jamais la position du client : l’adresse de la boutique est enregistrée dans sa carte, et c’est son téléphone qui détecte qu’il est à proximité.'],
+      sources: [S.offres],
     },
     {
       id: 'android',
@@ -196,7 +254,7 @@ export function objections(): Reponse[] {
       id: 'paiement',
       q: 'Comment je paie ? Et les factures ?',
       r: [
-        'En ligne, par carte bancaire, de façon sécurisée via Stripe, au nom de KOVA Elec, l’entreprise qui édite LOYNA. Les factures sont dans votre espace client.',
+        'En ligne, par carte bancaire, de façon sécurisée via Stripe, au nom de KOVA Elec : LOYNA est une marque de KOVA Elec. Les factures sont dans votre espace client.',
         MENTION_PRIX,
       ],
       sources: [S.faq, S.brief],
@@ -261,7 +319,8 @@ export function derouleAppel(): {titre: string; duree?: string; points: string[]
         '« Vos clients scannent un QR code au comptoir et ajoutent votre carte dans Apple Wallet ou Google Wallet, sans application. »',
         '« À chaque visite, vous scannez leur carte avec votre téléphone : un scan, un passage validé. »',
         '« Au seuil que vous choisissez, la récompense se débloque toute seule et le client reçoit une notification sur son téléphone. »',
-        `« Votre carte est prête sous 24 h, à partir de ${euro(prixMin())} par mois, sans TVA. »`,
+        '« Et quand il passe près de votre boutique, sa carte s’affiche sur l’écran de verrouillage de son téléphone. »',
+        `« Votre carte est prête sous 24 h, à partir de ${euro(prixMin())} par mois, sans TVA. Avec Premium, les automatisations font revenir vos clients toutes seules. »`,
       ],
     },
     {

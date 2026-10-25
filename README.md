@@ -33,7 +33,7 @@ Sous Git Bash, préfixer les deux outils par `MSYS_NO_PATHCONV=1` (sinon « / »
 | Contenu | Source | Secours hors ligne |
 |---|---|---|
 | Titre/sous-titre d'accueil, identité légale (KOVA Elec), lien Espace client, identifiant Google Analytics `ga4Id` | Builder.io, modèle `site-settings` | `src/content-seed/site-settings.json` |
-| FAQ (page /faq/ + données structurées) | Builder.io, modèle `faq` | `src/content-seed/faq.json` |
+| FAQ (page /faq/ + données structurées) | Builder.io, modèle `faq` (toute la liste vient de Builder dès qu'il en a une) | `src/content-seed/faq.json` |
 | Pages métiers /secteurs/… | Builder.io, modèle `secteur` | `src/content-seed/sectors.json` |
 | Articles /blog/… | Builder.io, modèle `article` | `src/content-seed/articles/*.json` |
 | Pages libres /p/… | Builder.io, modèle visuel `page` (aperçu : /builder-preview/) | aucune |
@@ -45,25 +45,40 @@ pages légales. Si Builder.io ne répond pas pendant la construction, le site se
 secours. Clés Builder : publique dans `src/lib/builder.ts` (lecture seule), privée dans `secrets/builder.env`
 (jamais versionnée, sert seulement aux scripts d'administration).
 
+Builder à jour des fichiers de secours relus : `python tools/builder_texte.py` (essai à blanc), puis `--appliquer`
+(champs différents remplacés à slug ou question égale, questions de FAQ manquantes créées, rien n'est supprimé ;
+contrôle final des termes retirés : SMS, anciennes offres, « HT »).
+
+Un champ du modèle `site-settings` (sous-titre d'accueil, identité légale…) : `python tools/builder_reglages.py <champ> "texte"`
+(essai à blanc), puis `--appliquer` : toute l'entrée est renvoyée à Builder (aucun champ perdu) et
+`src/content-seed/site-settings.json` est mis à jour en même temps.
+
 Images de partage : `python tools/og.py <fichier.json>` (voir le script). Un article ou un secteur ajouté
 depuis Builder.io sans image dédiée reçoit l'image par défaut.
 
 ## Stripe (compte live acct_1UKleaV05ztMZIc7)
 
-| Offre | Lien de paiement |
-|---|---|
-| Essentiel mensuel (29 € + 49 € de mise en service) | `plink_1UOMa6V05ztMZIc7xYo8BI1g` |
-| Growth mensuel (49 € + 49 €) | `plink_1UOMaKV05ztMZIc7l7Uw1Boz` |
-| Pro mensuel (79 € + 49 €) | `plink_1UOMaPV05ztMZIc7NpRImWin` |
-| Essentiel annuel (295,80 €) | `plink_1UOMaeV05ztMZIc7uSADuzxG` |
-| Growth annuel (499,80 €) | `plink_1UOMakV05ztMZIc7lYFe2eoN` |
-| Pro annuel (805,80 €) | `plink_1UOMapV05ztMZIc7rZ2Fjryb` |
+Offres Starter, Premium et Pro du 2026-10-25 : source de vérité dans le dépôt LOYNA, `docs/OFFRES.md` (prix, quotas,
+contenu, notification de proximité, formulation). Prix, quotas et liens du site : `src/data/site.ts`.
+
+| Offre | Lien de paiement | Retour vers /merci/ |
+|---|---|---|
+| Starter mensuel (29 € + 49 € de mise en service) | `plink_1UUOpQV05ztMZIc7M7g0hLe5` (buy.stripe.com/00wdRcgmucItbVX5Yc5Ne06) | `?offre=starter-mensuel` |
+| Starter annuel (295,80 €) | `plink_1UUOpQV05ztMZIc79uKJZ1pM` (buy.stripe.com/4gMbJ40nw6k5aRTdqE5Ne07) | `?offre=starter-annuel` |
+| Premium mensuel (39,99 € + 49 €) | `plink_1UUOpQV05ztMZIc7gRjoFDrG` (buy.stripe.com/dRm14q3zI23P5xzdqE5Ne08) | `?offre=premium-mensuel` |
+| Premium annuel (407,90 €) | `plink_1UUOpRV05ztMZIc7usK6b6zp` (buy.stripe.com/fZu8wSfiq6k5aRT86k5Ne09) | `?offre=premium-annuel` |
+| Pro mensuel (89 € + 49 €) | `plink_1UUOpRV05ztMZIc7k4hsWmtj` (buy.stripe.com/00w28u2vEbEp1hjbiw5Ne0a) | `?offre=pro-mensuel` |
+| Pro annuel (907,80 €) | `plink_1UUOpSV05ztMZIc7nhOjCUac` (buy.stripe.com/28E28u8U27o99NP2M05Ne0b) | `?offre=pro-annuel` |
 
 Chaque lien : adresse de facturation, téléphone, nom du commerce et du contact, numéro de TVA facultatif,
-rappel des CGV et de la mention « TVA non applicable, art. 293 B du CGI », retour vers /merci/. Métadonnées
-`loyna_plan`, `billing_period`, `source=loyna.fr` sur l'abonnement. Portail client : `bpc_1UOMbKV05ztMZIc7mrlHaYSW`
+rappel des CGV et de la mention « TVA non applicable, art. 293 B du CGI », retour vers
+/merci/?offre=…&session_id=… (la page affiche l'offre payée et les étapes propres à Premium ou Pro). Métadonnées
+`loyna_plan` (STARTER, PREMIUM, PRO), `billing_period`, `source=loyna.fr` sur l'abonnement. Les liens des anciennes
+offres seront désactivés après la mise en ligne du site à jour. Portail client : `bpc_1UOMbKV05ztMZIc7mrlHaYSW`
 (factures, carte bancaire, changement de formule au prorata, résiliation en fin de période), page de connexion
-reliée au bouton de /espace-client/. Il n'y a pas encore de webhook : après un achat, créer le commerce et
+reliée au bouton de /espace-client/. Webhook : fonction `stripe-webhook` du dépôt LOYNA (endpoint
+`we_1UOPsyV05ztMZIc7BrwNrnwh`), qui applique la formule payée au commerce dont le propriétaire a la même
+adresse e-mail ; elle attend sa clé (`Enregistrer la clé Stripe du webhook.cmd`, dépôt LOYNA). D'ici là,
 reporter la formule dans `merchants.subscription_plan` à la main (voir `LOYNA/docs/STRIPE_SETUP.md`).
 
 ## Offre de lancement
@@ -83,19 +98,21 @@ des Edge Functions (contrats : dépôt LOYNA, `docs/API.md` et `docs/WEWEB_SETUP
 
 | Adresse | Contenu |
 |---|---|
-| `/espace-client/` | connexion puis accueil (indicateurs), scanner (caméra, BarcodeDetector ou jsQR), clients et fiche, programme et récompenses, campagnes Wallet/SMS, équipe, réglages (logo, couleurs, affiche du comptoir), abonnement (portail Stripe) — navigation `#/scanner`, `#/client/<id>`… |
+| `/espace-client/` | connexion puis accueil (indicateurs, jauges des cartes et des notifications du mois), scanner (caméra, BarcodeDetector ou jsQR), clients et fiche (niveau VIP, parrainage), programme et récompenses, campagnes Wallet (temps forts, campagnes préparées par LOYNA), automatisations (anniversaire, inactifs, « Plus qu'un passage ! », avis Google, double tampon ; niveaux VIP et parrainage en Pro), rapport mensuel, équipe, réglages (logo, couleurs, affiche du comptoir, boutiques et message de proximité), abonnement (portail Stripe) — navigation `#/scanner`, `#/client/<id>`… |
 | `/espace-client/mot-de-passe/` | choix du mot de passe depuis un lien d'activation (`/set-password` y est redirigé) |
 | `/join/<commerce>` | inscription d'un client final (réécrite vers `/join/index.html` par `.htaccess`) |
 | `/preferences/?t=…` | préférences et suppression des données d'un client final |
-| `/espace-client/demo/` | **démonstration publique** sans compte : commerce, clients, passages, récompenses, campagnes et équipe fictifs tirés au hasard (`src/app/mock.ts`, graine dans `?seed=` ou le navigateur, bouton « Autres données »), scan simulé ; `/join/demo-<graine>` montre la page d'inscription du même commerce. Rien n'est envoyé ni enregistré (téléphones en 06 39 98, tranche ARCEP réservée à la fiction ; e-mails en example.com) |
+| `/espace-client/demo/` | **démonstration publique** sans compte : commerce, clients, passages, récompenses, campagnes et équipe fictifs tirés au hasard (`src/app/mock.ts`, graine dans `?seed=` ou le navigateur, bouton « Autres données »), scan simulé ; `/join/demo-<graine>` montre la page d'inscription du même commerce. Rien n'est envoyé ni enregistré (téléphones en 06 39 98, tranche ARCEP réservée à la fiction ; e-mails en example.com). Offre affichée : Pro par défaut ; `?offre=starter`, `?offre=premium` ou le sélecteur du bandeau montrent les autres offres (verrous, jauges) |
 
 - Démonstration : `/espace-client/demo/` en ligne, ou `?demo` sur `/espace-client/` en développement
   (même générateur `src/app/mock.ts`, chargé à part : absent des pages réelles) ; `/join/?slug=demo-loyna` en
   développement. Captures : `node tools/qa-app.mjs 1366 accueil scanner clients …` et `node tools/qa-flow.mjs`
   (serveur de développement sur le port 4322).
-- Les mentions « inclus dans la formule … » sont lues dans la table `plan_entitlements` (jamais en dur).
+- Les mentions « inclus dans la formule … », les verrous et les jauges (cartes, notifications du mois, boutiques)
+  sont lus dans `plan_entitlements` et `my_plan_usage` (jamais de nom d'offre en dur).
 - `.htaccess` : caméra autorisée seulement sous `/espace-client/`, Supabase ajouté à `connect-src` et
-  `img-src`, pages des cartes en `noindex` et sans référent.
+  `img-src`, géocodage des adresses de boutique (Base adresse nationale servie par l'IGN, `data.geopf.fr`)
+  ajouté à `connect-src`, pages des cartes en `noindex` et sans référent.
 
 ## Espace commercial (`/espace-commercial/`, privé)
 

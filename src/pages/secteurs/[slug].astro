@@ -7,7 +7,7 @@ import Icon from '../../components/Icon.astro';
 import PricingCards from '../../components/PricingCards.astro';
 import CtaBand from '../../components/CtaBand.astro';
 import {getSectors, type Sector} from '../../lib/builder';
-import {SITE} from '../../data/site';
+import {PLANS, SITE} from '../../data/site';
 import {ogImage} from '../../lib/og';
 
 export async function getStaticPaths() {
@@ -31,8 +31,17 @@ const serviceLd = {
   provider: {'@id': `${SITE.url}/#organisation`},
   areaServed: 'FR',
   audience: {'@type': 'BusinessAudience', name: s.nom},
-  offers: {'@type': 'Offer', price: 29, priceCurrency: 'EUR', url: `${SITE.url}/tarifs/`},
+  offers: {
+    '@type': 'AggregateOffer',
+    priceCurrency: 'EUR',
+    lowPrice: Math.min(...PLANS.map((p) => p.monthly)),
+    highPrice: Math.max(...PLANS.map((p) => p.monthly)),
+    offerCount: PLANS.length,
+    url: `${SITE.url}/tarifs/`,
+  },
 };
+// Notification de proximité : message affiché quand le client passe près de la boutique (docs/OFFRES.md, § 4)
+const proche = `Votre récompense vous attend chez ${s.carte.nom} !`;
 ---
 
 <Base title={s.metaTitle} description={s.metaDescription} ogImage={ogImage(`secteur-${s.slug}`)} breadcrumbs={crumbs} jsonLd={[serviceLd, faqLd]}>
@@ -121,6 +130,13 @@ const serviceLd = {
       <div>
         <h2>Exemples de notifications</h2>
         <div class="notifs">
+          <div class="notif notif--prox">
+            <span class="n-icon"><Icon name="map-pin" size={16} /></span>
+            <span>
+              <b>{s.carte.nom} <small>· près de la boutique</small></b>
+              <span>{proche}</span>
+            </span>
+          </div>
           {
             s.messages.map((m) => (
               <div class="notif">
@@ -141,7 +157,7 @@ const serviceLd = {
     <div class="container">
       <div class="section-head">
         <h2>Les tarifs</h2>
-        <p>Les mêmes formules pour tous les métiers : engagement 12 mois, puis résiliable chaque mois.</p>
+        <p>Les mêmes formules pour tous les métiers, avec la notification de proximité incluse dès Starter.</p>
       </div>
       <PricingCards idPrefix={`s-${s.slug}`} compact />
     </div>
@@ -258,6 +274,13 @@ const serviceLd = {
     background: var(--ink);
     color: #e6c27a;
     font-weight: 800;
+  }
+  .notif--prox {
+    box-shadow: 0 0 0 2px #e6c27a;
+  }
+  .notif--prox small {
+    font-weight: 600;
+    color: #7a5418;
   }
   .others-title {
     font-size: 1.5rem;

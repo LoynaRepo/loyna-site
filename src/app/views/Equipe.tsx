@@ -131,7 +131,7 @@ export function Equipe() {
       {link && (
         <Modal open onClose={() => setLink(null)} title={`Lien de connexion de ${link.name}`} wide footer={<Btn onClick={() => setLink(null)}>J’ai transmis le lien</Btn>}>
           <p>
-            Remettez ce lien à <strong>{link.name}</strong> (par SMS, ou faites-lui scanner le QR code). Il l’ouvre pour choisir son mot de passe, puis se connecte sur loyna.fr/espace-client. Le lien ne sert qu’une fois.
+            Remettez ce lien à <strong>{link.name}</strong> (par message, ou faites-lui scanner le QR code). Il l’ouvre pour choisir son mot de passe, puis se connecte sur loyna.fr/espace-client. Le lien ne sert qu’une fois.
           </p>
           <LinkBox url={link.url} note="Lien personnel : ne le publiez pas." />
         </Modal>

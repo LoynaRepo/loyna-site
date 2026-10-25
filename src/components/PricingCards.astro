@@ -1,6 +1,8 @@
 ---
 // Grille tarifaire avec bascule mensuel / annuel en CSS pur (aucun JavaScript).
-import {LAUNCH_OFFER, PLANS, SETUP_FEE, SITE, euro, offerActive} from '../data/site';
+// Offres, quotas et contenu : src/data/site.ts (source : docs/OFFRES.md du dépôt LOYNA).
+import Icon from './Icon.astro';
+import {LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, offerActive, quotas} from '../data/site';
 interface Props {
   idPrefix?: string;
   compact?: boolean;
@@ -56,6 +58,10 @@ const buy = (link: string, promo = false) =>
           <p class="note only-y">
             soit {euro(Math.round((p.yearly / 12) * 100) / 100)} / mois · <strong>mise en service offerte</strong>
           </p>
+          <p class="quota">
+            <Icon name="wallet" size={17} />
+            <span>{quotas(p)}</span>
+          </p>
           <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-m`} href={buy(p.links.monthly, true) || fallback(p.id, 'mensuel')} rel="nofollow" data-loading={p.links.monthly ? 'Redirection vers le paiement…' : undefined} data-plan={`${p.id}-mensuel`}>
             Choisir {p.name}
           </a>
@@ -67,6 +73,16 @@ const buy = (link: string, promo = false) =>
           {!compact && (
             <>
               {p.intro && <p class="intro">{p.intro}</p>}
+              {p.focus && (
+                <div class="focus">
+                  <p class="focus-title">{p.focus.title}</p>
+                  <ul class="checks">
+                    {p.focus.items.map((f) => (
+                      <li>{f}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <ul class="checks">
                 {p.features.map((f) => (
                   <li>{f}</li>
@@ -79,6 +95,9 @@ const buy = (link: string, promo = false) =>
     }
   </div>
   <p class="fine">
+    Une notification correspond à un message de campagne reçu par une carte. Les messages automatiques et les notifications de proximité ne sont jamais décomptés, et un client reçoit au plus un message commercial toutes les {MARKETING_INTERVAL_HOURS}&nbsp;h (délai réglable).
+  </p>
+  <p class="fine">
     {
       offer && (
         <span data-offer>
@@ -86,7 +105,7 @@ const buy = (link: string, promo = false) =>
         </span>
       )
     }
-    Prix en euros, sans TVA ({SITE.vatNote}) : le prix affiché est le prix payé. Paiement sécurisé par Stripe au nom de KOVA Elec, l’entreprise qui édite LOYNA ; factures dans votre espace client.
+    Prix en euros, sans TVA ({SITE.vatNote}) : le prix affiché est le prix payé. Paiement sécurisé par Stripe, au nom de KOVA Elec (LOYNA, une marque de KOVA Elec) ; factures dans votre espace client.
   </p>
 </div>
 
@@ -212,8 +231,9 @@ const buy = (link: string, promo = false) =>
   }
   .price {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
-    gap: 8px;
+    gap: 2px 8px;
     margin-top: 6px;
   }
   .amount {
@@ -229,6 +249,7 @@ const buy = (link: string, promo = false) =>
   .per {
     color: var(--muted);
     font-weight: 600;
+    white-space: nowrap;
   }
   .plan--hl .per {
     color: #b9b3a7;
@@ -258,6 +279,64 @@ const buy = (link: string, promo = false) =>
     font-weight: 700;
     margin: 10px 0 0;
   }
+  /* Quotas de l'offre, sous le prix */
+  .quota {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 9px 12px;
+    border-radius: 12px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.35;
+  }
+  .quota :global(svg) {
+    flex-shrink: 0;
+    color: var(--gold-strong);
+  }
+  .plan--hl .quota {
+    background: rgba(250, 247, 240, 0.06);
+    border-color: rgba(230, 194, 122, 0.3);
+    color: #faf7f0;
+  }
+  .plan--hl .quota :global(svg) {
+    color: #e6c27a;
+  }
+  /* Bloc mis en avant : automatisations (Premium), services de LOYNA (Pro) */
+  .focus {
+    padding: 16px 16px 18px;
+    border-radius: 18px;
+    background: var(--gold-soft);
+    border: 1px solid rgba(201, 150, 63, 0.35);
+  }
+  .focus-title {
+    margin: 0 0 10px;
+    font-weight: 800;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b4a14;
+  }
+  .focus .checks li::before {
+    background-color: #fffdf8;
+  }
+  .plan--hl .focus {
+    background: rgba(230, 194, 122, 0.1);
+    border-color: rgba(230, 194, 122, 0.4);
+  }
+  .plan--hl .focus-title {
+    color: #f0d49a;
+  }
+  .plan--hl .focus .checks li::before {
+    background-color: rgba(230, 194, 122, 0.22);
+  }
+  .plan--hl .focus li {
+    color: #faf7f0;
+  }
   .plan--hl :global(.checks li::before) {
     background-color: rgba(230, 194, 122, 0.18);
   }
@@ -265,7 +344,11 @@ const buy = (link: string, promo = false) =>
     text-align: center;
     color: var(--muted);
     font-size: 0.92rem;
-    margin-top: 28px;
+    margin: 28px auto 0;
+    max-width: 920px;
+  }
+  .fine + .fine {
+    margin-top: 10px;
   }
   .only-y {
     display: none;

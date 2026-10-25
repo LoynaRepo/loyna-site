@@ -9,8 +9,9 @@ import WalletCard from '../components/WalletCard.astro';
 import CtaBand from '../components/CtaBand.astro';
 import RoiCalculator from '../components/RoiCalculator.astro';
 import CallbackForm from '../components/CallbackForm.astro';
+import Proximite from '../components/Proximite.astro';
 import {getFaq, getSectors, getSettings} from '../lib/builder';
-import {PLANS, SITE} from '../data/site';
+import {LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SITE, offerActive} from '../data/site';
 import scanQr from '../assets/shots/scan-qr.png';
 import inscription from '../assets/shots/inscription.png';
 import ajoutWallet from '../assets/shots/ajout-wallet.png';
@@ -32,14 +33,15 @@ const steps = [
 
 const features = [
   {icon: 'wallet', title: 'Carte Apple & Google Wallet', text: 'À vos couleurs, avec votre logo et votre récompense. Elle se met à jour toute seule.'},
-  {icon: 'scan-line', title: 'Un scan, un passage', text: "Pas de recherche, pas de bouton +1 : le passage est validé dès le scan, avec protection anti double scan."},
+  {icon: 'map-pin', title: 'Notification de proximité', text: 'Votre client passe près de la boutique : sa carte s’affiche sur l’écran de verrouillage. Dans toutes les formules.'},
+  {icon: 'scan-line', title: 'Un scan, un passage', text: 'Pas de recherche, pas de bouton +1 : le passage est validé dès le scan, avec protection anti double scan.'},
   {icon: 'gift', title: 'Récompenses automatiques', text: 'Au seuil fixé, la récompense se débloque et le client est prévenu sur son téléphone.'},
-  {icon: 'bell', title: 'Notifications Wallet', text: 'Récompense, anniversaire, client inactif, nouveauté : des messages utiles, sans coût par envoi.'},
-  {icon: 'megaphone', title: 'Campagnes ciblées', text: 'Wallet ou SMS, vers vos clients actifs, inactifs depuis 30, 60 ou 90 jours, ou ceux qui fêtent leur anniversaire.'},
-  {icon: 'chart-column', title: 'Tableau de bord clair', text: 'Clients actifs, nouveaux clients, passages, récompenses : vous voyez enfin ce qui marche.'},
+  {icon: 'megaphone', title: 'Campagnes de notifications', text: 'Une offre, une nouveauté : le message arrive sur le téléphone de vos clients, sans coût par envoi.'},
+  {icon: 'workflow', title: 'Automatisations', text: 'Anniversaire, relance des inactifs, « Plus qu’un passage ! », avis Google : avec Premium, les messages partent tout seuls.'},
   {icon: 'users', title: 'Toute votre équipe', text: 'Un compte par personne, des rôles et des droits adaptés, sans limite d’employés.'},
   {icon: 'shield-check', title: 'Données protégées', text: 'Hébergées dans l’Union européenne, chiffrées, consentements séparés, export et suppression à la demande.'},
 ];
+const offer = offerActive();
 
 const softwareLd = {
   '@type': 'SoftwareApplication',
@@ -107,7 +109,7 @@ const softwareLd = {
         <div class="card compare">
           <p class="before">Aucun contact avec vos clients</p>
           <h3>Des notifications qui font revenir</h3>
-          <p>Récompense disponible, anniversaire, client inactif depuis 30 jours : le bon message arrive au bon moment.</p>
+          <p>Récompense disponible, passage devant la boutique, anniversaire : le bon message arrive au bon moment.</p>
         </div>
         <div class="card compare">
           <p class="before">Aucune idée de ce qui marche</p>
@@ -143,6 +145,26 @@ const softwareLd = {
       <div class="mid-cta">
         <a class="btn btn--primary" href="/creer-ma-carte/">Voir ma carte en 1 minute <Icon name="arrow-right" size={18} /></a>
         <span>Aperçu gratuit, à vos couleurs, avant tout paiement</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--dark" id="proximite">
+    <div class="container split">
+      <div>
+        <p class="eyebrow">Notification de proximité</p>
+        <h2>Votre client passe devant la boutique&nbsp;: sa carte s’affiche</h2>
+        <p class="lead">Un habitué passe devant votre boulangerie. Sur l’écran de verrouillage de son téléphone, sa carte de fidélité s’affiche avec un court message&nbsp;: « Votre récompense vous attend chez Le Fournil d’Albane&nbsp;! ». Le bon rappel, au bon endroit.</p>
+        <ul class="checks prox-checks">
+          <li>Incluse dans toutes les formules, et jamais décomptée de vos notifications</li>
+          <li>Sur iPhone, la carte s’affiche sur l’écran de verrouillage&nbsp;; sur Android, une notification apparaît quand le client s’attarde près de la boutique</li>
+          <li>Le message suit la carte&nbsp;: récompense qui attend, passages restants, ou votre propre message</li>
+          <li>LOYNA ne reçoit jamais la position de vos clients&nbsp;: c’est leur téléphone qui détecte la proximité</li>
+        </ul>
+        <p class="prox-note">Fonctionne quand le client a activé la localisation et laissé Wallet s’afficher sur l’écran verrouillé. Avec Pro, jusqu’à 3 boutiques.</p>
+      </div>
+      <div class="prox-visual">
+        <Proximite width={290} />
       </div>
     </div>
   </section>
@@ -197,15 +219,19 @@ const softwareLd = {
   <section class="section">
     <div class="container split reverse">
       <div>
-        <p class="eyebrow">Notifications Wallet</p>
-        <h2>Le message arrive sur l’écran de verrouillage</h2>
-        <p class="lead">Les notifications Wallet s’affichent comme un message, directement sur le téléphone de vos clients. Elles sont incluses dans toutes les formules, sans coût par envoi.</p>
+        <p class="eyebrow">Automatisations · Premium</p>
+        <h2>Les messages qui font revenir, envoyés tout seuls</h2>
+        <p class="lead">Avec Premium, LOYNA envoie le bon message au bon moment, sur l’écran de verrouillage de vos clients. Vous choisissez le texte et la surprise&nbsp;; ces messages automatiques ne sont jamais décomptés de vos notifications.</p>
         <ul class="checks">
-          <li>« Votre récompense vous attend » dès que le seuil est atteint</li>
-          <li>Un petit mot le jour de l’anniversaire</li>
-          <li>Une relance douce après 30, 60 ou 90 jours d’absence</li>
-          <li>Vos nouveautés et offres, vers les clients qui l’ont accepté</li>
+          <li><strong>Anniversaire</strong>&nbsp;: un message le jour J, avec la surprise de votre choix</li>
+          <li><strong>Relance des inactifs</strong>&nbsp;: un rappel aux clients qui ne reviennent plus (après 60 jours par défaut, réglable)</li>
+          <li><strong>« Plus qu’un passage&nbsp;! »</strong>&nbsp;: un rappel aux clients tout proches de leur récompense</li>
+          <li><strong>Avis Google</strong>&nbsp;: une demande d’avis après la 3e visite</li>
+          <li><strong>Double tampon aux heures creuses</strong>&nbsp;: jusqu’à 3 créneaux où chaque passage compte double</li>
+          <li><strong>Campagnes programmées et groupes de clients</strong>, et un rapport mensuel avec 3 conseils concrets</li>
         </ul>
+        <p class="auto-note">Toutes les formules préviennent le client à chaque passage et quand sa récompense est débloquée. Un client reçoit au plus un message commercial toutes les {MARKETING_INTERVAL_HOURS}&nbsp;h, délai réglable.</p>
+        <a class="btn btn--ghost" href="/tarifs/">Voir l’offre Premium</a>
       </div>
       <div class="shot narrow-shot">
         <Picture src={notifications} formats={['avif', 'webp']} fallbackFormat="webp" widths={[320, 480]} sizes="(max-width: 700px) 80vw, 340px" alt="Notifications Wallet sur l’écran de verrouillage d’un iPhone" loading="lazy" />
@@ -230,12 +256,37 @@ const softwareLd = {
       <div class="section-head">
         <p class="eyebrow">Tarifs</p>
         <h2>Des formules simples, sans surprise sur le prix</h2>
-        <p>Choisissez votre formule et payez en ligne en toute sécurité. Mise en service offerte en paiement annuel.</p>
+        <p>
+          Starter, Premium ou Pro&nbsp;: la notification de proximité est incluse partout. Payez en ligne en toute sécurité. Mise en service {
+            offer ? (
+              <>
+                <span data-offer>offerte jusqu’au {LAUNCH_OFFER.untilLabel}, en mensuel comme en annuel.</span>
+                <span data-offer-off hidden>offerte en paiement annuel.</span>
+              </>
+            ) : (
+              'offerte en paiement annuel.'
+            )
+          }
+        </p>
       </div>
       <PricingCards idPrefix="home" />
       <ul class="reassure">
         <li><Icon name="zap" size={18} /> Carte prête sous 24&nbsp;h</li>
-        <li><Icon name="gift" size={18} /> Mise en service offerte en annuel</li>
+        <li>
+          <Icon name="gift" size={18} />
+          <span>
+            Mise en service {
+              offer ? (
+                <>
+                  <span data-offer>offerte jusqu’au {LAUNCH_OFFER.untilLabel}</span>
+                  <span data-offer-off hidden>offerte en paiement annuel</span>
+                </>
+              ) : (
+                'offerte en paiement annuel'
+              )
+            }
+          </span>
+        </li>
         <li><Icon name="lock" size={18} /> Paiement sécurisé par Stripe</li>
         <li><Icon name="phone" size={18} /> Une question ? <a href="#rappel">On vous rappelle</a></li>
       </ul>
@@ -296,7 +347,7 @@ const softwareLd = {
   <section class="section">
     <div class="container seo-text">
       <div class="section-head">
-        <p class="eyebrow">L’essentiel</p>
+        <p class="eyebrow">Repères</p>
         <h2>La carte de fidélité digitale, en bref</h2>
       </div>
       <div class="seo-cols">
@@ -468,6 +519,32 @@ const softwareLd = {
     max-width: 360px;
     justify-self: center;
     width: 100%;
+  }
+  /* Notification de proximité */
+  .prox-checks {
+    margin: 26px 0 18px;
+  }
+  .prox-checks li {
+    color: #e9e5dc;
+  }
+  .prox-checks li::before {
+    background-color: rgba(230, 194, 122, 0.2);
+  }
+  .prox-note,
+  .auto-note {
+    font-size: 0.92rem;
+    margin: 0 0 24px;
+  }
+  .prox-note {
+    color: #a8a194 !important;
+  }
+  .auto-note {
+    color: var(--muted);
+  }
+  .prox-visual {
+    display: grid;
+    place-items: center;
+    padding: 10px 30px;
   }
   .center {
     text-align: center;
