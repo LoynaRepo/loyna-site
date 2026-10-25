@@ -73,8 +73,9 @@ contenu, notification de proximité, formulation). Prix, quotas et liens du site
 Chaque lien : adresse de facturation, téléphone, nom du commerce et du contact, numéro de TVA facultatif,
 rappel des CGV et de la mention « TVA non applicable, art. 293 B du CGI », retour vers
 /merci/?offre=…&session_id=… (la page affiche l'offre payée et les étapes propres à Premium ou Pro). Métadonnées
-`loyna_plan` (STARTER, PREMIUM, PRO), `billing_period`, `source=loyna.fr` sur l'abonnement. Les liens des anciennes
-offres seront désactivés après la mise en ligne du site à jour. Portail client : `bpc_1UOMbKV05ztMZIc7mrlHaYSW`
+`loyna_plan` (STARTER, PREMIUM, PRO), `billing_period`, `source=loyna.fr` sur l'abonnement. Anciennes offres
+retirées le 2026-10-25 (dépôt LOYNA, `deno task stripe:catalog -- --retire --live`) : liens désactivés, produits
+`loyna_essentiel` et `loyna_growth` archivés, code `LANCEMENT` désactivé. Portail client : `bpc_1UOMbKV05ztMZIc7mrlHaYSW`
 (factures, carte bancaire, changement de formule au prorata, résiliation en fin de période), page de connexion
 reliée au bouton de /espace-client/. Webhook : fonction `stripe-webhook` du dépôt LOYNA (endpoint
 `we_1UOPsyV05ztMZIc7BrwNrnwh`), qui applique la formule payée au commerce dont le propriétaire a la même
