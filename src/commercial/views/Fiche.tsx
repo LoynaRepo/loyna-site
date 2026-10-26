@@ -7,6 +7,10 @@ import type {Prospect} from '../types';
 import {Badge, Btn, Empty, Lien, PageHead, Panel, TexteLie} from '../ui';
 import {Action, BadgeCible, BadgeStatut, Recu} from './commun';
 import {MarqueNotes, NotesProspect} from './Notes';
+import {useState} from 'preact/hooks';
+import {annulerRefus, ErreurNotes, noterRefus, notesEtat, refusDe} from '../notes';
+import {aller, toast} from '../store';
+import {Modal} from '../ui';
 
 export function Fiche({id}: {id: string}) {
   const d = donnees.value!;
@@ -80,6 +84,10 @@ export function Fiche({id}: {id: string}) {
 
           <Panel title="Notes" sub="Chiffrées dans ce navigateur avant l’envoi : le serveur ne peut pas les lire." id="notes" class="cp-pnl-notes">
             <NotesProspect p={p} />
+          </Panel>
+
+          <Panel title="Il a refusé ?" sub="Le prospect disparaît du panel. Au prochain passage d’un agent, sa fiche passe en « refus » et sort du fichier (archivée) : plus aucun contact.">
+            <Refus p={p} />
           </Panel>
 
           {p.appel && (
@@ -241,5 +249,103 @@ export function ADire({p}: {p: Prospect}) {
         <span>{fr(a.objectif)}</span>
       </p>
     </div>
+  );
+}
+
+/** « Supprimer (a refusé) » : note de refus chiffrée comme les autres notes ; le coffre archive la fiche ensuite. */
+function Refus({p}: {p: Prospect}) {
+  const etat = notesEtat.value; // nouveau rendu quand les notes changent
+  const refus = refusDe(p.id);
+  // tant que les notes se chargent, un refus enregistré serait écrasé par le chargement : bouton en attente
+  const pret = etat.etat === 'pret';
+  const [ouvert, setOuvert] = useState(false);
+  const [raison, setRaison] = useState('');
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState('');
+  const message = (e: unknown) => (e instanceof ErreurNotes ? e.message : 'Enregistrement impossible.');
+
+  const confirmer = async () => {
+    setEnvoi(true);
+    setErreur('');
+    try {
+      await noterRefus(p.id, raison);
+      setOuvert(false);
+      toast(`${p.nom} retiré du panel. Sa fiche sera archivée au prochain passage d’un agent.`);
+      aller('prospects');
+    } catch (e) {
+      setErreur(message(e));
+    } finally {
+      setEnvoi(false);
+    }
+  };
+  const annuler = async () => {
+    setEnvoi(true);
+    setErreur('');
+    try {
+      await annulerRefus(p.id);
+      toast('Suppression annulée : le prospect reste dans le panel.');
+    } catch (e) {
+      setErreur(message(e));
+    } finally {
+      setEnvoi(false);
+    }
+  };
+
+  if (refus)
+    return (
+      <div class="stack">
+        <p>
+          <Badge tone="red">Refus noté</Badge> le {dateLongue(refus.cree_le.slice(0, 10))} : {fr(refus.texte.replace(/^\s*\[REFUS\]\s*/i, ''))}
+        </p>
+        <p>
+          <small>Pas encore archivé dans le coffre : vous pouvez encore annuler.</small>
+        </p>
+        {erreur && <p class="cp-notes-err" role="alert">{fr(erreur)}</p>}
+        <div class="btn-row">
+          <Btn kind="ghost" small icon="refresh-cw" busy={envoi} onClick={annuler}>
+            Annuler la suppression
+          </Btn>
+        </div>
+      </div>
+    );
+  return (
+    <>
+      <div class="btn-row">
+        <Btn kind="ghost" icon="trash-2" busy={etat.etat === 'chargement'} disabled={!pret} onClick={() => setOuvert(true)}>
+          Supprimer le prospect (a refusé)
+        </Btn>
+      </div>
+      {!pret && etat.etat !== 'chargement' && etat.message && (
+        <p>
+          <small>{fr(`Indisponible pour l’instant : ${etat.message}`)}</small>
+        </p>
+      )}
+      <Modal open={ouvert} onClose={() => setOuvert(false)} title={`Supprimer ${p.nom} ?`}>
+        <div class="stack">
+          <p>Le prospect a refusé la proposition : il disparaît du panel, sa fiche passe en « refus » et sort du fichier. Il ne sera plus jamais contacté.</p>
+          <label class="cp-filtre" for={`refus-${p.id}`}>
+            <span>Raison (facultatif)</span>
+          </label>
+          <textarea
+            id={`refus-${p.id}`}
+            rows={3}
+            maxLength={500}
+            style={{font: 'inherit', width: '100%', boxSizing: 'border-box'}}
+            placeholder="Déjà équipé, pas intéressé, trop cher…"
+            value={raison}
+            onInput={(e) => setRaison((e.target as HTMLTextAreaElement).value)}
+          />
+          {erreur && <p class="cp-notes-err" role="alert">{fr(erreur)}</p>}
+          <div class="btn-row">
+            <Btn kind="gold" icon="trash-2" busy={envoi} onClick={confirmer}>
+              Supprimer le prospect
+            </Btn>
+            <Btn kind="ghost" onClick={() => setOuvert(false)}>
+              Annuler
+            </Btn>
+          </div>
+        </div>
+      </Modal>
+    </>
   );
 }

@@ -9,6 +9,7 @@ import type {Prospect} from '../types';
 import {Badge, Empty, PageHead} from '../ui';
 import {BadgeCible, Tel} from './commun';
 import {ADire} from './Fiche';
+import {notesEtat, refuse} from '../notes';
 import {BoutonNotes, MarqueNotes} from './Notes';
 
 const TON_GROUPE = {1: 'red', 2: 'gold', 3: 'amber', 4: 'blue'} as const;
@@ -17,7 +18,8 @@ export function Appeler() {
   const d = donnees.value!;
   const [ligne, setLigne] = useState<'' | 'mobile' | 'fixe'>('');
   const [ville, setVille] = useState('');
-  const tous = useMemo(() => d.prospects.filter((p) => p.appel).sort((a, b) => a.appel!.rang - b.appel!.rang), [d]);
+  const blocsNotes = notesEtat.value.blocs;
+  const tous = useMemo(() => d.prospects.filter((p) => p.appel && !refuse(blocsNotes, p.id)).sort((a, b) => a.appel!.rang - b.appel!.rang), [d, blocsNotes]);
   const villes = useMemo(() => [...new Set(tous.map((p) => p.ville).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [tous]);
   const liste = tous.filter((p) => (!ligne || p.telephone_type === ligne) && (!ville || p.ville === ville));
   const groupes = d.groupes_appel.map((g) => ({...g, prospects: liste.filter((p) => p.appel!.groupe === g.groupe)})).filter((g) => g.prospects.length);

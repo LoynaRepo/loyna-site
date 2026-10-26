@@ -4,7 +4,7 @@
 // le serveur répond 409 avec sa version : un ajout est refait dessus tout seul, une modification ou une suppression
 // d'une note changée ailleurs demande un choix (Conflit).
 import {signal} from '@preact/signals';
-import {chiffrerBloc, dechiffrerBloc, importerCleNotes, type Note} from './notes-crypto';
+import {chiffrerBloc, dechiffrerBloc, importerCleNotes, nouvelId, type Note} from './notes-crypto';
 
 export type {Note};
 export const ADRESSE_NOTES = '/espace-commercial/notes.php';
@@ -186,6 +186,35 @@ export async function enregistrer(prospect: string, op: Operation, force = false
     fusion = true;
   }
   throw new ErreurNotes('conflit');
+}
+
+// --- Refus : « Supprimer (a refusé) » ------------------------------------------------------------------------
+// Une note qui commence par MARQUE_REFUS retire le prospect du panel tout de suite ; à la mise à jour suivante du
+// coffre (panel.py), la fiche passe en « refus » et sort du fichier (archivée, plus aucun contact).
+export const MARQUE_REFUS = '[REFUS]';
+const estNoteRefus = (n: Note) => n.texte.trimStart().toUpperCase().startsWith(MARQUE_REFUS);
+
+/** Prospect noté « refus » (selon les blocs de notes donnés : à utiliser dans un useMemo). */
+export function refuse(blocs: Record<string, BlocNotes>, prospect: string): boolean {
+  return (blocs[prospect]?.notes ?? []).some(estNoteRefus);
+}
+
+/** Note de refus du prospect (en attente d'archivage), s'il y en a une. */
+export function refusDe(prospect: string): Note | null {
+  return (notesEtat.value.blocs[prospect]?.notes ?? []).find(estNoteRefus) ?? null;
+}
+
+export async function noterRefus(prospect: string, raison: string): Promise<void> {
+  if (refusDe(prospect)) return;
+  const maintenant = new Date().toISOString();
+  const texte = `${MARQUE_REFUS} ${raison.trim() || 'A refusé la proposition.'}`.slice(0, TEXTE_MAX);
+  await enregistrer(prospect, {type: 'ajout', note: {id: nouvelId(), cree_le: maintenant, modifie_le: maintenant, texte}});
+}
+
+/** Annule un refus pas encore appliqué dans le coffre. */
+export async function annulerRefus(prospect: string): Promise<void> {
+  const n = refusDe(prospect);
+  if (n) await enregistrer(prospect, {type: 'suppression', id: n.id, avant: n.modifie_le}, true);
 }
 
 export function notesDe(prospect: string): Note[] {

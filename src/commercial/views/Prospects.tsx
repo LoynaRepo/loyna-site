@@ -7,7 +7,7 @@ import {donnees, filtres, FILTRES_VIDES, type Filtres} from '../store';
 import type {Prospect} from '../types';
 import {Btn, Empty, PageHead} from '../ui';
 import {Action, actionCorrespond, BadgeCible, BadgeStatut, Envoye, GROUPES_ACTION, Recu, Reponse, Suite, Tel} from './commun';
-import {notesEtat} from '../notes';
+import {notesEtat, refuse} from '../notes';
 import {MarqueNotes} from './Notes';
 
 const PAS = 50;
@@ -124,7 +124,8 @@ export function Prospects() {
   const libelleAction = (code: string) => d.actions.find((a) => a.code === code)?.libelle ?? code;
 
   const mots = cle(f.q).replace(/(\d)\s+(?=\d)/g, '$1').split(/\s+/).filter(Boolean);
-  const liste = useMemo(() => trier(d.prospects.filter((p) => correspond(p, f, mots, textes)), f.tri), [d, f, textes]);
+  // un prospect noté « refus » dans le panel disparaît tout de suite (la fiche est archivée à la mise à jour suivante)
+  const liste = useMemo(() => trier(d.prospects.filter((p) => !refuse(blocsNotes, p.id) && correspond(p, f, mots, textes)), f.tri), [d, f, textes, blocsNotes]);
   const actifs = (['statut', 'cible', 'ville', 'famille', 'action', 'recu', 'reponse'] as const).filter((k) => f[k]).length;
 
   const select = (k: keyof Filtres, label: string, options: {v: string; l: string}[], tous = 'Tous') => (
