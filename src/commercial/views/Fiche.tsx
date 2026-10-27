@@ -7,6 +7,7 @@ import type {Prospect} from '../types';
 import {Badge, Btn, Empty, Lien, PageHead, Panel, TexteLie} from '../ui';
 import {Action, BadgeCible, BadgeStatut, Recu} from './commun';
 import {MarqueNotes, NotesProspect} from './Notes';
+import {BoutonMailPerso, boutonVisible, EtatMailPerso, FenetreMailPerso} from './MailPerso';
 import {useState} from 'preact/hooks';
 import {annulerRefus, ErreurNotes, noterRefus, notesEtat, refusDe} from '../notes';
 import {aller, toast} from '../store';
@@ -15,6 +16,7 @@ import {Modal} from '../ui';
 export function Fiche({id}: {id: string}) {
   const d = donnees.value!;
   const p = d.prospects.find((x) => x.id === id);
+  const [mailPerso, setMailPerso] = useState(false); // compositeur hors du bandeau sombre (sinon il hérite de ses couleurs)
   if (!p)
     return (
       <div class="page">
@@ -66,6 +68,7 @@ export function Fiche({id}: {id: string}) {
                   {`Appeler ${p.tel_principal.affiche}`}
                 </Btn>
               )}
+              {boutonVisible(p) && <BoutonMailPerso ouvrir={() => setMailPerso(true)} />}
               {mail && (
                 <Btn kind="ghost" icon="mail" href={mail} class="cp-btn-clair">
                   E-mail
@@ -97,6 +100,8 @@ export function Fiche({id}: {id: string}) {
           <Panel title="Notes" sub="Chiffrées dans ce navigateur avant l’envoi : le serveur ne peut pas les lire." id="notes" class="cp-pnl-notes">
             <NotesProspect p={p} />
           </Panel>
+
+          <EtatMailPerso p={p} />
 
           {p.statut.toLowerCase() !== 'client' && (
             <Panel title="Il a refusé ?" sub="Le prospect disparaît du panel. Au prochain passage d’un agent, sa fiche passe en « refus » et sort du fichier (archivée) : plus aucun contact.">
@@ -234,6 +239,7 @@ export function Fiche({id}: {id: string}) {
           </Panel>
         </div>
       </div>
+      {boutonVisible(p) && <FenetreMailPerso p={p} ouvert={mailPerso} fermer={() => setMailPerso(false)} />}
     </div>
   );
 }

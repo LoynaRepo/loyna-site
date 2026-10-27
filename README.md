@@ -217,6 +217,26 @@ entre les deux est un défaut.
 Identifiants de test (localhost uniquement) : `tools/commercial/acces-local.exemple.json` ; `panel.py` refuse de
 publier en ligne avec eux. Après un essai sur les vraies données, remettre le jeu fictif (`--exemple`).
 
+### Mail perso après un appel (bouton « Envoyer mail perso »)
+
+Dans la fiche d'un prospect (adresse valide, ni refus, ni stop, ni hors cible) : compositeur avec le récap de l'appel
+(une puce par ligne), l'offre évoquée (prix de `PLANS`), la prochaine étape, le signataire (mémorisé dans le
+navigateur) et le **visuel de sa carte** aux couleurs de son activité, avec l'aperçu du mail complet. « Envoyer »
+enregistre une note chiffrée `[MAIL] {json}` ; le coffre construit le vrai mail avec son modèle (« 03 Modèles/Mail
+perso après appel.md », reçu aussi dans les données pour l'aperçu) et l'envoie par `loyna_mail.py`
+(`_systeme/mail_perso.py`, tâche « LOYNA - Mails perso du panel » toutes les 10 minutes). La fiche montre « en
+attente », puis « envoyé le … » ou « non envoyé : raison » (champs `mails_perso` de `suivi.py`).
+- Code : `src/commercial/mail-perso.ts` (note, contrôles, aperçu rempli comme le coffre), `views/MailPerso.tsx`.
+- Visuel : page `/visuel-carte/` (`src/pages/visuel-carte.astro`, 1200 × 630, noindex, hors du plan du site),
+  paramètres `?nom=&activite=&recompense=&fond=&tampons=&ambiance=&ville=` ; palettes `CARD_AMBIANCES` de
+  `src/data/site.ts` (seule source des couleurs). Le panel l'affiche dans une iframe (réglages par `postMessage`,
+  `frame-src 'self'` pour `/espace-commercial/` dans `.htaccess`) ; le coffre la capture en PNG avec Edge. **Le site
+  doit être publié avant le premier mail perso** : sans la page en ligne, le coffre refuse d'envoyer (alerte).
+```
+node tools/commercial/test_mail_perso.mjs     # panel ↔ coffre : même mail, mêmes prix et activités, contraste
+node tools/qa-mail-perso.mjs 1366              # bout en bout (ou 390) : compositeur, note [MAIL], « en attente », annulation
+```
+
 ## Référencement (SEO)
 
 - Contrôle : `python tools/seo-audit.py` après `npx astro build` (titre, description, H1, mots, données structurées,

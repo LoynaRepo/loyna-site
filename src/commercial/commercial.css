@@ -1783,3 +1783,138 @@ button.cp-kpi:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr)); /* 4 compteurs : 2 × 2 */
   }
 }
+
+/* Mail perso après un appel (views/MailPerso.tsx) : compositeur à deux colonnes, aperçu du mail et du visuel */
+.mdl.mp-mdl {
+  width: min(100% - 24px, 1120px);
+}
+.mp-grille {
+  display: grid;
+  grid-template-columns: minmax(0, 410px) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.mp-form {
+  display: grid;
+  gap: 14px;
+}
+.mp-visuel-reglages {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 12px 14px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 16px;
+}
+.mp-visuel-reglages legend {
+  padding: 0 6px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+.mp-couleurs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+}
+.mp-couleur {
+  display: grid;
+  gap: 6px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.mp-couleur input[type='color'] {
+  width: 64px;
+  height: 42px;
+  padding: 3px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+.mp-apercu {
+  position: sticky;
+  top: 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  overflow: hidden;
+}
+.mp-entete {
+  display: grid;
+  gap: 2px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 0.86rem;
+  overflow-wrap: anywhere;
+}
+.mp-corps {
+  display: grid;
+  gap: 0;
+  padding: 16px 18px 18px;
+  font: 14px/1.5 Arial, sans-serif; /* rendu des mails (loyna_mail.py) */
+  color: #222;
+}
+.mp-corps ul {
+  margin: 0.3em 0 1em; /* comme dans les messageries */
+  padding-left: 22px;
+}
+.mp-corps a {
+  color: #1a56c4;
+}
+.mp-visuel {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-alt);
+}
+.mp-visuel iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1200px;
+  height: 630px;
+  border: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+.mp-signature-img {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-style: italic;
+}
+.mp-etats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.mp-etats li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+.mp-etats li > span:not(.bdg) {
+  flex: 1 1 260px;
+  display: grid;
+}
+.mp-etats small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 860px) {
+  .mp-grille {
+    grid-template-columns: 1fr;
+  }
+  .mp-apercu {
+    position: static;
+  }
+}

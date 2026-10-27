@@ -1,0 +1,279 @@
+---
+// Visuel de la carte de fidélité d'un commerce, à ses couleurs : image du mail perso envoyé après un appel (bouton
+// « Envoyer mail perso » du panel commercial, demande d'Ewan du 2026-10-27). Une seule implémentation pour deux usages :
+//   - le panel l'affiche dans une iframe mise à l'échelle (aperçu en direct : postMessage du panel, même origine) ;
+//   - le coffre (_systeme/mail_perso.py) la capture en PNG avec Edge sans fenêtre, à 1200 × 630 px exactement.
+// Paramètres : ?nom=&activite=&recompense=&fond=&tampons=&ambiance=&ville= (couleurs en hexadécimal, avec ou sans #) ;
+// ce qui manque vient de l'ambiance de l'activité (CARD_AMBIANCES dans src/data/site.ts). Page publique mais sans
+// intérêt pour les moteurs : noindex, hors du plan du site, aucune mesure d'audience (page « bare »).
+import Base from '../layouts/Base.astro';
+import Phone from '../components/Phone.astro';
+import WalletCard from '../components/WalletCard.astro';
+import mark from '../assets/logo-mark.svg?raw';
+import word from '../assets/logo-word.svg?raw';
+import {visuelActivite} from '../data/site';
+
+const d = visuelActivite('Coiffure');
+const markSvg = mark.replace('id="g"', 'id="lg-vc"').replace('url(#g)', 'url(#lg-vc)').replace('<svg', '<svg aria-hidden="true"');
+const wordSvg = word.replace('<svg', '<svg role="img" aria-label="LOYNA"');
+---
+
+<Base bare noindex nofollow title="Visuel de carte de fidélité · LOYNA" description="Aperçu d'une carte de fidélité LOYNA aux couleurs d'un commerce.">
+  <meta slot="head" name="loyna-visuel" content="1" />
+  <div class="vc" id="vc" style={`--amb:${d.ambiance};--amb2:${d.ambiance2};--t:${d.texte};--acc:${d.tampons}`}>
+    <div class="vc-halo" aria-hidden="true"></div>
+    <div class="vc-g">
+      <span class="vc-logo"><span class="mark" set:html={markSvg} /><span class="word" set:html={wordSvg} /></span>
+      <div class="vc-titre">
+        <p class="vc-sur" id="vc-sur">{d.nom}</p>
+        <p class="vc-pre">La carte de fidélité de</p>
+        <h1 class="vc-nom" id="vc-nom">Votre commerce</h1>
+        <p class="vc-sous">Dans Apple Wallet et Google Wallet, sans application à télécharger.</p>
+      </div>
+      <ul class="vc-puces">
+        <li>Tampons</li>
+        <li id="vc-reco">{d.recompense}</li>
+        <li>Notifications</li>
+      </ul>
+    </div>
+    <div class="vc-d">
+      <Phone width={318} screen="#f3f2f5">
+        <div class="vc-wallet">
+          <p class="vc-wt">Wallet</p>
+          <div id="vc-carte">
+            <WalletCard name="Votre commerce" activity={d.nom} bg={d.fond} accent={d.tampons} filled={7} total={10} reward={d.recompense} width={282} />
+          </div>
+          <div class="vc-pile" aria-hidden="true"><span></span><span></span></div>
+        </div>
+      </Phone>
+    </div>
+  </div>
+</Base>
+
+<script>
+  import {appliquerCarte, initiales, luminance} from '../lib/carte-live';
+  import {visuelActivite} from '../data/site';
+
+  type Reglages = {nom: string; activite: string; recompense: string; fond: string; tampons: string; ambiance: string; ville: string};
+  const $ = <T extends HTMLElement>(s: string) => document.querySelector<T>(s)!;
+  const racine = $<HTMLElement>('#vc');
+  const carte = document.querySelector<HTMLElement>('#vc-carte .wcard')!;
+  const hexa = (v: string | null) => {
+    const h = (v || '').trim().replace(/^#/, '').toLowerCase();
+    return /^[0-9a-f]{6}$/.test(h) ? `#${h}` : ''; // couleur invalide : celle de l'activité
+  };
+  const texte = (v: string | null, n: number) => (v || '').replace(/\s+/g, ' ').trim().slice(0, n);
+  const lire = (p: URLSearchParams): Reglages => ({
+    nom: texte(p.get('nom'), 60),
+    activite: texte(p.get('activite'), 40),
+    recompense: texte(p.get('recompense'), 40),
+    fond: hexa(p.get('fond')),
+    tampons: hexa(p.get('tampons')),
+    ambiance: hexa(p.get('ambiance')),
+    ville: texte(p.get('ville'), 40),
+  });
+  const contraste = (a: string, b: string) => {
+    const [x, y] = [luminance(a), luminance(b)];
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  };
+  const lisibleSur = (fond: string) => (contraste('#16130e', fond) >= contraste('#f8f4ec', fond) ? '#16130e' : '#f8f4ec');
+
+  /** Nom du commerce le plus grand possible sur 2 lignes au plus (polices chargées ou non). */
+  function ajusterNom() {
+    const h = $<HTMLElement>('#vc-nom');
+    let taille = 78;
+    h.style.fontSize = `${taille}px`;
+    const deuxLignes = () => h.scrollHeight <= taille * 1.06 * 2 + 4 && h.scrollWidth <= h.clientWidth + 1;
+    while (taille > 38 && !deuxLignes()) {
+      taille -= 2;
+      h.style.fontSize = `${taille}px`;
+    }
+  }
+
+  function rendre(r: Reglages) {
+    const a = visuelActivite(r.activite);
+    const ambiance = r.ambiance || a.ambiance;
+    const propre = !r.ambiance || r.ambiance === a.ambiance; // ambiance de la palette : sa deuxième teinte et son texte
+    racine.style.setProperty('--amb', ambiance);
+    racine.style.setProperty('--amb2', propre ? a.ambiance2 : `color-mix(in srgb, ${ambiance} 78%, ${luminance(ambiance) > 0.4 ? '#000' : '#fff'})`);
+    racine.style.setProperty('--t', propre ? a.texte : lisibleSur(ambiance));
+    const fond = r.fond || a.fond;
+    const tampons = r.tampons || a.tampons;
+    racine.style.setProperty('--acc', tampons);
+    const nom = r.nom || 'Votre commerce';
+    const activite = r.activite || a.nom;
+    const recompense = r.recompense || a.recompense;
+    appliquerCarte(carte, {name: nom, activity: activite, bg: fond, accent: tampons, total: 10, reward: recompense}, false);
+    carte.querySelector<HTMLElement>('.wc-logo')!.style.color = lisibleSur(tampons); // initiales lisibles sur les tampons
+    carte.querySelector<HTMLElement>('.wc-logo')!.textContent = initiales(nom);
+    $<HTMLElement>('#vc-nom').textContent = nom;
+    $<HTMLElement>('#vc-sur').textContent = [activite, r.ville].filter(Boolean).join(' · ');
+    $<HTMLElement>('#vc-reco').textContent = recompense;
+    document.title = `Carte de fidélité ${nom} · LOYNA`;
+    ajusterNom();
+    racine.dataset.pret = '1';
+  }
+
+  rendre(lire(new URLSearchParams(location.search)));
+  document.fonts?.ready.then(ajusterNom); // police du site chargée : nouvelles mesures
+
+  // Aperçu du panel commercial (même origine) : réglages envoyés à chaque changement, sans recharger la page
+  addEventListener('message', (e) => {
+    if (e.origin !== location.origin || e.data?.type !== 'loyna-visuel' || typeof e.data.params !== 'string') return;
+    rendre(lire(new URLSearchParams(e.data.params)));
+  });
+</script>
+
+<style is:global>
+  html,
+  body {
+    width: 1200px;
+    height: 630px;
+    margin: 0;
+    overflow: hidden;
+    background: #fff;
+  }
+  body .skip-link {
+    display: none;
+  }
+</style>
+
+<style>
+  .vc {
+    position: relative;
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 660px 1fr;
+    grid-template-rows: 630px; /* le téléphone dépasse en bas : coupé, il n'agrandit pas la page */
+    color: var(--t);
+    background:
+      radial-gradient(circle at 80% 46%, color-mix(in srgb, var(--acc) 34%, transparent), transparent 46%),
+      linear-gradient(135deg, var(--amb) 18%, var(--amb2) 100%);
+    font-family: var(--font);
+  }
+  .vc-halo {
+    position: absolute;
+    inset: auto auto -260px -180px;
+    width: 620px;
+    height: 620px;
+    border-radius: 50%;
+    background: radial-gradient(circle, color-mix(in srgb, var(--amb2) 70%, transparent), transparent 70%);
+    pointer-events: none;
+  }
+  .vc-g {
+    position: relative;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: 58px 0 56px 76px;
+    gap: 18px;
+  }
+  .vc-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 34px;
+  }
+  .vc-logo .mark :global(svg) {
+    width: 34px;
+    height: 34px;
+  }
+  .vc-logo .word :global(svg) {
+    height: 16px;
+    width: auto;
+  }
+  .vc-titre {
+    align-self: center;
+    display: grid;
+    gap: 10px;
+  }
+  .vc-titre p {
+    margin: 0;
+  }
+  .vc-sur {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.72;
+  }
+  .vc-pre {
+    font-size: 30px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin-top: 6px !important;
+  }
+  .vc-nom {
+    margin: 0;
+    max-width: 560px;
+    color: inherit;
+    font-size: 78px;
+    font-weight: 800;
+    line-height: 1.06;
+    letter-spacing: -0.035em;
+    overflow-wrap: anywhere;
+  }
+  .vc-sous {
+    font-size: 22px;
+    font-weight: 500;
+    opacity: 0.8;
+    max-width: 520px;
+    line-height: 1.35;
+    margin-top: 6px !important;
+  }
+  .vc-puces {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .vc-puces li {
+    font-size: 16px;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1.5px solid color-mix(in srgb, var(--t) 30%, transparent);
+    background: color-mix(in srgb, var(--t) 7%, transparent);
+  }
+  .vc-d {
+    position: relative;
+    min-height: 0;
+    display: grid;
+    justify-items: center;
+    padding-top: 38px;
+  }
+  .vc-d :global(.phone) {
+    transform: rotate(4deg);
+    box-shadow:
+      0 50px 90px rgba(0, 0, 0, 0.32),
+      inset 0 0 0 1.5px rgba(255, 255, 255, 0.12);
+  }
+  .vc-wallet {
+    padding: 52px 9px 0;
+    display: grid;
+    gap: 14px;
+  }
+  .vc-wt {
+    margin: 0 4px;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #121216;
+  }
+  .vc-pile {
+    display: grid;
+    gap: 8px;
+  }
+  .vc-pile span {
+    height: 40px;
+    border-radius: 14px;
+    background: #dcdbe0;
+  }
+  .vc-pile span + span {
+    background: #e6e5ea;
+  }
+</style>

@@ -98,12 +98,75 @@ export const CARD_ACTIVITES: {nom: string; recompense: string; fond: string; tam
   {nom: 'Restaurant', recompense: 'Dessert offert', fond: '#14532d', tampons: '#d9b27a'},
   {nom: 'Snack', recompense: 'Menu offert', fond: '#121216', tampons: '#ffd166'},
   {nom: 'Pizzeria', recompense: 'Pizza offerte', fond: '#9b1c1c', tampons: '#ffd166'},
+  {nom: 'Sushi', recompense: 'Plateau offert', fond: '#121216', tampons: '#e63946'}, // secteur ciblé (2026-10-27)
   {nom: 'Fleuriste', recompense: 'Bouquet offert', fond: '#14532d', tampons: '#f4a3b5'},
   {nom: 'Boucherie', recompense: 'Brochettes offertes', fond: '#9b1c1c', tampons: '#d9b27a'},
   {nom: 'Pressing', recompense: 'Chemise nettoyée offerte', fond: '#1e3a5f', tampons: '#7dd3fc'},
   {nom: 'Boutique', recompense: '10 % sur le prochain achat', fond: '#121216', tampons: '#e9d5ff'},
   {nom: 'Autre', recompense: 'Cadeau offert', fond: '#1f1c17', tampons: '#d9b27a'},
 ];
+
+// Activités sans place dans la liste du configurateur, mais reconnues dans les fiches des prospects (même liste que
+// CORRESPONDANCE_SECTEUR dans _systeme/loyna_mail.py du coffre « Loyna Prospection ») : leur récompense.
+export const ACTIVITES_EN_PLUS: {nom: string; recompense: string}[] = [
+  {nom: 'Pâtisserie', recompense: 'Pâtisserie offerte'},
+  {nom: 'Salon de thé', recompense: 'Boisson chaude offerte'},
+  {nom: 'Bien-être', recompense: 'Massage offert'},
+  {nom: 'Toiletteur', recompense: 'Toilettage offert'},
+  {nom: 'Caviste', recompense: '10 % sur le prochain achat'},
+  {nom: 'Fromagerie', recompense: '10 % sur le prochain achat'},
+  {nom: 'Épicerie fine', recompense: '10 % sur le prochain achat'},
+];
+
+// Visuel personnalisé du mail perso après un appel (panel commercial, demande d'Ewan du 2026-10-27) : une ambiance
+// par activité, seule source de ces couleurs (page /visuel-carte/, aperçu du panel, PNG du mail). `ambiance` et
+// `ambiance2` : fond du visuel, en léger dégradé ; `texte` : couleur du texte posé dessus ; `fond` et `tampons` :
+// couleurs de la carte. Contraste vérifié : le nom et l'activité de la carte restent lisibles (pas de rose sur fond
+// clair rose, voir l'onglerie plus haut), les initiales prennent la couleur la plus lisible sur les tampons.
+export interface Ambiance {
+  ambiance: string;
+  ambiance2: string;
+  texte: string;
+  fond: string;
+  tampons: string;
+}
+export const CARD_AMBIANCES: Record<string, Ambiance> = {
+  Onglerie: {ambiance: '#fbe4ec', ambiance2: '#f2bccf', texte: '#4a1830', fond: '#a8325f', tampons: '#ffd6e4'}, // tons roses
+  Boulangerie: {ambiance: '#f5ead8', ambiance2: '#e3c9a1', texte: '#3d2814', fond: '#8a5a2e', tampons: '#f3d9a6'}, // beige, brun clair
+  Barbier: {ambiance: '#17171b', ambiance2: '#2c261c', texte: '#f3e9d2', fond: '#0d0d10', tampons: '#d9b27a'}, // noir et or
+  Coiffure: {ambiance: '#ebe3d8', ambiance2: '#cdbca6', texte: '#2f2820', fond: '#4a3f35', tampons: '#d9b27a'}, // taupe et or
+  'Institut de beauté': {ambiance: '#f7e9e2', ambiance2: '#e9c9bf', texte: '#4a2c26', fond: '#94544c', tampons: '#f8d8cf'}, // nude, rose poudré
+  Pâtisserie: {ambiance: '#f8f0e4', ambiance2: '#e7d3b9', texte: '#3b2416', fond: '#4a2c1d', tampons: '#f5e3c4'}, // crème et chocolat
+  Snack: {ambiance: '#ffd84d', ambiance2: '#f4b400', texte: '#17140c', fond: '#121216', tampons: '#ffd166'}, // jaune et noir
+  Pizzeria: {ambiance: '#c8352b', ambiance2: '#8c1d17', texte: '#fff4e2', fond: '#f8eedc', tampons: '#c8352b'}, // rouge tomate et crème
+  Sushi: {ambiance: '#2b0b10', ambiance2: '#0c0c0f', texte: '#ffffff', fond: '#121216', tampons: '#e63946'}, // noir, rouge, touches de blanc
+  Café: {ambiance: '#f4ece1', ambiance2: '#dcc8ad', texte: '#3a2618', fond: '#5a3a24', tampons: '#f3e3c7'}, // crème et brun
+  'Salon de thé': {ambiance: '#f5eee4', ambiance2: '#e2cfb5', texte: '#3a2618', fond: '#6b3f2a', tampons: '#f1dfc4'}, // crème et brun
+  Restaurant: {ambiance: '#163a2b', ambiance2: '#0b241a', texte: '#f3ead6', fond: '#0f2e22', tampons: '#d9b27a'}, // vert profond et or
+  Fleuriste: {ambiance: '#e1e9da', ambiance2: '#b9caad', texte: '#23301f', fond: '#566f51', tampons: '#f7c6d3'}, // vert sauge et rose
+  Boucherie: {ambiance: '#f4e9d7', ambiance2: '#e3cfb0', texte: '#3d1414', fond: '#8e1b1b', tampons: '#f3e3c3'}, // rouge et crème
+  Pressing: {ambiance: '#e4eff9', ambiance2: '#b9d4ed', texte: '#0f2740', fond: '#1e3a5f', tampons: '#7dd3fc'}, // bleu
+  Boutique: {ambiance: '#eee6f8', ambiance2: '#cdbbe8', texte: '#1d1626', fond: '#121216', tampons: '#e9d5ff'}, // noir et lilas
+  'Bien-être': {ambiance: '#eee8f6', ambiance2: '#cfc2e6', texte: '#2a1f3d', fond: '#5b2a86', tampons: '#f4c7d4'}, // violet doux
+  Toiletteur: {ambiance: '#e3f1ed', ambiance2: '#b9dad1', texte: '#12302b', fond: '#1e3a5f', tampons: '#86efac'}, // bleu nuit et menthe
+  Caviste: {ambiance: '#3b0f17', ambiance2: '#1d070b', texte: '#f3e3cf', fond: '#6e1423', tampons: '#d9b27a'}, // bordeaux et or
+  Fromagerie: {ambiance: '#f8eec9', ambiance2: '#ecd68e', texte: '#3a2a0c', fond: '#2f4a2b', tampons: '#f2d37a'}, // jaune paille et vert
+  'Épicerie fine': {ambiance: '#efe8da', ambiance2: '#d6c6a5', texte: '#1f2b1e', fond: '#14532d', tampons: '#d9b27a'}, // vert forêt et or
+  Autre: {ambiance: '#efeae2', ambiance2: '#d6ccbc', texte: '#1f1c17', fond: '#1f1c17', tampons: '#d9b27a'}, // neutre élégant
+};
+
+/** Activités proposées pour le visuel (configurateur, puis celles en plus), sans « Autre » en double. */
+export const ACTIVITES_VISUEL: string[] = [...CARD_ACTIVITES.map((a) => a.nom).filter((n) => n !== 'Autre'), ...ACTIVITES_EN_PLUS.map((a) => a.nom), 'Autre'];
+
+const simplifier = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+
+/** Activité reconnue (accents et majuscules ignorés), sinon « Autre » ; avec sa récompense et son ambiance. */
+export function visuelActivite(nom: string): {nom: string; recompense: string} & Ambiance {
+  const cle = simplifier(nom || '');
+  const trouve = ACTIVITES_VISUEL.find((a) => simplifier(a) === cle) ?? 'Autre';
+  const recompense = [...CARD_ACTIVITES, ...ACTIVITES_EN_PLUS].find((a) => a.nom === trouve)?.recompense ?? 'Cadeau offert';
+  return {nom: trouve, recompense, ...CARD_AMBIANCES[trouve]};
+}
 
 export const SETUP_FEE = 49;
 

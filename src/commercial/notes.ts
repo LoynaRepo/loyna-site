@@ -5,6 +5,7 @@
 // d'une note changée ailleurs demande un choix (Conflit).
 import {signal} from '@preact/signals';
 import {chiffrerBloc, dechiffrerBloc, importerCleNotes, nouvelId, type Note} from './notes-crypto';
+import {estNoteMail} from './mail-perso';
 
 export type {Note};
 export const ADRESSE_NOTES = '/espace-commercial/notes.php';
@@ -217,9 +218,31 @@ export async function annulerRefus(prospect: string): Promise<void> {
   if (n) await enregistrer(prospect, {type: 'suppression', id: n.id, avant: n.modifie_le}, true);
 }
 
+/** Notes libres d'un prospect, la plus récente d'abord (les demandes de mail perso « [MAIL] » ont leur propre panneau). */
 export function notesDe(prospect: string): Note[] {
-  const notes = notesEtat.value.blocs[prospect]?.notes ?? [];
+  const notes = (notesEtat.value.blocs[prospect]?.notes ?? []).filter((n) => !estNoteMail(n));
   return [...notes].sort((a, b) => (b.cree_le || '').localeCompare(a.cree_le || ''));
+}
+
+// --- Mail perso après un appel : « Envoyer mail perso » ------------------------------------------------------
+// Une note qui commence par MARQUE_MAIL (src/commercial/mail-perso.ts) demande au coffre d'envoyer le mail
+// (_systeme/mail_perso.py, au plus 10 minutes plus tard) ; tant qu'elle n'est pas traitée, elle peut être annulée.
+
+/** Demandes de mail perso d'un prospect, la plus récente d'abord. */
+export function mailsDe(prospect: string): Note[] {
+  const notes = (notesEtat.value.blocs[prospect]?.notes ?? []).filter(estNoteMail);
+  return [...notes].sort((a, b) => (b.cree_le || '').localeCompare(a.cree_le || ''));
+}
+
+export async function noterMail(prospect: string, texte: string, id = nouvelId()): Promise<void> {
+  if (texte.length > TEXTE_MAX) throw new ErreurNotes('trop_grand');
+  const maintenant = new Date().toISOString();
+  await enregistrer(prospect, {type: 'ajout', note: {id, cree_le: maintenant, modifie_le: maintenant, texte}});
+}
+
+/** Annule une demande pas encore traitée par le coffre (la note est supprimée). */
+export async function annulerMail(prospect: string, note: Note): Promise<void> {
+  await enregistrer(prospect, {type: 'suppression', id: note.id, avant: note.modifie_le}, true);
 }
 
 /** Verrouillage : clé, jeton et notes effacés de la mémoire. */

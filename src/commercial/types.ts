@@ -64,6 +64,21 @@ export interface Prospect {
   sources: string[];
   notes?: Note[]; // notes du panel recopiées à la dernière publication (secours en lecture seule)
   client_id?: string | null; // statut « client » : sa fiche dans 08 Clients (onglet Clients)
+  activite_carte?: string; // activité de sa carte (loyna_mail.activite_pour) : visuel du mail perso, prérempli
+  mail_perso?: {le: string; etat: string}; // dernier mail perso (propriétés mail_perso_le et mail_perso_etat de la fiche)
+  mails_perso?: EtatMailPerso[]; // mails perso traités par le coffre (_systeme/mail_perso.py), le plus récent d'abord
+}
+
+/** Mail perso après un appel (note « [MAIL] » du panel), une fois traité par le coffre. */
+export interface EtatMailPerso {
+  note: string; // identifiant de la note « [MAIL] »
+  etat: 'en cours' | 'envoyé' | 'erreur' | string;
+  le: string; // AAAA-MM-JJTHH:MM:SS (heure de Paris) : envoi, ou échec
+  demande_le: string; // création de la note (ISO 8601, UTC)
+  raison: string; // échec : pourquoi
+  objet: string;
+  to: string;
+  signataire: string;
 }
 
 // --- Clients (08 Clients du coffre, calculés par _systeme/clients.py) --------------------------------------
@@ -203,6 +218,7 @@ export interface Suivi {
   notes_panel?: {cle: string; version: number}; // clé des notes, ajoutée par panel.py au moment du chiffrement
   ressources: {
     modeles: {titre: string; fichier: string; blocs: BlocModele[]}[];
+    mail_perso?: {objet: string; html: string} | null; // modèle « Mail perso après appel » (aperçu du compositeur)
     faq_coffre: {q: string; r: string; pieces: string[]}[];
     accroches: {secteur: string; accroche: string}[];
     agenda: {jours_rdv?: string[] | string; plages?: string; duree_rdv_min?: string; marge_min?: string; delai_min_heures?: string};

@@ -16,7 +16,7 @@ export function initiales(nom: string): string {
   );
 }
 
-function luminance(hex: string): number {
+export function luminance(hex: string): number {
   const n = parseInt(hex.slice(1), 16);
   const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
     const s = v / 255;
