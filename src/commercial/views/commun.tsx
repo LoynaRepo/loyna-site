@@ -15,6 +15,7 @@ const TON_STATUT: Record<string, Tone> = {
   'abandonné': 'dark',
   'intéressé': 'gold',
   'rdv fixé': 'green',
+  client: 'green',
   'à traiter par ewan': 'red',
   'refus': 'dark',
   'stop': 'red',
@@ -46,6 +47,7 @@ const TON_ACTION: Record<string, Tone> = {
   premier_mail_en_file: 'blue',
   premier_mail: 'blue',
   adresse_a_verifier: 'amber',
+  client: 'green',
 };
 export function tonAction(code: string): Tone {
   return TON_ACTION[code] ?? 'neutral';
@@ -122,7 +124,7 @@ export function Action({p, detail = true}: {p: Prospect; detail?: boolean}) {
 }
 
 /** Lien d'appel (tel:) avec le type de ligne. */
-export function Tel({p, gros = false}: {p: Prospect; gros?: boolean}) {
+export function Tel({p, gros = false}: {p: Pick<Prospect, 'tel_principal'>; gros?: boolean}) {
   const t = p.tel_principal;
   const href = t ? lienTel(t.lien) : null;
   if (!t || !href) return <span class="muted">—</span>;

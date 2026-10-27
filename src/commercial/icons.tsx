@@ -64,6 +64,15 @@ import notebookText from 'lucide-static/icons/notebook-text.svg?raw';
 import save from 'lucide-static/icons/save.svg?raw';
 import wifiOff from 'lucide-static/icons/wifi-off.svg?raw';
 import gitMerge from 'lucide-static/icons/git-merge.svg?raw';
+import handshake from 'lucide-static/icons/handshake.svg?raw';
+import qrCode from 'lucide-static/icons/qr-code.svg?raw';
+import creditCard from 'lucide-static/icons/credit-card.svg?raw';
+import fileCheck from 'lucide-static/icons/file-check.svg?raw';
+import packageCheck from 'lucide-static/icons/package-check.svg?raw';
+import calendarClock from 'lucide-static/icons/calendar-clock.svg?raw';
+import receiptText from 'lucide-static/icons/receipt-text.svg?raw';
+import shoppingBag from 'lucide-static/icons/shopping-bag.svg?raw';
+import undo2 from 'lucide-static/icons/undo-2.svg?raw';
 
 const RAW: Record<string, string> = {
   'layout-dashboard': layoutDashboard,
@@ -129,6 +138,15 @@ const RAW: Record<string, string> = {
   save,
   'wifi-off': wifiOff,
   'git-merge': gitMerge,
+  handshake,
+  'qr-code': qrCode,
+  'credit-card': creditCard,
+  'file-check': fileCheck,
+  'package-check': packageCheck,
+  'calendar-clock': calendarClock,
+  'receipt-text': receiptText,
+  'shopping-bag': shoppingBag,
+  'undo-2': undo2,
 };
 
 const cache = new Map<string, string>();

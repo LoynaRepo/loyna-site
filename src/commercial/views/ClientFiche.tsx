@@ -1,0 +1,421 @@
+// Fiche d'un client : prochaine action, parcours en étapes (avec les boutons « Commerce créé », « Documents
+// envoyés », « QR codes livrés »), notes, abonnement, QR codes sous verre, coordonnées, liens Stripe et espace
+// client, carte, historique. Rien n'est modifié dans le coffre d'ici : les boutons enregistrent une note chiffrée
+// que panel.py recopie dans la fiche à la publication suivante.
+import type {ComponentChildren} from 'preact';
+import {useMemo, useState} from 'preact/hooks';
+import {ACTIONS, annulerAction, clientsAffiches, noteLibre, noterAction, type ClientAffiche, type CodeAction} from '../clients';
+import {isoJour} from '../clients-regles';
+import {dateLongue, euros, fr, lienMail, lienSur, lienTel} from '../format';
+import {Icon} from '../icons';
+import {ErreurNotes, notesEtat} from '../notes';
+import {donnees, toast} from '../store';
+import {Badge, Btn, Copier, Empty, Lien, Modal, PageHead, Panel, TexteLie} from '../ui';
+import {ActionClient, BadgeEtape} from './Clients';
+import {MarqueNotes, NotesProspect} from './Notes';
+
+const ACTION_DE_ETAPE: Partial<Record<string, CodeAction>> = {commerce: 'commerce_cree', documents: 'documents', qr: 'qr_livres'};
+const message = (e: unknown) => (e instanceof ErreurNotes ? e.message : 'Enregistrement impossible.');
+
+function Ligne({t, children}: {t: string; children: ComponentChildren}) {
+  return (
+    <div>
+      <dt>{t}</dt>
+      <dd>{children}</dd>
+    </div>
+  );
+}
+
+export function ClientFiche({id}: {id: string}) {
+  const d = donnees.value!;
+  const blocs = notesEtat.value.blocs;
+  const c = useMemo(() => clientsAffiches(d.clients, blocs).find((x) => x.id === id), [d, blocs, id]);
+  if (!c)
+    return (
+      <div class="page">
+        <PageHead title="Client introuvable" back={{href: '#/clients', label: 'Clients'}} />
+        <Empty icon="search" title="Ce client n’est plus dans les données">
+          Sa fiche a peut-être été renommée ou déplacée dans le coffre. Revenez à la liste des clients.
+        </Empty>
+      </div>
+    );
+  const mail = lienMail(c.email);
+  const tel = c.tel_principal && lienTel(c.tel_principal.lien);
+  const obsidian = d.exemple ? null : `obsidian://open?vault=${encodeURIComponent(d.coffre)}&file=${encodeURIComponent(`08 Clients/${c.fiche}`)}`;
+  const prochaine = ACTION_DE_ETAPE[c.action.code]; // commerce, documents ou QR codes : bouton direct
+  const historique = [...c.historique].reverse();
+  const o = c.offre;
+  const prix =
+    o.prix === null
+      ? '—'
+      : o.periodicite === 'annuel'
+        ? `${euros(o.prix)} par an (${euros(o.mensuel)} par mois), sans TVA`
+        : `${euros(o.prix)} par mois, sans TVA`;
+
+  return (
+    <div class="page">
+      <PageHead eyebrow={[c.activite, o.libelle].filter(Boolean).join(' · ') || 'Client'} title={c.commerce} back={{href: '#/clients', label: 'Clients'}}>
+        <span class="cp-badges">
+          <BadgeEtape c={c} />
+          {o.formule && <Badge tone="gold">{o.formule}</Badge>}
+          <MarqueNotes p={c} filtre={noteLibre} />
+        </span>
+      </PageHead>
+
+      <div class="cd-grid cd-grid--b">
+        <div class="stack">
+          <Panel dark class={`cp-entete ${c.action.urgence ? 'cl-entete--urgent' : ''}`}>
+            <p class="eyebrow">Prochaine action</p>
+            <p class="cp-entete-action">
+              {c.action.urgence && <Icon name="triangle-alert" size={20} />} {fr(c.action.libelle)}
+              {c.action.detail && <small> · {fr(c.action.detail)}</small>}
+            </p>
+            <div class="btn-row">
+              {prochaine && !c.enAttente[prochaine] && <BoutonAction c={c} code={prochaine} principal />}
+              {tel && (
+                <Btn kind={prochaine ? 'ghost' : 'gold'} icon="phone" href={tel} class={prochaine ? 'cp-btn-clair' : ''}>
+                  {`Appeler ${c.tel_principal!.affiche}`}
+                </Btn>
+              )}
+              {mail && (
+                <Btn kind="ghost" icon="mail" href={mail} class="cp-btn-clair">
+                  E-mail
+                </Btn>
+              )}
+              {c.stripe.liens[0] && (
+                <Btn kind="ghost" icon="credit-card" href={c.stripe.liens[0].href} external class="cp-btn-clair">
+                  Stripe
+                </Btn>
+              )}
+            </div>
+          </Panel>
+
+          <Panel title="Parcours" sub="Les boutons enregistrent l’étape tout de suite ; elle est recopiée dans la fiche du coffre (date et historique) au prochain passage d’un agent.">
+            <ol class="cl-parcours">
+              {c.parcours.map((e) => {
+                const code = ACTION_DE_ETAPE[e.code];
+                const attente = code ? c.enAttente[code] : undefined;
+                return (
+                  <li class={e.sans_objet ? 'na' : attente ? 'attente' : e.fait ? 'on' : c.etape.code === e.code ? 'courant' : ''}>
+                    <span class="cl-pt" aria-hidden="true">
+                      <Icon name={e.sans_objet ? 'ban' : e.fait ? 'check' : 'clock'} size={14} />
+                    </span>
+                    <div class="cl-pt-t">
+                      <strong>{e.libelle}</strong>
+                      <small>
+                        {e.sans_objet
+                          ? 'aucun QR code commandé'
+                          : e.fait
+                            ? e.date
+                              ? `le ${dateLongue(e.date)}`
+                              : 'fait'
+                            : e.code === 'qr' && c.qr.limite
+                              ? `${c.qr.commandes} à livrer avant le ${dateLongue(c.qr.limite)}`
+                              : 'à faire'}
+                        {attente && ` · noté dans le panel${attente.texte ? ` (${attente.texte})` : ''}, pas encore dans le coffre`}
+                      </small>
+                    </div>
+                    {code && !e.sans_objet && (
+                      <div class="cl-pt-a">
+                        {attente ? <Annuler c={c} code={code} /> : !e.fait && <BoutonAction c={c} code={code} />}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+            {c.etat && (
+              <p class={`cl-etat cl-etat--${c.etat.code}`}>
+                <Icon name={c.etat.code === 'paiement_echoue' ? 'circle-alert' : c.etat.code === 'termine' ? 'ban' : 'calendar-clock'} size={18} />
+                <span>
+                  <strong>{c.etat.libelle}</strong>
+                  {c.etat.code === 'paiement_echoue' && c.etat.date && ` le ${dateLongue(c.etat.date)} : relancer le client (portail Stripe), puis remettre « statut_paiement: payé » dans la fiche une fois réglé.`}
+                  {c.etat.code === 'resiliation' &&
+                    `${c.etat.demande_le ? ` le ${dateLongue(c.etat.demande_le)}` : ''}${c.etat.date ? ` : l’abonnement prend fin le ${dateLongue(c.etat.date)}.` : '.'}`}
+                  {c.etat.code === 'termine' && (c.etat.date ? ` le ${dateLongue(c.etat.date)}.` : '.')}
+                </span>
+              </p>
+            )}
+          </Panel>
+
+          <Panel title="Notes" sub="Chiffrées dans ce navigateur avant l’envoi : le serveur ne peut pas les lire." class="cp-pnl-notes">
+            <NotesProspect p={c} filtre={noteLibre} />
+          </Panel>
+
+          <Panel title="Abonnement">
+            <dl class="cp-dl">
+              <Ligne t="Offre">
+                {o.libelle || '—'}
+                <small>{fr(prix)}</small>
+              </Ligne>
+              <Ligne t="Souscrit le">{c.date_souscription ? dateLongue(c.date_souscription) : '—'}</Ligne>
+              {c.montant_paye && (
+                <Ligne t="Montant payé">
+                  {c.montant_paye}
+                  {c.code_promo && <small>code {c.code_promo}</small>}
+                </Ligne>
+              )}
+              <Ligne t="Paiement">
+                {c.etat?.code === 'paiement_echoue' ? <Badge tone="red">échoué</Badge> : c.paiement.statut || '—'}
+                {c.paiement.document && <small>{c.paiement.document === 'facture' ? 'facture LOYNA' : 'récapitulatif de paiement Stripe'}</small>}
+              </Ligne>
+              {c.engagement.fin && <Ligne t={c.engagement.libelle}>{dateLongue(c.engagement.fin)}</Ligne>}
+              {c.etat?.code === 'resiliation' && <Ligne t="Résiliation">{c.etat.date ? `fin le ${dateLongue(c.etat.date)}` : 'demandée'}</Ligne>}
+              <Ligne t="Documents">
+                {c.parcours.find((e) => e.code === 'documents')?.fait ? 'envoyés' : 'pas encore envoyés'}
+                <small>
+                  <code>documents_client.py envoyer "08 Clients/{c.fiche}.md"</code>
+                </small>
+              </Ligne>
+            </dl>
+          </Panel>
+
+          <Panel title="QR codes sous verre" sub="Achat unique, livré sous 15 jours au plus à l’adresse de facturation.">
+            {c.qr.commandes ? (
+              <dl class="cp-dl">
+                <Ligne t="Commandés">
+                  {c.qr.commandes}
+                  {c.qr.detail && <small>{fr(c.qr.detail)}</small>}
+                </Ligne>
+                <Ligne t="À livrer avant le">
+                  {c.qr.limite ? dateLongue(c.qr.limite) : '—'}
+                  {c.qr.a_livrer > 0 && c.qr.jours_restants !== null && (
+                    <small class={c.qr.jours_restants < 3 ? 'cl-rouge' : ''}>
+                      {c.qr.jours_restants < 0 ? `en retard de ${-c.qr.jours_restants} j` : c.qr.jours_restants === 0 ? 'aujourd’hui' : `dans ${c.qr.jours_restants} j`}
+                    </small>
+                  )}
+                </Ligne>
+                <Ligne t="Livrés">
+                  {c.enAttente.qr_livres
+                    ? `le ${dateLongue(c.enAttente.qr_livres.date)} (noté dans le panel)`
+                    : c.qr.livres_le
+                      ? `le ${dateLongue(c.qr.livres_le)}`
+                      : 'pas encore'}
+                </Ligne>
+                {c.adresse_facturation && <Ligne t="Adresse de livraison">{c.adresse_facturation}</Ligne>}
+              </dl>
+            ) : (
+              <p class="muted cp-m0">Aucun QR code sous verre commandé.</p>
+            )}
+          </Panel>
+
+          <Panel title="Historique" sub="Les dernières lignes de la fiche, la plus récente en premier.">
+            {historique.length ? (
+              <ol class="cp-histo">
+                {historique.map((h) => (
+                  <li>
+                    <TexteLie texte={h} />
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p class="muted cp-m0">Aucune ligne d’historique.</p>
+            )}
+          </Panel>
+        </div>
+
+        <div class="stack">
+          <Panel title="Contact">
+            <dl class="cp-dl">
+              <Ligne t="Contact">{c.contact.complet || <span class="muted">inconnu</span>}</Ligne>
+              <Ligne t="Téléphone">
+                {c.telephones.length ? (
+                  c.telephones.map((x) => (
+                    <a class="cp-tel" href={lienTel(x.lien) ?? undefined}>
+                      <Icon name={x.type === 'mobile' ? 'smartphone' : 'phone'} size={15} />
+                      <span>
+                        {x.affiche} <small>{x.type}</small>
+                      </span>
+                    </a>
+                  ))
+                ) : (
+                  <span class="muted">{c.telephone || 'aucun'}</span>
+                )}
+              </Ligne>
+              <Ligne t="E-mail">{mail ? <a href={mail}>{c.email}</a> : <span class="muted">{c.email || 'aucun'}</span>}</Ligne>
+              {c.adresse_facturation && <Ligne t="Adresse de facturation">{c.adresse_facturation}</Ligne>}
+              {c.siren && (
+                <Ligne t="SIREN">
+                  <Lien href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${c.siren}`}>{c.siren.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')}</Lien>
+                </Ligne>
+              )}
+              {lienSur(c.instagram) && (
+                <Ligne t="Instagram">
+                  <Lien href={c.instagram!}>{c.instagram!.replace(/^https?:\/\/(www\.)?instagram\.com\//, '@').replace(/\/$/, '')}</Lien>
+                </Ligne>
+              )}
+              {c.prospect_id && (
+                <Ligne t="Prospect d’origine">
+                  <a href={`#/prospect/${c.prospect_id}`}>{c.prospect || 'fiche prospect'}</a>
+                </Ligne>
+              )}
+            </dl>
+          </Panel>
+
+          <Panel title="Espace client et Stripe">
+            <dl class="cp-dl">
+              <Ligne t="Compte">
+                {c.compte || <span class="muted">inconnu</span>}
+                <small>e-mail de connexion du commerçant</small>
+              </Ligne>
+              <Ligne t="Espace client">
+                <Lien href={c.lien_espace_client}>{c.lien_espace_client.replace(/^https?:\/\//, '')}</Lien>
+                {c.commerce_existant === true && <small>commerce déjà existant au moment du paiement</small>}
+              </Ligne>
+              {c.identifiant_commerce && <Ligne t="Identifiant du commerce">{c.identifiant_commerce}</Ligne>}
+              {lienSur(c.lien_inscription) && (
+                <Ligne t="Lien d’inscription">
+                  <Lien href={c.lien_inscription}>{c.lien_inscription.replace(/^https?:\/\//, '')}</Lien>
+                </Ligne>
+              )}
+              {c.stripe.liens.map((l) => (
+                <Ligne t={l.libelle}>
+                  <Lien href={l.href}>
+                    <Icon name="external-link" size={14} /> <span>{l.href.split('/').pop()?.replace(/^search\?query=/, '')}</span>
+                  </Lien>
+                </Ligne>
+              ))}
+              {c.stripe.facture && <Ligne t="Facture Stripe">{c.stripe.facture}</Ligne>}
+            </dl>
+            {c.stripe.abonnement && (
+              <div class="btn-row cl-copier">
+                <Copier texte={c.stripe.abonnement} label="Copier l’abonnement" />
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="Carte de fidélité">
+            <dl class="cp-dl">
+              <Ligne t="Programme">{c.programme.nom || <span class="muted">à définir</span>}</Ligne>
+              <Ligne t="Récompense">
+                {c.programme.recompense || <span class="muted">à définir</span>}
+                {c.programme.passages && <small>au bout de {c.programme.passages} passages</small>}
+              </Ligne>
+              {c.couleurs && (c.couleurs.fond || c.couleurs.accent) && (
+                <Ligne t="Couleurs">
+                  <span class="cl-couleurs">
+                    {[c.couleurs.fond, c.couleurs.accent].filter((x) => /^#[0-9a-f]{6}$/i.test(x)).map((x) => (
+                      <span>
+                        <i style={{background: x}} />
+                        {x}
+                      </span>
+                    ))}
+                  </span>
+                </Ligne>
+              )}
+            </dl>
+            {obsidian && (
+              <p class="cp-obsidian">
+                <a href={obsidian}>Ouvrir la fiche dans Obsidian</a> <small class="muted">(sur l’ordinateur du coffre)</small>
+              </p>
+            )}
+          </Panel>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Bouton d'une étape : date (aujourd'hui par défaut) et précision facultative, puis note chiffrée [CLIENT:…]. */
+function BoutonAction({c, code, principal = false}: {c: ClientAffiche; code: CodeAction; principal?: boolean}) {
+  const etat = notesEtat.value;
+  const pret = etat.etat === 'pret'; // pendant le chargement, une écriture serait écrasée : bouton en attente
+  const a = ACTIONS[code];
+  const [ouvert, setOuvert] = useState(false);
+  const [date, setDate] = useState(isoJour(new Date()));
+  const [precision, setPrecision] = useState('');
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState('');
+  const confirmer = async () => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      setErreur('Date invalide.');
+      return;
+    }
+    setEnvoi(true);
+    setErreur('');
+    try {
+      await noterAction(c.id, code, date, precision);
+      setOuvert(false);
+      toast(`${a.fait} : noté. La fiche du coffre sera mise à jour au prochain passage d’un agent.`);
+    } catch (e) {
+      setErreur(message(e));
+    } finally {
+      setEnvoi(false);
+    }
+  };
+  const titre = code === 'qr_livres' ? `${a.bouton} (${c.qr.commandes})` : a.bouton;
+  return (
+    <>
+      <Btn
+        kind={principal ? 'gold' : 'ghost'}
+        small={!principal}
+        icon={code === 'qr_livres' ? 'package-check' : code === 'documents' ? 'file-check' : 'check'}
+        busy={etat.etat === 'chargement'}
+        disabled={!pret}
+        title={pret ? undefined : etat.message || 'Notes indisponibles'}
+        onClick={() => {
+          setDate(isoJour(new Date()));
+          setErreur('');
+          setOuvert(true);
+        }}
+      >
+        {titre}
+      </Btn>
+      <Modal open={ouvert} onClose={() => setOuvert(false)} title={`${a.bouton} · ${c.commerce}`}>
+        <div class="stack">
+          <label class="cp-filtre" for={`date-${code}-${c.id}`}>
+            <span>Date</span>
+          </label>
+          <input id={`date-${code}-${c.id}`} type="date" class="cl-champ" value={date} max={isoJour(new Date())} onInput={(e) => setDate((e.target as HTMLInputElement).value)} />
+          <label class="cp-filtre" for={`precision-${code}-${c.id}`}>
+            <span>{a.precision}</span>
+          </label>
+          <input id={`precision-${code}-${c.id}`} type="text" class="cl-champ" maxLength={120} value={precision} onInput={(e) => setPrecision((e.target as HTMLInputElement).value)} />
+          <p class="muted small cp-m0">{fr(a.aide)}</p>
+          {erreur && (
+            <p class="cp-notes-err" role="alert">
+              {fr(erreur)}
+            </p>
+          )}
+          <div class="btn-row">
+            <Btn kind="gold" icon="check" busy={envoi} onClick={confirmer}>
+              Enregistrer
+            </Btn>
+            <Btn kind="ghost" onClick={() => setOuvert(false)}>
+              Annuler
+            </Btn>
+          </div>
+        </div>
+      </Modal>
+    </>
+  );
+}
+
+/** Annule une étape notée dans le panel, tant qu'elle n'est pas recopiée dans le coffre. */
+function Annuler({c, code}: {c: ClientAffiche; code: CodeAction}) {
+  const [envoi, setEnvoi] = useState(false);
+  const a = c.enAttente[code];
+  if (!a) return null;
+  return (
+    <Btn
+      kind="quiet"
+      small
+      icon="undo-2"
+      busy={envoi}
+      disabled={notesEtat.value.etat !== 'pret'}
+      onClick={async () => {
+        setEnvoi(true);
+        try {
+          await annulerAction(c.id, a.note);
+          toast('Étape annulée.', 'info');
+        } catch (e) {
+          toast(message(e), 'error');
+        } finally {
+          setEnvoi(false);
+        }
+      }}
+    >
+      Annuler
+    </Btn>
+  );
+}

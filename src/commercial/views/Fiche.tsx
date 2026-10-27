@@ -42,6 +42,18 @@ export function Fiche({id}: {id: string}) {
 
       <div class="cd-grid cd-grid--b">
         <div class="stack">
+          {p.statut.toLowerCase() === 'client' && (
+            <a class="quick-scan cp-alerte cl-alerte cl-alerte--ok" href={p.client_id ? `#/client/${p.client_id}` : '#/clients'}>
+              <span class="qs-i">
+                <Icon name="handshake" size={24} />
+              </span>
+              <span>
+                <strong>Devenu client</strong>
+                <small>{p.client_id ? 'Plus aucune prospection. Voir sa fiche client : parcours, QR codes, abonnement.' : 'Plus aucune prospection. Sa fiche client (08 Clients) n’est pas encore dans les données.'}</small>
+              </span>
+              <Icon name="chevron-right" />
+            </a>
+          )}
           <Panel dark class="cp-entete">
             <p class="eyebrow">Action suivante</p>
             <p class="cp-entete-action">
@@ -86,9 +98,11 @@ export function Fiche({id}: {id: string}) {
             <NotesProspect p={p} />
           </Panel>
 
-          <Panel title="Il a refusé ?" sub="Le prospect disparaît du panel. Au prochain passage d’un agent, sa fiche passe en « refus » et sort du fichier (archivée) : plus aucun contact.">
-            <Refus p={p} />
-          </Panel>
+          {p.statut.toLowerCase() !== 'client' && (
+            <Panel title="Il a refusé ?" sub="Le prospect disparaît du panel. Au prochain passage d’un agent, sa fiche passe en « refus » et sort du fichier (archivée) : plus aucun contact.">
+              <Refus p={p} />
+            </Panel>
+          )}
 
           {p.appel && (
             <Panel title="Au téléphone" sub={`${p.appel.groupe_libelle} · ${p.appel.motif}`}>

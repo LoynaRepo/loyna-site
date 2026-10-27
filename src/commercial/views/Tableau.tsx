@@ -4,6 +4,7 @@ import {notesEtat} from '../notes';
 import {Icon} from '../icons';
 import {aller, donnees, voirProspects, type Filtres} from '../store';
 import {Badge, PageHead, Panel} from '../ui';
+import {AlerteClients} from './Clients';
 
 interface Tuile {
   l: string;
@@ -38,7 +39,7 @@ export function Tableau() {
   const maxAction = Math.max(1, ...d.par_action.map((a) => a.nombre));
   const maxStatut = Math.max(1, ...d.par_statut.map((a) => a.nombre));
   // notes dont la fiche a disparu (renommée ou supprimée) : jamais perdues, signalées ici
-  const ids = new Set(d.prospects.map((p) => p.id));
+  const ids = new Set([...d.prospects.map((p) => p.id), ...(d.clients ?? []).map((c) => c.id)]); // notes des clients : pas orphelines
   const orphelines = Object.entries(notesEtat.value.blocs).filter(([id, b]) => !ids.has(id) && b.notes.length);
 
   return (
@@ -64,6 +65,8 @@ export function Tableau() {
           <Icon name="chevron-right" />
         </a>
       )}
+
+      <AlerteClients />
 
       <div class="kpis cp-kpis">
         {tuiles.map((t) =>
