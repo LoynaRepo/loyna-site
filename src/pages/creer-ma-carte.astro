@@ -58,6 +58,7 @@ const appLd = {
           <select id="c-activity" name="activity">
             {activities.map((a) => <option selected={a === 'Coiffure'}>{a}</option>)}
           </select>
+          <input id="c-activity-other" class="act-other" type="text" maxlength="30" placeholder="Votre activité : fromagerie, tatoueur…" aria-label="Votre activité" hidden />
         </div>
         <fieldset class="field">
           <legend>Couleur de la carte</legend>
@@ -225,9 +226,33 @@ const appLd = {
     marquerCouleurs(document);
   }
 
+  // Activité « Autre » : champ libre affiché sous la liste, son texte va sur la carte (demande d'Ewan du 2026-10-27)
+  const AUTRE = 'Autre';
+  const autreInput = () => $<HTMLInputElement>('#c-activity-other');
+  const activite = () => {
+    const v = $<HTMLSelectElement>('#c-activity').value;
+    return v === AUTRE ? autreInput().value.trim() || 'Votre activité' : v;
+  };
+  const montrerAutre = (focus = false) => {
+    const autre = $<HTMLSelectElement>('#c-activity').value === AUTRE;
+    autreInput().hidden = !autre;
+    if (autre && focus) autreInput().focus();
+  };
+  /** Activité qui n'est pas dans la liste (brouillon, lien) : « Autre » + son texte dans le champ libre. */
+  const choisirActivite = (texte: string) => {
+    const act = $<HTMLSelectElement>('#c-activity');
+    const option = [...act.options].find((o) => simplifier(o.value) === simplifier(texte));
+    if (option) act.value = option.value;
+    else {
+      act.value = AUTRE;
+      autreInput().value = texte.slice(0, 30);
+    }
+    montrerAutre();
+  };
+
   const read = (): Cfg => ({
     name: $<HTMLInputElement>('#c-name').value.trim() || 'Votre commerce',
-    activity: $<HTMLSelectElement>('#c-activity').value,
+    activity: activite(),
     bg: $<HTMLInputElement>('#c-bg').value,
     accent: $<HTMLInputElement>('#c-accent').value,
     total: Number($<HTMLInputElement>('#c-total').value),
@@ -328,6 +353,7 @@ const appLd = {
   // Changement d'activité : la récompense et les couleurs de l'activité, sauf ce que le visiteur a modifié
   $<HTMLSelectElement>('#c-activity').addEventListener('input', () => {
     appliquerActivite($<HTMLSelectElement>('#c-activity').value);
+    montrerAutre(true);
     render();
   });
 
@@ -351,9 +377,7 @@ const appLd = {
     const saved = JSON.parse(localStorage.getItem(KEY) || 'null') as Cfg | null;
     if (saved) {
       $<HTMLInputElement>('#c-name').value = saved.name;
-      const act = $<HTMLSelectElement>('#c-activity');
-      if (saved.activity && ![...act.options].some((o) => o.value === saved.activity)) act.add(new Option(saved.activity, saved.activity));
-      if (saved.activity) act.value = saved.activity;
+      if (saved.activity && saved.activity !== 'Votre activité') choisirActivite(saved.activity);
       $<HTMLInputElement>('#c-bg').value = saved.bg;
       $<HTMLInputElement>('#c-accent').value = saved.accent;
       $<HTMLInputElement>('#c-total').value = String(saved.total);
@@ -382,12 +406,7 @@ const appLd = {
   if (nomLien) $<HTMLInputElement>('#c-name').value = nomLien.slice(0, 40);
   if (activiteLien) {
     const act = $<HTMLSelectElement>('#c-activity');
-    const option = [...act.options].find((o) => simplifier(o.value) === simplifier(activiteLien));
-    if (option) act.value = option.value;
-    else {
-      act.add(new Option(activiteLien, activiteLien));
-      act.value = activiteLien;
-    }
+    choisirActivite(activiteLien);
     // l'activité du lien apporte sa récompense et ses couleurs, sauf celles que le lien précise lui-même
     const d = defautsActivite(act.value);
     if (d) {
@@ -605,6 +624,12 @@ const appLd = {
     font-size: 26px;
     font-weight: 750;
     margin: 6px 2px 16px;
+  }
+  .act-other {
+    margin-top: 8px;
+  }
+  .act-other[hidden] {
+    display: none;
   }
   .send-preview {
     margin-top: 22px;
