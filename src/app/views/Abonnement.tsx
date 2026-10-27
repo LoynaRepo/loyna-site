@@ -1,11 +1,12 @@
-// Abonnement : offre actuelle, quotas consommés (my_plan_usage), résumé Stripe (my_subscription) et
-// comparaison des offres Starter, Premium et Pro (prix et contenu : PLANS de src/data/site.ts). Factures,
-// carte bancaire, changement d'offre et résiliation : portail Stripe, comme avant.
+// Abonnement : offre actuelle, quotas consommés (my_plan_usage), résumé Stripe (my_subscription),
+// Parrainage LOYNA entre commerçants (my_referral, décision d'Ewan du 2026-10-27) et comparaison des offres
+// Starter, Premium et Pro (prix et contenu : PLANS de src/data/site.ts). Factures, carte bancaire,
+// changement d'offre et résiliation : portail Stripe, comme avant.
 import {PLANS, SITE, euro, quotas, type Plan} from '../../data/site';
 import {Icon} from '../icons';
-import {api, can, loadUsage, merchant, planLabel, session} from '../state';
+import {api, can, loadUsage, merchant, planLabel, session, toast} from '../state';
 import {Badge, Btn, ErrorBox, PageHead, Panel, Spinner, UsageMeter, useLoad} from '../ui';
-import {date, num, resetDay} from '../util';
+import {copy, date, num, resetDay} from '../util';
 
 const SUB_STATUS: Record<string, [string, 'green' | 'amber' | 'red' | 'neutral']> = {
   active: ['Actif', 'green'],
@@ -17,6 +18,105 @@ const SUB_STATUS: Record<string, [string, 'green' | 'amber' | 'red' | 'neutral']
   incomplete_expired: ['Paiement non abouti', 'red'],
   paused: ['En pause', 'neutral'],
 };
+
+// --- Parrainage LOYNA (my_referral) -------------------------------------------------------------------
+interface Referral {
+  status: 'OK' | 'NO_ACCOUNT';
+  code?: string;
+  link?: string;
+  eligibility?: 'ACTIVE' | 'YEARLY' | 'NO_SUBSCRIPTION';
+  months_applied?: number;
+  months_waiting?: number;
+  referrals?: {name: string; status: 'en_attente_paiement' | 'gagne' | 'applique'; created_at: string; won_at: string | null; applied_at: string | null}[];
+}
+const REFERRAL_STATUS: Record<string, [string, 'neutral' | 'gold' | 'green']> = {
+  en_attente_paiement: ['En attente de son paiement', 'neutral'],
+  gagne: ['Abonné : votre -50 % arrive', 'gold'],
+  applique: ['-50 % appliqué à votre abonnement', 'green'],
+};
+const mois = (n: number) => `${num(n)} mois`;
+
+function Parrainage() {
+  const data = useLoad(() => api.rpc<Referral>('my_referral'), []);
+  const r = data.data;
+  if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
+  if (!r) return <Spinner />;
+  if (r.status !== 'OK' || !r.code || !r.link) return null;
+  const message = `Je vous recommande LOYNA, la carte de fidélité dans Apple Wallet et Google Wallet. Avec mon code ${r.code}, vous avez -50 % sur votre premier mois (abonnement mensuel) : ${r.link}`;
+  const doCopy = async (text: string, what: string) => toast((await copy(text)) ? `${what} copié.` : 'Copie impossible : sélectionnez le texte à la main.', 'info');
+  const list = r.referrals ?? [];
+  return (
+    <Panel title="Parrainez un commerçant" sub="Parrainage LOYNA, abonnements mensuels" class="ref-card">
+      <ul class="ref-gains">
+        <li>
+          <b>-50 %</b>
+          <span>sur le premier mois de votre filleul</span>
+        </li>
+        <li>
+          <b>-50 %</b>
+          <span>sur votre mois suivant, pour chaque filleul qui s’abonne</span>
+        </li>
+      </ul>
+      {r.eligibility === 'ACTIVE' ? (
+        <>
+          <div class="ref-code-row">
+            <span class="ref-code" aria-label={`Votre code de parrainage : ${r.code}`}>
+              {r.code}
+            </span>
+            <Btn kind="ghost" small icon="copy" onClick={() => doCopy(r.code!, 'Code')}>
+              Copier
+            </Btn>
+          </div>
+          <label class="fld">
+            <span class="fld-l">Votre lien de parrainage</span>
+            <span class="ref-link">
+              <input type="text" readOnly value={r.link} onFocus={(e) => (e.target as HTMLInputElement).select()} />
+              <Btn kind="ghost" small icon="copy" title="Copier le lien" onClick={() => doCopy(r.link!, 'Lien')} />
+            </span>
+          </label>
+          <div class="btn-row">
+            <Btn kind="primary" small icon="mail" href={`mailto:?subject=${encodeURIComponent('Une carte de fidélité pour votre commerce')}&body=${encodeURIComponent(message)}`}>
+              Par e-mail
+            </Btn>
+            <Btn kind="primary" small icon="message-square" href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank">
+              Par WhatsApp
+            </Btn>
+          </div>
+        </>
+      ) : (
+        <p class="note">
+          {r.eligibility === 'YEARLY'
+            ? 'Le parrainage LOYNA est réservé aux abonnements mensuels : votre code sera utilisable si vous passez au paiement mensuel.'
+            : 'Votre code sera utilisable dès que votre abonnement mensuel sera actif.'}{' '}
+          Votre code : <b>{r.code}</b>.
+        </p>
+      )}
+      <p class="ref-months">
+        Mois à -50 % : <b>{mois(r.months_applied ?? 0)}</b> obtenu{(r.months_applied ?? 0) > 1 ? 's' : ''}, <b>{mois(r.months_waiting ?? 0)}</b> à venir
+        {(r.months_waiting ?? 0) > 1 ? ' (un par facture, les mois s’enchaînent)' : ''}.
+      </p>
+      {list.length > 0 ? (
+        <ul class="ref-list">
+          {list.map((x) => (
+            <li>
+              <span>
+                <strong>{x.name}</strong>
+                <small>depuis le {date(x.created_at)}</small>
+              </span>
+              <Badge tone={REFERRAL_STATUS[x.status]?.[1] ?? 'neutral'}>{REFERRAL_STATUS[x.status]?.[0] ?? x.status}</Badge>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="muted small">Aucun filleul pour le moment.</p>
+      )}
+      <p class="muted small">
+        Le filleul saisit votre code dans le panier de loyna.fr, ou ouvre votre lien. Votre -50 % s’applique à votre facture suivante dès son premier paiement ; une remise non encore appliquée est perdue si votre abonnement se termine. Conditions :{' '}
+        <a href="/cgv/">CGV, article 4.8</a>.
+      </p>
+    </Panel>
+  );
+}
 
 /** Contenu d'une offre tel que présenté sur loyna.fr/tarifs/ (« Tout Starter, plus : … »). */
 function planContent(p: Plan): string[] {
@@ -121,6 +221,8 @@ export function Abonnement({portal}: {portal: string}) {
                 <li>Une notification = un message de campagne reçu par une carte. Les messages automatiques et les notifications de proximité ne sont jamais décomptés.</li>
               </ul>
             </Panel>
+
+            <Parrainage />
 
             <Panel title="Bon à savoir">
               <ul class="plain small">

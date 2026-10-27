@@ -60,11 +60,10 @@ const SQL_MESSAGES: Record<string, string> = {
   INVALID_PERMISSIONS: 'Permission inconnue : rechargez la page.',
   FEATURE_NOT_AVAILABLE: 'Cette fonction n’est pas incluse dans votre offre.',
   LOCATIONS_LIMIT: 'Votre offre ne permet pas d’ajouter une autre boutique.',
-  HAPPY_HOURS_INVALID: 'Créneau du double tampon non valide : vérifiez les jours et les heures.',
   TIER_PERKS_INVALID: 'Avantages des niveaux VIP non valides (80 caractères au plus).',
 };
 // Erreurs dont le serveur donne l'explication en français dans `hint`
-const HINTED = new Set(['LOCATIONS_LIMIT', 'HAPPY_HOURS_INVALID', 'TIER_PERKS_INVALID']);
+const HINTED = new Set(['LOCATIONS_LIMIT', 'TIER_PERKS_INVALID']);
 
 function pgError(e: {code?: string; message?: string; details?: string | null; hint?: string | null}): ApiError {
   const msg = e.message ?? '';

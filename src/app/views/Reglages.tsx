@@ -842,7 +842,7 @@ function SettingsForm({initial}: {initial: Settings & {merchant_id?: string}}) {
           <input type="number" min={0} max={3600} value={s.scan_undo_window_seconds} onInput={(e) => set('scan_undo_window_seconds', Number((e.target as HTMLInputElement).value) || 0)} />
         </Field>
         <p class="note">
-          Notification après chaque passage, anniversaire, relances, avis Google, double tampon… : tout se règle dans le menu <a href="#/automatisations">Automatisations</a>.
+          Notification après chaque passage, anniversaire, relances, avis Google… : tout se règle dans le menu <a href="#/automatisations">Automatisations</a>.
         </p>
         {bar}
       </Panel>

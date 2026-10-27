@@ -79,8 +79,14 @@ ouvre une session Stripe Checkout aux mêmes réglages que les liens ; si Stripe
 `CHECKOUT_FALLBACK` : le panier ouvre le lien de paiement ci-dessous avec `prefilled_email` et `client_reference_id`
 (les QR codes s'y rechoisissent). Retour : `/merci/?…&compte=1` (étapes du compte). Un compte sans commerce voit
 « Votre commande » dans l'espace client (`my_orders`) ; essai local : `/espace-client/?demo&commande` (ou `commande=0`).
+Depuis le 2026-10-27 : mise en service offerte d'office dans le panier jusqu'au 31/12/2026 (aucun code à saisir) et
+**Parrainage LOYNA** entre commerçants (mensuel seulement, -50 % sur le premier mois du filleul, -50 % sur le mois suivant
+du parrain par filleul payant) : champ « Code de parrainage » du panier (`?parrain=LOYNA-XXXXXX`), carte « Parrainez un
+commerçant » dans Abonnement (`my_referral`), section `#parrainage` de l'accueil, FAQ (catégorie « Parrainage LOYNA »),
+CGV article 4.8. Le double tampon aux heures creuses est retiré de toutes les offres.
 
-Chaque lien : adresse de facturation, téléphone, nom du commerce et du contact, numéro de TVA facultatif,
+Chaque lien : adresse de facturation, téléphone, nom du commerce et du contact (le numéro de TVA n'est plus
+demandé depuis le 2026-10-27, décision d'Ewan),
 rappel des CGV et de la mention « TVA non applicable, art. 293 B du CGI », retour vers
 /merci/?offre=…&session_id=… (la page affiche l'offre payée et les étapes propres à Premium ou Pro). Métadonnées
 `loyna_plan` (STARTER, PREMIUM, PRO), `billing_period`, `source=loyna.fr` sur l'abonnement. Anciennes offres

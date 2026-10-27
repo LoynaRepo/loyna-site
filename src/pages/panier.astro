@@ -270,6 +270,45 @@ const prixMin = Math.min(...PLANS.map((p) => p.monthly));
     color: var(--ink);
   }
 
+  /* Code de parrainage LOYNA */
+  .pn-ref {
+    display: grid;
+    gap: 6px;
+    max-width: 420px;
+  }
+  .pn-ref label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  .pn-ref input {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #fff;
+    font: 700 1rem var(--font);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .pn-ref input::placeholder {
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .pn-ref input:focus-visible {
+    outline: 3px solid rgba(201, 150, 63, 0.45);
+    outline-offset: 1px;
+    border-color: var(--gold);
+  }
+  .pn-ref input[aria-invalid='true'] {
+    border-color: #b3261e;
+    background: #fff7f6;
+  }
+  .pn-ref .pn-err {
+    margin: 0;
+  }
+
   /* 2. QR codes sous verre */
   .pn-qr {
     display: grid;
@@ -555,19 +594,6 @@ const prixMin = Math.min(...PLANS.map((p) => p.monthly));
     margin: 0;
     font-size: 0.88rem;
     color: #b9b3a7;
-  }
-  .pn-code {
-    margin: 0;
-    padding: 10px 12px;
-    border-radius: 12px;
-    background: rgba(230, 194, 122, 0.12);
-    border: 1px dashed rgba(230, 194, 122, 0.5);
-    color: #f0d49a;
-    font-size: 0.88rem;
-  }
-  .pn-code strong {
-    color: #faf7f0;
-    letter-spacing: 0.04em;
   }
   .pn-alert {
     display: grid;

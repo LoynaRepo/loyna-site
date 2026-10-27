@@ -26,7 +26,6 @@ interface ScanResult {
   transaction_id?: string;
   customer?: {id: string; first_name: string};
   display: Display;
-  happy_hour?: boolean; // double tampon aux heures creuses (Premium et Pro)
   referral_bonus?: {bonus: number; referrer_credited: boolean} | null; // première visite d'un ami parrainé (Pro)
   program?: {unit_singular: string; unit_plural: string};
   // contexte local (pour rejouer un scan : montant, forçage)
@@ -426,14 +425,8 @@ export function Scanner() {
                   {d.subtitle && <span class="result-sub">{d.subtitle}</span>}
                 </div>
               </div>
-              {result?.status === 'OK' && (result.happy_hour || bonus) && (
+              {result?.status === 'OK' && bonus && (
                 <div class="result-tags">
-                  {result.happy_hour && (
-                    <span class="result-tag">
-                      <Icon name="zap" size={16} />
-                      Double tampon !
-                    </span>
-                  )}
                   {bonus && (
                     <span class="result-tag">
                       <Icon name="share-2" size={16} />

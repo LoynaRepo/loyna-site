@@ -129,29 +129,7 @@ export function renderTemplate(t: string, v: {prenom?: string; commerce?: string
   return out.charAt(0).toUpperCase() + out.slice(1);
 }
 
-/** Créneaux du double tampon, comme au dos de la carte : « Du mardi au jeudi, de 14 h à 16 h ». */
-export interface HappySlot {
-  days: number[]; // 1 = lundi … 7 = dimanche
-  start: string; // HH:MM
-  end: string; // HH:MM ou 24:00
-}
 export const DAY_NAMES = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
-export function formatHappyHours(slots: HappySlot[]): string {
-  const heure = (hhmm: string) => {
-    const [h, m] = hhmm.split(':');
-    return `${Number(h)} h${m === '00' ? '' : ` ${m}`}`;
-  };
-  return slots
-    .map((slot) => {
-      const days = [...new Set(slot.days)].filter((d) => d >= 1 && d <= 7).sort((a, b) => a - b);
-      const consecutive = days.length > 2 && days.every((d, i) => i === 0 || d === days[i - 1] + 1);
-      const list = days.map((d) => DAY_NAMES[d - 1]).join(', ').replace(/, ([^,]*)$/, ' et $1');
-      const when = days.length === 7 ? 'Tous les jours' : consecutive ? `Du ${DAY_NAMES[days[0] - 1]} au ${DAY_NAMES[days[days.length - 1] - 1]}` : list.charAt(0).toUpperCase() + list.slice(1);
-      const hours = slot.start === '00:00' && slot.end === '24:00' ? 'toute la journée' : `de ${heure(slot.start)} à ${heure(slot.end === '24:00' ? '00:00' : slot.end)}`;
-      return `${when}, ${hours}`;
-    })
-    .join('\n');
-}
 
 // Typographie française du texte affiché : module à part, sans dépendance (utilisé aussi par le panier).
 export {frenchTypography} from './typo';

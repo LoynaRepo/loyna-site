@@ -79,13 +79,13 @@
   },
   {
     "q": "Combien coûte LOYNA ?",
-    "a": "Trois formules, prix par mois sans TVA (TVA non applicable : le prix affiché est le prix payé). Starter, 29 € : la carte de fidélité complète, avec 500 cartes et 2 000 notifications par mois, la notification de proximité, l’inscription par QR code, les passages ou points, les récompenses automatiques, le scanner, le tableau de bord et les campagnes de notifications. Premium, 39,99 € : tout Starter avec 2 000 cartes et 24 000 notifications par mois, plus les automatisations (anniversaire, relance des inactifs, « Plus qu’un passage ! », demande d’avis Google, double tampon aux heures creuses, campagnes programmées, groupes de clients) et le rapport mensuel avec 3 conseils. Pro, 89 € : tout Premium avec cartes et notifications illimitées, plus un point mensuel avec LOYNA, des campagnes clés en main, jusqu’à 3 boutiques, les niveaux VIP, le parrainage, le kit comptoir imprimé et le support prioritaire.",
+    "a": "Trois formules, prix par mois sans TVA (TVA non applicable : le prix affiché est le prix payé). Starter, 29 € : la carte de fidélité complète, avec 500 cartes et 2 000 notifications par mois, la notification de proximité, l’inscription par QR code, les passages ou points, les récompenses automatiques, le scanner, le tableau de bord et les campagnes de notifications. Premium, 39,99 € : tout Starter avec 2 000 cartes et 24 000 notifications par mois, plus les automatisations (anniversaire, relance des inactifs, « Plus qu’un passage ! », demande d’avis Google, campagnes programmées, groupes de clients) et le rapport mensuel avec 3 conseils. Pro, 89 € : tout Premium avec cartes et notifications illimitées, plus un point mensuel avec LOYNA, des campagnes clés en main, jusqu’à 3 boutiques, les niveaux VIP, le parrainage entre vos clients, le kit comptoir imprimé et le support prioritaire.",
     "categorie": "Tarifs et abonnement",
     "ordre": 14
   },
   {
     "q": "Quelles automatisations sont incluses avec Premium ?",
-    "a": "Avec Premium, et avec Pro, les messages qui font revenir vos clients partent tout seuls : un message d’anniversaire le jour J, avec la surprise de votre choix ; la relance des clients qui ne reviennent plus, après 60 jours par défaut ; « Plus qu’un passage ! », un rappel aux clients tout proches de leur récompense ; la demande d’avis Google après la 3e visite ; le double tampon aux heures creuses, sur 3 créneaux au plus ; les campagnes programmées et les groupes de clients (fidèles, inactifs depuis 30, 60 ou 90 jours, anniversaires du mois, récompense disponible). Le 1er de chaque mois, un rapport résume votre activité avec 3 conseils concrets, dans votre espace et par e-mail. Les délais se règlent, et ces messages automatiques ne sont jamais décomptés de vos notifications.",
+    "a": "Avec Premium, et avec Pro, les messages qui font revenir vos clients partent tout seuls : un message d’anniversaire le jour J, avec la surprise de votre choix ; la relance des clients qui ne reviennent plus, après 60 jours par défaut ; « Plus qu’un passage ! », un rappel aux clients tout proches de leur récompense ; la demande d’avis Google après la 3e visite  ; les campagnes programmées et les groupes de clients (fidèles, inactifs depuis 30, 60 ou 90 jours, anniversaires du mois, récompense disponible). Le 1er de chaque mois, un rapport résume votre activité avec 3 conseils concrets, dans votre espace et par e-mail. Les délais se règlent, et ces messages automatiques ne sont jamais décomptés de vos notifications.",
     "categorie": "Tarifs et abonnement",
     "ordre": 15
   },
@@ -138,27 +138,45 @@
     "ordre": 23
   },
   {
+    "q": "Comment fonctionne le Parrainage LOYNA ?",
+    "a": "Vous êtes client LOYNA en paiement mensuel ? Partagez votre code de parrainage (LOYNA-…) ou votre lien, depuis votre espace client, rubrique Abonnement. Le commerçant que vous parrainez saisit le code dans son panier sur loyna.fr : il a -50 % sur son premier mois. Dès son premier paiement, vous avez -50 % sur votre mois suivant. Le parrainage est ouvert dans les trois offres, Starter, Premium et Pro.",
+    "categorie": "Parrainage LOYNA",
+    "ordre": 24
+  },
+  {
+    "q": "Les remises du parrainage se cumulent-elles ?",
+    "a": "Oui, à raison d’un mois à -50 % par commerçant parrainé qui s’abonne et paie. Les mois s’enchaînent : une remise par facture, jamais deux sur la même. La remise porte sur le prix de votre offre (pas sur la mise en service ni sur les QR codes sous verre) et n’est pas convertible en argent. Une remise pas encore appliquée est perdue si votre abonnement se termine.",
+    "categorie": "Parrainage LOYNA",
+    "ordre": 25
+  },
+  {
+    "q": "Le parrainage fonctionne-t-il en paiement annuel ?",
+    "a": "Non : le Parrainage LOYNA est réservé aux abonnements mensuels, pour le parrain comme pour le filleul. Le filleul doit être un nouveau client LOYNA, n’a qu’un parrain, et personne ne peut utiliser son propre code. Toutes les conditions figurent à l’article 4.8 de nos conditions générales de vente.",
+    "categorie": "Parrainage LOYNA",
+    "ordre": 26
+  },
+  {
     "q": "Où sont hébergées les données ?",
     "a": "Les données de votre programme et de vos clients sont hébergées dans l’Union européenne. Elles sont protégées, chiffrées, et ne sont jamais utilisées à des fins commerciales. LOYNA applique aussi un principe de minimisation : on ne demande à vos clients que l’essentiel, à savoir leur prénom, leur téléphone s’ils le souhaitent, et leurs consentements.",
     "categorie": "Données et sécurité",
-    "ordre": 24
+    "ordre": 27
   },
   {
     "q": "Comment LOYNA m’aide-t-il à respecter le RGPD ?",
     "a": "À l’inscription, vos clients donnent des consentements séparés pour la fidélité et pour les offres par notification, jamais cochés d’avance. Chaque fiche client affiche ces consentements, et vos clients peuvent retirer leur accord ou supprimer leurs données depuis le lien « Mes préférences » au dos de leur carte. Sur demande d’un client, vous pouvez aussi exporter ou supprimer ses données. Seules les données utiles sont collectées, et elles sont hébergées dans l’Union européenne.",
     "categorie": "Données et sécurité",
-    "ordre": 25
+    "ordre": 28
   },
   {
     "q": "La notification de proximité transmet-elle la position de mes clients ?",
     "a": "Non. LOYNA ne reçoit jamais la position de vos clients, et vous non plus. L’adresse de votre boutique est enregistrée dans la carte de fidélité, et c’est le téléphone du client qui détecte qu’il est à proximité, puis affiche la carte. Le client garde la main : la fonction ne marche que s’il a activé la localisation, et il peut désactiver les notifications de sa carte à tout moment.",
     "categorie": "Données et sécurité",
-    "ordre": 26
+    "ordre": 29
   },
   {
     "q": "Le QR code de la carte contient-il des données personnelles ?",
     "a": "Non. Le QR code de la carte de fidélité ne contient aucune donnée personnelle : ni nom, ni numéro de téléphone. Il contient seulement un jeton opaque, qui ne révèle rien sur votre client et qui peut être révoqué. C’est au moment du scan, dans LOYNA Business, que la carte correspondante est retrouvée.",
     "categorie": "Données et sécurité",
-    "ordre": 27
+    "ordre": 30
   }
 ]

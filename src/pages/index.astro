@@ -227,7 +227,6 @@ const softwareLd = {
           <li><strong>Relance des inactifs</strong>&nbsp;: un rappel aux clients qui ne reviennent plus (après 60 jours par défaut, réglable)</li>
           <li><strong>« Plus qu’un passage&nbsp;! »</strong>&nbsp;: un rappel aux clients tout proches de leur récompense</li>
           <li><strong>Avis Google</strong>&nbsp;: une demande d’avis après la 3e visite</li>
-          <li><strong>Double tampon aux heures creuses</strong>&nbsp;: jusqu’à 3 créneaux où chaque passage compte double</li>
           <li><strong>Campagnes programmées et groupes de clients</strong>, et un rapport mensuel avec 3 conseils concrets</li>
         </ul>
         <p class="auto-note">Toutes les formules préviennent le client à chaque passage et quand sa récompense est débloquée. Un client reçoit au plus un message commercial toutes les {MARKETING_INTERVAL_HOURS}&nbsp;h, délai réglable.</p>
@@ -291,6 +290,29 @@ const softwareLd = {
         <li><Icon name="phone" size={18} /> Une question ? <a href="#rappel">On vous rappelle</a></li>
       </ul>
       <p class="center"><a href="/tarifs/">Comparer les formules en détail</a></p>
+    </div>
+  </section>
+
+  <section class="section" id="parrainage">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Parrainage LOYNA</p>
+        <h2>Parrainez un commerçant&nbsp;: un mois à -50&nbsp;% chacun</h2>
+        <p>Vous connaissez un commerçant à qui une carte de fidélité rendrait service&nbsp;? Partagez votre code de parrainage depuis votre espace client.</p>
+      </div>
+      <div class="grid grid-2 ref-grid">
+        <div class="card">
+          <span class="icon"><Icon name="gift" /></span>
+          <h3>-50 % pour votre filleul</h3>
+          <p>Sur son premier mois d’abonnement, avec votre code saisi dans son panier.</p>
+        </div>
+        <div class="card">
+          <span class="icon"><Icon name="handshake" /></span>
+          <h3>-50 % pour vous</h3>
+          <p>Sur votre mois suivant, pour chaque commerçant parrainé qui s’abonne. Les mois s’enchaînent, un par filleul.</p>
+        </div>
+      </div>
+      <p class="center ref-note">Dans les trois offres, pour les abonnements mensuels, parrain comme filleul. <a href="/faq/#parrainage-loyna">Comment ça marche</a></p>
     </div>
   </section>
 
@@ -443,6 +465,15 @@ const softwareLd = {
   }
   .swipe-hint {
     display: none;
+  }
+  .ref-grid {
+    max-width: 880px;
+    margin-inline: auto;
+  }
+  .ref-note {
+    margin: 26px auto 0;
+    max-width: 720px;
+    color: var(--muted);
   }
   .reassure {
     list-style: none;

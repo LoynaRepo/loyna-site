@@ -1,5 +1,7 @@
 // Panier de loyna.fr (/panier/, décision d'Ewan du 2026-10-27) : offre et période, QR codes sous verre en quantité
 // libre, compte LOYNA créé AVANT le paiement (il reçoit la commande et l'espace client), puis paiement Stripe.
+// Parrainage LOYNA (même jour) : code facultatif, pré-rempli par ?parrain=, -50 % sur le premier mois en mensuel.
+// Mise en service : offerte d'office jusqu'à la fin de l'offre de lancement (aucun code à saisir).
 // Le serveur (Edge Function checkout-create, dépôt LOYNA) crée ou vérifie le compte et la session de paiement ;
 // s'il ne peut pas créer la session, il répond CHECKOUT_FALLBACK et on passe par le lien de paiement de l'offre.
 // Session de l'espace client : même client Supabase que LOYNA Business (src/app/backend.ts), chargé seulement si
@@ -22,6 +24,7 @@ interface CheckoutReply {
   url?: string;
   account: Account;
   warnings?: string[];
+  referral?: {code: string; applied: boolean};
 }
 
 // name : pour les lecteurs d'écran (« Ajouter un pack de 5 »)
@@ -41,6 +44,14 @@ const AUTH_KEY = 'loyna-business-auth'; // session de l'espace client (src/app/b
 const FORM_KEY = 'loyna-panier'; // champs du compte, sans le mot de passe (retour depuis Stripe)
 const COMPTE_KEY = 'loyna-panier-compte'; // compte créé avant un paiement par lien : lu par /merci/ (même nom)
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+// Parrainage LOYNA : « LOYNA- » + 6 caractères sans 0, O, 1 ni I (comme le serveur, _shared/referral.ts)
+const REFERRAL_RE = /^LOYNA-[A-HJ-NP-Z2-9]{6}$/;
+function normalizeReferral(value: string): string | null {
+  const raw = value.toUpperCase().replace(/[\s_.-]+/g, '');
+  const code = `LOYNA-${raw.startsWith('LOYNA') ? raw.slice(5) : raw}`;
+  return REFERRAL_RE.test(code) ? code : null;
+}
+const REFERRAL_ERRORS = new Set(['REFERRAL_INVALID', 'REFERRAL_SELF', 'REFERRAL_NOT_NEW', 'REFERRAL_ALREADY', 'REFERRAL_MONTHLY_ONLY']);
 
 const cents = (n: number) => Math.round(n * 100);
 const eur = (c: number) => euro(c / 100);
@@ -72,6 +83,11 @@ function initialChoice() {
   return {plan, periode, qr};
 }
 
+/** Code de parrainage du lien partagé (?parrain=…), gardé si l'on change d'offre ou de période. */
+function initialReferral(): string {
+  return (new URLSearchParams(location.search).get('parrain') ?? '').trim().slice(0, 20);
+}
+
 function initialFields() {
   const f = {first_name: '', last_name: '', business_name: '', email: '', phone: ''};
   try {
@@ -94,6 +110,7 @@ export default function Panier() {
   const [showPw, setShowPw] = useState(false);
   const [cgv, setCgv] = useState(false);
   const [website, setWebsite] = useState(''); // champ piège
+  const [referral, setReferral] = useState(initialReferral);
   const [session, setSession] = useState<{email: string} | null | undefined>(undefined);
   const [mode, setMode] = useState<'create' | 'login'>('create');
   const [login, setLogin] = useState({email: '', password: ''});
@@ -103,7 +120,7 @@ export default function Panier() {
   const [formErr, setFormErr] = useState('');
   const [exists, setExists] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [fallback, setFallback] = useState<{url: string; email: string; warning: boolean} | null>(null);
+  const [fallback, setFallback] = useState<{url: string; email: string; warning: boolean; referralLost: boolean} | null>(null);
   const offer = offerActive();
 
   useEffect(() => (root.current ? frenchTypography(root.current) : undefined), []);
@@ -118,8 +135,9 @@ export default function Panier() {
   useEffect(() => {
     const q = new URLSearchParams({offre: choice.plan, periode: choice.periode});
     (Object.keys(choice.qr) as QrKey[]).forEach((k) => choice.qr[k] > 0 && q.set(k === 'unit' ? 'qr' : k, String(choice.qr[k])));
+    if (referral.trim()) q.set('parrain', normalizeReferral(referral) ?? referral.trim());
     history.replaceState(null, '', `${location.pathname}?${q}`);
-  }, [choice]);
+  }, [choice, referral]);
 
   const plan = PLANS.find((p) => p.id === choice.plan)!;
   const monthly = choice.periode === 'mensuel';
@@ -128,7 +146,11 @@ export default function Panier() {
   const qrLines = QR_ROWS.filter((r) => choice.qr[r.key] > 0);
   const qrCents = qrLines.reduce((s, r) => s + choice.qr[r.key] * cents(r.price), 0);
   const qrCount = QR_ROWS.reduce((s, r) => s + choice.qr[r.key] * r.size, 0);
-  const todayCents = subCents + setupDue + qrCents;
+  // Parrainage LOYNA : -50 % sur le prix de l'offre du premier mois (ni mise en service, ni QR codes), mensuel seulement
+  const referralCode = referral.trim() ? normalizeReferral(referral) : null;
+  const referralOn = monthly && !!referralCode;
+  const referralCents = referralOn ? Math.round(subCents / 2) : 0;
+  const todayCents = subCents + setupDue + qrCents - referralCents;
 
   const setQr = (k: QrKey, v: number) => setChoice((c) => ({...c, qr: {...c.qr, [k]: clamp(v, QR_ROWS.find((r) => r.key === k)!.max)}}));
   const setField = (k: keyof typeof f, v: string) => {
@@ -148,11 +170,12 @@ export default function Panier() {
       else if (pw !== pw2) e.password2 = 'Les deux mots de passe sont différents.';
     }
     if (!cgv) e.cgv = 'Acceptez les conditions générales de vente pour continuer.';
+    if (monthly && referral.trim() && !referralCode) e.referral = 'Code de parrainage inconnu ou expiré.';
     return e;
   };
 
   const focusFirstError = (e: Record<string, string>) => {
-    const first = ['first_name', 'last_name', 'business_name', 'email', 'phone', 'password', 'password2', 'cgv'].find((k) => e[k]);
+    const first = ['referral', 'first_name', 'last_name', 'business_name', 'email', 'phone', 'password', 'password2', 'cgv'].find((k) => e[k]);
     if (first) setTimeout(() => (document.getElementById(`pn-${first}`) as HTMLElement | null)?.focus(), 0);
   };
 
@@ -200,6 +223,7 @@ export default function Panier() {
       period: monthly ? 'monthly' : 'yearly',
       qr: choice.qr,
       website,
+      ...(referralOn ? {referral_code: referralCode} : {}),
       ...(session
         ? {}
         : {
@@ -230,14 +254,22 @@ export default function Panier() {
       link.searchParams.set('client_reference_id', reply.account.id);
       if (monthly && offerActive()) link.searchParams.set('prefilled_promo_code', LAUNCH_OFFER.code);
       store('session', COMPTE_KEY, '1');
-      setFallback({url: link.toString(), email: reply.account.email, warning: !!reply.warnings?.includes('CONFIRMATION_NOT_SENT')});
+      setFallback({
+        url: link.toString(),
+        email: reply.account.email,
+        warning: !!reply.warnings?.includes('CONFIRMATION_NOT_SENT'),
+        referralLost: !!reply.referral && !reply.referral.applied,
+      });
       setBusy(false);
       setTimeout(() => document.getElementById('pn-fallback')?.focus(), 0);
     } catch (err) {
       setBusy(false);
       const code = err instanceof ApiError ? err.code : '';
       const msg = err instanceof Error && err.message ? err.message : 'L’opération n’a pas abouti. Réessayez dans un instant.';
-      if (code === 'ACCOUNT_EXISTS') {
+      if (REFERRAL_ERRORS.has(code)) {
+        setErrors({referral: msg});
+        focusFirstError({referral: msg});
+      } else if (code === 'ACCOUNT_EXISTS') {
         setExists(true);
         setFormErr(msg);
         setLogin({email: f.email.trim(), password: ''});
@@ -324,6 +356,35 @@ export default function Panier() {
             )}{' '}
             <a href="/tarifs/">Comparer les offres</a>
           </p>
+          <div class="pn-ref">
+            <label for="pn-referral">
+              Code de parrainage <span class="pn-opt">(facultatif)</span>
+            </label>
+            <input
+              id="pn-referral"
+              type="text"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck={false}
+              maxLength={20}
+              placeholder="LOYNA-XXXXXX"
+              value={referral}
+              onInput={(e) => {
+                setReferral((e.target as HTMLInputElement).value);
+                if (errors.referral) setErrors((x) => ({...x, referral: ''}));
+              }}
+              aria-invalid={errors.referral ? true : undefined}
+              aria-describedby={`pn-referral-help${errors.referral ? ' pn-referral-err' : ''}`}
+            />
+            <p class="pn-muted pn-small" id="pn-referral-help">
+              {monthly
+                ? 'Parrainé par un commerçant client de LOYNA ? -50 % sur votre premier mois, en paiement mensuel.'
+                : referral.trim()
+                  ? 'Le parrainage s’applique au paiement mensuel : choisissez « Mensuel » pour en profiter.'
+                  : 'Le parrainage LOYNA s’applique au paiement mensuel.'}
+            </p>
+            {err('referral')}
+          </div>
         </fieldset>
 
         {/* --- 2. QR codes sous verre ------------------------------------------------------------ */}
@@ -601,6 +662,15 @@ export default function Panier() {
               )}
             </dd>
           </div>
+          {referralOn && (
+            <div>
+              <dt>
+                Parrainage LOYNA
+                <small>-50 % sur votre premier mois ({referralCode})</small>
+              </dt>
+              <dd>−{eur(referralCents)}</dd>
+            </div>
+          )}
           {qrLines.map((r) => (
             <div>
               <dt>
@@ -618,11 +688,7 @@ export default function Panier() {
           {monthly ? `Puis ${euro(plan.monthly)} par mois pendant la durée de l’engagement de 12 mois, résiliable ensuite à la fin de n’importe quel mois.` : `Puis ${euro(plan.yearly)} par an, à chaque échéance, sauf résiliation avant cette date.`}
         </p>
         <p class="pn-vat">Prix sans TVA (art. 293 B du CGI) : le prix affiché est le prix payé.</p>
-        {monthly && offer && !fallback && (
-          <p class="pn-code" data-offer>
-            Mise en service offerte avec le code <strong>{LAUNCH_OFFER.code}</strong>, à saisir dans le champ « code promotionnel » de la page de paiement.
-          </p>
-        )}
+        {!monthly && referral.trim() && <p class="pn-then">Le parrainage s’applique au paiement mensuel : il n’est pas appliqué en paiement annuel.</p>}
         {formErr && (
           <div class="pn-alert" role="alert">
             <p>{formErr}</p>
@@ -643,6 +709,11 @@ export default function Panier() {
               {qrCount > 0 ? <strong>vous choisirez vos QR codes sous verre sur la page de paiement.</strong> : 'vous pourrez y ajouter des QR codes sous verre.'}
               {monthly && offer ? ` Le code ${LAUNCH_OFFER.code} y est déjà saisi : la mise en service est offerte.` : ''}
             </p>
+            {fallback.referralLost && (
+              <p>
+                <strong>Le code de parrainage ne peut pas s’appliquer sur cette page de paiement.</strong> Écrivez-nous à <a href="mailto:contact@loyna.fr">contact@loyna.fr</a> avant de payer.
+              </p>
+            )}
             {fallback.warning && <p>L’e-mail de confirmation de votre adresse n’a pas pu partir : nous vous l’enverrons. En cas de besoin, écrivez à contact@loyna.fr.</p>}
             <a class="btn btn--gold btn--block" href={fallback.url} rel="nofollow">
               Continuer vers le paiement sécurisé

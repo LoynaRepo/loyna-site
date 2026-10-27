@@ -2575,71 +2575,6 @@ label.b {
   overflow-wrap: anywhere;
   color: var(--ink);
 }
-.scan-pill {
-  justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-  padding: 6px 12px;
-  border-radius: 99px;
-  background: linear-gradient(150deg, #22a564, #157a47);
-  color: #fff;
-  font-weight: 750;
-  font-size: 0.86rem;
-}
-.slots {
-  display: grid;
-  gap: 12px;
-  justify-items: start;
-}
-.slot {
-  width: 100%;
-  display: grid;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: #fff;
-  border: 1px solid var(--line);
-}
-.slot-h {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.days {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.day {
-  min-width: 46px;
-  padding: 8px 10px;
-  border-radius: 99px;
-  border: 1.5px solid var(--line);
-  background: var(--card);
-  font: 650 0.84rem/1.2 var(--font);
-  color: var(--text);
-  cursor: pointer;
-}
-.day.on {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: #f0d49a;
-}
-.slot-t {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: flex-end;
-}
-.slot-t .fld {
-  width: 120px;
-}
-.slot-t .check {
-  min-height: 48px;
-  align-items: center;
-}
 .tiers {
   display: grid;
   gap: 10px;
@@ -3250,7 +3185,7 @@ label.b {
 .result--reward .result-lines {
   background: rgba(18, 18, 22, 0.08);
 }
-/* Double tampon et bonus de parrainage */
+/* Bonus de parrainage (offre Pro) */
 .result-tags {
   display: flex;
   flex-wrap: wrap;
@@ -3567,5 +3502,100 @@ label.b {
   .ord-dl > div {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+}
+
+/* Parrainage LOYNA entre commerçants (Abonnement → « Parrainez un commerçant ») */
+.ref-card {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+.ref-card > .pnl-h {
+  margin-bottom: 0;
+}
+.ref-card .fld,
+.ref-card .btn-row,
+.ref-card .note {
+  margin: 0;
+}
+.ref-gains {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ref-gains li {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--gold-soft, #f3e3c3);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+.ref-gains b {
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.ref-code-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.ref-code {
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1.5px dashed var(--gold, #c9963f);
+  background: #fff;
+  font: 800 1.2rem/1.2 var(--font);
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+.ref-link {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ref-link input {
+  flex: 1;
+  min-width: 0;
+}
+.ref-months {
+  margin: 0;
+  font-size: 0.92rem;
+}
+.ref-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.ref-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+.ref-list li > span {
+  display: grid;
+  gap: 2px;
+}
+.ref-list small {
+  color: var(--muted);
+}
+@media (max-width: 520px) {
+  .ref-gains {
+    grid-template-columns: 1fr;
   }
 }

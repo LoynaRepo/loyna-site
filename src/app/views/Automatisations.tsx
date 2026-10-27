@@ -1,14 +1,15 @@
 // Automatisations : les messages et avantages qui partent tout seuls (table merchant_settings, droit
 // settings.manage). Toutes les offres : notification après chaque passage, délai entre deux messages
-// commerciaux. Premium : anniversaire, relance des inactifs, « Plus qu'un passage ! », avis Google, double
-// tampon. Pro : niveaux VIP, parrainage. Sans la fonction (carte features), la carte est verrouillée.
+// commerciaux. Premium : anniversaire, relance des inactifs, « Plus qu'un passage ! », avis Google. Pro :
+// niveaux VIP, parrainage entre clients. Sans la fonction (carte features), la carte est verrouillée.
+// Le double tampon aux heures creuses est retiré des offres depuis le 2026-10-27 (décision d'Ewan).
 // Chaque carte s'enregistre seule ; les aperçus reprennent les textes du serveur (scheduled-customer-engagement).
 import type {ComponentChildren} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
 import {Icon} from '../icons';
 import {api, feature, includedIn, merchant, toast} from '../state';
 import {Badge, Btn, ErrorBox, Field, LockBadge, NotifPreview, OffersLink, PageHead, Spinner, Toggle, useBusy, useLoad} from '../ui';
-import {DAY_NAMES, formatHappyHours, joinUrl, renderTemplate, type HappySlot} from '../util';
+import {joinUrl, renderTemplate} from '../util';
 
 interface Settings {
   merchant_id: string;
@@ -31,8 +32,6 @@ interface Settings {
   review_url: string | null;
   review_after_visits: number;
   review_message: string;
-  happy_hours_enabled: boolean;
-  happy_hours: HappySlot[];
   tiers_enabled: boolean;
   tier_thresholds: number[];
   tier_perks: {BRONZE?: string; SILVER?: string; GOLD?: string};
@@ -114,7 +113,6 @@ export function Automatisations() {
           <Inactive ctx={ctx} />
           <NearReward ctx={ctx} />
           <Review ctx={ctx} />
-          <HappyHours ctx={ctx} />
         </div>
         <p class="auto-more">
           <Icon name="sparkles" size={16} />
@@ -533,91 +531,6 @@ function Review({ctx}: {ctx: Ctx}) {
         </>
       )}
     />
-  );
-}
-
-function HappyHours({ctx}: {ctx: Ctx}) {
-  return (
-    <Auto
-      ctx={ctx}
-      feature="automation.happy_hours"
-      keys={['happy_hours_enabled', 'happy_hours']}
-      toggle="happy_hours_enabled"
-      icon="clock"
-      title="Double tampon aux heures creuses"
-      text={() => 'Pendant ces créneaux, chaque passage compte double : de quoi remplir vos heures creuses.'}
-      body={(s, set) => <SlotsEditor slots={s.happy_hours} onChange={(v) => set('happy_hours', v)} />}
-      validate={(s) => {
-        if (s.happy_hours_enabled && !s.happy_hours.length) return 'Ajoutez au moins un créneau.';
-        for (const [i, x] of s.happy_hours.entries()) {
-          if (!x.days.length) return `Créneau ${i + 1} : choisissez au moins un jour.`;
-          if (!x.start || !x.end || x.start >= x.end) return `Créneau ${i + 1} : l’heure de début doit précéder l’heure de fin.`;
-        }
-        return null;
-      }}
-      preview={(s) =>
-        s.happy_hours.length ? (
-          <div class="back-field">
-            <span class="back-l">Au dos de la carte · Double tampon</span>
-            <span class="back-v">{formatHappyHours(s.happy_hours)}</span>
-            <span class="scan-pill">
-              <Icon name="zap" size={14} /> Double tampon !
-            </span>
-            <span class="muted small">Ce que voit l’équipe au scanner pendant un créneau.</span>
-          </div>
-        ) : (
-          <p class="muted small">Aucun créneau pour le moment.</p>
-        )
-      }
-    />
-  );
-}
-
-/** Éditeur de 3 créneaux au plus : jours (1 = lundi) et heures, « 24:00 » pour finir à minuit. */
-function SlotsEditor({slots, onChange}: {slots: HappySlot[]; onChange: (s: HappySlot[]) => void}) {
-  const upd = (i: number, x: Partial<HappySlot>) => onChange(slots.map((y, k) => (k === i ? {...y, ...x} : y)));
-  return (
-    <div class="slots">
-      {slots.map((x, i) => (
-        <div class="slot">
-          <div class="slot-h">
-            <strong>Créneau {i + 1}</strong>
-            <Btn kind="quiet" small icon="trash-2" title={`Retirer le créneau ${i + 1}`} onClick={() => onChange(slots.filter((_, k) => k !== i))} />
-          </div>
-          <div class="days" role="group" aria-label={`Jours du créneau ${i + 1}`}>
-            {DAY_NAMES.map((n, k) => {
-              const day = k + 1;
-              const on = x.days.includes(day);
-              return (
-                <button type="button" class={`day ${on ? 'on' : ''}`} aria-pressed={on} title={n} onClick={() => upd(i, {days: on ? x.days.filter((y) => y !== day) : [...x.days, day].sort((a, b) => a - b)})}>
-                  {n.slice(0, 3)}.
-                </button>
-              );
-            })}
-          </div>
-          <div class="slot-t">
-            <label class="fld">
-              <span class="fld-l">De</span>
-              <input type="time" step={900} value={x.start} onInput={(e) => upd(i, {start: (e.target as HTMLInputElement).value})} />
-            </label>
-            <label class="fld">
-              <span class="fld-l">À</span>
-              <input type="time" step={900} value={x.end === '24:00' ? '' : x.end} disabled={x.end === '24:00'} onInput={(e) => upd(i, {end: (e.target as HTMLInputElement).value})} />
-            </label>
-            <label class="check">
-              <input type="checkbox" checked={x.end === '24:00'} onChange={(e) => upd(i, {end: (e.target as HTMLInputElement).checked ? '24:00' : '23:00'})} />
-              jusqu’à minuit
-            </label>
-          </div>
-        </div>
-      ))}
-      {slots.length < 3 && (
-        <Btn kind="ghost" small icon="plus" onClick={() => onChange([...slots, {days: [2, 3, 4], start: '14:00', end: '16:00'}])}>
-          Ajouter un créneau
-        </Btn>
-      )}
-      {slots.length >= 3 && <p class="muted small">Trois créneaux au plus.</p>}
-    </div>
   );
 }
 

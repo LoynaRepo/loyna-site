@@ -11,7 +11,7 @@ RENOMMEES ; une question du dépôt absente de Builder y est créée et publiée
 dès qu'il en a une). Rien n'est jamais supprimé : une entrée Builder sans équivalent est seulement signalée. Les
 réglages du site (site-settings) ne sont pas recopiés, seulement contrôlés.
 
-Contrôle final : aucun terme retiré (SMS, anciennes offres et anciens prix, « HT », API et webhooks) ne doit rester
+Contrôle final : aucun terme retiré (SMS, anciennes offres et anciens prix, « HT », API et webhooks, double tampon) ne doit rester
 dans Builder. La clé privée n'est jamais affichée. Après --appliquer : construire et publier le site (les contenus
 Builder sont lus au build).
 """
@@ -46,6 +46,8 @@ RETIRES = [
     ("ancien prix annuel", re.compile(r"499,80|805,80")),
     ("HT", re.compile(r"\bHT\b")),
     ("API et webhooks", re.compile(r"webhooks", re.I)),
+    # double tampon aux heures creuses : retiré des offres le 2026-10-27 (décision d'Ewan)
+    ("double tampon", re.compile(r"double tampon|compter double|compte double", re.I)),
 ]
 
 
