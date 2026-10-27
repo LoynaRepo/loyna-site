@@ -37,6 +37,7 @@ interface Settings {
   wallet_back_text: string | null;
   scan_undo_window_seconds: number;
   proximity_message: string | null;
+  proximity_enabled: boolean;
 }
 interface Shop {
   id?: string;
@@ -93,7 +94,15 @@ export function Reglages() {
         </a>
       </nav>
       <Branding initial={data.data.merchant} />
-      {data.data.settings && <Boutique merchant={data.data.merchant} shops={data.data.shops} message={data.data.settings.proximity_message} program={data.data.program} />}
+      {data.data.settings && (
+        <Boutique
+          merchant={data.data.merchant}
+          shops={data.data.shops}
+          message={data.data.settings.proximity_message}
+          enabled={data.data.settings.proximity_enabled !== false}
+          program={data.data.program}
+        />
+      )}
       <Poster slug={data.data.merchant.slug} name={data.data.merchant.name} />
       {data.data.settings && <SettingsForm initial={data.data.settings} />}
     </div>
@@ -260,16 +269,32 @@ const osm = (lat: number, lon: number) => `https://www.openstreetmap.org/?mlat=$
 const placed = (s: Shop) => s.latitude !== null && s.longitude !== null;
 const line = (s: Pick<Shop, 'address' | 'postal_code' | 'city'>) => [s.address, [s.postal_code, s.city].filter(Boolean).join(' ')].filter((x) => x && x.trim()).join(', ');
 
-function Boutique({merchant: initialMer, shops: initialShops, message, program}: {merchant: Merchant; shops: Shop[]; message: string | null; program: Program | null}) {
+function Boutique(props: {merchant: Merchant; shops: Shop[]; message: string | null; enabled: boolean; program: Program | null}) {
+  const {message, program} = props;
   // Rechargement limité à cette section : les modifications en cours ailleurs dans la page sont gardées
-  const [mer, setMer] = useState(initialMer);
-  const [shops, setShops] = useState(initialShops);
+  const [mer, setMer] = useState(props.merchant);
+  const [shops, setShops] = useState(props.shops);
+  const [enabled, setEnabled] = useState(props.enabled);
   const [editing, setEditing] = useState<number | 'new' | null>(null);
   const [removing, setRemoving] = useState<Shop | null>(null);
   const [busy, run] = useBusy();
+  const [switching, runSwitch] = useBusy();
   const limit = featureLimit('locations.max') ?? 1;
   const on = feature('wallet.proximity');
-  const active = on && (shops.length > 0 || (mer.latitude !== null && mer.longitude !== null));
+  const placedAny = shops.length > 0 || (mer.latitude !== null && mer.longitude !== null);
+  const active = on && enabled && placedAny;
+
+  /** Interrupteur (2026-10-27) : désactivée, les cartes ne portent plus d'adresse ; les boutiques restent enregistrées. */
+  const switchProximity = (v: boolean) =>
+    runSwitch(async () => {
+      try {
+        const r = await api.update<Settings>('merchant_settings', {merchant_id: mer.id}, {proximity_enabled: v});
+        setEnabled(r.proximity_enabled !== false);
+        toast(v ? 'Notification de proximité activée : les cartes de vos clients se mettent à jour.' : 'Notification de proximité désactivée : vos boutiques restent enregistrées.');
+      } catch (e) {
+        toastError(e);
+      }
+    });
   const many = limit > 1;
   const refresh = async () => setShops(await api.select<Shop>('merchant_locations', {eq: {merchant_id: mer.id}, order: ['sort_order', true]}));
 
@@ -281,7 +306,7 @@ function Boutique({merchant: initialMer, shops: initialShops, message, program}:
     const existing = typeof index === 'number' ? shops[index] : undefined;
     if (existing?.id) await api.update('merchant_locations', {id: existing.id}, row);
     else await api.insert('merchant_locations', {...row, merchant_id: mer.id, sort_order: shops.length});
-    toast(first ? 'Adresse enregistrée : la notification de proximité est active sur les cartes.' : 'Boutique enregistrée');
+    toast(first && enabled ? 'Adresse enregistrée : la notification de proximité est active sur les cartes.' : first ? 'Adresse enregistrée' : 'Boutique enregistrée');
     setEditing(null);
     await refresh().catch(() => {});
   };
@@ -302,9 +327,22 @@ function Boutique({merchant: initialMer, shops: initialShops, message, program}:
   return (
     <Panel title="Votre boutique et la notification de proximité" sub="Quand un client passe près de votre boutique, sa carte s’affiche sur l’écran de verrouillage de son téléphone, avec un court message.">
       <span id="r-boutique" class="anchor-t" />
+      {on && (
+        <Toggle
+          checked={enabled}
+          disabled={switching}
+          onChange={switchProximity}
+          label="Notification de proximité"
+          hint={enabled ? 'Activée : la carte s’affiche quand un client passe près de votre boutique.' : 'Désactivée : vos boutiques restent enregistrées, la carte ne s’affiche plus près de la boutique.'}
+        />
+      )}
       <div class="prox-state">
         {!on ? (
           <LockBadge feature="wallet.proximity" />
+        ) : !enabled ? (
+          <Badge tone="neutral">
+            <Icon name="map-pin" size={14} /> Notification de proximité désactivée
+          </Badge>
         ) : active ? (
           <Badge tone="green">
             <Icon name="map-pin-check" size={14} /> Notification de proximité active
@@ -315,9 +353,13 @@ function Boutique({merchant: initialMer, shops: initialShops, message, program}:
           </Badge>
         )}
         <span class="muted small">
-          {active
-            ? `${shops.length > 1 ? `${shops.length} boutiques placées` : 'Boutique placée'} sur les cartes de vos clients${many ? ` (${limit} au plus avec votre offre)` : ''}.`
-            : 'Saisissez l’adresse de la boutique : LOYNA la place sur les cartes de vos clients.'}
+          {!on || !enabled
+            ? placedAny
+              ? `${shops.length > 1 ? `${shops.length} boutiques enregistrées` : 'Boutique enregistrée'}.`
+              : 'Saisissez l’adresse de la boutique : LOYNA la place sur les cartes de vos clients.'
+            : active
+              ? `${shops.length > 1 ? `${shops.length} boutiques placées` : 'Boutique placée'} sur les cartes de vos clients${many ? ` (${limit} au plus avec votre offre)` : ''}.`
+              : 'Saisissez l’adresse de la boutique : LOYNA la place sur les cartes de vos clients.'}
         </span>
       </div>
 

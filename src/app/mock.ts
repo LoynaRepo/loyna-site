@@ -414,7 +414,7 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
         terms_url: null, privacy_url: null, wallet_back_text: d.tpl.closed.includes(0) ? 'Du mardi au samedi, 9 h – 19 h.' : 'Tous les jours sauf le lundi, 7 h – 20 h.', notify_balance_updates: true,
         birthday_enabled: has('automation.birthday'), birthday_channel: 'WALLET', birthday_message: 'Joyeux anniversaire {prenom} ! Une surprise vous attend chez {commerce}.',
         inactive_enabled: has('automation.inactive'), inactive_after_days: 60, inactive_channel: 'WALLET', inactive_message: '{prenom}, cela fait longtemps ! Revenez nous voir chez {commerce}.',
-        reengagement_cooldown_days: 30, marketing_min_interval_hours: 48, scan_undo_window_seconds: 120, proximity_message: d.tpl.proximity,
+        reengagement_cooldown_days: 30, marketing_min_interval_hours: 48, scan_undo_window_seconds: 120, proximity_message: d.tpl.proximity, proximity_enabled: true,
         near_reward_enabled: has('automation.near_reward'), near_reward_after_days: 7, near_reward_remaining: null, near_reward_message: '{prenom}, plus que {reste} {unite} avant votre récompense chez {commerce} !',
         review_enabled: has('automation.review'), review_url: has('automation.review') ? 'https://example.com/avis-google-demo' : null, review_after_visits: 3,
         review_message: 'Merci pour votre fidélité, {prenom} ! Votre avis compte beaucoup pour {commerce} : le lien pour laisser un avis Google est au dos de votre carte.',

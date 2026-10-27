@@ -15,6 +15,8 @@ interface Settings {
   enrollment_collect_birthday: boolean;
   notify_balance_updates: boolean;
   marketing_min_interval_hours: number;
+  proximity_enabled: boolean;
+  proximity_message: string | null;
   birthday_enabled: boolean;
   birthday_message: string;
   inactive_enabled: boolean;
@@ -95,6 +97,7 @@ export function Automatisations() {
 
       <div class="auto-grid">
         <PassNotif ctx={ctx} />
+        <Proximity ctx={ctx} />
         <Pace ctx={ctx} />
       </div>
 
@@ -282,6 +285,36 @@ function PassNotif({ctx}: {ctx: Ctx}) {
         )
       }
       saved="Réglage enregistré"
+    />
+  );
+}
+
+/** Interrupteur de la notification de proximité (2026-10-27) ; adresses et message dans Réglages. */
+function Proximity({ctx}: {ctx: Ctx}) {
+  const name = merchant.value!.merchant_name;
+  return (
+    <Auto
+      ctx={ctx}
+      feature="wallet.proximity"
+      keys={['proximity_enabled']}
+      toggle="proximity_enabled"
+      icon="map-pin"
+      title="Notification de proximité"
+      text={() => 'Incluse dans toutes les offres : quand un client passe près de votre boutique, sa carte s’affiche sur l’écran de verrouillage de son téléphone.'}
+      body={() => (
+        <p class="muted small">
+          Adresses des boutiques et message : <a href="#/reglages">Réglages › Boutique et proximité</a>.
+        </p>
+      )}
+      bodyAlways
+      preview={(s) =>
+        s.proximity_enabled ? (
+          <NotifPreview body={s.proximity_message?.trim() || `Vous passez près de ${name} : votre carte est prête.`} when="près de la boutique" />
+        ) : (
+          <p class="muted small">Désactivée : vos boutiques restent enregistrées, la carte ne s’affiche plus quand un client passe à proximité.</p>
+        )
+      }
+      saved="Réglage enregistré : les cartes de vos clients se mettent à jour."
     />
   );
 }
