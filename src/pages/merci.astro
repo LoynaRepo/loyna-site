@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
+import WalletCard from '../components/WalletCard.astro';
 import {CARD_ACCENTS, CARD_BGS, PLANS, SETUP_FEE, offerActive} from '../data/site';
 // Stripe revient ici avec ?offre=starter-mensuel|starter-annuel|premium-mensuel|premium-annuel|pro-mensuel|pro-annuel
 // &session_id=… (liens de paiement de src/data/site.ts).
@@ -67,6 +68,13 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
 
         <form method="post" action="/elements.php" enctype="multipart/form-data" id="elements-form">
           <h2 class="h3">Les éléments de votre carte</h2>
+          <div class="el-apercu" aria-label="Aperçu en direct de votre carte">
+            <p class="el-apercu-t"><Icon name="eye" size={16} /> Aperçu en direct</p>
+            <div id="el-card-slot">
+              <WalletCard name="Votre commerce" activity="Carte de fidélité" filled={7} total={10} reward="Votre récompense" width={300} />
+            </div>
+            <p class="el-apercu-n small" id="el-apercu-note">Votre carte telle que vos clients l’ajouteront dans Apple Wallet ou Google Wallet. Elle suit vos choix ci-dessous.</p>
+          </div>
           <p class="alert" id="el-error" role="alert" tabindex="-1" hidden></p>
           <input type="hidden" name="t" value="" />
           <input type="hidden" name="offre" value="" />
@@ -152,12 +160,51 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
 </Base>
 
 <script>
-  import {brancherCouleurs, marquerCouleurs} from '../lib/carte-live';
+  import {appliquerCarte, brancherCouleurs, initiales, marquerCouleurs} from '../lib/carte-live';
 
   const q = new URLSearchParams(location.search);
   const form = document.getElementById('elements-form') as HTMLFormElement;
-  // Ronds de couleur : la valeur part dans les champs « fond » et « accent » du formulaire
-  brancherCouleurs(form, () => {});
+
+  // Aperçu en direct de la carte (demande d'Ewan du 2026-10-27, comme le configurateur) : il suit le nom,
+  // l'activité, les couleurs, le nombre de passages, la récompense et le logo (image ; un PDF garde les initiales).
+  const carte = document.querySelector<HTMLElement>('#el-card-slot .wcard');
+  let logoUrl = '';
+  const champ = (name: string) => ((form.elements.namedItem(name) as HTMLInputElement | null)?.value ?? '').trim();
+  function apercu(animer = false) {
+    if (!carte) return;
+    const total = Math.min(50, Math.max(2, Number(champ('passages')) || 10));
+    const nom = champ('commerce') || 'Votre commerce';
+    appliquerCarte(
+      carte,
+      {
+        name: nom,
+        activity: champ('activite') || 'Carte de fidélité',
+        bg: /^#[0-9a-f]{6}$/i.test(champ('fond')) ? champ('fond') : '#1f1c17',
+        accent: /^#[0-9a-f]{6}$/i.test(champ('accent')) ? champ('accent') : '#d9b27a',
+        total,
+        reward: champ('recompense') || 'Votre récompense',
+      },
+      animer,
+    );
+    const logo = carte.querySelector<HTMLElement>('.wc-logo');
+    if (logo) {
+      if (logoUrl) {
+        logo.textContent = '';
+        const img = document.createElement('img');
+        img.src = logoUrl;
+        img.alt = '';
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+        logo.append(img);
+      } else {
+        logo.textContent = initiales(nom);
+      }
+    }
+  }
+  // Ronds de couleur : la valeur part dans les champs « fond » et « accent » du formulaire, et dans l'aperçu
+  brancherCouleurs(form, () => apercu(true));
+  ['commerce', 'activite', 'passages', 'recompense'].forEach((name) =>
+    form.elements.namedItem(name)?.addEventListener('input', () => apercu()),
+  );
   const set = (name: string, v: string) => {
     const el = form.elements.namedItem(name) as HTMLInputElement | null;
     if (el && v) el.value = v;
@@ -188,6 +235,13 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
   document.getElementById('el-logo')?.addEventListener('change', (e) => {
     const f = (e.target as HTMLInputElement).files?.[0];
     (document.getElementById('el-logo-name') as HTMLElement).textContent = f ? f.name : 'Aucun fichier choisi';
+    if (logoUrl) URL.revokeObjectURL(logoUrl);
+    logoUrl = f && /^image\/(png|jpeg|webp|svg\+xml)$/.test(f.type) ? URL.createObjectURL(f) : '';
+    (document.getElementById('el-apercu-note') as HTMLElement).textContent =
+      f && !logoUrl
+        ? 'Votre logo PDF sera placé sur la carte par nos soins : l’aperçu garde vos initiales.'
+        : 'Votre carte telle que vos clients l’ajouteront dans Apple Wallet ou Google Wallet. Elle suit vos choix ci-dessous.';
+    apercu(true);
   });
   set('t', String(Date.now()));
   set('offre', /^[a-z-]{3,30}$/.test(q.get('offre') || '') ? q.get('offre')! : '');
@@ -230,6 +284,7 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
     /* stockage indisponible */
   }
   marquerCouleurs(form);
+  apercu();
   // Mesure de conversion (seulement si la mesure d'audience a été acceptée)
   window.addEventListener('load', () => {
     const offre = q.get('offre') || '';
@@ -329,6 +384,47 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
   .elements form[hidden],
   .recu[hidden] {
     display: none;
+  }
+  /* Aperçu en direct de la carte : reste visible pendant la saisie sur les grands écrans */
+  .el-apercu {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    padding: 14px 12px 12px;
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--card) 88%, transparent);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--line);
+  }
+  .el-apercu-t {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .el-apercu-n {
+    margin: 0;
+    text-align: center;
+    max-width: 34ch;
+  }
+  .el-apercu {
+    min-width: 0;
+  }
+  /* Largeur de la carte : 300 px, réduite sur téléphone (marges du formulaire et de l'aperçu déduites) */
+  #el-card-slot :global(.wcard) {
+    --w: min(300px, calc(100vw - 120px)) !important;
+  }
+  @media (min-width: 901px) and (min-height: 1000px) {
+    .el-apercu {
+      position: sticky;
+      top: 84px;
+      z-index: 2;
+    }
   }
   .row {
     display: grid;
