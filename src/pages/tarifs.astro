@@ -6,6 +6,7 @@ import Icon from '../components/Icon.astro';
 import CtaBand from '../components/CtaBand.astro';
 import CallbackForm from '../components/CallbackForm.astro';
 import Proximite from '../components/Proximite.astro';
+import PourVotreMetier from '../components/PourVotreMetier.astro';
 import {COMPARISON, LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, nombre, offerActive} from '../data/site';
 import {getFaq} from '../lib/builder';
 
@@ -242,6 +243,8 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
       </section>
     )
   }
+
+  <PourVotreMetier />
 
   <CtaBand callbackHref="#rappel" title="Pas encore décidé ?" text="Créez l’aperçu de votre carte en 30 secondes, ou écrivez-nous : nous vous aidons à choisir la formule adaptée à votre commerce." />
 </Base>

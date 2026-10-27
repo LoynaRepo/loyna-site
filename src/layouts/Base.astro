@@ -21,6 +21,8 @@ interface Props {
   jsonLd?: object | object[];
   breadcrumbs?: {name: string; url: string}[];
   published?: string;
+  modified?: string;
+  ogImageAlt?: string;
   bare?: boolean;
   /** Barre d'action fixe sur mobile : false pour la masquer, ou liens personnalisés. */
   stickyCta?: false | {primary?: Link; secondary?: Link};

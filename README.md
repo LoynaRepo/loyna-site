@@ -16,6 +16,8 @@ Faits produit, prix et ton : [docs/BRIEF.md](docs/BRIEF.md). Ne rien inventer (n
 
 Commandes équivalentes : `npx astro build` puis `python tools/deploy.py publier` (`--essai` pour voir sans
 envoyer, `test` pour vérifier la connexion). Après une modification dans Builder.io, il faut republier.
+Après une mise en ligne réussie, `deploy.py` signale à IndexNow (Bing, Yandex…) les pages du plan du site qui ont
+changé (`--sans-indexnow` pour s'en passer ; un refus d'IndexNow n'annule pas la mise en ligne).
 
 ## Développer
 
@@ -246,8 +248,19 @@ node tools/qa-mail-perso.mjs 1366              # bout en bout (ou 390) : composi
 - Les liens internes reçoivent leur « / » final au build (`astro.config.mjs`) : pas de redirection 301 inutile.
 - Vérification Search Console / Bing : `googleVerification` et `bingVerification` dans `src/data/site.ts` (ou
   Builder `site-settings`) ; profils officiels de la marque dans `sameAs` (données structurées Organization).
-- IndexNow (Bing, Yandex…) : `python tools/indexnow.py` après chaque mise en ligne (clé publique
-  `public/<clé>.txt`). Google lit le plan du site `https://loyna.fr/sitemap.xml` déclaré dans la Search Console.
+- IndexNow (Bing, Yandex…) : lancé par `deploy.py publier` pour les pages modifiées ; à la main, `python
+  tools/indexnow.py` (tout le plan du site, clé publique `public/<clé>.txt`). Google lit le plan du site
+  `https://loyna.fr/sitemap.xml` déclaré dans la Search Console.
+- Plan du site : `<lastmod>` = vraie date de chaque page (`tools/lastmod.mjs` : date ou `miseAJour` d'un article,
+  dernier commit qui a modifié la fiche d'un métier ou le fichier source d'une page), sans `changefreq`.
+  `/espace-client/` en est exclue.
+- Maillage interne (`src/lib/maillage.ts`) : guides de chaque page métier (`GUIDES_PAR_METIER`, sinon mots-clés),
+  métiers voisins (`METIERS_PROCHES`), « À lire aussi » des articles choisi par sujet ; tous les métiers dans le
+  pied de page et dans le bloc « Pour votre métier » de /tarifs/ et /fonctionnalites/ (`PourVotreMetier.astro`).
+- Auteur et entreprise : page `/a-propos/` (identité des mentions légales), fondateur `FONDATEUR` de
+  `src/data/site.ts` (Person dans Organization.founder et auteur des articles, `sameAs` vide tant que les profils
+  ne sont pas donnés). Article mis à jour : champ `miseAJour` (AAAA-MM-JJ) seulement si le contenu a vraiment
+  changé ; il donne `dateModified` et la mention « Mis à jour le … ».
 
 ## Hébergement OVH
 

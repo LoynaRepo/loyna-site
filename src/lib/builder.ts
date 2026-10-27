@@ -58,6 +58,8 @@ export interface Article {
   metaDescription: string;
   excerpt: string;
   date: string;
+  /** Date de la dernière mise à jour réelle du contenu (AAAA-MM-JJ), jamais la date seule ; absente = jamais mis à jour. */
+  miseAJour?: string;
   readingMinutes: number;
   tags: string[];
   faq?: {q: string; a: string}[];

@@ -1,0 +1,213 @@
+---
+// Page « À propos » : qui édite LOYNA, ce que fait le service, pourquoi une carte dans le Wallet, comment nous
+// joindre. Uniquement des faits vérifiables : identité reprise des mentions légales (Builder site-settings ou
+// src/data/site.ts), fonctionnement repris des pages produit. Ni chiffre, ni client, ni témoignage, ni photo.
+// TODO Ewan : présenter l'associé (nom complet et accord pour être cité), ajouter de vraies photos (équipe, carte
+// au comptoir) et les profils publics (FONDATEUR.sameAs et SITE.sameAs dans src/data/site.ts).
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Icon from '../components/Icon.astro';
+import CtaBand from '../components/CtaBand.astro';
+import {getSettings} from '../lib/builder';
+import {SITE} from '../data/site';
+
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: 'À propos', url: '/a-propos/'},
+];
+// Identité légale : mêmes sources que les mentions légales (Builder l'emporte sur les valeurs du dépôt)
+const s = await getSettings();
+const dirigeant = (s.nomDirigeant || SITE.legal.nomDirigeant).trim();
+const nomCommercial = (s.nomCommercial || SITE.legal.nomCommercial).trim();
+const siret = (s.siret || SITE.legal.siret).trim();
+const adresse = (s.adresse || SITE.legal.adresse).trim();
+const de = (nom: string) => (/^[aeiouyàâéèêîôh]/i.test(nom) ? `d’${nom}` : `de ${nom}`);
+
+const aboutLd = {
+  '@type': 'AboutPage',
+  '@id': `${SITE.url}/a-propos/#page`,
+  url: `${SITE.url}/a-propos/`,
+  name: 'À propos de LOYNA',
+  inLanguage: 'fr-FR',
+  isPartOf: {'@id': `${SITE.url}/#site`},
+  about: {'@id': `${SITE.url}/#organisation`},
+  mainEntity: {'@id': `${SITE.url}/#organisation`},
+};
+// Mêmes libellés que les mentions légales
+const identite = [
+  ['Éditeur', `${dirigeant}, entrepreneur individuel (EI), micro-entreprise`],
+  ['Nom commercial', nomCommercial],
+  ['Marque et service', 'LOYNA'],
+  ['Adresse', adresse],
+  ['SIRET', siret],
+  ['TVA', SITE.vatNote],
+];
+---
+
+<Base
+  title="À propos de LOYNA : qui sommes-nous ?"
+  description="LOYNA, marque de KOVA Elec, l’entreprise d’Ewan Touquet à Fabrègues, près de Montpellier : la carte de fidélité Apple Wallet et Google Wallet, sans appli."
+  ogImage="/og/a-propos.png"
+  breadcrumbs={crumbs}
+  jsonLd={aboutLd}
+>
+  <section class="page-hero">
+    <div class="container">
+      <Breadcrumbs items={crumbs} />
+      <p class="eyebrow">Qui sommes-nous</p>
+      <h1>À propos de LOYNA</h1>
+      <p class="lead">LOYNA crée la carte de fidélité des commerces indépendants dans le téléphone de leurs clients : dans Apple Wallet ou Google Wallet, sans application à télécharger.</p>
+    </div>
+  </section>
+
+  <section class="section pt0">
+    <div class="container grid grid-2 duo">
+      <div>
+        <h2>Qui est derrière LOYNA ?</h2>
+        <p>
+          LOYNA est une marque de {nomCommercial}, l’entreprise individuelle {de(dirigeant)}, fondateur de LOYNA. L’entreprise est installée à Fabrègues, dans l’Hérault,
+          près de Montpellier.
+        </p>
+        <p>
+          C’est elle qui conçoit le service, crée la carte de chaque commerce à ses couleurs et répond aux commerçants. Pour toute question, vous écrivez directement à
+          l’équipe : <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.
+        </p>
+      </div>
+      <dl class="card fiche" aria-label="Identité de l’entreprise">
+        {
+          identite.map(([terme, valeur]) => (
+            <div>
+              <dt>{terme}</dt>
+              <dd>{valeur}</dd>
+            </div>
+          ))
+        }
+        <div>
+          <dt>E-mail</dt>
+          <dd><a href={`mailto:${SITE.email}`}>{SITE.email}</a></dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container narrow">
+      <h2>Ce que fait LOYNA</h2>
+      <p>
+        LOYNA est un logiciel de fidélité pour les commerces de proximité : salons de coiffure, barbiers, instituts de beauté, ongleries, boulangeries, cafés,
+        restaurants, pizzerias, snacks et boutiques de quartier.
+      </p>
+      <ul class="checks">
+        <li>La carte de fidélité du commerce s’ajoute à Apple Wallet sur iPhone ou à Google Wallet sur Android, sans application à télécharger.</li>
+        <li>Le client s’inscrit en scannant un QR code au comptoir ; le commerçant valide chaque passage d’un scan avec son téléphone, dans LOYNA Business.</li>
+        <li>La récompense se débloque toute seule au seuil choisi, et le client est prévenu par une notification Wallet.</li>
+        <li>Quand le client passe près de la boutique, la carte peut s’afficher sur l’écran de verrouillage de son téléphone. LOYNA ne reçoit jamais sa position.</li>
+        <li>Les données des clients sont hébergées dans l’Union européenne et ne sont jamais utilisées à des fins commerciales.</li>
+      </ul>
+      <p class="liens">
+        <a href="/fonctionnalites/">Toutes les fonctionnalités <Icon name="arrow-right" size={16} /></a>
+        <a href="/tarifs/">Les tarifs <Icon name="arrow-right" size={16} /></a>
+        <a href="/secteurs/">Les métiers <Icon name="arrow-right" size={16} /></a>
+      </p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container narrow">
+      <h2>Pourquoi une carte dans le Wallet ?</h2>
+      <p>
+        La carte à tampons en carton a un défaut simple : elle n’est jamais là au bon moment. Elle reste à la maison, se plie dans un portefeuille ou se perd avec un
+        ticket. Le client repart sans son tampon, se décourage, puis oublie le programme. Et le commerçant ne sait ni qui sont ses habitués, ni comment les prévenir
+        d’une nouveauté.
+      </p>
+      <p>
+        Le téléphone, lui, reste dans la poche de vos clients. Rangée dans Apple Wallet ou Google Wallet, la carte de fidélité ne s’oublie plus, se met à jour toute
+        seule à chaque passage et permet d’envoyer un message utile au bon moment. C’est l’idée de LOYNA : garder ce qui marche dans la carte à tampons, une récompense
+        simple remise au comptoir, et retirer ce qui la fait échouer.
+      </p>
+      <p>
+        Pour comparer les deux supports en détail, lisez notre guide <a href="/blog/carte-fidelite-papier-ou-digitale/">carte de fidélité papier ou digitale</a>.
+      </p>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container narrow contact">
+      <h2>Nous contacter</h2>
+      <p>Une question sur LOYNA, une démonstration ou un exemple de carte à votre nom : écrivez-nous, nous vous répondons par e-mail.</p>
+      <div class="btn-row">
+        <a class="btn btn--primary" href="/contact/">Écrire à LOYNA <Icon name="arrow-right" size={18} /></a>
+        <a class="btn btn--ghost" href={`mailto:${SITE.email}`}>{SITE.email}</a>
+      </div>
+      <p class="petit">Éditeur du site, hébergement et conditions : <a href="/mentions-legales/">mentions légales</a>, <a href="/cgv/">CGV</a>.</p>
+    </div>
+  </section>
+
+  <CtaBand />
+</Base>
+
+<style>
+  .pt0 {
+    padding-top: 0;
+  }
+  .duo {
+    align-items: start;
+    gap: clamp(28px, 5vw, 64px);
+  }
+  .duo h2,
+  .narrow h2 {
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+  }
+  .fiche {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+  }
+  .fiche div {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .fiche div:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  .fiche dt {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .fiche dd {
+    margin: 0;
+    color: var(--text);
+  }
+  .checks {
+    margin: 20px 0;
+  }
+  .liens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+  }
+  .liens a {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    font-weight: 700;
+    color: var(--gold-strong);
+  }
+  .contact .btn-row {
+    margin: 22px 0;
+  }
+  .petit {
+    font-size: 0.92rem;
+    color: var(--muted);
+  }
+  @media (max-width: 520px) {
+    .fiche div {
+      grid-template-columns: 1fr;
+      gap: 2px;
+    }
+  }
+</style>

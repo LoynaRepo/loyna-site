@@ -4,12 +4,14 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Icon from '../../components/Icon.astro';
 import CtaBand from '../../components/CtaBand.astro';
 import {getArticles, type Article} from '../../lib/builder';
-import {PLANS, SITE, euro} from '../../data/site';
+import {articlesProches} from '../../lib/maillage';
+import {FONDATEUR, PLANS, SITE, euro} from '../../data/site';
 import {ogImage} from '../../lib/og';
 
 export async function getStaticPaths() {
   const all = await getArticles();
-  return all.map((a) => ({params: {slug: a.slug}, props: {a, others: all.filter((o) => o.slug !== a.slug).slice(0, 3)}}));
+  // « À lire aussi » : les articles les plus proches par le sujet (src/lib/maillage.ts)
+  return all.map((a) => ({params: {slug: a.slug}, props: {a, others: articlesProches(a, all)}}));
 }
 const {a, others} = Astro.props as {a: Article; others: Article[]};
 const url = `${SITE.url}/blog/${a.slug}/`;
@@ -19,7 +21,10 @@ const crumbs = [
   {name: 'Ressources', url: '/blog/'},
   {name: a.title, url: `/blog/${a.slug}/`},
 ];
-const date = new Date(a.date).toLocaleDateString('fr-FR', {day: 'numeric', month: 'long', year: 'numeric'});
+const dateFr = (d: string) => new Date(d).toLocaleDateString('fr-FR', {day: 'numeric', month: 'long', year: 'numeric'});
+const date = dateFr(a.date);
+// Mise à jour réelle du contenu (champ miseAJour), affichée seulement si elle est postérieure à la publication
+const maj = a.miseAJour && a.miseAJour > a.date ? a.miseAJour : undefined;
 const words = a.body.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
 const ld: object[] = [
   {
@@ -27,14 +32,15 @@ const ld: object[] = [
     headline: a.title,
     description: a.metaDescription,
     datePublished: a.date,
-    dateModified: a.date,
+    dateModified: maj ?? a.date,
     inLanguage: 'fr-FR',
     wordCount: words,
     keywords: a.tags.join(', '),
     mainEntityOfPage: url,
     url,
     image: og.startsWith('http') ? og : SITE.url + og,
-    author: {'@type': 'Organization', name: 'LOYNA', url: SITE.url},
+    // Auteur : le fondateur, décrit sur /a-propos/ (Person complète dans l'Organization de Seo.astro)
+    author: {'@type': 'Person', '@id': FONDATEUR.id, name: FONDATEUR.nom, jobTitle: FONDATEUR.titre, url: new URL(FONDATEUR.page, SITE.url).href},
     publisher: {'@id': `${SITE.url}/#organisation`},
   },
 ];
@@ -43,14 +49,28 @@ if (a.faq?.length) {
 }
 ---
 
-<Base title={a.metaTitle} description={a.metaDescription} type="article" published={a.date} ogImage={og} breadcrumbs={crumbs} jsonLd={ld}>
+<Base title={a.metaTitle} description={a.metaDescription} type="article" published={a.date} modified={maj} ogImage={og} ogImageAlt={a.title} breadcrumbs={crumbs} jsonLd={ld}>
   <article>
     <header class="page-hero article-head">
       <div class="narrow">
         <Breadcrumbs items={crumbs} />
-        <p class="meta">{date} · {a.readingMinutes} min de lecture</p>
+        <p class="meta">
+          <time datetime={a.date}>{date}</time>
+          {
+            maj && (
+              <>
+                {' · '}Mis à jour le <time datetime={maj}>{dateFr(maj)}</time>
+              </>
+            )
+          }
+          {' · '}
+          {a.readingMinutes} min de lecture
+        </p>
         <h1>{a.title}</h1>
         <p class="lead">{a.excerpt}</p>
+        <p class="byline">
+          Par <a href={FONDATEUR.page} rel="author">{FONDATEUR.nom}</a>, fondateur de LOYNA
+        </p>
       </div>
     </header>
     <div class="narrow prose" set:html={a.body} />
@@ -115,6 +135,15 @@ if (a.faq?.length) {
     font-weight: 600;
     color: var(--muted);
     font-size: 0.92rem;
+  }
+  .byline {
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .byline a {
+    color: var(--ink);
+    font-weight: 700;
   }
   .faq-block {
     margin-top: 48px;

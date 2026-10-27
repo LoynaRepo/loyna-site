@@ -36,6 +36,17 @@ export const SITE = {
   billingPortalUrl: 'https://billing.stripe.com/p/login/28E28u2vEcIt4tvbiw5Ne00',
 };
 
+// Fondateur : page « À propos », auteur des articles et données structurées (Organization.founder, BlogPosting.author).
+// sameAs : ses profils publics (LinkedIn…), vides tant qu'Ewan ne les a pas donnés.
+// TODO Ewan : l'associé (nom complet et accord pour être cité) et les photos, à ajouter ici et sur /a-propos/.
+export const FONDATEUR = {
+  nom: 'Ewan Touquet',
+  titre: 'Fondateur de LOYNA',
+  page: '/a-propos/',
+  id: `${SITE.url}/a-propos/#ewan-touquet`,
+  sameAs: [] as string[],
+};
+
 // Offres Starter, Premium et Pro : source de vérité dans le dépôt LOYNA, docs/OFFRES.md (décision d'Ewan du
 // 2026-10-25). Ne rien ajouter ici qui n'y figure pas.
 export type PlanId = 'starter' | 'premium' | 'pro';

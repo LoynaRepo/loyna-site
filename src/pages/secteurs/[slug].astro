@@ -6,15 +6,18 @@ import Phone from '../../components/Phone.astro';
 import Icon from '../../components/Icon.astro';
 import PricingCards from '../../components/PricingCards.astro';
 import CtaBand from '../../components/CtaBand.astro';
-import {getSectors, type Sector} from '../../lib/builder';
+import {getArticles, getSectors, type Article, type Sector} from '../../lib/builder';
+import {autresMetiers, guidesPourMetier} from '../../lib/maillage';
 import {PLANS, SITE} from '../../data/site';
 import {ogImage} from '../../lib/og';
 
 export async function getStaticPaths() {
   const sectors = await getSectors();
-  return sectors.map((s) => ({params: {slug: s.slug}, props: {s, others: sectors.filter((o) => o.slug !== s.slug)}}));
+  const articles = await getArticles();
+  // Maillage (src/lib/maillage.ts) : guides du même sujet, puis les autres métiers, les plus proches en premier
+  return sectors.map((s) => ({params: {slug: s.slug}, props: {s, others: autresMetiers(s, sectors), guides: guidesPourMetier(s, articles)}}));
 }
-const {s, others} = Astro.props as {s: Sector; others: Sector[]};
+const {s, others, guides} = Astro.props as {s: Sector; others: Sector[]; guides: Article[]};
 const crumbs = [
   {name: 'Accueil', url: '/'},
   {name: 'Secteurs', url: '/secteurs/'},
@@ -44,7 +47,7 @@ const serviceLd = {
 const proche = `Votre récompense vous attend chez ${s.carte.nom} !`;
 ---
 
-<Base title={s.metaTitle} description={s.metaDescription} ogImage={ogImage(`secteur-${s.slug}`)} breadcrumbs={crumbs} jsonLd={[serviceLd, faqLd]}>
+<Base title={s.metaTitle} description={s.metaDescription} ogImage={ogImage(`secteur-${s.slug}`)} ogImageAlt={s.h1} breadcrumbs={crumbs} jsonLd={[serviceLd, faqLd]}>
   <section class="hero">
     <div class="container hero-grid">
       <div>
@@ -183,7 +186,31 @@ const proche = `Votre récompense vous attend chez ${s.carte.nom} !`;
     </div>
   </section>
 
-  <section class="section">
+  {
+    guides.length > 0 && (
+      <section class="section" aria-labelledby="guides-titre">
+        <div class="container">
+          <div class="section-head">
+            <h2 id="guides-titre">Guides pour votre métier</h2>
+            <p>Nos conseils pour choisir vos récompenses, lancer votre carte et faire revenir vos clients.</p>
+          </div>
+          <div class="guides">
+            {guides.map((g) => (
+              <a href={`/blog/${g.slug}/`}>
+                <strong>{g.title}</strong>
+                <span class="g-excerpt">{g.excerpt}</span>
+                <span class="g-more">
+                  Lire le guide <Icon name="arrow-right" size={15} />
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <section class="section section--alt">
     <div class="container">
       <h2 class="others-title">Les autres métiers</h2>
       <div class="others">
@@ -281,6 +308,36 @@ const proche = `Votre récompense vous attend chez ${s.carte.nom} !`;
   .notif--prox small {
     font-weight: 600;
     color: #7a5418;
+  }
+  .guides {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 18px;
+  }
+  .guides a {
+    display: grid;
+    gap: 10px;
+    align-content: start;
+    padding: 24px;
+    border-radius: var(--radius);
+    background: var(--card);
+    border: 1px solid var(--line);
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .guides a:hover {
+    border-color: var(--ink);
+  }
+  .g-excerpt {
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .g-more {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    color: var(--gold-strong);
+    font-weight: 700;
   }
   .others-title {
     font-size: 1.5rem;

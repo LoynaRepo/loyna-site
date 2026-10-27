@@ -1,12 +1,15 @@
 ---
 import Logo from './Logo.astro';
 import {SITE} from '../data/site';
+import {getSectors} from '../lib/builder';
 interface Props {
   consent?: boolean;
 }
 const {consent = false} = Astro.props;
 const year = new Date().getFullYear();
-const cols = [
+// Tous les métiers, y compris ceux ajoutés depuis Builder.io (même liste et même ordre que /secteurs/)
+const sectors = await getSectors();
+const cols: {title: string; wide?: boolean; links: [string, string][]}[] = [
   {
     title: 'Produit',
     links: [
@@ -19,19 +22,15 @@ const cols = [
   },
   {
     title: 'Secteurs',
-    links: [
-      ['/secteurs/coiffeur-barbier/', 'Coiffeurs et barbiers'],
-      ['/secteurs/institut-onglerie/', 'Instituts et ongleries'],
-      ['/secteurs/restauration-rapide/', 'Restauration rapide'],
-      ['/secteurs/boulangerie-cafe/', 'Boulangeries et cafés'],
-      ['/secteurs/commerce-de-proximite/', 'Commerces de proximité'],
-    ],
+    wide: true,
+    links: sectors.map((s): [string, string] => [`/secteurs/${s.slug}/`, s.nom]),
   },
   {
     title: 'Ressources',
     links: [
       ['/blog/', 'Blog'],
       ['/faq/', 'Questions fréquentes'],
+      ['/a-propos/', 'À propos de LOYNA'],
       ['/contact/', 'Contact'],
       ['/plan-du-site/', 'Plan du site'],
     ],
@@ -64,7 +63,7 @@ const cols = [
       </div>
       {
         cols.map((c) => (
-          <nav aria-label={c.title}>
+          <nav aria-label={c.title} class={c.wide ? 'wide' : undefined}>
             <p class="col-title">{c.title}</p>
             <ul>
               {c.links.map(([href, label]) => (
@@ -116,8 +115,13 @@ const cols = [
   }
   .top {
     display: grid;
-    grid-template-columns: 1.4fr repeat(4, 1fr);
+    grid-template-columns: 1.7fr 0.9fr 2.1fr 1.1fr 1fr;
     gap: 36px;
+  }
+  /* Secteurs : tous les métiers, sur deux colonnes */
+  .wide ul {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 24px;
   }
   .about p {
     margin: 20px 0 14px;
@@ -161,7 +165,8 @@ const cols = [
     .top {
       grid-template-columns: 1fr 1fr;
     }
-    .about {
+    .about,
+    .wide {
       grid-column: 1 / -1;
     }
     /* liens plus hauts : faciles à toucher */

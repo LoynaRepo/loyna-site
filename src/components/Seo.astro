@@ -1,6 +1,6 @@
 ---
 // Balises de référencement : titre, description, URL canonique, Open Graph, Twitter, données structurées.
-import {SITE} from '../data/site';
+import {FONDATEUR, SITE} from '../data/site';
 
 interface Props {
   title: string;
@@ -13,14 +13,32 @@ interface Props {
   jsonLd?: object | object[];
   breadcrumbs?: {name: string; url: string}[];
   published?: string;
+  /** Date de la dernière mise à jour réelle (articles), si elle existe. */
+  modified?: string;
+  /** Texte alternatif de l'image de partage ; par défaut, le titre de la page quand elle a son image propre. */
+  ogImageAlt?: string;
   googleVerification?: string;
   bingVerification?: string;
   sameAs?: string[];
 }
-const {title, description, noindex = false, nofollow = false, ogImage, type = 'website', jsonLd = [], breadcrumbs, published, googleVerification, bingVerification, sameAs = []} = Astro.props;
+const {title, description, noindex = false, nofollow = false, ogImage, type = 'website', jsonLd = [], breadcrumbs, published, modified, ogImageAlt, googleVerification, bingVerification, sameAs = []} = Astro.props;
 const canonical = new URL(Astro.url.pathname, SITE.url).href;
 const image = new URL(ogImage || '/og/default.png', SITE.url).href;
 const fullTitle = title.includes('LOYNA') ? title : `${title} | LOYNA`;
+// Image propre à la page (tools/og.py : le titre de la page est écrit sur l'image) ou image par défaut de la marque
+const imageAlt =
+  ogImageAlt || (ogImage && !ogImage.endsWith('/default.png') ? fullTitle : 'LOYNA — carte de fidélité digitale Apple Wallet et Google Wallet');
+
+// Fondateur (page « À propos »), aussi auteur des articles. sameAs vide tant qu'Ewan n'a pas donné ses profils.
+const fondateur = {
+  '@type': 'Person',
+  '@id': FONDATEUR.id,
+  name: FONDATEUR.nom,
+  jobTitle: FONDATEUR.titre,
+  url: new URL(FONDATEUR.page, SITE.url).href,
+  worksFor: {'@id': `${SITE.url}/#organisation`},
+  ...(FONDATEUR.sameAs.length ? {sameAs: FONDATEUR.sameAs} : {}),
+};
 
 const organization = {
   '@type': 'Organization',
@@ -30,7 +48,11 @@ const organization = {
   description: SITE.description,
   url: SITE.url,
   logo: {'@type': 'ImageObject', url: `${SITE.url}/icon-512.png`, width: 512, height: 512},
+  // Profils officiels de la marque (SITE.sameAs ou Builder site-settings) : vides tant qu'Ewan ne les a pas donnés
   ...(sameAs.length ? {sameAs} : {}),
+  founder: fondateur,
+  // LOYNA est une marque de KOVA Elec, nom commercial d'Ewan Touquet, entrepreneur individuel (mentions légales)
+  identifier: {'@type': 'PropertyValue', propertyID: 'SIRET', value: SITE.legal.siret.replace(/\D/g, '')},
   knowsAbout: ['carte de fidélité', 'carte de fidélité digitale', 'programme de fidélité', 'Apple Wallet', 'Google Wallet', 'fidélisation client'],
   email: SITE.email,
   slogan: SITE.slogan,
@@ -80,8 +102,9 @@ const ld = JSON.stringify({'@context': 'https://schema.org', '@graph': graph}).r
 <meta property="og:image" content={image} />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="LOYNA — carte de fidélité digitale Apple Wallet et Google Wallet" />
+<meta property="og:image:alt" content={imageAlt} />
 {published && <meta property="article:published_time" content={published} />}
+{modified && <meta property="article:modified_time" content={modified} />}
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content={fullTitle} />
 <meta name="twitter:description" content={description} />

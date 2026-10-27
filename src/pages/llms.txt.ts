@@ -24,6 +24,7 @@ ${PLANS.map((p) => `- ${p.name} : ${euro(p.monthly)} par mois ou ${euro(p.yearly
 - [Créer ma carte (configurateur)](${SITE.url}/creer-ma-carte/)
 - [Démo vidéo](${SITE.url}/demo/)
 - [Questions fréquentes](${SITE.url}/faq/)
+- [À propos de LOYNA (entreprise, fondateur, contact)](${SITE.url}/a-propos/)
 - [Contact](${SITE.url}/contact/)
 
 ## Secteurs

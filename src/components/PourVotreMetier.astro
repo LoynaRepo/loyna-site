@@ -1,0 +1,55 @@
+---
+// Bloc « Pour votre métier » (pages Tarifs et Fonctionnalités) : un lien vers chaque page métier, y compris
+// celles ajoutées depuis Builder.io (même liste que /secteurs/).
+import Icon from './Icon.astro';
+import {getSectors} from '../lib/builder';
+
+interface Props {
+  /** Fond de la section (alternance avec les sections voisines). */
+  alt?: boolean;
+}
+const {alt = false} = Astro.props;
+const sectors = await getSectors();
+---
+
+<section class={`section ${alt ? 'section--alt' : ''}`} aria-labelledby="metiers-titre">
+  <div class="container">
+    <div class="section-head">
+      <h2 id="metiers-titre">Pour votre métier</h2>
+      <p>Rythme de visites, récompenses, messages : voyez comment la carte s’adapte à votre commerce.</p>
+    </div>
+    <div class="metiers">
+      {
+        sectors.map((s) => (
+          <a href={`/secteurs/${s.slug}/`}>
+            {s.nom} <Icon name="arrow-right" size={16} />
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .metiers {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+  .metiers a {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    padding: 12px 18px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .metiers a:hover {
+    border-color: var(--ink);
+  }
+</style>
