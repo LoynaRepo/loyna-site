@@ -4,6 +4,7 @@ import preact from '@astrojs/preact';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {datesDesPages} from './tools/lastmod.mjs';
 
 // Typographie française dans le HTML final : espace insécable avant « : ; ? ! » et à l'intérieur
 // des guillemets, pour qu'un signe ne se retrouve jamais seul en début de ligne. Seul le texte
@@ -43,8 +44,12 @@ function sansDonneesCommerciales() {
   };
 }
 
-// Pages exclues du plan du site (sans intérêt pour les moteurs de recherche, ou privées)
-const NOINDEX = ['/merci/', '/contact/envoye/', '/builder-preview/', '/404/', '/espace-client/mot-de-passe/', '/espace-client/confirmer/', '/espace-client/demo/', '/panier/', '/join/', '/preferences/', '/espace-commercial/', '/visuel-carte/'];
+// Pages exclues du plan du site (sans intérêt pour les moteurs de recherche, ou privées). /espace-client/ reste
+// indexable (recherches « loyna connexion ») mais n'a presque pas de texte : hors du plan du site.
+const NOINDEX = ['/merci/', '/contact/envoye/', '/builder-preview/', '/404/', '/espace-client/', '/espace-client/mot-de-passe/', '/espace-client/confirmer/', '/espace-client/demo/', '/panier/', '/join/', '/preferences/', '/espace-commercial/', '/visuel-carte/'];
+
+// Date réelle de modification de chaque page (commits git, dates des articles) : voir tools/lastmod.mjs
+const lastmod = datesDesPages(path.dirname(fileURLToPath(import.meta.url)));
 
 export default defineConfig({
   site: 'https://loyna.fr',
@@ -61,8 +66,11 @@ export default defineConfig({
     sansDonneesCommerciales(),
     sitemap({
       filter: (page) => !NOINDEX.some((p) => page.endsWith(p)),
-      changefreq: 'weekly',
-      lastmod: new Date(),
+      // Pas de changefreq (ignoré par Google) ni de date du build : la vraie date de chaque page, sinon aucune
+      serialize: (item) => {
+        const date = lastmod(item.url);
+        return date ? {...item, lastmod: date} : item;
+      },
       i18n: undefined,
     }),
   ],

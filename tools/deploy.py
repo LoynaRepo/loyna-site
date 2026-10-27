@@ -7,8 +7,10 @@ Commandes (Python 3.13 de la machine, module paramiko) :
   python tools/deploy.py configurer   enregistre le mot de passe FTP dans le Gestionnaire d'identifiants Windows
   python tools/deploy.py test         connexion + contenu actuel du dossier www (ne modifie rien)
   python tools/deploy.py publier      envoie dist/ vers www/ (fichiers nouveaux ou modifiés), puis
-                                      supprime de www/ les fichiers qui n'existent plus dans dist/
+                                      supprime de www/ les fichiers qui n'existent plus dans dist/, puis
+                                      signale à IndexNow (Bing, Yandex…) les pages du plan du site modifiées
   python tools/deploy.py publier --essai   affiche ce qui serait fait, sans rien envoyer
+  python tools/deploy.py publier --sans-indexnow   met en ligne sans prévenir IndexNow
 
 Le mot de passe n'est jamais écrit dans un fichier ni affiché.
 """
@@ -134,7 +136,43 @@ def creer_dossiers(sftp: paramiko.SFTPClient, chemin: str, existants: set[str]) 
         existants.add(d)
 
 
-def cmd_publier(essai: bool) -> int:
+def adresse_page(rel: str) -> str | None:
+    """Adresse publique d'une page de dist/ (« tarifs/index.html » → https://loyna.fr/tarifs/), sinon None."""
+    if rel == "index.html":
+        return "https://loyna.fr/"
+    if rel.endswith("/index.html"):
+        return f"https://loyna.fr/{rel[: -len('index.html')]}"
+    return None
+
+
+def signaler_indexnow(envoyes: list[str], essai: bool) -> None:
+    """IndexNow après la mise en ligne : seulement les pages envoyées (nouvelles ou modifiées) qui sont dans le plan
+    du site (pages indexables). Un refus ou une panne d'IndexNow ne remet pas en cause la mise en ligne."""
+    if str(ROOT / "tools") not in sys.path:
+        sys.path.insert(0, str(ROOT / "tools"))
+    import indexnow  # tools/indexnow.py, dans le même dossier que ce script
+
+    plan = set(indexnow.adresses_du_plan())
+    urls = sorted({u for u in map(adresse_page, envoyes) if u in plan})
+    if not urls:
+        print("IndexNow : aucune page du plan du site n'a changé, rien à signaler.")
+        return
+    if essai:
+        print(f"IndexNow (essai) : {len(urls)} page(s) seraient signalées.")
+        for u in urls[:40]:
+            print("  ", u)
+        return
+    print("IndexNow (pages modifiées du plan du site) :")
+    try:
+        code = indexnow.signaler(urls)
+    except Exception as e:  # noqa: BLE001 : jamais d'échec de la mise en ligne à cause d'IndexNow
+        print("IndexNow : erreur inattendue :", e)
+        code = 1
+    if code != 0:
+        print("La mise en ligne est faite ; relancer plus tard « python tools/indexnow.py » (tout le plan du site).")
+
+
+def cmd_publier(essai: bool, avec_indexnow: bool = True) -> int:
     if not (DIST / "index.html").is_file():
         sys.exit("dist/ est vide : lancer d'abord « npx astro build ».")
     locaux = {p.relative_to(DIST).as_posix(): p for p in DIST.rglob("*") if p.is_file()}
@@ -165,6 +203,8 @@ def cmd_publier(essai: bool) -> int:
     if essai:
         print("Mode essai : rien n'a été modifié.")
         client.close()
+        if avec_indexnow:
+            signaler_indexnow([rel for rel, _, _ in a_envoyer], essai=True)
         return 0
 
     # Les pages HTML en dernier : les fichiers qu'elles appellent sont déjà en ligne.
@@ -195,6 +235,8 @@ def cmd_publier(essai: bool) -> int:
     MANIFESTE.parent.mkdir(parents=True, exist_ok=True)
     MANIFESTE.write_text(json.dumps(manifeste, indent=0, sort_keys=True), encoding="utf-8")
     print("Mise en ligne terminée : https://loyna.fr/")
+    if avec_indexnow:
+        signaler_indexnow([rel for rel, _, _ in a_envoyer], essai=False)
     return 0
 
 
@@ -207,4 +249,4 @@ if __name__ == "__main__":
         sys.exit(cmd_configurer())
     if args[0] == "test":
         sys.exit(cmd_test())
-    sys.exit(cmd_publier("--essai" in args))
+    sys.exit(cmd_publier("--essai" in args, avec_indexnow="--sans-indexnow" not in args))

@@ -1,7 +1,7 @@
+// /merci/ n'est pas bloquée : elle porte « noindex », que les moteurs doivent pouvoir lire.
 export function GET() {
   const body = `User-agent: *
 Allow: /
-Disallow: /merci/
 Disallow: /builder-preview/
 Disallow: /espace-commercial/
 Disallow: /contact.php

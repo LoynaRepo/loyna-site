@@ -7,6 +7,7 @@ Google n'utilise pas IndexNow : pour Google, le plan du site est lu via la Searc
   python tools/indexnow.py --essai    affiche ce qui serait envoyé
 
 La clé publique est le fichier public/<clé>.txt (servi à la racine du site) : ce n'est pas un secret.
+« deploy.py publier » appelle signaler() après chaque mise en ligne réussie (pages modifiées seulement).
 """
 import json
 import re
@@ -29,19 +30,15 @@ def adresses_du_plan() -> list[str]:
     return urls
 
 
-def main() -> int:
+def signaler(urls: list[str], essai: bool = False) -> int:
+    """Envoie ces adresses (https://loyna.fr/…) à IndexNow ; avec essai=True, les affiche seulement."""
     if not CLE_FICHIER:
         print("Clé IndexNow introuvable (public/<32 caractères hexadécimaux>.txt).")
         return 1
     cle = CLE_FICHIER.stem
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    urls = [f"https://{HOTE}{a}" for a in args] if args else adresses_du_plan()
-    if not urls:
-        print("Aucune adresse : lancez d'abord « npx astro build ».")
-        return 1
     corps = {"host": HOTE, "key": cle, "keyLocation": f"https://{HOTE}/{cle}.txt", "urlList": urls[:10000]}
     print(f"{len(urls)} adresse(s) à signaler.")
-    if "--essai" in sys.argv:
+    if essai:
         print("\n".join(urls))
         return 0
     req = urllib.request.Request("https://api.indexnow.org/indexnow", data=json.dumps(corps).encode(), method="POST",
@@ -52,7 +49,19 @@ def main() -> int:
     except urllib.error.HTTPError as e:
         print("IndexNow a refusé :", e.code, e.read().decode()[:200])
         return 1
+    except OSError as e:  # réseau indisponible
+        print("IndexNow injoignable :", e)
+        return 1
     return 0
+
+
+def main() -> int:
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    urls = [f"https://{HOTE}{a}" for a in args] if args else adresses_du_plan()
+    if not urls:
+        print("Aucune adresse : lancez d'abord « npx astro build ».")
+        return 1
+    return signaler(urls, essai="--essai" in sys.argv)
 
 
 if __name__ == "__main__":
