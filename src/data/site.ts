@@ -58,7 +58,8 @@ export interface Plan {
   features: string[];
   highlight?: boolean;
   badge?: string;
-  // Liens de paiement Stripe (mensuel avec mise en service, annuel sans) ; retour vers /merci/?offre=<id>-mensuel|annuel
+  // Liens de paiement Stripe (mensuel avec mise en service, annuel sans) ; retour vers /merci/?offre=<id>-mensuel|annuel.
+  // Depuis le 2026-10-27, on achète par le panier (/panier/) ; ces liens servent de secours au panier.
   links: {monthly: string; yearly: string};
 }
 
@@ -105,6 +106,23 @@ export const CARD_ACTIVITES: {nom: string; recompense: string; fond: string; tam
 ];
 
 export const SETUP_FEE = 49;
+
+// QR code d'inscription personnalisé sous verre (option du 2026-10-26, dépôt LOYNA docs/OFFRES.md) : achat unique,
+// à l'unité ou en pack, sans TVA, livré sous 15 jours maximum à l'adresse de facturation. Proposé dans le panier
+// (/panier/) ; produits Stripe loyna_qr_verre, loyna_qr_verre_5 et loyna_qr_verre_10.
+export const QR_VERRE = {
+  unit: 9.99,
+  pack5: 42.49, // -15 %
+  pack10: 74.99, // -25 %
+  maxUnit: 20,
+  maxPack: 4,
+  deliveryDays: 15,
+};
+
+// Panier (décision d'Ewan du 2026-10-27) : les boutons « Choisir » y mènent ; le compte LOYNA y est créé avant le
+// paiement. Les liens de paiement Stripe (`links` des offres) servent de secours au panier.
+export type Periode = 'mensuel' | 'annuel';
+export const panierUrl = (plan: PlanId, periode: Periode) => `/panier/?offre=${plan}&periode=${periode}`;
 
 // Offre de lancement (décision d'Ewan du 2026-10-09) : mise en service offerte en mensuel avec un code promo
 // Stripe (coupon loyna_lancement_2026_v2 : -49 € sur la 1re facture, valable sur les liens mensuels).

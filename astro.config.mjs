@@ -44,7 +44,7 @@ function sansDonneesCommerciales() {
 }
 
 // Pages exclues du plan du site (sans intérêt pour les moteurs de recherche, ou privées)
-const NOINDEX = ['/merci/', '/contact/envoye/', '/builder-preview/', '/404/', '/espace-client/mot-de-passe/', '/espace-client/demo/', '/join/', '/preferences/', '/espace-commercial/'];
+const NOINDEX = ['/merci/', '/contact/envoye/', '/builder-preview/', '/404/', '/espace-client/mot-de-passe/', '/espace-client/confirmer/', '/espace-client/demo/', '/panier/', '/join/', '/preferences/', '/espace-commercial/'];
 
 export default defineConfig({
   site: 'https://loyna.fr',

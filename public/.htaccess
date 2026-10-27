@@ -95,8 +95,9 @@ RewriteRule ^set-password/?$ https://loyna.fr/espace-client/mot-de-passe/ [R=302
   <FilesMatch "^(contact|elements)\.php$">
     Header always set X-Robots-Tag "noindex, nofollow"
   </FilesMatch>
-  # Pages des cartes (inscription, préférences), choix du mot de passe et espace commercial privé : jamais indexés
-  <If "%{REQUEST_URI} =~ m#^/(join|preferences|espace-client/mot-de-passe|espace-commercial)/#">
+  # Pages des cartes (inscription, préférences), choix du mot de passe, confirmation de l'adresse (jeton dans
+  # l'adresse), panier et espace commercial privé : jamais indexés, sans référent
+  <If "%{REQUEST_URI} =~ m#^/(join|preferences|espace-client/mot-de-passe|espace-client/confirmer|panier|espace-commercial)/#">
     Header always set X-Robots-Tag "noindex, nofollow"
     Header always set Referrer-Policy "no-referrer"
   </If>

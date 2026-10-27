@@ -245,6 +245,9 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
   const limit = (f: string) => LIMITS[f]?.[d.plan] ?? null;
   // Essais locaux des jauges (développement seulement) : ?usage=85 affiche 85 % des quotas consommés
   const usagePct = import.meta.env.DEV ? Number(new URLSearchParams(location.search).get('usage')) || 0 : 0;
+  // Essais locaux de l'écran « Votre commande » d'un compte sans commerce (développement seulement) :
+  // ?demo&commande (une commande Premium avec QR codes), ?demo&commande=0 (aucune commande)
+  const orderDemo = import.meta.env.DEV ? new URLSearchParams(location.search).get('commande') : null;
 
   // Équipe (les tirages ne dépendent pas de l'offre : même commerce quelle que soit l'offre affichée)
   const others = [...STAFF_NAMES].sort(() => r() - 0.5).slice(0, int(1, 3));
@@ -681,7 +684,26 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
       await wait();
       switch (fn) {
         case 'my_staff_context':
-          return {user_id: 'u-owner', is_platform_admin: false, memberships: [membership()]};
+          return {user_id: 'u-owner', is_platform_admin: false, memberships: orderDemo === null ? [membership()] : []};
+        case 'my_orders':
+          return {
+            status: 'OK',
+            email: staff[0].email,
+            orders:
+              orderDemo === '0'
+                ? []
+                : [
+                    {
+                      plan: 'PREMIUM', billing_period: 'monthly', subscription_status: 'active', ordered_at: iso(now - 3600000), current_period_end: iso(now + 30 * DAY),
+                      commitment_end: iso(now + 365 * DAY), cancel_at: null, business_name: d.merchant.name, merchant_linked: false,
+                      items: [
+                        {lookup_key: 'loyna_premium_monthly', label: 'LOYNA Premium', quantity: 1, amount: 3999},
+                        {lookup_key: 'loyna_qr_verre', label: 'QR code personnalisé sous verre', quantity: 3, amount: 2997},
+                        {lookup_key: 'loyna_qr_verre_5', label: 'Pack de 5 QR codes personnalisés sous verre', quantity: 1, amount: 4249},
+                      ],
+                    },
+                  ],
+          };
         case 'search_customers': {
           const q = (a.p_query ?? '').toLowerCase();
           const age = (t: string) => (now - new Date(t).getTime()) / DAY;

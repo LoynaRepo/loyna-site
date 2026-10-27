@@ -1,0 +1,19 @@
+---
+// Confirmation de l'adresse e-mail d'un compte créé dans le panier (/panier/) : lien envoyé par la fonction
+// checkout-create du dépôt LOYNA (?token_hash=…&type=signup), vérifié par Supabase Auth (src/app/Confirmer.tsx).
+import Base from '../../layouts/Base.astro';
+import Confirmer from '../../app/Confirmer';
+import {logoHtml} from '../../lib/logo-html';
+import '../../app/styles/base.css';
+import '../../app/styles/business.css';
+
+const logo = logoHtml('lg-confirm', 30);
+---
+
+<Base bare noindex title="Confirmer mon adresse · LOYNA" description="Confirmez l'adresse e-mail de votre compte LOYNA pour suivre votre commande dans votre espace client.">
+  <Confirmer client:only="preact" logo={logo}>
+    <div slot="fallback" class="splash">
+      <div class="spin-wrap" role="status"><span class="spin"></span><span class="sr-only">Chargement…</span></div>
+    </div>
+  </Confirmer>
+</Base>

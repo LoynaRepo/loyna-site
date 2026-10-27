@@ -1,0 +1,657 @@
+---
+// Panier (décision d'Ewan du 2026-10-27) : offre et période (?offre=starter|premium|pro&periode=mensuel|annuel), QR codes
+// sous verre en quantité libre (?qr=…&pack5=…&pack10=…), compte LOYNA créé avant le paiement, puis paiement Stripe.
+// Île Preact src/app/Panier.tsx ; serveur : Edge Function checkout-create (dépôt LOYNA). Page non indexée.
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Panier from '../app/Panier';
+import {PLANS, euro} from '../data/site';
+
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: 'Tarifs', url: '/tarifs/'},
+  {name: 'Panier', url: '/panier/'},
+];
+const prixMin = Math.min(...PLANS.map((p) => p.monthly));
+---
+
+<Base
+  noindex
+  stickyCta={false}
+  title="Votre panier : offre, QR codes sous verre et compte LOYNA"
+  description={`Choisissez votre offre LOYNA (dès ${euro(prixMin)} par mois, sans TVA), ajoutez vos QR codes sous verre et créez votre compte avant le paiement sécurisé.`}
+  breadcrumbs={crumbs}
+>
+  <section class="page-hero pn-hero">
+    <div class="container">
+      <Breadcrumbs items={crumbs} />
+      <p class="eyebrow">Commande</p>
+      <h1>Votre panier</h1>
+      <p class="lead">Choisissez votre offre, ajoutez vos QR codes sous verre et créez votre compte LOYNA. Le paiement se fait ensuite sur la page sécurisée de Stripe.</p>
+    </div>
+  </section>
+
+  <section class="section pn-section">
+    <div class="container">
+      <Panier client:only="preact">
+        <div slot="fallback" class="pn-wait" role="status">Chargement du panier…</div>
+      </Panier>
+      <noscript>
+        <p class="pn-wait">Le panier a besoin de JavaScript. Activez-le dans votre navigateur, ou écrivez-nous à <a href="mailto:contact@loyna.fr">contact@loyna.fr</a>.</p>
+      </noscript>
+    </div>
+  </section>
+</Base>
+
+<style is:global>
+  /* Panier : mêmes couleurs, rayons et ombres que la grille tarifaire (PricingCards) et le configurateur. */
+  .pn-hero {
+    padding-bottom: clamp(30px, 4vw, 50px);
+  }
+  .pn-section {
+    padding-top: 0;
+  }
+  .pn-wait {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--muted);
+  }
+  .pn {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+    gap: clamp(20px, 3vw, 36px);
+    align-items: start;
+  }
+  .pn-steps {
+    display: grid;
+    gap: 22px;
+    min-width: 0;
+  }
+  .pn-step {
+    display: block;
+    margin: 0;
+    min-width: 0;
+    padding: clamp(20px, 3.4vw, 32px);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+  .pn-step > legend {
+    float: left;
+    width: 100%;
+    padding: 0;
+    margin: 0 0 14px; /* légende flottante : la marge du bloc suivant serait absorbée */
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    font-size: clamp(1.15rem, 2.4vw, 1.35rem);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .pn-step > legend + * {
+    clear: both;
+  }
+  .pn .pn-step > * + * {
+    margin-top: 16px;
+  }
+  .pn-num {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #faf7f0;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+  .pn-opt {
+    font-weight: 500;
+    color: var(--muted);
+    font-size: 0.92em;
+  }
+  .pn-intro,
+  .pn-muted,
+  .pn-note {
+    margin: 0;
+    color: var(--muted);
+  }
+  .pn-note {
+    font-size: 0.92rem;
+  }
+  .pn-note strong {
+    color: var(--ink);
+  }
+  .pn-small {
+    font-size: 0.86rem;
+  }
+  .pn-link {
+    border: 0;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-weight: 700;
+    color: var(--gold-strong);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  /* 1. Offre et période */
+  .pn-period {
+    display: inline-flex;
+    padding: 4px;
+    border-radius: 999px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+  }
+  .pn-period label {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 8px 20px;
+    border-radius: 999px;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .pn-period label.on {
+    background: var(--ink);
+    color: #faf7f0;
+  }
+  .pn-period input,
+  .pn-plan input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .pn-period label:has(input:focus-visible),
+  .pn-plan:has(input:focus-visible) {
+    outline: 3px solid var(--gold);
+    outline-offset: 2px;
+  }
+  .pn-save {
+    font-size: 0.76rem;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--gold-soft);
+    color: #6b4a14;
+  }
+  .pn-plans {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .pn-plan {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    padding: 16px;
+    border: 2px solid var(--line);
+    border-radius: 18px;
+    background: #fff;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+  .pn-plan:hover {
+    border-color: #cdbb9b;
+  }
+  .pn-plan.on {
+    border-color: var(--ink);
+    box-shadow:
+      0 0 0 1px var(--ink),
+      var(--shadow);
+  }
+  .pn-plan.on::after {
+    content: '✓';
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--ink);
+    color: #faf7f0;
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+  .pn-plan-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 8px;
+  }
+  .pn-plan-head strong {
+    font-size: 1.15rem;
+    color: var(--ink);
+  }
+  .pn-badge {
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--gold-soft);
+    color: #6b4a14;
+  }
+  .pn-plan-price {
+    font-size: 1.45rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+  }
+  .pn-plan-price small {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: var(--muted);
+  }
+  .pn-plan-pitch {
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+  .pn-plan-quota {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  /* 2. QR codes sous verre */
+  .pn-qr {
+    display: grid;
+    gap: 10px;
+  }
+  .pn-qr-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+  }
+  .pn-qr-row.on {
+    border-color: rgba(201, 150, 63, 0.6);
+    background: #fffaf0;
+  }
+  .pn-qr-t {
+    display: grid;
+    gap: 2px;
+  }
+  .pn-qr-t label {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .pn-qr-t span {
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+  .pn-stepper {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--card);
+    overflow: hidden;
+  }
+  .pn-stepper button {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    font: 700 1.3rem/1 var(--font);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .pn-stepper button:hover:not(:disabled) {
+    background: var(--gold-soft);
+  }
+  .pn-stepper button:disabled {
+    color: #c9bfae;
+    cursor: not-allowed;
+  }
+  .pn-stepper input {
+    width: 54px;
+    height: 44px;
+    border: 0;
+    border-inline: 1px solid var(--line);
+    border-radius: 0;
+    background: #fff;
+    text-align: center;
+    font: 700 1rem var(--font);
+    color: var(--ink);
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .pn-stepper input::-webkit-outer-spin-button,
+  .pn-stepper input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .pn-stepper button:focus-visible,
+  .pn-stepper input:focus-visible {
+    outline: 3px solid var(--gold);
+    outline-offset: -3px;
+  }
+  .pn-qr-total {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+
+  /* 3. Compte */
+  .pn-fields {
+    display: grid;
+    gap: 14px;
+  }
+  .pn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .pn .field label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  .pn .field input {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #fff;
+    font: inherit;
+  }
+  .pn .field input:focus-visible {
+    outline: 3px solid rgba(201, 150, 63, 0.45);
+    outline-offset: 1px;
+    border-color: var(--gold);
+  }
+  .pn .field input[aria-invalid='true'] {
+    border-color: #b3261e;
+    background: #fff7f6;
+  }
+  .pn-err {
+    margin: 6px 0 0;
+    color: #a1251b;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+  .pn-pw {
+    position: relative;
+    display: block;
+  }
+  .pn .pn-pw input {
+    padding-right: 96px;
+  }
+  .pn-eye {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    min-height: 36px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    font: 700 0.85rem var(--font);
+    color: var(--gold-strong);
+    cursor: pointer;
+  }
+  .pn-rules {
+    list-style: none;
+    margin: -4px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    font-size: 0.86rem;
+    color: var(--muted);
+  }
+  .pn-rules li.ok {
+    color: #13663b;
+    font-weight: 600;
+  }
+  .pn-session {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(31, 157, 92, 0.08);
+    border: 1px solid rgba(31, 157, 92, 0.3);
+  }
+  .pn-session p {
+    margin: 0;
+  }
+  .pn-login-a {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 18px;
+  }
+  .pn-login-a .btn {
+    min-height: 46px;
+    padding: 10px 22px;
+  }
+  .pn-cgv {
+    display: grid;
+    gap: 8px;
+  }
+  .pn-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .pn-check input {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin: 2px 0 0;
+    accent-color: var(--ink);
+  }
+  .pn-check a {
+    color: var(--gold-strong);
+  }
+  .pn-hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  /* Récapitulatif */
+  .pn-sum {
+    position: sticky;
+    top: 96px;
+    display: grid;
+    gap: 14px;
+    padding: clamp(20px, 3vw, 28px);
+    border-radius: var(--radius-lg);
+    background: var(--ink);
+    color: #e9e5dc;
+    box-shadow: var(--shadow-lg);
+  }
+  .pn-sum h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: #faf7f0;
+  }
+  .pn-lines {
+    margin: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .pn-lines > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .pn-lines dt {
+    display: grid;
+    gap: 2px;
+  }
+  .pn-lines dt small {
+    font-size: 0.82rem;
+    color: #b9b3a7;
+  }
+  .pn-lines dd {
+    margin: 0;
+    font-weight: 700;
+    white-space: nowrap;
+    color: #faf7f0;
+  }
+  .pn-lines s {
+    color: #b9b3a7;
+    font-weight: 500;
+  }
+  .pn-total {
+    margin: 0;
+    padding-top: 14px;
+    border-top: 1px solid rgba(250, 247, 240, 0.16);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .pn-total span {
+    font-weight: 700;
+  }
+  .pn-total strong {
+    font-size: 1.9rem;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+    color: #faf7f0;
+  }
+  .pn-then,
+  .pn-vat {
+    margin: 0;
+    font-size: 0.88rem;
+    color: #b9b3a7;
+  }
+  .pn-code {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(230, 194, 122, 0.12);
+    border: 1px dashed rgba(230, 194, 122, 0.5);
+    color: #f0d49a;
+    font-size: 0.88rem;
+  }
+  .pn-code strong {
+    color: #faf7f0;
+    letter-spacing: 0.04em;
+  }
+  .pn-alert {
+    display: grid;
+    gap: 6px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #fdecea;
+    color: #8a1c12;
+    font-weight: 600;
+  }
+  .pn-alert p {
+    margin: 0;
+  }
+  .pn-sum .pn-alert .pn-link,
+  .pn-sum .pn-alert a:not(.btn) {
+    color: #8a1c12;
+  }
+  .pn-fallback {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 14px;
+    background: rgba(250, 247, 240, 0.06);
+    border: 1px solid rgba(230, 194, 122, 0.4);
+  }
+  .pn-fallback p {
+    margin: 0;
+  }
+  .pn-fallback:focus {
+    outline: 3px solid var(--gold);
+    outline-offset: 2px;
+  }
+  .pn-sum .pn-muted {
+    color: #b9b3a7;
+  }
+  .pn-sum a:not(.btn) {
+    color: #f0d49a;
+  }
+  .pn-sum .btn {
+    white-space: normal;
+    text-align: center;
+  }
+  .pn .btn:disabled {
+    opacity: 0.75;
+    cursor: progress;
+  }
+
+  @media (max-width: 980px) {
+    .pn {
+      grid-template-columns: 1fr;
+    }
+    .pn-sum {
+      position: static;
+    }
+  }
+  @media (max-width: 720px) {
+    .pn-plans,
+    .pn-row {
+      grid-template-columns: 1fr;
+    }
+    .pn-plan {
+      grid-template-columns: 1fr auto;
+      column-gap: 12px;
+    }
+    .pn-plan-head,
+    .pn-plan-pitch,
+    .pn-plan-quota {
+      grid-column: 1;
+    }
+    .pn-plan-price {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      align-self: center;
+      text-align: right;
+    }
+    .pn-plan-price small {
+      display: block;
+    }
+    .pn-period {
+      display: flex;
+    }
+    .pn-period label {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+</style>

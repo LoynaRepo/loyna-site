@@ -182,6 +182,20 @@ export const supabaseBackend: Backend = {
   },
 };
 
+/**
+ * Lien « Confirmez votre adresse » d'un compte créé dans le panier (e-mail envoyé par la fonction checkout-create
+ * du dépôt LOYNA) : vérifie le jeton et ouvre la session du compte. Renvoie l'adresse confirmée.
+ */
+export async function verifySignupLink(tokenHash: string): Promise<string> {
+  const {data, error} = await sb().auth.verifyOtp({token_hash: tokenHash, type: 'signup'});
+  if (error || !data.session) {
+    const raw = `${error?.code ?? ''} ${error?.message ?? ''}`;
+    if (/expired|invalid|not.?found|already/i.test(raw) || error?.status === 403) throw new ApiError('LINK_INVALID', 'Ce lien n’est plus valide.', error?.status ?? 0);
+    throw new ApiError('AUTH', authMessage(error?.message ?? ''), error?.status ?? 0);
+  }
+  return data.session.user.email ?? '';
+}
+
 /** Lit l'erreur éventuelle renvoyée par Supabase Auth dans l'adresse (lien expiré ou déjà utilisé). */
 export function linkError(): string | null {
   const h = new URLSearchParams(location.hash.replace(/^#/, ''));

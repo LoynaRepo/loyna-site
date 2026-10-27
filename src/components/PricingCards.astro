@@ -1,8 +1,9 @@
 ---
 // Grille tarifaire avec bascule mensuel / annuel en CSS pur (aucun JavaScript).
 // Offres, quotas et contenu : src/data/site.ts (source : docs/OFFRES.md du dépôt LOYNA).
+// Les boutons « Choisir » mènent au panier (/panier/ : QR codes sous verre, compte LOYNA, puis paiement Stripe).
 import Icon from './Icon.astro';
-import {LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, offerActive, quotas} from '../data/site';
+import {LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, offerActive, panierUrl, quotas} from '../data/site';
 interface Props {
   idPrefix?: string;
   compact?: boolean;
@@ -11,11 +12,7 @@ interface Props {
 }
 const {idPrefix = 'p', compact = false, level = 3} = Astro.props;
 const H = level === 2 ? 'h2' : 'h3';
-const fallback = (plan: string, period: string) => `/contact/?offre=${plan}-${period}`;
-// Lien de paiement Stripe affiché en français
 const offer = offerActive();
-const buy = (link: string, promo = false) =>
-  link ? `${link}?locale=fr${promo && offer ? `&prefilled_promo_code=${LAUNCH_OFFER.code}` : ''}` : '';
 ---
 
 <div class="pricing">
@@ -62,11 +59,11 @@ const buy = (link: string, promo = false) =>
             <Icon name="wallet" size={17} />
             <span>{quotas(p)}</span>
           </p>
-          <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-m`} href={buy(p.links.monthly, true) || fallback(p.id, 'mensuel')} rel="nofollow" data-loading={p.links.monthly ? 'Redirection vers le paiement…' : undefined} data-plan={`${p.id}-mensuel`}>
+          <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-m`} href={panierUrl(p.id, 'mensuel')} rel="nofollow">
             Choisir {p.name}
           </a>
           <p class="engage only-m"><strong>Engagement de 12 mois</strong>, réglés chaque mois, puis résiliable à la fin de n’importe quel mois, sans frais.</p>
-          <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-y`} href={buy(p.links.yearly) || fallback(p.id, 'annuel')} rel="nofollow" data-loading={p.links.yearly ? 'Redirection vers le paiement…' : undefined} data-plan={`${p.id}-annuel`}>
+          <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-y`} href={panierUrl(p.id, 'annuel')} rel="nofollow">
             Choisir {p.name} en annuel
           </a>
           <p class="engage only-y">12 mois payés en une fois, renouvelables.</p>
@@ -101,7 +98,7 @@ const buy = (link: string, promo = false) =>
     {
       offer && (
         <span data-offer>
-          Offre de lancement : mise en service offerte jusqu’au {LAUNCH_OFFER.untilLabel}, en mensuel comme en annuel (code {LAUNCH_OFFER.code}, déjà appliqué par ces boutons).{' '}
+          Offre de lancement : mise en service offerte jusqu’au {LAUNCH_OFFER.untilLabel}, en mensuel comme en annuel (code {LAUNCH_OFFER.code}, rappelé dans votre panier).{' '}
         </span>
       )
     }

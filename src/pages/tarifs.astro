@@ -200,7 +200,7 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
       <div class="card">
         <span class="icon"><Icon name="rocket" /></span>
         <h2 class="h3">Mise en service : {euro(SETUP_FEE)}, une seule fois</h2>
-        <p>Création de votre carte à vos couleurs, de votre QR code d’inscription et de votre espace commerçant. {offerActive() ? <><span data-offer><strong>Offerte jusqu’au {LAUNCH_OFFER.untilLabel}</strong>, en mensuel comme en annuel (code <strong>{LAUNCH_OFFER.code}</strong>, déjà appliqué par nos boutons). Ensuite : </span>offerte en paiement annuel.</> : <>Offerte en paiement annuel.</>}</p>
+        <p>Création de votre carte à vos couleurs, de votre QR code d’inscription et de votre espace commerçant. {offerActive() ? <><span data-offer><strong>Offerte jusqu’au {LAUNCH_OFFER.untilLabel}</strong>, en mensuel comme en annuel (code <strong>{LAUNCH_OFFER.code}</strong>, rappelé dans votre panier). Ensuite : </span>offerte en paiement annuel.</> : <>Offerte en paiement annuel.</>}</p>
       </div>
       <div class="card">
         <span class="icon"><Icon name="sparkles" /></span>

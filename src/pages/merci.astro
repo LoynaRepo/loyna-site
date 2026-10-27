@@ -23,11 +23,21 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
   <section class="section pt0">
     <div class="container merci-grid">
       <div>
+        <div class="compte" data-compte hidden>
+          <h2 class="h3">Votre compte LOYNA</h2>
+          <ol class="next">
+            <li><strong>Confirmez votre adresse e-mail</strong> : ouvrez le lien de l’e-mail « Confirmez votre adresse e-mail – LOYNA » que nous venons de vous envoyer (pensez à regarder dans les courriers indésirables).</li>
+            <li><strong>Connectez-vous à votre espace client</strong> avec votre adresse e-mail et votre mot de passe : votre commande y apparaît.</li>
+            <li><strong>LOYNA prépare votre carte</strong> et vous écrit dès qu’elle est prête.</li>
+          </ol>
+          <a class="btn btn--primary" href="/espace-client/">Mon espace client</a>
+        </div>
         <h2 class="h3">La suite, en 4 étapes</h2>
         <ol class="next">
           <li><strong>Envoyez vos éléments</strong> avec le formulaire : logo, couleurs, récompense. Deux minutes suffisent.</li>
           <li><strong>Votre carte est prête sous 24&nbsp;h</strong>, avec votre QR code d’inscription et l’affiche du comptoir à imprimer ou à partager.</li>
-          <li><strong>Vous recevez votre accès à LOYNA Business</strong> pour scanner les cartes depuis votre téléphone.</li>
+          <li data-sans-compte><strong>Vous recevez votre accès à LOYNA Business</strong> pour scanner les cartes depuis votre téléphone.</li>
+          <li data-compte hidden><strong>LOYNA Business s’ouvre dans votre espace client</strong>, avec le compte que vous venez de créer, pour scanner les cartes depuis votre téléphone.</li>
           <li><strong>Vous lancez votre programme</strong> : QR code au comptoir, vos clients s’inscrivent en quelques secondes.</li>
         </ol>
         <div class="suite" data-suite="premium" hidden>
@@ -191,6 +201,20 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
     document.querySelectorAll<HTMLElement>('[data-suite]').forEach((s) => (s.hidden = s.dataset.suite !== offrePayee[1]));
   }
   set('session', /^cs_[A-Za-z0-9_]{10,200}$/.test(q.get('session_id') || '') ? q.get('session_id')! : '');
+  // Commande passée avec un compte LOYNA (panier) : ?compte=1 au retour de Stripe, ou repère posé par le panier avant
+  // un paiement par lien de secours (src/app/Panier.tsx, même nom de clé). Étapes du compte affichées.
+  let avecCompte = q.get('compte') === '1';
+  try {
+    avecCompte ||= sessionStorage.getItem('loyna-panier-compte') === '1';
+    sessionStorage.removeItem('loyna-panier-compte');
+    sessionStorage.removeItem('loyna-panier');
+  } catch {
+    /* stockage indisponible */
+  }
+  if (avecCompte) {
+    document.querySelectorAll<HTMLElement>('[data-compte]').forEach((el) => (el.hidden = false));
+    document.querySelectorAll<HTMLElement>('[data-sans-compte]').forEach((el) => (el.hidden = true));
+  }
   // Préremplissage avec l'aperçu préparé dans le configurateur (même navigateur)
   try {
     const c = JSON.parse(localStorage.getItem('loyna-config') || 'null');
@@ -263,8 +287,24 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
     background: var(--gold-soft);
     border: 1px solid rgba(201, 150, 63, 0.35);
   }
-  .suite[hidden] {
+  .suite[hidden],
+  .compte[hidden],
+  .next li[hidden] {
     display: none;
+  }
+  .compte {
+    margin: 0 0 28px;
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: rgba(31, 157, 92, 0.08);
+    border: 1px solid rgba(31, 157, 92, 0.3);
+  }
+  .compte h2 {
+    margin: 0 0 10px;
+  }
+  .compte .next {
+    margin-bottom: 16px;
+    font-size: 1rem;
   }
   .suite h2 {
     margin: 0 0 6px;

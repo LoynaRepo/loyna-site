@@ -3515,3 +3515,57 @@ label.b {
 .in-app .login--page > .login-side {
   display: none;
 }
+
+/* Compte sans commerce : écran « Votre commande » (src/app/Commande.tsx) */
+.ord-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.ord-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--gold-strong, #7a5418);
+}
+.ord {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  padding: 16px 18px;
+  display: grid;
+  gap: 10px;
+}
+.ord-h {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ord-h strong {
+  font-size: 1.1rem;
+}
+.ord-dl {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.ord-dl > div {
+  display: grid;
+  grid-template-columns: minmax(110px, 40%) 1fr;
+  gap: 10px;
+  font-size: 0.92rem;
+}
+.ord-dl dt {
+  color: var(--muted);
+}
+.ord-dl dd {
+  margin: 0;
+  font-weight: 600;
+}
+@media (max-width: 420px) {
+  .ord-dl > div {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

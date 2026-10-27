@@ -5,6 +5,7 @@ import {Icon} from './icons';
 import {api, can, go, loadPlans, merchant, PLAN_ORDER, planLabel, rememberMerchant, rememberedMerchant, route, session, setBackend, staffCtx, toastError, type Membership, type StaffContext} from './state';
 import {Btn, Field, Spinner, Toasts} from './ui';
 import {frenchTypography} from './util';
+import {Commande} from './Commande';
 
 // Écrans chargés à la demande : le téléphone ne télécharge que la page ouverte (le scanner en premier).
 type ViewComp = (props: any) => any;
@@ -260,17 +261,11 @@ function Workspace({logo}: {logo: string}) {
       </Center>
     );
   if (!ctx) return <Splash />;
+  // Compte sans commerce (commande passée dans le panier de loyna.fr) : « Votre commande », LOYNA prépare la carte.
   if (!ctx.memberships.length)
     return (
       <Center logo={logo}>
-        <h1>Compte non rattaché à un commerce</h1>
-        <p class="muted">
-          Vous êtes connecté avec <strong>{session.value?.email}</strong>, mais ce compte n’a accès à aucun commerce. Demandez à votre responsable de vous inviter depuis le menu Équipe, ou écrivez à{' '}
-          <a href="mailto:contact@loyna.fr">contact@loyna.fr</a>.
-        </p>
-        <Btn kind="ghost" icon="log-out" onClick={() => api.signOut().then(() => (session.value = null))}>
-          Se déconnecter
-        </Btn>
+        <Commande email={session.value?.email ?? ''} portal={PORTAL} onSignOut={() => api.signOut().then(() => (session.value = null))} />
       </Center>
     );
   if (!merchant.value) return <MerchantPicker logo={logo} list={ctx.memberships} />;

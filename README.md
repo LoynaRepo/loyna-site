@@ -70,6 +70,16 @@ contenu, notification de proximité, formulation). Prix, quotas et liens du site
 | Pro mensuel (89 € + 49 €) | `plink_1UUOpRV05ztMZIc7k4hsWmtj` (buy.stripe.com/00w28u2vEbEp1hjbiw5Ne0a) | `?offre=pro-mensuel` |
 | Pro annuel (907,80 €) | `plink_1UUOpSV05ztMZIc7nhOjCUac` (buy.stripe.com/28E28u8U27o99NP2M05Ne0b) | `?offre=pro-annuel` |
 
+**Panier (2026-10-27)** : les boutons « Choisir » mènent à `/panier/?offre=<id>&periode=mensuel|annuel` (`src/pages/panier.astro`,
+île `src/app/Panier.tsx`) : offre et période, QR codes sous verre en quantité libre (unité 0 à 20, packs de 5 et de 10 de
+0 à 4, prix `QR_VERRE` de `src/data/site.ts`), récapitulatif (total du jour et montant récurrent, sans TVA), puis compte
+LOYNA créé **avant** le paiement (ou session de l'espace client reprise). L'Edge Function `checkout-create` (dépôt LOYNA)
+crée ou vérifie le compte, envoie l'e-mail « Confirmez votre adresse » (lien `/espace-client/confirmer/?token_hash=…`) et
+ouvre une session Stripe Checkout aux mêmes réglages que les liens ; si Stripe refuse (permissions de la clé), réponse
+`CHECKOUT_FALLBACK` : le panier ouvre le lien de paiement ci-dessous avec `prefilled_email` et `client_reference_id`
+(les QR codes s'y rechoisissent). Retour : `/merci/?…&compte=1` (étapes du compte). Un compte sans commerce voit
+« Votre commande » dans l'espace client (`my_orders`) ; essai local : `/espace-client/?demo&commande` (ou `commande=0`).
+
 Chaque lien : adresse de facturation, téléphone, nom du commerce et du contact, numéro de TVA facultatif,
 rappel des CGV et de la mention « TVA non applicable, art. 293 B du CGI », retour vers
 /merci/?offre=…&session_id=… (la page affiche l'offre payée et les étapes propres à Premium ou Pro). Métadonnées
@@ -101,6 +111,7 @@ des Edge Functions (contrats : dépôt LOYNA, `docs/API.md` et `docs/WEWEB_SETUP
 |---|---|
 | `/espace-client/` | connexion puis accueil (indicateurs, jauges des cartes et des notifications du mois), scanner (caméra, BarcodeDetector ou jsQR), clients et fiche (niveau VIP, parrainage), programme et récompenses, campagnes Wallet (temps forts, campagnes préparées par LOYNA), automatisations (anniversaire, inactifs, « Plus qu'un passage ! », avis Google, double tampon ; niveaux VIP et parrainage en Pro), rapport mensuel, équipe, réglages (logo, couleurs, affiche du comptoir, boutiques et message de proximité), abonnement (portail Stripe) — navigation `#/scanner`, `#/client/<id>`… |
 | `/espace-client/mot-de-passe/` | choix du mot de passe depuis un lien d'activation (`/set-password` y est redirigé) |
+| `/espace-client/confirmer/` | confirmation de l'adresse d'un compte créé dans le panier (`?token_hash=…&type=signup`, `verifyOtp`), puis ouverture de l'espace client |
 | `/join/<commerce>` | inscription d'un client final (réécrite vers `/join/index.html` par `.htaccess`) |
 | `/preferences/?t=…` | préférences et suppression des données d'un client final |
 | `/espace-client/demo/` | **démonstration publique** sans compte : commerce, clients, passages, récompenses, campagnes et équipe fictifs tirés au hasard (`src/app/mock.ts`, graine dans `?seed=` ou le navigateur, bouton « Autres données »), scan simulé ; `/join/demo-<graine>` montre la page d'inscription du même commerce. Rien n'est envoyé ni enregistré (téléphones en 06 39 98, tranche ARCEP réservée à la fiction ; e-mails en example.com). Offre affichée : Pro par défaut ; `?offre=starter`, `?offre=premium` ou le sélecteur du bandeau montrent les autres offres (verrous, jauges) |
