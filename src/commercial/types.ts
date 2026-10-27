@@ -63,6 +63,92 @@ export interface Prospect {
   historique: string[];
   sources: string[];
   notes?: Note[]; // notes du panel recopiées à la dernière publication (secours en lecture seule)
+  client_id?: string | null; // statut « client » : sa fiche dans 08 Clients (onglet Clients)
+}
+
+// --- Clients (08 Clients du coffre, calculés par _systeme/clients.py) --------------------------------------
+export type CodeEtape = 'commande' | 'commerce' | 'documents' | 'qr' | 'actif';
+export type Urgence = '' | 'bientot' | 'retard';
+
+export interface EtapeClient {
+  code: CodeEtape;
+  libelle: string;
+  date: string; // AAAA-MM-JJ (ou AAAA-MM-JJTHH:MM)
+  fait: boolean;
+  sans_objet: boolean; // QR codes : aucun commandé
+  attente?: boolean; // noté dans le panel, pas encore recopié dans le coffre (calculé dans le navigateur)
+}
+
+export interface ActionClient {
+  code: 'paiement' | 'commerce' | 'documents' | 'qr' | 'aucune';
+  ordre: number;
+  libelle: string;
+  detail: string;
+  urgence: Urgence;
+}
+
+export interface EtatClient {
+  code: 'paiement_echoue' | 'resiliation' | 'termine';
+  libelle: string;
+  date: string; // paiement échoué le / fin de l'abonnement
+  demande_le?: string;
+}
+
+export interface Client {
+  id: string; // 12 caractères (notes chiffrées du panel)
+  fiche: string;
+  commerce: string;
+  activite: string;
+  contact: {prenom: string; nom: string; complet: string};
+  email: string;
+  telephone: string;
+  telephones: Telephone[];
+  tel_principal: Telephone | null;
+  adresse_facturation: string;
+  siren: string;
+  instagram?: string;
+  offre: {formule: string; periodicite: 'mensuel' | 'annuel'; libelle: string; prix: number | null; mensuel: number | null};
+  date_souscription: string;
+  montant_paye: string;
+  code_promo: string;
+  paiement: {statut: string; echoue_le: string; document: string};
+  engagement: {fin: string; libelle: string};
+  compte: string; // e-mail du compte de l'espace client
+  lien_espace_client: string;
+  commerce_existant: boolean | null;
+  identifiant_commerce: string;
+  lien_inscription: string;
+  stripe: {session: string; abonnement: string; client: string; facture: string; liens: {libelle: string; href: string}[]};
+  qr: {commandes: number; detail: string; limite: string; livres_le: string; a_livrer: number; jours_restants: number | null};
+  parcours: EtapeClient[];
+  etape: {code: CodeEtape; libelle: string};
+  etat: EtatClient | null;
+  action: ActionClient;
+  abonnement_en_cours: boolean;
+  mrr: number;
+  programme: {nom: string; recompense: string; passages: string};
+  couleurs?: {fond: string; accent: string};
+  statut: string;
+  documents_generes_le: string;
+  prospect: string;
+  prospect_id?: string | null;
+  historique: string[];
+  derniere_activite: string;
+  notes?: Note[];
+}
+
+export interface TotauxClients {
+  clients: number;
+  actifs: number;
+  mrr: number;
+  qr_a_livrer: number;
+  qr_clients: number;
+  en_retard: number;
+  urgents: number;
+  a_traiter: number;
+  resiliations?: number;
+  par_etape: {code: string; libelle: string; nombre: number}[];
+  par_offre: {formule: string; nombre: number}[];
 }
 
 export interface Totaux {
@@ -87,6 +173,7 @@ export interface Totaux {
   contacts_hors_fiches: number;
   notes?: number;
   prospects_avec_notes?: number;
+  devenus_clients?: number;
 }
 
 export interface BlocModele {
@@ -109,7 +196,9 @@ export interface Suivi {
   actions: {code: string; ordre: number; libelle: string}[];
   groupes_appel: {groupe: number; libelle: string}[];
   prospects: Prospect[];
-  hors_fiches: {prospect: string; email: string; premier_mail: string; relance: string; echec: string; detail: string}[];
+  clients?: Client[]; // absent des données publiées avant le 2026-10-27
+  totaux_clients?: TotauxClients;
+  hors_fiches:{prospect: string; email: string; premier_mail: string; relance: string; echec: string; detail: string}[];
   notes_orphelines?: {prospect: string; notes: Note[]}[];
   notes_panel?: {cle: string; version: number}; // clé des notes, ajoutée par panel.py au moment du chiffrement
   ressources: {

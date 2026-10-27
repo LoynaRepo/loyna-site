@@ -39,9 +39,35 @@ const ANCRES = [
   ['appel', 'Déroulé d’un appel'],
   ['processus', 'Processus'],
   ['modeles', 'Modèles de mails'],
+  ['clients', 'Clients'],
   ['pratiques', 'Bonnes pratiques'],
   ['regles', 'Règles du démarchage'],
 ] as const;
+
+// Parcours d'un client (08 Clients du coffre, _systeme/clients.py)
+const ETAPES_CLIENT: [string, string][] = [
+  [
+    '1 · Commande reçue',
+    'Mail « [Site LOYNA] Nouvelle commande » : l’agent Trieur crée la fiche 08 Clients (offre, contact, QR codes, liens Stripe, compte LOYNA) et passe la fiche prospect du commerce au statut « client » : plus aucune prospection.',
+  ],
+  [
+    '2 · Commerce créé',
+    'Vous créez le commerce et sa carte dans l’espace client, avec l’e-mail du compte du client (la commande s’y rattache), puis bouton « Commerce créé », avec l’identifiant du lien /join/….',
+  ],
+  [
+    '3 · Documents envoyés',
+    'Compléter la fiche (programme, récompense, couleurs, logo, lien d’inscription), puis documents_client.py envoyer : les 4 PDF partent et l’étape se coche seule.',
+  ],
+  ['4 · QR codes livrés', 'S’il en a commandé : à livrer sous 15 jours au plus à l’adresse de facturation, puis bouton « QR codes livrés ».'],
+  ['5 · Client actif', 'Plus rien à faire dans le parcours : restent les notes et, en Premium et Pro, la mise en route des automatisations (point mensuel en Pro).'],
+];
+const POINTS_CLIENTS = [
+  'Prochaine action : « Créer le commerce », « Envoyer les documents », « Livrer N QR codes avant le JJ/MM » (en rouge en retard ou à moins de 3 jours), « Relancer le paiement » ou « Rien à faire ». Le compteur « Actions en retard » et le bandeau du tableau de bord les reprennent.',
+  'Les boutons enregistrent une note chiffrée : l’étape change tout de suite ici, puis panel.py la recopie dans la fiche du coffre (date et ligne d’historique) au prochain passage d’un agent. Tant que ce n’est pas fait, « Annuler » la retire.',
+  'Résiliation demandée, abonnement terminé, paiement échoué, changement d’offre : les mails du site mettent la fiche à jour d’eux-mêmes (le Trieur lance clients.py), et la demande arrive aussi dans « À traiter par Ewan ».',
+  'Revenu mensuel : abonnements en cours, mensuels plus annuels divisés par 12, aux prix des offres, sans TVA.',
+  'Une erreur dans un client (nom, offre, dates) se corrige dans sa fiche de 08 Clients, dans Obsidian ; le panel suit à la publication suivante.',
+];
 
 export function Aide() {
   const d = donnees.value!;
@@ -178,6 +204,22 @@ export function Aide() {
         <p class="muted small cp-m0">
           {fr('Les mails partent uniquement par _systeme/loyna_mail.py (jamais depuis Gmail ou le navigateur) : c’est lui qui applique les quotas, les horaires, la liste STOP et les anti-doublons.')}
         </p>
+      </Panel>
+
+      <Panel title="Les clients" id="aide-clients" sub="Après un paiement sur loyna.fr : de la commande au client actif (onglet « Clients »).">
+        <ol class="cp-frise cl-frise">
+          {ETAPES_CLIENT.map(([titre, texte]) => (
+            <li>
+              <strong>{titre}</strong>
+              <span>{fr(texte)}</span>
+            </li>
+          ))}
+        </ol>
+        <ul class="cp-points">
+          {POINTS_CLIENTS.map((p) => (
+            <li>{fr(p)}</li>
+          ))}
+        </ul>
       </Panel>
 
       <Panel title="Bonnes pratiques" id="aide-pratiques">

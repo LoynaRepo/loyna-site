@@ -65,6 +65,10 @@ export const nombre = (n: number | null | undefined) => (n === null || n === und
 export const pourcent = (n: number | null | undefined) => (n === null || n === undefined ? '–' : `${nf.format(n)} %`);
 export const pluriel = (n: number, un: string, plusieurs: string) => `${nombre(n)} ${n > 1 ? plusieurs : un}`;
 
+const ef = new Intl.NumberFormat('fr-FR', {style: 'currency', currency: 'EUR'});
+/** « 39,99 € » */
+export const euros = (n: number | null | undefined) => (n === null || n === undefined ? '–' : ef.format(n));
+
 /** Typographie française du texte affiché : espace insécable avant « : ; ? ! % € » et dans les guillemets. */
 export function fr(s: string | null | undefined): string {
   return (s || '')

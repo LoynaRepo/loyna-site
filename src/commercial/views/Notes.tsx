@@ -8,6 +8,9 @@ import {nouvelId} from '../notes-crypto';
 import {brouillons, chargerNotes, Conflit, enregistrer, ErreurNotes, notesDe, notesEtat, TEXTE_MAX, type Note, type Operation} from '../notes';
 import {toast} from '../store';
 import type {Prospect} from '../types';
+
+/** Prospect ou client : seuls l'identifiant (clé des notes) et le nom servent ici. */
+type Cible = Pick<Prospect, 'id' | 'nom'>;
 import {Btn, Modal, Spinner} from '../ui';
 
 const raccourci = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘ + Entrée' : 'Ctrl + Entrée';
@@ -23,9 +26,9 @@ function surEntree(action: () => void) {
   };
 }
 
-export function NotesProspect({p, focus = false}: {p: Prospect; focus?: boolean}) {
+export function NotesProspect({p, focus = false, filtre}: {p: Pick<Cible, 'id'>; focus?: boolean; filtre?: (n: Note) => boolean}) {
   const etat = notesEtat.value;
-  const notes = notesDe(p.id);
+  const notes = filtre ? notesDe(p.id).filter(filtre) : notesDe(p.id); // clients : sans les notes d'action
   const lectureSeule = etat.etat !== 'pret';
   return (
     <div class="cp-notes">
@@ -66,7 +69,7 @@ export function NotesProspect({p, focus = false}: {p: Prospect; focus?: boolean}
   );
 }
 
-function Ajout({p, focus}: {p: Prospect; focus: boolean}) {
+function Ajout({p, focus}: {p: Pick<Cible, 'id'>; focus: boolean}) {
   const [texte, setTexte] = useState(brouillons.get(p.id) ?? '');
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
@@ -147,7 +150,7 @@ function Ajout({p, focus}: {p: Prospect; focus: boolean}) {
   );
 }
 
-function ElementNote({p, note, lectureSeule}: {p: Prospect; note: Note; lectureSeule: boolean}) {
+function ElementNote({p, note, lectureSeule}: {p: Pick<Cible, 'id'>; note: Note; lectureSeule: boolean}) {
   const [mode, setMode] = useState<'lecture' | 'edition' | 'suppression'>('lecture');
   const [texte, setTexte] = useState(note.texte);
   const [avant, setAvant] = useState(note.modifie_le); // version de la note quand la modification a commencé
@@ -298,7 +301,7 @@ function ChoixConflit(props: {conflit: Conflit; monTexte: string; envoi: boolean
 }
 
 /** Bouton « Note » des cartes « À appeler » : ouvre les notes du prospect dans une fenêtre. */
-export function BoutonNotes({p}: {p: Prospect}) {
+export function BoutonNotes({p}: {p: Cible}) {
   const [ouvert, setOuvert] = useState(false);
   const n = notesDe(p.id).length;
   return (
@@ -314,11 +317,12 @@ export function BoutonNotes({p}: {p: Prospect}) {
 }
 
 /** « n notes » sur les lignes des tableaux et des cartes. */
-export function MarqueNotes({p}: {p: Prospect}) {
-  const n = notesDe(p.id).length;
+export function MarqueNotes({p, filtre}: {p: Pick<Cible, 'id'>; filtre?: (n: Note) => boolean}) {
+  const liste = filtre ? notesDe(p.id).filter(filtre) : notesDe(p.id);
+  const n = liste.length;
   if (!n) return null;
   return (
-    <span class="bdg bdg--blue cp-marque-notes" title={notesDe(p.id)[0]?.texte.slice(0, 140)}>
+    <span class="bdg bdg--blue cp-marque-notes" title={liste[0]?.texte.slice(0, 140)}>
       <Icon name="notebook-text" size={12} />
       {n > 1 ? `${n} notes` : '1 note'}
     </span>

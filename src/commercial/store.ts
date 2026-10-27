@@ -25,7 +25,8 @@ if (typeof window !== 'undefined') {
     const avant = route.value.vue;
     route.value = lireRoute();
     // retour d'une fiche vers la liste : on garde la position ; sinon, haut de page
-    if (!(avant === 'prospect' && route.value.vue === 'prospects')) window.scrollTo({top: 0});
+    const retour = (avant === 'prospect' && route.value.vue === 'prospects') || (avant === 'client' && route.value.vue === 'clients');
+    if (!retour) window.scrollTo({top: 0});
   });
 }
 
@@ -47,6 +48,20 @@ export const filtres = signal<Filtres>({...FILTRES_VIDES});
 export function voirProspects(f: Partial<Filtres>) {
   filtres.value = {...FILTRES_VIDES, ...f};
   aller('prospects');
+}
+
+// --- Filtres de la liste « Clients » ---------------------------------------------------------------
+export interface FiltresClients {
+  q: string;
+  offre: string;
+  etape: string; // étape du parcours ou état (paiement_echoue, resiliation, termine)
+  suivi: string; // '' | 'a_traiter' | 'urgent'
+}
+export const FILTRES_CLIENTS_VIDES: FiltresClients = {q: '', offre: '', etape: '', suivi: ''};
+export const filtresClients = signal<FiltresClients>({...FILTRES_CLIENTS_VIDES});
+export function voirClients(f: Partial<FiltresClients>) {
+  filtresClients.value = {...FILTRES_CLIENTS_VIDES, ...f};
+  aller('clients');
 }
 
 // --- Messages éphémères -------------------------------------------------------------------------------

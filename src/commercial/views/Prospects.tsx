@@ -33,7 +33,7 @@ const TRIS: {v: string; l: string}[] = [
   {v: 'activite', l: 'Dernière activité'},
 ];
 
-function useLarge(): boolean {
+export function useLarge(): boolean {
   const q = '(min-width: 1000px)';
   const [large, setLarge] = useState(() => typeof matchMedia !== 'undefined' && matchMedia(q).matches);
   useEffect(() => {
