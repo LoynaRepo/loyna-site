@@ -201,8 +201,8 @@ export function Toasts() {
 /** Lien à copier, avec son QR code (lien d'inscription, lien d'activation d'un employé…). */
 export function LinkBox({url, qr = true, note}: {url: string; qr?: boolean; note?: ComponentChildren}) {
   return (
-    <div class="linkbox">
-      {qr && <div class="linkbox-qr" dangerouslySetInnerHTML={{__html: qrSvg(url)}} />}
+    <div class={`linkbox ${qr ? '' : 'linkbox--noqr'}`}>
+      {qr &&<div class="linkbox-qr" dangerouslySetInnerHTML={{__html: qrSvg(url)}} />}
       <div class="linkbox-t">
         <code>{url}</code>
         <div class="btn-row">

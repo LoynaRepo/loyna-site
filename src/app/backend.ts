@@ -186,7 +186,20 @@ export const supabaseBackend: Backend = {
  * du dépôt LOYNA) : vérifie le jeton et ouvre la session du compte. Renvoie l'adresse confirmée.
  */
 export async function verifySignupLink(tokenHash: string): Promise<string> {
-  const {data, error} = await sb().auth.verifyOtp({token_hash: tokenHash, type: 'signup'});
+  return verifyLink(tokenHash, 'signup');
+}
+
+/**
+ * Lien « Choisir mon mot de passe » (fonctions staff-manage et merchant-bootstrap du dépôt LOYNA, depuis le
+ * 2026-10-27) : /espace-client/mot-de-passe/?token_hash=…&type=recovery. Vérifie le jeton et ouvre la session du
+ * compte, qui n'a plus qu'à enregistrer son mot de passe. Renvoie l'adresse du compte.
+ */
+export async function verifyRecoveryLink(tokenHash: string): Promise<string> {
+  return verifyLink(tokenHash, 'recovery');
+}
+
+async function verifyLink(tokenHash: string, type: 'signup' | 'recovery'): Promise<string> {
+  const {data, error} = await sb().auth.verifyOtp({token_hash: tokenHash, type});
   if (error || !data.session) {
     const raw = `${error?.code ?? ''} ${error?.message ?? ''}`;
     if (/expired|invalid|not.?found|already/i.test(raw) || error?.status === 403) throw new ApiError('LINK_INVALID', 'Ce lien n’est plus valide.', error?.status ?? 0);

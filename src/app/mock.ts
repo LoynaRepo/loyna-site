@@ -247,6 +247,13 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
   // Essais locaux de l'écran « Votre commande » d'un compte sans commerce (développement seulement) :
   // ?demo&commande (une commande Premium avec QR codes), ?demo&commande=0 (aucune commande)
   const orderDemo = import.meta.env.DEV ? new URLSearchParams(location.search).get('commande') : null;
+  // Essais locaux de l'écran Opérateur (développement seulement, module mock-operateur.ts) : ?demo&operateur (opérateur
+  // membre du commerce fictif), ?demo&operateur=seul (opérateur sans commerce). Jamais dans la démonstration publique.
+  const operatorDemo = import.meta.env.DEV ? new URLSearchParams(location.search).get('operateur') : null;
+  const operatorSelf = () => ({
+    id: d.merchant.id, name: db.merchants[0].name, slug: d.merchant.slug, plan: d.plan, primary_color: db.merchants[0].primary_color,
+    secondary_color: db.merchants[0].secondary_color, cards: customers.filter((c) => !c.deleted).length, owner_email: staff[0].email, member: operatorDemo !== 'seul',
+  });
 
   // Équipe (les tirages ne dépendent pas de l'offre : même commerce quelle que soit l'offre affichée)
   const others = [...STAFF_NAMES].sort(() => r() - 0.5).slice(0, int(1, 3));
@@ -672,7 +679,7 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
       await wait();
       switch (fn) {
         case 'my_staff_context':
-          return {user_id: 'u-owner', is_platform_admin: false, memberships: orderDemo === null ? [membership()] : []};
+          return {user_id: 'u-owner', is_platform_admin: operatorDemo !== null, memberships: orderDemo === null && operatorDemo !== 'seul' ? [membership()] : []};
         case 'my_orders':
           return {
             status: 'OK',
@@ -801,6 +808,10 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
             ],
           };
         }
+        case 'op_orders':
+        case 'op_merchants':
+          if (import.meta.env.DEV && operatorDemo !== null) return (await import('./mock-operateur')).operatorRpc(fn, operatorSelf());
+          break;
         case 'my_subscription': {
           const yearly = seed % 4 === 0;
           return {status: 'OK', plan: d.plan, billing_period: yearly ? 'yearly' : 'monthly', subscription_status: 'active', cancel_at_period_end: false, cancel_at: null, canceled_at: null, current_period_end: iso(now + ((seed % 27) + 2) * DAY), commitment_end: iso(now + ((seed % 300) + 30) * DAY), customer_email: staff[0].email};
@@ -924,6 +935,9 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
             if (b.display_name) s.display_name = b.display_name;
             return {status: 'OK'};
           }
+        case 'merchant-bootstrap':
+          if (import.meta.env.DEV && operatorDemo !== null) return (await import('./mock-operateur')).operatorEdge(b, operatorSelf());
+          break;
         case 'apple-pass-create':
           return {apple_pass_url: FAKE_LINK, qr_rotated: !!b.rotate_qr};
         case 'google-wallet-create':

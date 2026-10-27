@@ -2,7 +2,7 @@
 import type {ComponentChildren} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
 import {Icon} from './icons';
-import {api, can, go, loadPlans, merchant, PLAN_ORDER, planLabel, rememberMerchant, rememberedMerchant, route, session, setBackend, staffCtx, toastError, type Membership, type StaffContext} from './state';
+import {api, can, go, isOperator, loadPlans, merchant, PLAN_ORDER, planLabel, rememberMerchant, rememberedMerchant, route, session, setBackend, staffCtx, toastError, type Membership, type StaffContext} from './state';
 import {Btn, Field, Spinner, Toasts} from './ui';
 import {frenchTypography} from './util';
 import {Commande} from './Commande';
@@ -21,6 +21,7 @@ const LOADERS: Record<string, () => Promise<ViewComp>> = {
   equipe: () => import('./views/Equipe').then((m) => m.Equipe),
   reglages: () => import('./views/Reglages').then((m) => m.Reglages),
   abonnement: () => import('./views/Abonnement').then((m) => m.Abonnement),
+  operateur: () => import('./views/Operateur').then((m) => m.Operateur),
 };
 const loaded: Record<string, ViewComp> = {};
 function loadView(name: string): Promise<ViewComp> {
@@ -49,6 +50,8 @@ const NAV: NavItem[] = [
   {view: 'equipe', label: 'Équipe', icon: 'users-round', show: () => can('team.manage')},
   {view: 'reglages', label: 'Réglages', icon: 'settings', show: () => can('settings.manage')},
   {view: 'abonnement', label: 'Abonnement', icon: 'credit-card', show: () => can('settings.manage')},
+  // Opérateur LOYNA (platform_admins, vérifié par le serveur) : commandes à traiter et création des commerces
+  {view: 'operateur', label: 'Opérateur', icon: 'shield-check', show: isOperator},
 ];
 
 /** Un logo par emplacement : chaque copie reçoit son propre identifiant de dégradé. */
@@ -261,6 +264,9 @@ function Workspace({logo}: {logo: string}) {
       </Center>
     );
   if (!ctx) return <Splash />;
+  const operator = isOperator();
+  // Opérateur LOYNA sans commerce à lui (ou sans commerce choisi) : écran Opérateur seul.
+  if (operator && (!ctx.memberships.length || (!merchant.value && route.value.view === 'operateur'))) return <OperatorShell logo={logo} />;
   // Compte sans commerce (commande passée dans le panier de loyna.fr) : « Votre commande », LOYNA prépare la carte.
   if (!ctx.memberships.length)
     return (
@@ -268,8 +274,83 @@ function Workspace({logo}: {logo: string}) {
         <Commande email={session.value?.email ?? ''} portal={PORTAL} onSignOut={() => api.signOut().then(() => (session.value = null))} />
       </Center>
     );
-  if (!merchant.value) return <MerchantPicker logo={logo} list={ctx.memberships} />;
+  if (!merchant.value) return <MerchantPicker logo={logo} list={ctx.memberships} operator={operator} />;
   return <Shell logo={logo} />;
+}
+
+/** Déconnexion (ou sortie de la démonstration en ligne). */
+async function signOutAll() {
+  if (api.demo && !import.meta.env.DEV) {
+    location.href = '/'; // quitter la démonstration
+    return;
+  }
+  try {
+    await api.signOut();
+  } catch (e) {
+    toastError(e);
+  }
+  session.value = null;
+  staffCtx.value = null;
+  merchant.value = null;
+}
+
+/** Écran Opérateur hors d'un commerce : opérateur sans commerce à lui, ou avant d'en choisir un. */
+function OperatorShell({logo}: {logo: string}) {
+  const hasMerchants = (staffCtx.value?.memberships.length ?? 0) > 0;
+  const email = session.value?.email ?? '';
+  return (
+    <div class="app">
+      <aside class="side">
+        <a href="/" class="side-logo" aria-label="Retour au site loyna.fr" dangerouslySetInnerHTML={{__html: logoFor(logo, 'side')}} />
+        <div class="side-merchant side-merchant--op">
+          <span class="side-m-logo op-mark">
+            <Icon name="shield-check" size={22} />
+          </span>
+          <span class="side-m-t">
+            <strong>Opérateur LOYNA</strong>
+            <small>{email}</small>
+          </span>
+        </div>
+        <nav class="side-nav" aria-label="LOYNA Business">
+          <a href="#/operateur" class="on" aria-current="page">
+            <Icon name="shield-check" />
+            Opérateur
+          </a>
+          {hasMerchants && (
+            <a href="#/">
+              <Icon name="store" />
+              Choisir un commerce
+            </a>
+          )}
+        </nav>
+        <div class="side-foot">
+          <button type="button" class="side-out" onClick={signOutAll}>
+            <Icon name="log-out" size={18} />
+            {api.demo ? 'Quitter la démo' : 'Se déconnecter'}
+          </button>
+        </div>
+      </aside>
+      <header class="top">
+        <a href="/" class="top-logo" aria-label="loyna.fr" dangerouslySetInnerHTML={{__html: logoFor(logo, 'top')}} />
+        {hasMerchants ? (
+          <a class="top-merchant" href="#/">
+            <Icon name="store" size={14} />
+            Mes commerces
+          </a>
+        ) : (
+          <button type="button" class="top-merchant" onClick={signOutAll}>
+            <Icon name="log-out" size={14} />
+            Se déconnecter
+          </button>
+        )}
+      </header>
+      <div class="main">
+        {api.demo && <DemoBar />}
+        <View view="operateur" />
+      </div>
+      <Toasts />
+    </div>
+  );
 }
 
 function Center({logo, children}: {logo: string; children: ComponentChildren}) {
@@ -281,7 +362,7 @@ function Center({logo, children}: {logo: string; children: ComponentChildren}) {
   );
 }
 
-function MerchantPicker({logo, list}: {logo: string; list: Membership[]}) {
+function MerchantPicker({logo, list, operator = false}: {logo: string; list: Membership[]; operator?: boolean}) {
   const pick = (m: Membership) => {
     rememberMerchant(m.merchant_id);
     merchant.value = m;
@@ -305,6 +386,18 @@ function MerchantPicker({logo, list}: {logo: string; list: Membership[]}) {
             <Icon name="chevron-right" />
           </button>
         ))}
+        {operator && (
+          <a class="picker-i" href="#/operateur">
+            <span class="picker-logo op-mark">
+              <Icon name="shield-check" size={22} />
+            </span>
+            <span>
+              <strong>Écran opérateur</strong>
+              <small>Commandes à traiter, création des commerces</small>
+            </span>
+            <Icon name="chevron-right" />
+          </a>
+        )}
       </div>
     </Center>
   );
@@ -319,20 +412,7 @@ function Shell({logo}: {logo: string}) {
 
   useEffect(() => setMore(false), [route.value]);
 
-  const logout = async () => {
-    if (api.demo && !import.meta.env.DEV) {
-      location.href = '/'; // quitter la démonstration
-      return;
-    }
-    try {
-      await api.signOut();
-    } catch (e) {
-      toastError(e);
-    }
-    session.value = null;
-    staffCtx.value = null;
-    merchant.value = null;
-  };
+  const logout = signOutAll;
   const switchMerchant = () => {
     merchant.value = null;
   };

@@ -37,6 +37,14 @@ export const route = signal(parseRoute());
 export function can(permission: string): boolean {
   return !!merchant.value?.permissions.includes(permission);
 }
+/**
+ * Opérateur LOYNA (table platform_admins), d'après le serveur (my_staff_context) : affiche l'onglet « Opérateur ».
+ * Simple affichage : chaque appel de cet écran est refusé par le serveur à un autre compte. Jamais dans la
+ * démonstration publique (en développement seulement, avec ?demo&operateur).
+ */
+export function isOperator(): boolean {
+  return staffCtx.value?.is_platform_admin === true && (!api.demo || import.meta.env.DEV);
+}
 export function feature(name: string): boolean {
   return merchant.value?.features?.[name]?.enabled === true;
 }

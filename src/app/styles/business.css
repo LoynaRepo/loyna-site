@@ -883,6 +883,9 @@ body {
   gap: 18px;
   align-items: center;
 }
+.linkbox.linkbox--noqr {
+  grid-template-columns: minmax(0, 1fr);
+}
 .linkbox-qr {
   width: 112px;
   padding: 6px;
@@ -3598,4 +3601,179 @@ label.b {
   .ref-gains {
     grid-template-columns: 1fr;
   }
+}
+
+/* --- Écran Opérateur (src/app/views/Operateur.tsx, opérateurs LOYNA seulement) ---------------------------- */
+.op-mark {
+  background: var(--grad-gold);
+  color: var(--ink);
+}
+a.picker-i,
+a.top-merchant {
+  color: inherit;
+  text-decoration: none;
+}
+a.top-merchant {
+  color: #faf7f0;
+}
+.side-merchant--op {
+  cursor: default;
+}
+.side-merchant--op small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.op-list {
+  display: grid;
+  gap: 14px;
+}
+@media (min-width: 1200px) {
+  .op-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+.op-order .btn-row,
+.op-order .fld-h {
+  margin: 0;
+}
+.op-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.op-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.op-recap {
+  overflow-wrap: anywhere;
+}
+.op-form > .form {
+  gap: 20px;
+  align-content: start;
+}
+.op-slug {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.op-slug > span {
+  padding-right: 6px;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.op-slug input {
+  flex: 1;
+  min-width: 0;
+}
+.op-color {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.op-hex {
+  width: 6.6em;
+  height: 34px;
+  padding: 4px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font: 600 0.88rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--text);
+}
+.op-hex:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px rgba(201, 150, 63, 0.18);
+}
+.op-done {
+  display: grid;
+  gap: 20px;
+}
+@media (min-width: 1100px) {
+  .op-done {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+.op-done .btn-row {
+  margin-top: 14px;
+}
+.op-done .form .btn-row {
+  margin-top: 0;
+}
+.op-done p {
+  margin: 0;
+}
+.op-access {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.op-access svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--green, #13663b);
+}
+.op-tbl td {
+  vertical-align: middle;
+}
+.op-m {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 230px;
+}
+.op-m > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+.op-m small {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.op-m-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+.op-m-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.op-join {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.op-copy {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+.op-copy:hover {
+  border-color: var(--gold);
+}
+.op-foot {
+  margin: 12px 0 0;
 }

@@ -27,7 +27,8 @@ interface Order {
   merchant_linked: boolean;
 }
 type Tone = 'green' | 'amber' | 'red' | 'neutral';
-const STATUS: Record<string, [string, Tone]> = {
+/** Statut d'un abonnement Stripe, en clair (aussi utilisé par l'écran Opérateur). */
+export const STATUS: Record<string, [string, Tone]> = {
   active: ['Abonnement actif', 'green'],
   trialing: ['Abonnement actif', 'green'],
   incomplete: ['Paiement en cours de validation', 'amber'],

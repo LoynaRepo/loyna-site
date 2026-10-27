@@ -1,7 +1,9 @@
 // Choix du mot de passe (lien d'activation d'un nouveau membre ou lien de réinitialisation).
-// Supabase Auth ouvre la session à partir du lien ; il ne reste qu'à enregistrer le mot de passe.
+// Lien ?token_hash=…&type=recovery (depuis le 2026-10-27) : la page vérifie le jeton (verifyOtp), ce qui ouvre la
+// session. Ancien lien (jetons après #, via /set-password) : Supabase Auth ouvre la session à partir de l'adresse.
+// Il ne reste qu'à enregistrer le mot de passe.
 import {useEffect, useState} from 'preact/hooks';
-import {linkError, supabaseBackend} from './backend';
+import {linkError, supabaseBackend, verifyRecoveryLink} from './backend';
 import {Icon} from './icons';
 import {Btn, Field, Spinner} from './ui';
 
@@ -28,6 +30,27 @@ export default function Password({logo}: {logo: string}) {
     if (err) {
       setLinkErr(err);
       setState('error');
+      return;
+    }
+    const q = new URLSearchParams(location.search);
+    const token = q.get('token_hash') ?? '';
+    if (token && q.get('type') === 'recovery') {
+      if (!/^[A-Za-z0-9_-]{8,200}$/.test(token)) {
+        setLinkErr('Ce lien n’est plus valide (il a peut-être déjà été utilisé).');
+        setState('error');
+        return;
+      }
+      verifyRecoveryLink(token).then(
+        (address) => {
+          setEmail(address);
+          setState('ready');
+          history.replaceState(null, '', location.pathname); // le jeton ne reste pas dans l'adresse
+        },
+        (e) => {
+          setLinkErr(e?.code === 'LINK_INVALID' ? 'Ce lien n’est plus valide (il a peut-être déjà été utilisé, ou il a expiré).' : (e?.message ?? 'Vérification du lien impossible.'));
+          setState('error');
+        },
+      );
       return;
     }
     // Laisse le client Supabase lire le jeton présent dans l'adresse, puis vérifie la session.
