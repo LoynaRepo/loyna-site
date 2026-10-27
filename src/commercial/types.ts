@@ -143,6 +143,8 @@ export interface Client {
   mrr: number;
   programme: {nom: string; recompense: string; passages: string};
   couleurs?: {fond: string; accent: string};
+  /** Liens d'ajout des cartes de démonstration (propriétés carte_demo_apple / carte_demo_google de la fiche). */
+  cartes_demo?: {apple: string; google: string};
   statut: string;
   documents_generes_le: string;
   prospect: string;

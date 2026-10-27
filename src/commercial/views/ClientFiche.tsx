@@ -3,6 +3,7 @@
 // client, carte, historique. Rien n'est modifié dans le coffre d'ici : les boutons enregistrent une note chiffrée
 // que panel.py recopie dans la fiche à la publication suivante.
 import type {ComponentChildren} from 'preact';
+import qrcode from 'qrcode-generator';
 import {useMemo, useState} from 'preact/hooks';
 import {ACTIONS, annulerAction, clientsAffiches, noteLibre, noterAction, type ClientAffiche, type CodeAction} from '../clients';
 import {isoJour} from '../clients-regles';
@@ -170,6 +171,21 @@ export function ClientFiche({id}: {id: string}) {
             </dl>
           </Panel>
 
+          {(c.cartes_demo?.apple || c.cartes_demo?.google) && (
+            <Panel title="Carte de démonstration" sub="Aux couleurs de sa commande : à scanner avec l’appareil photo du téléphone. Carte figée (pas de mises à jour).">
+              <div class="cl-demo">
+                {c.cartes_demo?.apple && <CarteDemo titre="Apple Wallet · iPhone" lien={c.cartes_demo.apple} note="Tout iPhone peut l’ajouter." />}
+                {c.cartes_demo?.google && (
+                  <CarteDemo
+                    titre="Google Wallet · Android"
+                    lien={c.cartes_demo.google}
+                    note="Tant que Google n’a pas validé la publication : seulement les comptes de test de la Pay & Wallet Console."
+                  />
+                )}
+              </div>
+            </Panel>
+          )}
+
           <Panel title="QR codes sous verre" sub="Achat unique, livré sous 15 jours au plus à l’adresse de facturation.">
             {c.qr.commandes ? (
               <dl class="cp-dl">
@@ -317,6 +333,33 @@ export function ClientFiche({id}: {id: string}) {
 }
 
 /** Bouton d'une étape : date (aujourd'hui par défaut) et précision facultative, puis note chiffrée [CLIENT:…]. */
+/** Carte de démonstration (LOYNA scripts/google-poc/demo-client.ts) : QR code du lien d'ajout, lisible à l'écran.
+ *  Correction L : le lien Google (jeton signé) est long, des modules plus gros se scannent mieux. */
+function CarteDemo({titre, lien, note}: {titre: string; lien: string; note: string}) {
+  const svg = useMemo(() => {
+    const q = qrcode(0, 'L');
+    q.addData(lien);
+    q.make();
+    const n = q.getModuleCount();
+    const m = 3;
+    const s = n + m * 2;
+    let d = '';
+    for (let r = 0; r < n; r++) for (let x = 0; x < n; x++) if (q.isDark(r, x)) d += `M${x + m} ${r + m}h1v1h-1z`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${s} ${s}" shape-rendering="crispEdges" role="img" aria-label="QR code ${titre}"><rect width="${s}" height="${s}" fill="#fff"/><path d="${d}" fill="#121216"/></svg>`;
+  }, [lien, titre]);
+  return (
+    <figure class="cl-demo-carte">
+      <figcaption>{titre}</figcaption>
+      <div class="cl-demo-qr" dangerouslySetInnerHTML={{__html: svg}} />
+      <p class="muted">{note}</p>
+      <div class="cl-demo-actions">
+        <Lien href={lien}>Ouvrir le lien</Lien>
+        <Copier texte={lien} label="Copier le lien" />
+      </div>
+    </figure>
+  );
+}
+
 function BoutonAction({c, code, principal = false}: {c: ClientAffiche; code: CodeAction; principal?: boolean}) {
   const etat = notesEtat.value;
   const pret = etat.etat === 'pret'; // pendant le chargement, une écriture serait écrasée : bouton en attente
