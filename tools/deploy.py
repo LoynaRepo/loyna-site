@@ -39,6 +39,9 @@ GARDER = {".ovhconfig"}
 # Données chiffrées de l'espace commercial : déposées par _systeme/panel.py du coffre de prospection, jamais
 # envoyées depuis dist/ (la copie locale de développement) ni supprimées par la mise en ligne du site.
 DONNEES_COMMERCIALES = "espace-commercial/donnees.enc"
+# Cartes Apple Wallet de démonstration (tools/carte_demo.py) : déposées directement dans www/cartes-demo/, hors
+# du dépôt (coordonnées de prospects) ; jamais supprimées par la mise en ligne du site.
+CARTES_DEMO = "cartes-demo/"
 
 
 def mot_de_passe() -> str:
@@ -151,7 +154,8 @@ def cmd_publier(essai: bool) -> int:
         if rel not in distants or distants[rel] != p.stat().st_size or manifeste.get(rel) != h:
             a_envoyer.append((rel, p, h))
     a_supprimer = sorted(k for k in distants if k not in locaux and posixpath.basename(k) not in GARDER
-                         and k != DONNEES_COMMERCIALES and not posixpath.basename(k).startswith(".donnees.enc."))
+                         and k != DONNEES_COMMERCIALES and not posixpath.basename(k).startswith(".donnees.enc.")
+                         and not k.startswith(CARTES_DEMO))
 
     print(f"À envoyer : {len(a_envoyer)} · à supprimer : {len(a_supprimer)} · inchangés : {len(locaux) - len(a_envoyer)}")
     for rel, _, _ in a_envoyer[:40]:
