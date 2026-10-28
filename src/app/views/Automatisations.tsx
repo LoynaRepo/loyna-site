@@ -1,7 +1,8 @@
 // Automatisations : les messages et avantages qui partent tout seuls (table merchant_settings, droit
 // settings.manage). Toutes les offres : notification après chaque passage, délai entre deux messages
-// commerciaux. Premium : anniversaire, relance des inactifs, « Plus qu'un passage ! », avis Google. Pro :
-// niveaux VIP, parrainage entre clients. Sans la fonction (carte features), la carte est verrouillée.
+// commerciaux. Premium : anniversaire, relance des inactifs, « Plus qu'un passage ! », avis Google, niveaux VIP
+// (dès Premium depuis le 2026-10-28, décision d'Ewan). Pro : parrainage entre clients. Sans la fonction (carte
+// features), la carte est verrouillée.
 // Le double tampon aux heures creuses est retiré des offres depuis le 2026-10-27 (décision d'Ewan).
 // Chaque carte s'enregistre seule ; les aperçus reprennent les textes du serveur (scheduled-customer-engagement).
 import type {ComponentChildren} from 'preact';
@@ -86,7 +87,7 @@ export function Automatisations() {
 
   const ctx: Ctx = {s, program: data.data.program, reward: data.data.reward, onSaved: setS};
   const premium = feature('automation.birthday') || feature('automation.near_reward');
-  const pro = feature('loyalty.tiers') || feature('referral');
+  const pro = feature('referral');
   return (
     <div class="page">
       <PageHead eyebrow={m.merchant_name} title="Automatisations" />
@@ -113,6 +114,7 @@ export function Automatisations() {
           <Inactive ctx={ctx} />
           <NearReward ctx={ctx} />
           <Review ctx={ctx} />
+          <Tiers ctx={ctx} />
         </div>
         <p class="auto-more">
           <Icon name="sparkles" size={16} />
@@ -128,10 +130,9 @@ export function Automatisations() {
             <p class="eyebrow">Pro</p>
             <h2>LOYNA travaille avec vous</h2>
           </div>
-          {pro ? <Badge tone="green">Inclus dans votre offre</Badge> : <LockBadge feature="loyalty.tiers" />}
+          {pro ? <Badge tone="green">Inclus dans votre offre</Badge> : <LockBadge feature="referral" />}
         </header>
         <div class="auto-grid">
-          <Tiers ctx={ctx} />
           <Referral ctx={ctx} />
         </div>
         <p class="auto-more">
@@ -534,7 +535,7 @@ function Review({ctx}: {ctx: Ctx}) {
   );
 }
 
-// --- Pro ----------------------------------------------------------------------------------------------------
+// --- Premium et Pro : niveaux VIP ----------------------------------------------------------------------------
 function Tiers({ctx}: {ctx: Ctx}) {
   return (
     <Auto
@@ -602,6 +603,7 @@ function Tiers({ctx}: {ctx: Ctx}) {
   );
 }
 
+// --- Pro ----------------------------------------------------------------------------------------------------
 function Referral({ctx}: {ctx: Ctx}) {
   const m = merchant.value!;
   const p = ctx.program;

@@ -1,4 +1,4 @@
-// Fiche client : solde, récompenses, niveau VIP et parrainage (Pro), historique, carte Wallet,
+// Fiche client : solde, récompenses, niveau VIP (Premium et Pro) et parrainage (Pro), historique, carte Wallet,
 // consentements et RGPD. Les boutons suivent les droits renvoyés par le serveur (permissions de la fiche).
 import {useState} from 'preact/hooks';
 import {Icon} from '../icons';

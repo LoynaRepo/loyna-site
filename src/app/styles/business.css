@@ -1545,7 +1545,7 @@ body {
 .consents li > span:not(.ic) {
   flex: 1;
 }
-/* Niveau VIP et parrainage (offre Pro) */
+/* Niveau VIP (Premium et Pro) et parrainage (offre Pro) */
 .cd-id {
   flex-wrap: wrap;
 }

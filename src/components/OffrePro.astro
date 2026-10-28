@@ -11,13 +11,14 @@ const items = [
   {icon: 'calendar-check', t: 'Point mensuel de 30 min'},
   {icon: 'megaphone', t: 'Campagnes clés en main'},
   {icon: 'store', t: 'Jusqu’à 3 boutiques'},
-  {icon: 'crown', t: 'Niveaux VIP'},
   {icon: 'users', t: 'Parrainage'},
   {icon: 'printer', t: 'Kit comptoir imprimé'},
+  {icon: 'headset', t: 'Support prioritaire'},
 ];
+// Les niveaux VIP sont inclus dès Premium depuis le 2026-10-28 (décision d'Ewan) : ils ne figurent plus ici.
 ---
 
-<div class={`pro-tiles ${cls}`} role="img" aria-label={`Offre Pro : ${items.map((i) => i.t).join(', ')} et support prioritaire`}>
+<div class={`pro-tiles ${cls}`} role="img" aria-label={`Offre Pro : ${items.slice(0, -1).map((i) => i.t).join(', ')} et ${items[items.length - 1].t.toLowerCase()}`}>
   <p class="pt-head"><span class="pt-badge">Pro</span> LOYNA travaille avec vous</p>
   <ul>
     {

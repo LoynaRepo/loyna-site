@@ -78,8 +78,8 @@ const PLAN_FEATURES: Record<Plan, string[]> = {
   PREMIUM: [],
   PRO: [],
 };
-PLAN_FEATURES.PREMIUM = [...PLAN_FEATURES.STARTER, 'segmentation', 'automation.birthday', 'automation.inactive', 'automation.near_reward', 'automation.review', 'campaigns.scheduled', 'analytics.advanced', 'reports.monthly'];
-PLAN_FEATURES.PRO = [...PLAN_FEATURES.PREMIUM, 'loyalty.tiers', 'referral', 'campaigns.prepared', 'support.followup', 'support.priority', 'integrations', 'validation.automatic', 'automation.advanced', 'api.webhooks'];
+PLAN_FEATURES.PREMIUM = [...PLAN_FEATURES.STARTER, 'segmentation', 'automation.birthday', 'automation.inactive', 'automation.near_reward', 'automation.review', 'campaigns.scheduled', 'analytics.advanced', 'reports.monthly', 'loyalty.tiers'];
+PLAN_FEATURES.PRO = [...PLAN_FEATURES.PREMIUM, 'referral', 'campaigns.prepared', 'support.followup', 'support.priority', 'integrations', 'validation.automatic', 'automation.advanced', 'api.webhooks'];
 // Limites (null = illimité) : cartes, notifications de campagne par mois, boutiques
 const LIMITS: Record<string, Record<Plan, number | null>> = {
   'cards.max': {STARTER: 500, PREMIUM: 2000, PRO: null},
@@ -465,7 +465,7 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
     };
   }
 
-  // Niveau VIP (Pro) : passages cumulés comparés aux seuils réglés
+  // Niveau VIP (Premium et Pro) : passages cumulés comparés aux seuils réglés
   function tier(c: Cust) {
     const s = settings();
     if (!has('loyalty.tiers') || !s.tiers_enabled) return null;
