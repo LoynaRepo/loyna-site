@@ -24,7 +24,7 @@ export const SITE = {
   // Adresse postale (registre SIRENE, siège de l'entreprise)
   address: {street: 'C 07, 137 rue Uderzo', postalCode: '34690', locality: 'Fabrègues', region: 'Occitanie', country: 'FR'},
   // Mesure d'audience Google Analytics 4 (« G-… ») : vide = aucun bandeau ni traceur. Modifiable dans Builder.
-  ga4Id: '',
+  ga4Id: 'G-8YTGCX1EQ1', // propriété « LOYNA » créée par Ewan le 2026-10-28
   // Référencement : codes de vérification (Search Console, Bing) et profils officiels de la marque.
   // Modifiables aussi dans Builder (site-settings : googleVerification, bingVerification, sameAs).
   googleVerification: '',
