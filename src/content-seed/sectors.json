@@ -154,10 +154,10 @@
   {
     "slug": "restauration-rapide",
     "nom": "Restauration rapide",
-    "metaTitle": "Carte de fidélité snack, kebab, tacos et pizzeria",
-    "metaDescription": "Carte de fidélité digitale pour snack, kebab, tacos ou pizzeria à emporter : un scan par passage, récompense automatique, sans application.",
-    "h1": "Carte de fidélité snack, kebab, tacos et pizzeria à emporter",
-    "intro": "<p>Au comptoir d’un snack, d’un kebab, d’une boutique de tacos ou d’une pizzeria à emporter, chaque seconde compte. Pendant le rush de midi, personne n’a le temps de chercher une carte en carton ni de compter des tampons. Et quand la concurrence est à deux rues, un client sans raison particulière de revenir chez vous ira simplement là où il passe.</p><p>LOYNA met votre carte de fidélité dans le téléphone de vos clients, dans Apple Wallet ou Google Wallet, sans application à télécharger. Au moment de payer, vous scannez la carte : un scan, un passage validé, sans rechercher le client ni appuyer sur +1. La carte se met à jour toute seule et, au seuil choisi, la récompense se débloque automatiquement, par exemple un menu offert.</p>",
+    "metaTitle": "Carte de fidélité snack, kebab, tacos et burger",
+    "metaDescription": "Carte de fidélité digitale pour snack, kebab, tacos ou burger : un scan par passage, récompense automatique, sans application.",
+    "h1": "Carte de fidélité snack, kebab, tacos et burger",
+    "intro": "<p>Au comptoir d’un snack, d’un kebab, d’une boutique de tacos ou d’un fast-food de burgers, chaque seconde compte. Pendant le rush de midi, personne n’a le temps de chercher une carte en carton ni de compter des tampons. Et quand la concurrence est à deux rues, un client sans raison particulière de revenir chez vous ira simplement là où il passe.</p><p>LOYNA met votre carte de fidélité dans le téléphone de vos clients, dans Apple Wallet ou Google Wallet, sans application à télécharger. Au moment de payer, vous scannez la carte : un scan, un passage validé, sans rechercher le client ni appuyer sur +1. La carte se met à jour toute seule et, au seuil choisi, la récompense se débloque automatiquement, par exemple un menu offert. Pour une pizzeria, voyez plutôt notre page <a href=\"/secteurs/pizzeria/\">carte de fidélité pizzeria</a>.</p>",
     "enjeux": [
       {
         "titre": "Le rush ne laisse pas de place aux tampons",
@@ -165,7 +165,7 @@
       },
       {
         "titre": "Une concurrence à chaque coin de rue",
-        "texte": "Snacks, kebabs, tacos, pizzerias : l’offre est dense et les prix sont proches. Sans lien avec votre clientèle, rien ne la retient d’aller tester le voisin."
+        "texte": "Snacks, kebabs, tacos, burgers : l’offre est dense et les prix sont proches. Sans lien avec votre clientèle, rien ne la retient d’aller tester le voisin."
       },
       {
         "titre": "Des heures creuses à remplir",
@@ -194,7 +194,7 @@
       "10e menu offert",
       "Boisson offerte au 5e passage",
       "Dessert ou frites offerts",
-      "Pizza offerte au 10e passage"
+      "Tacos offert au 10e passage"
     ],
     "messages": [
       "Votre menu offert est disponible ! Montrez simplement votre carte au comptoir.",

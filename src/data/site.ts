@@ -29,7 +29,8 @@ export const SITE = {
   // Modifiables aussi dans Builder (site-settings : googleVerification, bingVerification, sameAs).
   googleVerification: '',
   bingVerification: '',
-  sameAs: [] as string[],
+  // Comptes officiels de LOYNA (donnés par Ewan le 2026-10-28) : données structurées et liens du pied de page
+  sameAs: ['https://www.instagram.com/loyna.fr/', 'https://www.tiktok.com/@loyna.fr'] as string[],
   // Espace commerçant (LOYNA Business) : laissé vide tant que l'application n'est pas en ligne.
   appUrl: '',
   // Portail Stripe (abonnement, factures, moyen de paiement) : rempli après création du portail.
