@@ -30,6 +30,11 @@ const siret = (s.siret || SITE.legal.siret || '').trim();
 const link = `<a href="mailto:${SITE.email}">${SITE.email}</a>`;
 const analytics = !!(s.ga4Id || SITE.ga4Id || '').trim();
 const flags: Record<string, boolean> = {telephone: !!telephone, analytics, 'sans-analytics': !analytics};
+// Description de /cookies/ : elle suit, comme le texte de la page, l'activation de la mesure d'audience (GA4 depuis le 28/10)
+const description =
+  slug === 'cookies' && analytics
+    ? "Le site loyna.fr n'utilise aucun cookie publicitaire. La mesure d'audience (Google Analytics) n'est activée qu'avec votre accord. Détail des cookies et stockages utilisés."
+    : meta.description;
 const html = raw
   .replace(/<!--[\s\S]*?-->/g, '')
   // Passages conditionnels (data-if="…") : téléphone renseigné, mesure d'audience activée ou non
@@ -50,7 +55,7 @@ const crumbs = [
 ];
 ---
 
-<Base title={meta.title} description={meta.description} breadcrumbs={crumbs}>
+<Base title={meta.title} description={description} breadcrumbs={crumbs}>
   <section class="page-hero">
     <div class="narrow">
       <Breadcrumbs items={crumbs} />
