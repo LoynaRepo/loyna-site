@@ -164,7 +164,7 @@ export function contexteMail(nom: string, d: DemandeMail, demandeLe?: Date, auj 
     lien_configurateur: lienConfigurateur(nom, d),
     alt_visuel: `Aperçu de la carte de fidélité de ${nom}`,
     signataire: ewan ? 'Ewan' : signataire,
-    signature_ligne2: ewan ? 'Fondateur de LOYNA, une marque de KOVA Elec' : 'LOYNA, une marque de KOVA Elec',
+    signature_ligne2: ewan ? 'Fondateur de LOYNA' : 'LOYNA',
   };
 }
 
