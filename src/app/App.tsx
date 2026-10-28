@@ -178,8 +178,8 @@ function Login({logo, withSide = true}: {logo: string; withSide?: boolean}) {
               <strong>Employé :</strong> demandez à votre responsable un nouveau lien depuis le menu <em>Équipe</em>. Vous y choisirez vous-même votre mot de passe.
             </p>
             <p>
-              <strong>Propriétaire :</strong> votre lien d’activation vous a été envoyé à la mise en service de votre carte. Pour en recevoir un nouveau, écrivez à{' '}
-              <a href="mailto:contact@loyna.fr?subject=Nouveau%20lien%20de%20connexion%20LOYNA%20Business">contact@loyna.fr</a> depuis l’adresse de votre compte.
+              <strong>Propriétaire :</strong> connectez-vous avec l’adresse e-mail de votre commande et le mot de passe que vous avez choisi. Pas encore de mot de passe, ou vous l’avez oublié ? Écrivez à{' '}
+              <a href="mailto:contact@loyna.fr?subject=Nouveau%20lien%20de%20connexion%20LOYNA%20Business">contact@loyna.fr</a> depuis cette adresse : nous vous envoyons un lien pour en choisir un.
             </p>
           </div>
         )}
