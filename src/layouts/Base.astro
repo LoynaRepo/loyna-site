@@ -37,6 +37,16 @@ const gaId = (settings.ga4Id || SITE.ga4Id || '').trim();
 <html lang="fr-FR" data-offer-until={offerActive() ? LAUNCH_OFFER.until : undefined}>
   <head>
     <meta charset="utf-8" />
+    <!-- Liens Supabase Auth arrivés sur une autre page (ex. « Send password recovery » du tableau de bord, qui renvoie à
+         l'accueil) : jetons ou erreur après # → page du mot de passe, qui sait les lire (2026-10-28). -->
+    <script is:inline>
+      (function () {
+        var h = location.hash;
+        if (location.pathname.indexOf('/espace-client/mot-de-passe') === 0) return;
+        if ((h.indexOf('access_token=') > -1 && /[#&]type=(recovery|invite)(&|$)/.test(h)) || /[#&]error_code=/.test(h))
+          location.replace('/espace-client/mot-de-passe/' + h);
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="preload" href={fontLatin} as="font" type="font/woff2" crossorigin />
     <Seo
