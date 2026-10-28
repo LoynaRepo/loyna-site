@@ -3760,6 +3760,13 @@ a.top-merchant {
   gap: 6px;
   white-space: nowrap;
 }
+/* Liste des commerces : envoi de l'accès, QR code, ouverture */
+.op-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
 .op-copy {
   display: inline-grid;
   place-items: center;

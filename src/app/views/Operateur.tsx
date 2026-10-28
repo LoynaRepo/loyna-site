@@ -346,11 +346,17 @@ function Merchants({list}: {list: OpMerchant[]}) {
                   </span>
                 </td>
                 <td class="r">
-                  {m.is_member && (
-                    <Btn kind="ghost" small icon="arrow-right" onClick={() => open(m)}>
-                      Ouvrir
+                  <span class="op-actions">
+                    {m.owner_email && <EnvoyerAcces m={m} />}
+                    <Btn kind="ghost" small icon="download" onClick={() => download(`qr-${m.slug}.svg`, qrSvg(joinUrl(m.slug)), 'image/svg+xml')}>
+                      QR code
                     </Btn>
-                  )}
+                    {m.is_member && (
+                      <Btn kind="ghost" small icon="arrow-right" onClick={() => open(m)}>
+                        Ouvrir
+                      </Btn>
+                    )}
+                  </span>
                 </td>
               </tr>
             ))}
@@ -361,6 +367,29 @@ function Merchants({list}: {list: OpMerchant[]}) {
         « Ouvrir » n’apparaît que pour les commerces dont votre compte fait partie de l’équipe : l’espace d’un autre commerce (clients, passages) reste réservé à son équipe.
       </p>
     </Panel>
+  );
+}
+
+/** E-mail « Votre carte LOYNA est prête » (lien neuf pour choisir le mot de passe) depuis la liste des commerces :
+ *  l'écran qui suit la création ne s'affiche qu'une fois (demande du fondateur du 2026-10-28). */
+function EnvoyerAcces({m}: {m: OpMerchant}) {
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [busy, run] = useBusy();
+  const send = () =>
+    run(async () => {
+      if (!confirm(`Envoyer l’accès de ${m.name} à ${m.owner_email} ?\nUn nouveau lien pour choisir le mot de passe part par e-mail ; l’ancien ne fonctionnera plus.`)) return;
+      try {
+        const s = await api.edge<{status: string; to: string; setup_link: string}>('merchant-bootstrap', {action: 'send_access', merchant_id: m.id});
+        setSentTo(s.to);
+        toast(`E-mail envoyé à ${s.to}.`);
+      } catch (e) {
+        toastError(e);
+      }
+    });
+  return (
+    <Btn kind={m.owner_status === 'INVITED' && !sentTo ? 'gold' : 'ghost'} small icon="send" busy={busy} onClick={send}>
+      {sentTo ? 'Accès envoyé' : m.owner_status === 'INVITED' ? 'Envoyer l’accès' : 'Renvoyer l’accès'}
+    </Btn>
   );
 }
 
