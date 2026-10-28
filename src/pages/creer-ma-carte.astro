@@ -10,8 +10,13 @@ const crumbs = [
   {name: 'Accueil', url: '/'},
   {name: 'Créer ma carte', url: '/creer-ma-carte/'},
 ];
-const bgs = CARD_BGS;
-const accents = CARD_ACCENTS;
+// Couleurs de la carte et des tampons : ronds prédéfinis, puis le rond arc-en-ciel qui ouvre le réglage libre
+// (teinte, intensité, clarté, code couleur) dans la page : la carte change en direct, y compris sur téléphone,
+// où le sélecteur du système couvrait l'écran et ne mettait pas toujours l'aperçu à jour.
+const couleurs = [
+  {cible: 'bg', legende: 'Couleur de la carte', liste: CARD_BGS, valeur: '#1f1c17', libre: 'Couleur de carte personnalisée'},
+  {cible: 'accent', legende: 'Couleur des tampons', liste: CARD_ACCENTS, valeur: '#d9b27a', libre: 'Couleur des tampons personnalisée'},
+];
 const activities = CARD_ACTIVITES.map((a) => a.nom);
 // Questions fréquentes de la page (affichées et décrites en données structurées FAQPage)
 const cfgFaq = [
@@ -60,20 +65,38 @@ const appLd = {
           </select>
           <input id="c-activity-other" class="act-other" type="text" maxlength="30" placeholder="Votre activité : fromagerie, tatoueur…" aria-label="Votre activité" hidden />
         </div>
-        <fieldset class="field">
-          <legend>Couleur de la carte</legend>
-          <div class="swatches" data-target="bg">
-            {bgs.map((c, i) => <button type="button" class="sw" style={`--c:${c.c}`} data-color={c.c} aria-label={c.nom} title={c.nom} aria-pressed={i === 0 ? 'true' : 'false'} />)}
-            <label class="sw custom" title="Couleur personnalisée"><input type="color" id="c-bg" value="#1f1c17" aria-label="Couleur de carte personnalisée" /></label>
-          </div>
-        </fieldset>
-        <fieldset class="field">
-          <legend>Couleur des tampons</legend>
-          <div class="swatches" data-target="accent">
-            {accents.map((c, i) => <button type="button" class="sw" style={`--c:${c.c}`} data-color={c.c} aria-label={c.nom} title={c.nom} aria-pressed={i === 0 ? 'true' : 'false'} />)}
-            <label class="sw custom" title="Couleur personnalisée"><input type="color" id="c-accent" value="#d9b27a" aria-label="Couleur des tampons personnalisée" /></label>
-          </div>
-        </fieldset>
+        {
+          couleurs.map((g) => (
+            <fieldset class="field">
+              <legend>{g.legende}</legend>
+              <div class="swatches" data-target={g.cible}>
+                {g.liste.map((c, i) => (
+                  <button type="button" class="sw" style={`--c:${c.c}`} data-color={c.c} aria-label={c.nom} title={c.nom} aria-pressed={i === 0 ? 'true' : 'false'} />
+                ))}
+                <button type="button" class="sw custom" aria-expanded="false" aria-controls={`pk-${g.cible}`} aria-label={g.libre} title="Couleur personnalisée" />
+                <input type="color" id={`c-${g.cible}`} value={g.valeur} hidden />
+              </div>
+              <div class="picker" id={`pk-${g.cible}`} data-target={g.cible} hidden>
+                <label>
+                  <span>Teinte</span>
+                  <input type="range" class="pk-h" data-pk min="0" max="359" />
+                </label>
+                <label>
+                  <span>Intensité</span>
+                  <input type="range" class="pk-s" data-pk min="0" max="100" />
+                </label>
+                <label>
+                  <span>Clarté</span>
+                  <input type="range" class="pk-l" data-pk min="0" max="100" />
+                </label>
+                <label class="pk-code">
+                  <span>Code couleur</span>
+                  <input type="text" class="pk-hex" data-pk maxlength="7" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="#1f1c17" />
+                </label>
+              </div>
+            </fieldset>
+          ))
+        }
         <div class="field">
           <span class="label">Votre logo <span class="hint">(facultatif, reste sur votre appareil)</span></span>
           <label class="file" for="c-logo">
@@ -105,39 +128,47 @@ const appLd = {
         </fieldset>
       </form>
 
-      <div class="preview" aria-live="polite">
-        <Phone width={330} screen="#000">
-          <div class="wallet-ui" id="wallet-ui">
-            <p class="wallet-title" id="wallet-title">Wallet</p>
-            <div id="card-slot">
-              <WalletCard name="Maison Lumière" activity="Coiffure" filled={7} total={10} reward="Brushing offert" width={294} />
+      <div class="preview">
+        <div class="stage" aria-live="polite">
+          <Phone width={330} screen="#000">
+            <div class="wallet-ui" id="wallet-ui">
+              <p class="wallet-title" id="wallet-title">Wallet</p>
+              <div id="card-slot">
+                <WalletCard name="Maison Lumière" activity="Coiffure" filled={7} total={10} reward="Brushing offert" width={294} />
+              </div>
             </div>
-          </div>
-        </Phone>
-        <p class="caption">Aperçu indicatif : la carte définitive est créée par LOYNA à vos couleurs, avec votre logo en haute définition.</p>
-        <div class="btn-row center">
-          <a class="btn btn--gold" href="/tarifs/?carte=1" id="go-plans">Je veux cette carte <Icon name="arrow-right" size={18} /></a>
+          </Phone>
         </div>
-        <form class="send-preview" method="post" action="/contact.php" id="send-preview">
-          <p class="sp-title"><Icon name="mail" size={18} /> Pas encore décidé ? Recevez cet aperçu et nos conseils</p>
-          <input type="hidden" name="type" value="apercu" />
-          <input type="hidden" name="page" value="/creer-ma-carte/" />
-          <input type="hidden" name="t" value="" />
-          <input type="hidden" name="commerce" value="" />
-          <input type="hidden" name="apercu" value="" />
-          <div class="hp" aria-hidden="true">
-            <label for="sp-site">Ne pas remplir</label>
-            <input id="sp-site" name="site_web" type="text" tabindex="-1" autocomplete="off" />
+        <!-- téléphone : copie réduite de la carte, fixée sous l'en-tête pendant les réglages (aperçu en direct) -->
+        <div class="mini" id="mini" aria-hidden="true">
+          <WalletCard name="Maison Lumière" activity="Coiffure" filled={7} total={10} reward="Brushing offert" width={290} qr={false} />
+        </div>
+        <div class="after">
+          <p class="caption">Aperçu indicatif : la carte définitive est créée par LOYNA à vos couleurs, avec votre logo en haute définition.</p>
+          <div class="btn-row center">
+            <a class="btn btn--gold" href="/tarifs/?carte=1" id="go-plans">Je veux cette carte <Icon name="arrow-right" size={18} /></a>
           </div>
-          <div class="sp-row">
-            <label class="sr-only" for="sp-email">Votre e-mail</label>
-            <input id="sp-email" name="email" type="email" required maxlength="120" placeholder="Votre e-mail" autocomplete="email" />
-            <label class="sr-only" for="sp-tel">Téléphone (facultatif)</label>
-            <input id="sp-tel" name="telephone" type="tel" maxlength="30" pattern="[0-9+ ().-]{8,30}" placeholder="Téléphone" autocomplete="tel" />
-            <button type="submit" class="btn btn--primary" data-loading="Envoi…">Recevoir</button>
-          </div>
-          <p class="sp-legal">Votre demande arrive directement chez nous : nous vous répondons avec votre aperçu. Aucun paiement à cette étape. <a href="/confidentialite/">Confidentialité</a></p>
-        </form>
+          <form class="send-preview" method="post" action="/contact.php" id="send-preview">
+            <p class="sp-title"><Icon name="mail" size={18} /> Pas encore décidé ? Recevez cet aperçu et nos conseils</p>
+            <input type="hidden" name="type" value="apercu" />
+            <input type="hidden" name="page" value="/creer-ma-carte/" />
+            <input type="hidden" name="t" value="" />
+            <input type="hidden" name="commerce" value="" />
+            <input type="hidden" name="apercu" value="" />
+            <div class="hp" aria-hidden="true">
+              <label for="sp-site">Ne pas remplir</label>
+              <input id="sp-site" name="site_web" type="text" tabindex="-1" autocomplete="off" />
+            </div>
+            <div class="sp-row">
+              <label class="sr-only" for="sp-email">Votre e-mail</label>
+              <input id="sp-email" name="email" type="email" required maxlength="120" placeholder="Votre e-mail" autocomplete="email" />
+              <label class="sr-only" for="sp-tel">Téléphone (facultatif)</label>
+              <input id="sp-tel" name="telephone" type="tel" maxlength="30" pattern="[0-9+ ().-]{8,30}" placeholder="Téléphone" autocomplete="tel" />
+              <button type="submit" class="btn btn--primary" data-loading="Envoi…">Recevoir</button>
+            </div>
+            <p class="sp-legal">Votre demande arrive directement chez nous : nous vous répondons avec votre aperçu. Aucun paiement à cette étape. <a href="/confidentialite/">Confidentialité</a></p>
+          </form>
+        </div>
       </div>
     </div>
   </section>
@@ -208,7 +239,7 @@ const appLd = {
   type Touche = {reward: boolean; bg: boolean; accent: boolean};
   type Cfg = {name: string; activity: string; bg: string; accent: string; total: number; filled: number; reward: string; variant: 'apple' | 'google'; touche?: Touche};
   const $ = <T extends HTMLElement>(s: string) => document.querySelector<T>(s)!;
-  const card = document.querySelector<HTMLElement>('#card-slot .wcard')!;
+  const cartes = [...document.querySelectorAll<HTMLElement>('#card-slot .wcard, #mini .wcard')];
   const KEY = 'loyna-config';
   let logoUrl = '';
 
@@ -280,6 +311,23 @@ const appLd = {
     }
     $<HTMLOutputElement>('#o-total').value = String(c.total);
     $<HTMLOutputElement>('#o-filled').value = String(c.filled);
+    cartes.forEach((card) => peindre(card, c));
+    $('#wallet-title').textContent = c.variant === 'apple' ? 'Wallet' : 'Google Wallet';
+    rafraichirReglages();
+    try {
+      localStorage.setItem(KEY, JSON.stringify({...c, touche}));
+    } catch {
+      /* stockage indisponible : sans conséquence */
+    }
+    // Formulaire « Recevoir cet aperçu » : le commerce et l'aperçu suivent la carte affichée.
+    const sp = $<HTMLFormElement>('#send-preview');
+    (sp.elements.namedItem('commerce') as HTMLInputElement).value = c.name;
+    (sp.elements.namedItem('apercu') as HTMLInputElement).value =
+      `${c.name} (${c.activity}) · fond ${c.bg} · tampons ${c.accent} · ${c.total} passages · récompense : ${c.reward} · style ${c.variant === 'google' ? 'Google Wallet' : 'Apple Wallet'}`;
+  }
+
+  /** Met une carte (la grande, ou la copie réduite du téléphone) aux réglages du visiteur. */
+  function peindre(card: HTMLElement, c: Cfg) {
     const fg = luminance(c.bg) > 0.45 ? '#16130e' : '#f8f4ec';
     card.style.setProperty('--bg', c.bg);
     card.style.setProperty('--accent', c.accent);
@@ -316,20 +364,103 @@ const appLd = {
     stamps.style.setProperty('--n', String(c.total));
     stamps.innerHTML = Array.from({length: c.total}, (_, i) => `<span class="${i < c.filled ? 'on' : ''}"></span>`).join('');
     card.querySelector('.wc-reward span')!.textContent = c.reward;
-    $('#wallet-title').textContent = c.variant === 'apple' ? 'Wallet' : 'Google Wallet';
-    try {
-      localStorage.setItem(KEY, JSON.stringify({...c, touche}));
-    } catch {
-      /* stockage indisponible : sans conséquence */
-    }
-    // Formulaire « Recevoir cet aperçu » : le commerce et l'aperçu suivent la carte affichée.
-    const sp = $<HTMLFormElement>('#send-preview');
-    (sp.elements.namedItem('commerce') as HTMLInputElement).value = c.name;
-    (sp.elements.namedItem('apercu') as HTMLInputElement).value =
-      `${c.name} (${c.activity}) · fond ${c.bg} · tampons ${c.accent} · ${c.total} passages · récompense : ${c.reward} · style ${c.variant === 'google' ? 'Google Wallet' : 'Apple Wallet'}`;
   }
 
-  // Couleurs : pastilles et sélecteur libre (roue des couleurs, couleur choisie affichée au centre)
+  // Réglage libre d'une couleur, dans la page : teinte, intensité et clarté (curseurs, qui mettent la carte à jour
+  // pendant qu'on les fait glisser sur tous les téléphones) et code couleur (#rrggbb) pour la couleur exacte du commerce.
+  const hexVersHsl = (hex: string): [number, number, number] => {
+    const n = parseInt(hex.slice(1), 16);
+    const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => v / 255);
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const d = max - min;
+    const l = (max + min) / 2;
+    const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+    let h = 0;
+    if (d) h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return [Math.round((h * 60 + 360) % 360), Math.round(s * 100), Math.round(l * 100)];
+  };
+  const hslVersHex = (h: number, s: number, l: number) => {
+    const a = (s / 100) * Math.min(l / 100, 1 - l / 100);
+    const f = (n: number) => {
+      const k = (n + h / 30) % 12;
+      const v = l / 100 - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+      return Math.round(v * 255)
+        .toString(16)
+        .padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  };
+  const lireHex = (v: string) => {
+    let h = v.trim().replace(/^#/, '').toLowerCase();
+    if (/^[0-9a-f]{3}$/.test(h)) h = [...h].map((x) => x + x).join('');
+    return /^[0-9a-f]{6}$/.test(h) ? `#${h}` : '';
+  };
+  const reglages = [...document.querySelectorAll<HTMLElement>('.picker')];
+  const valeurDe = (pk: HTMLElement) => $<HTMLInputElement>(`#c-${pk.dataset.target}`);
+  /** Curseurs et code d'un réglage d'après la couleur choisie (rond prédéfini, activité, brouillon) ; une couleur
+   *  venue des curseurs eux-mêmes est laissée telle quelle, pour qu'ils ne sautent pas pendant qu'on les déplace. */
+  function rafraichirReglages() {
+    reglages.forEach((pk) => {
+      const v = valeurDe(pk).value.toLowerCase();
+      if (pk.dataset.hex === v) return;
+      const [h, s, l] = hexVersHsl(v);
+      pk.querySelector<HTMLInputElement>('.pk-h')!.value = String(h);
+      pk.querySelector<HTMLInputElement>('.pk-s')!.value = String(s);
+      pk.querySelector<HTMLInputElement>('.pk-l')!.value = String(l);
+      if (document.activeElement !== pk.querySelector('.pk-hex')) pk.querySelector<HTMLInputElement>('.pk-hex')!.value = v;
+      teinter(pk, h, s, l);
+      pk.dataset.hex = v;
+    });
+  }
+  /** Fonds des curseurs : ce que donnerait chaque position avec les deux autres réglages. */
+  function teinter(pk: HTMLElement, h: number, s: number, l: number) {
+    pk.style.setProperty('--h', String(h));
+    pk.style.setProperty('--s', `${s}%`);
+    pk.style.setProperty('--l', `${l}%`);
+  }
+  reglages.forEach((pk) => {
+    const cible = pk.dataset.target as 'bg' | 'accent';
+    const groupe = document.querySelector<HTMLElement>(`.swatches[data-target="${cible}"]`)!;
+    const bouton = groupe.querySelector<HTMLButtonElement>('.sw.custom')!;
+    const [h, s, l] = ['.pk-h', '.pk-s', '.pk-l'].map((q) => pk.querySelector<HTMLInputElement>(q)!);
+    const code = pk.querySelector<HTMLInputElement>('.pk-hex')!;
+    const choisir = (v: string) => {
+      valeurDe(pk).value = v;
+      touche[cible] = true;
+      marquerCouleurs(groupe);
+      render();
+    };
+    bouton.addEventListener('click', () => {
+      const ouvrir = pk.hidden;
+      // un seul réglage ouvert à la fois : le formulaire reste court et la carte proche
+      document.querySelectorAll<HTMLButtonElement>('.sw.custom[aria-expanded="true"]').forEach((b) => {
+        b.setAttribute('aria-expanded', 'false');
+        document.getElementById(b.getAttribute('aria-controls')!)!.hidden = true;
+      });
+      pk.hidden = !ouvrir;
+      bouton.setAttribute('aria-expanded', String(ouvrir));
+    });
+    [h, s, l].forEach((curseur) =>
+      curseur.addEventListener('input', () => {
+        const [vh, vs, vl] = [h, s, l].map((x) => Number(x.value));
+        const v = hslVersHex(vh, vs, vl);
+        pk.dataset.hex = v;
+        code.value = v;
+        teinter(pk, vh, vs, vl);
+        choisir(v);
+      }),
+    );
+    code.addEventListener('input', () => {
+      const v = lireHex(code.value);
+      if (v) choisir(v);
+    });
+    code.addEventListener('blur', () => {
+      code.value = valeurDe(pk).value;
+    });
+  });
+
+  // Couleurs : ronds prédéfinis (le rond arc-en-ciel ouvre le réglage libre, couleur choisie affichée au centre)
   document.querySelectorAll<HTMLElement>('.swatches').forEach((group) => {
     const input = group.querySelector<HTMLInputElement>('input[type=color]')!;
     const cible = group.dataset.target as 'bg' | 'accent';
@@ -341,12 +472,29 @@ const appLd = {
         render();
       }),
     );
-    input.addEventListener('input', () => {
-      touche[cible] = true;
-      marquerCouleurs(group);
-      render();
-    });
   });
+
+  // Téléphone : la grande carte est en haut de la page et les réglages en dessous. Dès que la grande carte passe
+  // sous l'en-tête, une copie réduite s'affiche juste en dessous de lui, tant que les réglages sont à l'écran.
+  const mini = $('#mini');
+  const grande = $('#card-slot');
+  const enTete = document.querySelector<HTMLElement>('.site-header');
+  let attente = 0;
+  function placerMini() {
+    attente = 0;
+    const haut = enTete ? Math.max(0, enTete.getBoundingClientRect().bottom) : 0;
+    const panneau = $('#cfg').getBoundingClientRect();
+    const visible = mini.offsetHeight > 0 && grande.getBoundingClientRect().bottom < haut + 20 && panneau.bottom > haut + mini.offsetHeight + 80;
+    mini.style.top = `${haut}px`;
+    mini.classList.toggle('on', visible);
+    // les champs touchés restent visibles sous la copie réduite (clavier ouvert, retour sur un champ)
+    document.documentElement.style.scrollPaddingTop = visible ? `${haut + mini.offsetHeight + 12}px` : '';
+  }
+  const surDefilement = () => {
+    if (!attente) attente = requestAnimationFrame(placerMini);
+  };
+  window.addEventListener('scroll', surDefilement, {passive: true});
+  window.addEventListener('resize', surDefilement);
   $<HTMLInputElement>('#c-reward').addEventListener('input', () => {
     touche.reward = true;
   });
@@ -364,7 +512,7 @@ const appLd = {
     $('#file-name').textContent = f ? f.name : 'Aucun fichier choisi';
     render();
   });
-  document.querySelectorAll('#cfg input:not([type=file]):not([type=color])').forEach((el) => el.addEventListener('input', render));
+  document.querySelectorAll('#cfg input:not([type=file]):not([type=color]):not([data-pk])').forEach((el) => el.addEventListener('input', render));
 
   ($<HTMLFormElement>('#send-preview').elements.namedItem('t') as HTMLInputElement).value = String(Date.now());
   $<HTMLFormElement>('#send-preview').addEventListener('submit', (e) => {
@@ -430,6 +578,7 @@ const appLd = {
   }
   marquerCouleurs(document);
   render();
+  placerMini();
 </script>
 
 <style>
@@ -505,7 +654,8 @@ const appLd = {
     color: var(--ink);
   }
   .file {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     gap: 12px;
     cursor: pointer;
@@ -518,6 +668,8 @@ const appLd = {
     opacity: 0;
   }
   .file-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
     padding: 10px 16px;
     border-radius: 999px;
     border: 1.5px solid var(--line);
@@ -564,17 +716,95 @@ const appLd = {
     background:
       radial-gradient(circle closest-side, var(--pick) 0 50%, #fff 54% 63%, rgb(255 255 255 / 0) 67%),
       var(--roue-arc);
+  }
+  .custom.is-picked,
+  .custom[aria-expanded='true'] {
     box-shadow:
       0 0 0 3px var(--bg),
       0 0 0 5px var(--ink);
   }
-  .custom input {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
+  /* Réglage libre d'une couleur : trois curseurs dont le fond montre le résultat, puis le code couleur */
+  .picker {
+    --h: 40;
+    --s: 30%;
+    --l: 30%;
+    display: grid;
+    gap: 10px;
+    margin-top: 6px;
+    padding: 14px 16px 16px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .picker[hidden] {
+    display: none;
+  }
+  .field .picker label {
+    display: grid;
+    gap: 4px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .picker input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 30px;
+    margin: 0;
+    background: transparent;
     cursor: pointer;
-    width: 100%;
-    height: 100%;
+  }
+  .picker input[type='range']::-webkit-slider-runnable-track {
+    height: 14px;
+    border-radius: 999px;
+    background: var(--piste);
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
+  }
+  .picker input[type='range']::-moz-range-track {
+    height: 14px;
+    border-radius: 999px;
+    background: var(--piste);
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
+  }
+  .picker input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    margin-top: -7px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    background: hsl(var(--h) var(--s) var(--l));
+    box-shadow: 0 1px 5px rgb(0 0 0 / 0.35);
+  }
+  .picker input[type='range']::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    background: hsl(var(--h) var(--s) var(--l));
+    box-shadow: 0 1px 5px rgb(0 0 0 / 0.35);
+  }
+  .picker input[type='range']:focus-visible {
+    outline: 3px solid var(--gold);
+    outline-offset: 2px;
+    border-radius: 999px;
+  }
+  .pk-h {
+    --piste: linear-gradient(to right, hsl(0 85% 50%), hsl(60 85% 50%), hsl(120 85% 50%), hsl(180 85% 50%), hsl(240 85% 50%), hsl(300 85% 50%), hsl(360 85% 50%));
+  }
+  .pk-s {
+    --piste: linear-gradient(to right, hsl(var(--h) 0% var(--l)), hsl(var(--h) 100% var(--l)));
+  }
+  .pk-l {
+    --piste: linear-gradient(to right, #000, hsl(var(--h) var(--s) 50%), #fff);
+  }
+  .picker .pk-code input {
+    max-width: 170px;
+    min-height: 44px;
+    padding: 8px 14px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    text-transform: lowercase;
   }
   .seg {
     display: inline-flex;
@@ -594,6 +824,8 @@ const appLd = {
     cursor: pointer;
     font-weight: 600;
     color: var(--muted);
+    white-space: nowrap;
+    text-align: center;
   }
   .seg input:checked + label {
     background: var(--ink);
@@ -613,6 +845,15 @@ const appLd = {
     .preview {
       position: static;
     }
+  }
+  .after {
+    justify-self: stretch;
+    display: grid;
+    justify-items: center;
+    gap: 18px;
+  }
+  .mini {
+    display: none;
   }
   .wallet-ui {
     position: absolute;
@@ -691,6 +932,17 @@ const appLd = {
     .sp-row {
       grid-template-columns: 1fr;
     }
+    .two {
+      grid-template-columns: 1fr;
+    }
+    .seg {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      width: 100%;
+    }
+    .seg label {
+      padding-inline: 10px;
+    }
   }
   .caption {
     color: var(--muted);
@@ -706,9 +958,49 @@ const appLd = {
     .configurator {
       grid-template-columns: 1fr;
     }
+    /* téléphone : la carte, puis les réglages, puis la commande et « Recevoir cet aperçu » */
     .preview {
-      position: static;
+      display: contents;
+    }
+    .stage {
       order: -1;
+      justify-self: center;
+      width: min(330px, 100%);
+    }
+    .after {
+      order: 1;
+    }
+    .mini {
+      display: block;
+      position: fixed;
+      z-index: 45;
+      left: 0;
+      right: 0;
+      top: 64px;
+      padding: 10px 16px 12px;
+      background: rgba(18, 18, 22, 0.96);
+      border-bottom: 1px solid rgba(230, 194, 122, 0.16);
+      box-shadow: 0 10px 24px rgba(18, 18, 22, 0.22);
+      transform: translateY(-110%);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition:
+        transform 0.22s ease,
+        opacity 0.22s ease,
+        visibility 0s 0.22s;
+    }
+    .mini.on {
+      transform: none;
+      opacity: 1;
+      visibility: visible;
+      transition:
+        transform 0.22s ease,
+        opacity 0.22s ease;
+    }
+    .mini :global(.wcard) {
+      margin: 0 auto;
+      box-shadow: inset 0 0 0 0.06em color-mix(in srgb, var(--accent) 45%, transparent);
     }
     /* téléphone : le cadre s'arrête sous la carte (pas d'écran noir vide) */
     .preview :global(.phone) {

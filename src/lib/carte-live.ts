@@ -94,7 +94,8 @@ export function marquerCouleurs(root: ParentNode): void {
       predefini ||= on;
       b.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
-    const rond = libre.closest<HTMLElement>('.sw');
+    // rond arc-en-ciel : il contient le sélecteur libre (CardSwatches) ou ouvre le réglage du configurateur
+    const rond = groupe.querySelector<HTMLElement>('.sw.custom');
     rond?.classList.toggle('is-picked', !predefini);
     rond?.style.setProperty('--pick', libre.value);
   });
