@@ -97,7 +97,7 @@ export function objections(): Reponse[] {
       r: [
         `Les automatisations qui font revenir vos clients, pour ${euro(premium.monthly)} par mois, sans TVA : ${enListe(premium.focus?.items ?? [])}.`,
         'Ces messages partent tout seuls : vous choisissez le texte et la surprise, et ils ne sont jamais décomptés des notifications.',
-        'Les niveaux VIP bronze, argent et or : vos clients montent de niveau avec leurs passages, le niveau s’affiche sur leur carte avec l’avantage de votre choix, et un message part à chaque nouveau niveau.',
+        'Les niveaux VIP bronze, argent et or : vos clients montent de niveau avec leurs passages et leur carte change de couleur à chaque niveau (vos couleurs, puis argent, puis or), avec l’avantage de votre choix et un message à chaque nouveau niveau.',
         `Et plus de place : ${quotas(premium)}.`,
       ],
       liens: [LIENS.tarifs],

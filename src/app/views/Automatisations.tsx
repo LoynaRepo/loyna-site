@@ -61,6 +61,9 @@ const TIERS = [
   {key: 'SILVER', name: 'Argent'},
   {key: 'GOLD', name: 'Or'},
 ] as const;
+// Couleur de la carte Wallet à chaque niveau (dépôt LOYNA, supabase/functions/_shared/tiers.ts) : bronze aux couleurs
+// du commerce, puis argent et or.
+const TIER_CARD: Record<string, string | null> = {BRONZE: null, SILVER: '#C9CED6', GOLD: '#D8B65E'};
 
 export function Automatisations() {
   const m = merchant.value!;
@@ -537,6 +540,7 @@ function Review({ctx}: {ctx: Ctx}) {
 
 // --- Premium et Pro : niveaux VIP ----------------------------------------------------------------------------
 function Tiers({ctx}: {ctx: Ctx}) {
+  const m = merchant.value!;
   return (
     <Auto
       ctx={ctx}
@@ -545,7 +549,7 @@ function Tiers({ctx}: {ctx: Ctx}) {
       toggle="tiers_enabled"
       icon="crown"
       title="Niveaux VIP bronze, argent et or"
-      text={() => 'Vos clients montent de niveau avec leurs passages. Le niveau s’affiche sur la carte avec l’avantage choisi, et une notification part à chaque nouveau niveau.'}
+      text={() => 'Vos clients montent de niveau avec leurs passages et leur carte change de couleur à chaque niveau : vos couleurs en bronze, puis argent, puis or. Le niveau s’affiche sur la carte avec l’avantage choisi, et une notification part à chaque nouveau niveau.'}
       body={(s, set) => (
         <div class="tiers">
           {TIERS.map((t, i) => (
@@ -553,6 +557,11 @@ function Tiers({ctx}: {ctx: Ctx}) {
               <span class="tier-n">
                 <Icon name="crown" size={16} />
                 {t.name}
+                <span
+                  class={`tier-card ${TIER_CARD[t.key] ? 'tier-card--metal' : ''}`}
+                  style={{backgroundColor: TIER_CARD[t.key] ?? m.primary_color}}
+                  title={TIER_CARD[t.key] ? `Carte ${t.name.toLowerCase()} à ce niveau` : 'Carte à vos couleurs à ce niveau'}
+                />
               </span>
               <label class="tier-th">
                 <span>À partir de</span>

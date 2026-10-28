@@ -2639,6 +2639,18 @@ label.b {
 .tier--gold .tier-n .ic {
   color: var(--gold);
 }
+/* Couleur de la carte Wallet à ce niveau : vos couleurs (bronze), argent, or */
+.tier-card {
+  flex: none;
+  width: 30px;
+  height: 20px;
+  margin-left: 2px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+.tier-card--metal {
+  background-image: linear-gradient(115deg, transparent 28%, rgba(255, 255, 255, 0.5) 50%, transparent 72%);
+}
 
 /* --- Rapport mensuel ------------------------------------------------------------------------------- */
 .bars {
