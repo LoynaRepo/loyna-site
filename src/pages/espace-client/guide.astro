@@ -1,0 +1,532 @@
+---
+// Guide de démarrage de l'espace client (LOYNA Business), demande d'Ewan du 2026-10-28 : une courte section par
+// partie de l'espace, dans l'ordre de la mise en place, avec une capture de la démonstration. Lien dans l'e-mail
+// « Votre carte LOYNA est prête » (dépôt LOYNA, _shared/owner-access-email.ts) et dans le menu de l'espace client.
+// Page publique, noindex et hors du plan du site ; elle s'imprime en PDF A4 de 3 pages.
+//   - captures : node tools/guide-captures.mjs [adresse du site]  → public/espace-client/guide/*.webp
+//   - PDF publié à côté : node tools/guide-pdf.mjs [adresse du site] → public/espace-client/guide/guide-demarrage-loyna.pdf
+// Ne rien écrire ici qui n'existe pas dans l'espace client (src/app/views/) ni dans les offres (src/data/site.ts).
+import fs from 'node:fs';
+import path from 'node:path';
+import sharp from 'sharp';
+import Base from '../../layouts/Base.astro';
+import mark from '../../assets/logo-mark.svg?raw';
+import word from '../../assets/logo-word.svg?raw';
+import {SITE} from '../../data/site';
+
+const markSvg = mark.replace('id="g"', 'id="lg-guide"').replace('url(#g)', 'url(#lg-guide)').replace('<svg', '<svg aria-hidden="true"');
+const wordSvg = word.replace('<svg', '<svg role="img" aria-label="LOYNA"');
+const PDF = '/espace-client/guide/guide-demarrage-loyna.pdf';
+
+interface Etape {
+  id: string;
+  titre: string;
+  img: string;
+  alt: string;
+  texte: string; // HTML court : 2 ou 3 phrases
+}
+// « Menu X » : nom exact du menu de l'espace (App.tsx) ; « … » : libellé exact d'un bouton ou d'une partie.
+const ETAPES: Etape[] = [
+  {
+    id: 'connexion',
+    titre: 'Se connecter',
+    img: '01-connexion',
+    alt: 'Écran de connexion de l’espace client : adresse e-mail, mot de passe et bouton « Se connecter ».',
+    texte:
+      'Ouvrez <strong>loyna.fr/espace-client</strong> sur votre téléphone ou votre ordinateur, et connectez-vous avec votre adresse e-mail et le mot de passe choisi grâce au lien reçu par e-mail. Sur téléphone, les menus sont en bas de l’écran, les autres sous « Plus ». Mot de passe oublié : écrivez à <a href="mailto:contact@loyna.fr">contact@loyna.fr</a>.',
+  },
+  {
+    id: 'reglages',
+    titre: 'Réglages : votre carte et votre boutique',
+    img: '02-reglages',
+    alt: 'Menu Réglages : ajout du logo, couleur de la carte, couleur du texte et téléphone.',
+    texte:
+      'Menu <strong>Réglages</strong> : ajoutez votre logo, choisissez vos couleurs, indiquez votre téléphone, puis touchez « Enregistrer ». Dans « Boutique et proximité », saisissez l’adresse de la boutique (jusqu’à 3 boutiques avec l’offre Pro) : la carte s’affiche sur l’écran verrouillé des clients qui passent tout près.',
+  },
+  {
+    id: 'qr-code',
+    titre: 'Le QR code d’inscription, au comptoir',
+    img: '03-qr-code',
+    alt: 'Affiche du comptoir : QR code d’inscription, boutons « Imprimer l’affiche (A4) » et « Télécharger le QR code ».',
+    texte:
+      'Menu <strong>Réglages</strong>, partie « Affiche du comptoir » : touchez « Imprimer l’affiche (A4) ». Posez-la au comptoir : vos clients la scannent avec l’appareil photo de leur téléphone et ajoutent leur carte à Apple Wallet ou Google Wallet, sans application.',
+  },
+  {
+    id: 'scanner',
+    titre: 'Scanner un passage',
+    img: '04-scanner',
+    alt: 'Scanner : passage validé, nombre de passages du client et bouton « Annuler ».',
+    texte:
+      'Menu <strong>Scanner</strong> (le bouton rond du milieu, sur téléphone) : touchez « Activer la caméra », puis présentez le QR code de la carte du client à 15–20 cm. Le passage est validé aussitôt ; en cas d’erreur, touchez « Annuler ». Quand une récompense est prête, touchez « Utiliser » au moment de l’offrir.',
+  },
+  {
+    id: 'programme',
+    titre: 'Programme et récompenses',
+    img: '05-programme',
+    alt: 'Programme : liste des récompenses avec le bouton « Ajouter ».',
+    texte:
+      'Votre carte est déjà réglée par LOYNA : vérifiez-la dans le menu <strong>Programme</strong>. Dans « Récompenses », touchez « Ajouter », ou le crayon, pour créer ou modifier une récompense, par exemple « Café offert » à 10 passages.',
+  },
+  {
+    id: 'automatisations',
+    titre: 'Automatisations',
+    img: '06-automatisations',
+    alt: 'Automatisations : message d’anniversaire avec son interrupteur et son texte.',
+    texte:
+      'Menu <strong>Automatisations</strong> : chaque message automatique a son interrupteur ; activez-le, adaptez le texte, puis touchez « Enregistrer ». Message après chaque passage : toutes les offres ; anniversaire, relance des clients absents, « Plus qu’un passage ! » et avis Google : dès l’offre Premium ; niveaux VIP et parrainage : offre Pro.',
+  },
+  {
+    id: 'campagnes',
+    titre: 'Campagnes : envoyer un message',
+    img: '07-campagnes',
+    alt: 'Nouvelle campagne : message, raccourcis prénom et nom du commerce, bouton « Vérifier les destinataires ».',
+    texte:
+      'Menu <strong>Campagnes</strong>, « Nouvelle campagne » : écrivez votre message, touchez « Vérifier les destinataires », puis envoyez ; il s’affiche sur le téléphone de vos clients, grâce à leur carte. Groupes de clients et envoi programmé : dès l’offre Premium. Avec l’offre Pro, LOYNA prépare aussi des campagnes, envoyées seulement après votre validation.',
+  },
+  {
+    id: 'clients',
+    titre: 'Clients',
+    img: '08-clients',
+    alt: 'Liste des clients : recherche, filtres et solde de chaque client.',
+    texte:
+      'Menu <strong>Clients</strong> : cherchez un client par son prénom, son nom ou son téléphone, ou filtrez la liste. Sa fiche montre son solde, ses passages et ses récompenses : vous pouvez y utiliser une récompense ou lui renvoyer sa carte.',
+  },
+  {
+    id: 'equipe',
+    titre: 'Équipe : ajouter un employé',
+    img: '09-equipe',
+    alt: 'Équipe : bouton « Inviter un membre » et liste des comptes.',
+    texte:
+      'Menu <strong>Équipe</strong>, « Inviter un membre » : indiquez son prénom, son adresse e-mail et son rôle, puis touchez « Créer le lien d’accès ». Transmettez-lui ce lien : il choisit lui-même son mot de passe, et vous pouvez retirer son accès à tout moment.',
+  },
+  {
+    id: 'rapport',
+    titre: 'Rapport',
+    img: '10-rapport',
+    alt: 'Rapport mensuel : passages et clients venus, comparés au mois précédent.',
+    texte:
+      'Menu <strong>Rapport</strong> (dès l’offre Premium) : vos passages, nouveaux clients, clients revenus et récompenses du mois, comparés au mois précédent, avec 3 conseils concrets. Avec toutes les offres, l’<strong>Accueil</strong> montre vos chiffres des 7, 30 ou 90 derniers jours.',
+  },
+  {
+    id: 'aide',
+    titre: 'Aide et contact',
+    img: '11-aide',
+    alt: 'Menu « Plus » sur téléphone : Abonnement et Guide de démarrage.',
+    texte:
+      'Une question : écrivez à <a href="mailto:contact@loyna.fr">contact@loyna.fr</a> en précisant le nom de votre commerce. Ce guide reste dans votre espace (« Guide de démarrage », sous « Plus » sur téléphone) ; vos factures sont dans le menu <strong>Abonnement</strong>. Avec l’offre Pro, fixez votre point mensuel de 30 minutes depuis l’Accueil.',
+  },
+];
+
+// Dimensions réelles des captures (elles changent si on les refait) : pas de décalage au chargement
+const DOSSIER = path.join(process.cwd(), 'public', 'espace-client', 'guide');
+const taille = async (nom: string) => {
+  const f = path.join(DOSSIER, `${nom}.webp`);
+  if (!fs.existsSync(f)) return {};
+  const m = await sharp(f).metadata();
+  return {width: m.width, height: m.height};
+};
+const etapes = await Promise.all(ETAPES.map(async (e, i) => ({...e, n: i + 1, ...(await taille(e.img))})));
+const PREMIERES = [
+  {id: 'reglages', titre: 'Réglages', texte: 'Vérifiez votre logo et vos couleurs, ajoutez votre téléphone et l’adresse de votre boutique.'},
+  {id: 'qr-code', titre: 'Le QR code au comptoir', texte: 'Imprimez l’affiche et posez-la près de la caisse.'},
+  {id: 'scanner', titre: 'Le premier scan', texte: 'Scannez la carte d’un client avec votre téléphone.'},
+];
+---
+
+<Base
+  bare
+  noindex
+  title="Guide de démarrage LOYNA Business · votre espace client"
+  description="Votre espace client LOYNA Business en 2 minutes : connexion, réglages, QR code au comptoir, scanner, programme, automatisations, campagnes, clients, équipe et rapport."
+>
+  <div class="g">
+    <header class="g-head">
+      <div class="g-head-in">
+        <a href="/" class="g-logo" aria-label="loyna.fr"><span class="mark" set:html={markSvg} /><span class="word" set:html={wordSvg} /></a>
+        <p class="g-k">LOYNA Business · espace client</p>
+        <h1>Guide de <span>démarrage</span></h1>
+        <p class="g-lead">Votre espace, partie par partie, dans l’ordre de la mise en place. Il fonctionne sur téléphone comme sur ordinateur.</p>
+        <div class="g-actions">
+          <a class="g-btn g-btn--gold" href={PDF} download>Télécharger en PDF</a>
+          <a class="g-btn" href="/espace-client/">Ouvrir mon espace client</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="g-main">
+      <section class="g-first" aria-labelledby="g-first-h">
+        <h2 id="g-first-h">Les 3 premières choses à faire</h2>
+        <ol>
+          {
+            PREMIERES.map((p, i) => (
+              <li>
+                <span class="g-first-n">{i + 1}</span>
+                <span>
+                  <a href={`#${p.id}`}>{p.titre}</a>
+                  <small>{p.texte}</small>
+                </span>
+              </li>
+            ))
+          }
+        </ol>
+      </section>
+
+      <ol class="g-steps">
+        {
+          etapes.map((e) => (
+            <li class="g-step" id={e.id}>
+              <h2>
+                <span class="g-n">{e.n}</span>
+                {e.titre}
+              </h2>
+              <p set:html={e.texte} />
+              <figure>
+                <img src={`/espace-client/guide/${e.img}.webp`} alt={e.alt} width={e.width} height={e.height} decoding="async" />
+              </figure>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+
+    <footer class="g-foot">
+      <p>
+        <strong>LOYNA</strong>, une marque de KOVA Elec · <a href={`mailto:${SITE.email}`}>{SITE.email}</a> · loyna.fr/espace-client/guide
+      </p>
+      <p class="g-foot-n">Captures : démonstration de LOYNA Business (commerce et clients fictifs).</p>
+    </footer>
+  </div>
+</Base>
+
+<style>
+  .g {
+    --gutter: 16px;
+    min-height: 100vh;
+    background: var(--bg);
+  }
+  /* En-tête noir et or, comme le menu de l'espace client */
+  .g-head {
+    background:
+      radial-gradient(70% 120% at 100% 0%, rgba(230, 194, 122, 0.22), transparent 70%),
+      var(--ink);
+    color: #e9e5dc;
+    padding: 26px var(--gutter) 34px;
+  }
+  .g-head-in,
+  .g-main,
+  .g-foot {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+  .g-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #f8f4ec;
+    text-decoration: none;
+  }
+  .g-logo :global(.mark svg) {
+    width: 30px;
+    height: 30px;
+  }
+  .g-logo :global(.word svg) {
+    height: 14px;
+    width: auto;
+  }
+  .g-k {
+    margin: 26px 0 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #e6c27a;
+  }
+  .g-head h1 {
+    color: #faf7f0;
+    font-size: clamp(2rem, 6vw, 3.1rem);
+    margin: 0 0 10px;
+  }
+  .g-head h1 span {
+    background: var(--grad-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .g-lead {
+    margin: 0;
+    max-width: 560px;
+    color: #c9c2b4;
+  }
+  .g-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .g-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 46px;
+    padding: 11px 20px;
+    border-radius: 999px;
+    border: 1px solid rgba(250, 247, 240, 0.22);
+    color: #faf7f0;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+  }
+  .g-btn:hover {
+    color: #fff;
+    background: rgba(250, 247, 240, 0.08);
+  }
+  .g-btn--gold {
+    border: 0;
+    background: var(--grad-gold);
+    color: var(--ink);
+  }
+  .g-btn--gold:hover {
+    color: var(--ink);
+    filter: brightness(1.05);
+  }
+
+  .g-main {
+    padding: 0 var(--gutter);
+  }
+  /* Encadré « Les 3 premières choses à faire », posé à cheval sur l'en-tête */
+  .g-first {
+    position: relative;
+    margin-top: -16px;
+    padding: 20px 20px 18px;
+    border-radius: var(--radius);
+    background: var(--card);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+  }
+  .g-first h2 {
+    font-size: 1.25rem;
+    margin: 0 0 12px;
+  }
+  .g-first ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+  }
+  .g-first li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .g-first li > span:last-child {
+    display: grid;
+    line-height: 1.4;
+  }
+  .g-first a {
+    font-weight: 750;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .g-first small {
+    font-size: 0.92rem;
+    color: var(--muted);
+  }
+  .g-first-n,
+  .g-n {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--grad-gold);
+    color: var(--ink);
+    font-weight: 800;
+    font-size: 0.95rem;
+    letter-spacing: 0;
+  }
+
+  .g-steps {
+    list-style: none;
+    margin: 22px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+  }
+  .g-step {
+    padding: 18px 18px 20px;
+    border-radius: var(--radius);
+    background: var(--card);
+    border: 1px solid var(--line);
+    scroll-margin-top: 16px;
+  }
+  .g-step h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.15rem;
+    margin: 0 0 8px;
+  }
+  .g-step p {
+    margin: 0;
+    font-size: 0.97rem;
+    line-height: 1.6;
+  }
+  .g-step figure {
+    margin: 14px 0 0;
+    text-align: center;
+  }
+  .g-step img {
+    display: inline-block;
+    width: auto;
+    max-width: 100%;
+    max-height: 440px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    box-shadow: 0 1px 2px rgba(18, 18, 22, 0.05), 0 10px 26px rgba(18, 18, 22, 0.08);
+    background: var(--bg);
+  }
+
+  .g-foot {
+    padding: 26px var(--gutter) 40px;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .g-foot p {
+    margin: 0 0 4px;
+  }
+  .g-foot-n {
+    font-size: 0.8rem;
+  }
+
+  @media (min-width: 820px) {
+    .g {
+      --gutter: 32px;
+    }
+    .g-head {
+      padding: 34px var(--gutter) 46px;
+    }
+    .g-first ol {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .g-steps {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+  }
+
+  /* Impression et PDF : A4, deux colonnes, trois pages */
+  @page {
+    size: A4;
+    margin: 10mm 11mm;
+  }
+  @media print {
+    :global(html),
+    :global(body) {
+      background: #fff;
+      font-size: 9pt;
+    }
+    .g {
+      --gutter: 0;
+      min-height: 0;
+      background: #fff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .g-head {
+      padding: 5mm 7mm 8.5mm;
+      border-radius: 4mm;
+    }
+    .g-logo :global(.mark svg) {
+      width: 8mm;
+      height: 8mm;
+    }
+    .g-logo :global(.word svg) {
+      height: 3.6mm;
+    }
+    .g-k {
+      margin: 3mm 0 1mm;
+      font-size: 7pt;
+    }
+    .g-head h1 {
+      font-size: 21pt;
+      margin: 0 0 1mm;
+    }
+    .g-head h1 span {
+      background: none;
+      color: #d9b27a; /* le texte en dégradé laisse un filet dans le PDF */
+    }
+    .g-lead {
+      font-size: 8.8pt;
+      max-width: none;
+    }
+    .g-actions {
+      display: none;
+    }
+    .g-first {
+      margin-top: -5mm;
+      margin-left: 5mm;
+      margin-right: 5mm;
+      padding: 3.5mm 5mm;
+      box-shadow: none;
+      break-inside: avoid;
+    }
+    .g-first h2 {
+      font-size: 11.5pt;
+      margin-bottom: 2mm;
+    }
+    .g-first ol {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4mm;
+    }
+    .g-first small {
+      font-size: 8pt;
+    }
+    .g-first-n,
+    .g-n {
+      width: 6mm;
+      height: 6mm;
+      font-size: 8.5pt;
+    }
+    .g-steps {
+      grid-template-columns: 1fr 1fr;
+      gap: 4mm;
+      margin-top: 4mm;
+      align-items: start;
+    }
+    .g-step {
+      padding: 3.5mm 4mm 4mm;
+      border-radius: 3.5mm;
+      break-inside: avoid;
+    }
+    .g-step h2 {
+      font-size: 10.5pt;
+      margin-bottom: 1.5mm;
+      gap: 2.5mm;
+    }
+    .g-step p {
+      font-size: 8.3pt;
+      line-height: 1.45;
+    }
+    .g-step figure {
+      margin-top: 2.5mm;
+    }
+    .g-step img {
+      max-height: 50mm;
+      border-radius: 2.5mm;
+      box-shadow: none;
+    }
+    .g-step p :global(a),
+    .g-foot a {
+      color: var(--ink);
+      text-decoration: none;
+    }
+    .g-foot {
+      padding: 4mm 0 0;
+      font-size: 8pt;
+    }
+    .g-foot-n {
+      font-size: 7pt;
+    }
+  }
+</style>

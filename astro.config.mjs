@@ -46,7 +46,7 @@ function sansDonneesCommerciales() {
 
 // Pages exclues du plan du site (sans intérêt pour les moteurs de recherche, ou privées). /espace-client/ reste
 // indexable (recherches « loyna connexion ») mais n'a presque pas de texte : hors du plan du site.
-const NOINDEX = ['/merci/', '/contact/envoye/', '/builder-preview/', '/404/', '/espace-client/', '/espace-client/mot-de-passe/', '/espace-client/confirmer/', '/espace-client/demo/', '/panier/', '/join/', '/preferences/', '/espace-commercial/', '/visuel-carte/'];
+const NOINDEX = ['/merci/', '/contact/envoye/', '/builder-preview/', '/404/', '/espace-client/', '/espace-client/mot-de-passe/', '/espace-client/confirmer/', '/espace-client/demo/', '/espace-client/guide/', '/panier/', '/join/', '/preferences/', '/espace-commercial/', '/visuel-carte/'];
 
 // Date réelle de modification de chaque page (commits git, dates des articles) : voir tools/lastmod.mjs
 const lastmod = datesDesPages(path.dirname(fileURLToPath(import.meta.url)));

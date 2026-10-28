@@ -29,6 +29,8 @@ function loadView(name: string): Promise<ViewComp> {
 }
 
 const PORTAL = 'https://billing.stripe.com/p/login/28E28u2vEcIt4tvbiw5Ne00';
+// Guide de démarrage (page publique imprimable, lien aussi dans l'e-mail « Votre carte LOYNA est prête »)
+const GUIDE = '/espace-client/guide/';
 const ROLE_LABEL = {OWNER: 'Propriétaire', ADMIN: 'Responsable', STAFF: 'Employé'} as const;
 
 interface NavItem {
@@ -180,6 +182,9 @@ function Login({logo, withSide = true}: {logo: string; withSide?: boolean}) {
             <p>
               <strong>Propriétaire :</strong> connectez-vous avec l’adresse e-mail de votre commande et le mot de passe que vous avez choisi. Pas encore de mot de passe, ou vous l’avez oublié ? Écrivez à{' '}
               <a href="mailto:contact@loyna.fr?subject=Nouveau%20lien%20de%20connexion%20LOYNA%20Business">contact@loyna.fr</a> depuis cette adresse : nous vous envoyons un lien pour en choisir un.
+            </p>
+            <p>
+              <strong>Pour bien démarrer :</strong> <a href={GUIDE}>le guide de démarrage</a> présente chaque partie de votre espace en 2 minutes.
             </p>
           </div>
         )}
@@ -450,6 +455,10 @@ function Shell({logo}: {logo: string}) {
           ))}
         </nav>
         <div class="side-foot">
+          <a class="side-out side-guide" href={GUIDE} target="_blank" rel="noopener">
+            <Icon name="circle-help" size={18} />
+            Guide de démarrage
+          </a>
           <div class="side-user">
             <span class="side-avatar">{m.display_name.slice(0, 1).toUpperCase()}</span>
             <span>
@@ -523,6 +532,10 @@ function Shell({logo}: {logo: string}) {
                 Changer de commerce
               </button>
             )}
+            <a href={GUIDE} target="_blank" rel="noopener">
+              <Icon name="circle-help" />
+              Guide de démarrage
+            </a>
             <a href="/">
               <Icon name="external-link" />
               Retour au site loyna.fr

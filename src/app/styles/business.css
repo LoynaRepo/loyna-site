@@ -523,6 +523,10 @@ body {
   background: rgba(250, 247, 240, 0.06);
   color: #faf7f0;
 }
+/* Guide de démarrage : lien discret, au-dessus du nom de la personne connectée */
+.side-guide {
+  text-decoration: none;
+}
 .banner {
   display: flex;
   gap: 10px;

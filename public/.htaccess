@@ -107,6 +107,10 @@ RewriteRule ^set-password/?$ https://loyna.fr/espace-client/mot-de-passe/ [R=302
     Header always set X-Robots-Tag "noindex, nofollow"
     Header always set Referrer-Policy "no-referrer"
   </If>
+  # Guide de démarrage de l'espace client : page et PDF publics (lien de l'e-mail d'accès), hors des moteurs de recherche
+  <If "%{REQUEST_URI} =~ m#^/espace-client/guide/#">
+    Header always set X-Robots-Tag "noindex"
+  </If>
   # Données chiffrées de l'espace commercial (déposées par panel.py du coffre) : jamais en cache, jamais indexées
   <FilesMatch "\.enc$">
     Header set Cache-Control "no-store, max-age=0"
