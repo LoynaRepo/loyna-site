@@ -24,7 +24,8 @@ interface Props {
 const {title, description, noindex = false, nofollow = false, ogImage, type = 'website', jsonLd = [], breadcrumbs, published, modified, ogImageAlt, googleVerification, bingVerification, sameAs = []} = Astro.props;
 const canonical = new URL(Astro.url.pathname, SITE.url).href;
 const image = new URL(ogImage || '/og/default.png', SITE.url).href;
-const fullTitle = title.includes('LOYNA') ? title : `${title} | LOYNA`;
+// Le nom de la marque n'est ajouté que s'il manque, quelle que soit sa casse (accueil : « Loyna : … », 2026-10-28)
+const fullTitle = /loyna/i.test(title) ? title : `${title} | LOYNA`;
 // Image propre à la page (tools/og.py : le titre de la page est écrit sur l'image) ou image par défaut de la marque
 const imageAlt =
   ogImageAlt || (ogImage && !ogImage.endsWith('/default.png') ? fullTitle : 'LOYNA — carte de fidélité digitale Apple Wallet et Google Wallet');
