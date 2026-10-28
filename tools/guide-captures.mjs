@@ -3,6 +3,10 @@
 //
 //   node tools/guide-captures.mjs                         captures sur https://loyna.fr (démo publique)
 //   node tools/guide-captures.mjs http://127.0.0.1:4321   captures sur le site local (npx astro preview)
+//   node tools/guide-captures.mjs <adresse> aide           une seule capture (nom contenant « aide »)
+//
+// Les captures du 2026-10-28 viennent du site local (même démo que loyna.fr, avec le lien « Guide de démarrage » du
+// menu, pas encore en ligne ce jour-là). Ensuite, refaire le PDF : node tools/guide-pdf.mjs <adresse>.
 //
 // Toujours le même commerce fictif (graine 268380 : « Boulangerie du Moulin Doré », noir et or) et l'offre Premium,
 // pour que les images restent cohérentes d'une fois sur l'autre. Le bandeau « Démonstration » et les barres fixes
