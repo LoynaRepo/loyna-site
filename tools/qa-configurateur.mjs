@@ -148,8 +148,41 @@ const BROUILLON = {name: 'Mon Salon', activity: 'Coiffure', bg: '#14532d', accen
 {
   const {page, ctx} = await ouvrir('/creer-ma-carte/?activite=Toiletteur&recompense=' + encodeURIComponent('Un toilettage offert, et même plus que ça, vraiment'));
   const e = await etat(page);
-  verifier('activité inconnue ajoutée et choisie', e.activite, 'Toiletteur');
+  // activité hors liste : « Autre », son texte dans le champ libre et sur la carte (depuis le 2026-10-27)
+  verifier('activité inconnue : « Autre » et son texte sur la carte', [e.activite, e.carte.activite], ['Autre', 'Toiletteur']);
   verifier('récompense coupée à 40 caractères', [e.recompense, e.recompense.length], ['Un toilettage offert, et même plus que ç', 40]);
+  await ctx.close();
+}
+{
+  // Téléphone : copie réduite de la carte sous l'en-tête pendant les réglages, couleur libre réglée dans la page
+  const {page, ctx} = await ouvrir('/creer-ma-carte/');
+  await page.setViewport({width: 375, height: 812, isMobile: true, hasTouch: true});
+  await page.evaluate(() => {
+    const t = document.querySelector('.swatches[data-target="bg"]');
+    window.scrollTo({top: t.getBoundingClientRect().top + scrollY - 300, behavior: 'instant'});
+  });
+  await new Promise((r) => setTimeout(r, 400));
+  const mini = await page.evaluate(() => ({
+    affichee: document.querySelector('#mini').classList.contains('on'),
+    sousEnTete: Math.round(document.querySelector('#mini').getBoundingClientRect().top) === Math.round(document.querySelector('.site-header').getBoundingClientRect().bottom),
+    largeur: document.documentElement.scrollWidth,
+  }));
+  verifier('téléphone : copie réduite de la carte sous l’en-tête, sans débordement', mini, {affichee: true, sousEnTete: true, largeur: 375});
+  await page.click('.swatches[data-target="bg"] .sw.custom');
+  const reglage = await page.evaluate(() => {
+    const pk = document.querySelector('#pk-bg');
+    const ouvert = !pk.hidden;
+    const h = pk.querySelector('.pk-h');
+    h.value = '220';
+    h.dispatchEvent(new Event('input', {bubbles: true}));
+    const code = pk.querySelector('.pk-hex');
+    const apresCurseur = [document.querySelector('#c-bg').value === code.value, document.querySelector('#mini .wcard').style.getPropertyValue('--bg') === code.value];
+    code.value = '#2A6F97';
+    code.dispatchEvent(new Event('input', {bubbles: true}));
+    return {ouvert, apresCurseur, code: document.querySelector('#c-bg').value, grande: document.querySelector('#card-slot .wcard').style.getPropertyValue('--bg'), roue: document.querySelector('.swatches[data-target="bg"] .sw.custom').classList.contains('is-picked')};
+  });
+  verifier('téléphone : réglage libre (curseur puis code couleur), les deux cartes suivent', reglage, {ouvert: true, apresCurseur: [true, true], code: '#2a6f97', grande: '#2a6f97', roue: true});
+  await page.screenshot({path: 'out/qa/configurateur-telephone.png'});
   await ctx.close();
 }
 
