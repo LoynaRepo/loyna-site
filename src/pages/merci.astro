@@ -49,6 +49,12 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
           <h2 class="h3">Avec Pro</h2>
           <p>Nous fixons ensemble votre premier point mensuel de 30&nbsp;minutes, nous préparons vos premières campagnes (elles ne partent qu’après votre validation) et votre kit comptoir imprimé (chevalet QR code et vitrophanie) est envoyé à votre commerce. Indiquez vos disponibilités dans «&nbsp;Précisions&nbsp;».</p>
         </div>
+        <!-- Parrainage LOYNA (CGV 4.8), montré après une commande mensuelle : demande d'Ewan du 29/10/2026 (le parrainage
+             parle aux commerçants déjà clients, pas aux visiteurs de l'accueil) -->
+        <div class="suite" data-parrainage hidden>
+          <h2 class="h3">Parrainez un commerçant : -50&nbsp;% chacun</h2>
+          <p>Vous connaissez un commerçant à qui une carte de fidélité rendrait service&nbsp;? Dès que votre abonnement mensuel est actif, votre code de parrainage vous attend dans votre <a href="/espace-client/#/abonnement">espace client</a> (menu Abonnement) : -50&nbsp;% sur son premier mois, et -50&nbsp;% sur votre mois suivant pour chaque commerçant qui s’abonne. <a href="/faq/#parrainage-loyna">Comment ça marche</a></p>
+        </div>
         <p class="small">
           Notification de proximité : elle utilise l’adresse de votre boutique. Si elle diffère de votre adresse de facturation, indiquez-la dans «&nbsp;Précisions&nbsp;» (jusqu’à 3 boutiques avec Pro).
         </p>
@@ -253,6 +259,9 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
     el.textContent = `Offre ${nomsOffres[offrePayee[1]]}, paiement ${offrePayee[2]}. `;
     el.hidden = false;
     document.querySelectorAll<HTMLElement>('[data-suite]').forEach((s) => (s.hidden = s.dataset.suite !== offrePayee[1]));
+    // Parrainage LOYNA : abonnements mensuels seulement (CGV 4.8)
+    const parrainage = document.querySelector<HTMLElement>('[data-parrainage]');
+    if (parrainage) parrainage.hidden = offrePayee[2] !== 'mensuel';
   }
   set('session', /^cs_[A-Za-z0-9_]{10,200}$/.test(q.get('session_id') || '') ? q.get('session_id')! : '');
   // Commande passée avec un compte LOYNA (panier) : ?compte=1 au retour de Stripe, ou repère posé par le panier avant

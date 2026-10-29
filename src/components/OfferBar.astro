@@ -1,33 +1,40 @@
 ---
 // Bandeau fin au-dessus de l'en-tête : texte libre de Builder (site-settings « announcement ») ou, à défaut,
-// le Parrainage LOYNA (choix d'Ewan du 2026-10-28, à la place de l'offre de lancement, qui reste dans les tarifs),
-// avec un lien vers la section « Parrainage » de la page d'accueil.
+// l'offre de lancement tant qu'elle est valable. Masqué automatiquement après la date de l'offre.
+// 29/10/2026 (Ewan) : l'offre de lancement revient ici ; le Parrainage LOYNA (bandeau du 28/10) part chez les
+// commerçants déjà clients : accueil de l'espace client, page /merci/ après une commande mensuelle, guide de démarrage.
 import Icon from './Icon.astro';
+import {LAUNCH_OFFER, SETUP_FEE, euro, offerActive} from '../data/site';
 interface Props {
   announcement?: string;
 }
 const {announcement = ''} = Astro.props;
+const offer = offerActive();
 const text = announcement.trim();
 ---
 
-<div class="offer-bar">
-  <div class="container ob-row">
-    {text ? (
-      <p>{text}</p>
-    ) : (
-      <p>
-        <Icon name="gift" size={16} />
-        <span class="ob-long">
-          <strong>Parrainage LOYNA</strong> : parrainez un commerçant, un mois à -50&nbsp;% chacun
-        </span>
-        <span class="ob-short">
-          <strong>Parrainage</strong> : un mois à -50&nbsp;% chacun
-        </span>
-        <a href="/#parrainage"><span class="ob-long">En savoir plus</span> →</a>
-      </p>
-    )}
-  </div>
-</div>
+{
+  (text || offer) && (
+    <div class="offer-bar" data-offer={text ? undefined : ''}>
+      <div class="container ob-row">
+        {text ? (
+          <p>{text}</p>
+        ) : (
+          <p>
+            <Icon name="gift" size={16} />
+            <span class="ob-long">
+              <strong>Offre de lancement</strong> : mise en service offerte (au lieu de {euro(SETUP_FEE)}) jusqu’au {LAUNCH_OFFER.untilLabel}, en mensuel comme en annuel · code <b class="code">{LAUNCH_OFFER.code}</b>
+            </span>
+            <span class="ob-short">
+              Mise en service offerte · code <b class="code">{LAUNCH_OFFER.code}</b>
+            </span>
+            <a href="/tarifs/"><span class="ob-long">J’en profite</span> →</a>
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
 
 <style>
   .offer-bar {
@@ -39,12 +46,25 @@ const text = announcement.trim();
     margin: 0;
     padding: 8px 0;
     display: flex;
-    flex-wrap: wrap;
+    /* sur une ligne : entre 700 et 1 200 px, le texte passe sur deux lignes entre l'icône et le lien */
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
     gap: 6px 10px;
     text-align: center;
     line-height: 1.35;
+  }
+  .ob-row :global(svg) {
+    flex: none;
+  }
+  .code {
+    padding: 1px 8px;
+    border-radius: 6px;
+    background: rgba(18, 18, 22, 0.88);
+    color: #f0d49a;
+    letter-spacing: 0.06em;
+    font-weight: 800;
+    white-space: nowrap;
   }
   .ob-short {
     display: none;
@@ -58,7 +78,6 @@ const text = announcement.trim();
       white-space: nowrap;
     }
     .ob-row p {
-      flex-wrap: nowrap;
       font-size: 0.84rem;
       padding: 10px 0;
     }
@@ -72,6 +91,16 @@ const text = announcement.trim();
     }
     .ob-row :global(svg) {
       display: none;
+    }
+  }
+  @media (max-width: 400px) {
+    .ob-row p {
+      font-size: 0.76rem;
+      gap: 6px;
+    }
+    .code {
+      padding: 1px 5px;
+      letter-spacing: 0.02em;
     }
   }
   .ob-row a {

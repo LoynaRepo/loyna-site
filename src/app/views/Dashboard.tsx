@@ -1,11 +1,14 @@
 // Accueil : indicateurs de la période (avec la période précédente), consommation de l'offre (cartes,
 // notifications du mois) avec alertes à 80 % et 100 %, courbe quotidienne et suivi LOYNA (Pro).
+// Parrainage LOYNA (29/10/2026, Ewan : le montrer aux commerçants déjà clients, plus sur l'accueil du site) :
+// bandeau « Parrainez un commerçant » pour le propriétaire d'un abonnement mensuel actif (my_referral, CGV 4.8),
+// masquable 30 jours ; le détail (filleuls, mois obtenus) reste dans Abonnement.
 // Définitions des indicateurs : en-tête de supabase/migrations/…_analytics.sql (dépôt LOYNA).
 import {useState} from 'preact/hooks';
 import {Icon} from '../icons';
-import {api, can, feature, includedIn, loadUsage, merchant, planLabel, type PlanUsage} from '../state';
+import {api, can, feature, includedIn, loadUsage, merchant, planLabel, toast, type PlanUsage} from '../state';
 import {Btn, ErrorBox, Kpi, LinkBox, Panel, Segmented, Spinner, UsageMeter, useLoad} from '../ui';
-import {date, joinUrl, num, resetDay} from '../util';
+import {copy, date, joinUrl, num, resetDay} from '../util';
 
 interface Period {
   visits: number;
@@ -42,6 +45,62 @@ const METRICS = [
   {value: 'new_customers', label: 'Nouveaux clients'},
   {value: 'rewards_redeemed', label: 'Récompenses utilisées'},
 ] as const;
+
+// --- Parrainage LOYNA (CGV 4.8 : -50 % sur le premier mois du filleul, -50 % sur le mois suivant du parrain,
+// abonnements mensuels) ------------------------------------------------------------------------------------
+const MASQUE = 'loyna_parrainage_masque_jusqua';
+const masqueJusqua = () => {
+  try {
+    return Number(localStorage.getItem(MASQUE) || 0);
+  } catch {
+    return 0;
+  }
+};
+
+function ParrainageAccueil() {
+  const [masque, setMasque] = useState(() => masqueJusqua() > Date.now());
+  const data = useLoad(() => (masque ? Promise.resolve(null) : api.rpc<{status: string; code?: string; link?: string; eligibility?: string; months_waiting?: number}>('my_referral').catch(() => null)), [masque]);
+  const r = data.data;
+  if (masque || !r || r.status !== 'OK' || r.eligibility !== 'ACTIVE' || !r.code || !r.link) return null;
+  const message = `Je vous recommande LOYNA, la carte de fidélité dans Apple Wallet et Google Wallet. Avec mon code ${r.code}, vous avez -50 % sur votre premier mois (abonnement mensuel) : ${r.link}`;
+  const cacher = () => {
+    try {
+      localStorage.setItem(MASQUE, String(Date.now() + 30 * 86400000));
+    } catch {
+      /* stockage indisponible : masqué jusqu'au rechargement */
+    }
+    setMasque(true);
+  };
+  return (
+    <section class="ref-banner" aria-label="Parrainage LOYNA">
+      <span class="rb-i">
+        <Icon name="gift" size={26} />
+      </span>
+      <div class="rb-t">
+        <strong>Parrainez un commerçant : -50 % chacun</strong>
+        <small>
+          -50 % sur son premier mois, et -50 % sur votre mois suivant pour chaque commerçant qui s’abonne (abonnements mensuels).
+          {(r.months_waiting ?? 0) > 0 ? ` ${num(r.months_waiting!)} mois à -50 % à venir.` : ''}
+        </small>
+        <div class="rb-a">
+          <span class="ref-code">{r.code}</span>
+          <Btn kind="primary" small icon="message-square" href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank">
+            WhatsApp
+          </Btn>
+          <Btn kind="ghost" small icon="copy" onClick={async () => toast((await copy(r.link!)) ? 'Lien de parrainage copié.' : 'Copie impossible : votre lien est dans Abonnement.', 'info')}>
+            Copier le lien
+          </Btn>
+          <a href="#/abonnement" class="rb-l">
+            Mes parrainages <Icon name="arrow-right" size={15} />
+          </a>
+        </div>
+      </div>
+      <button type="button" class="rb-x" aria-label="Masquer pendant 30 jours" title="Masquer pendant 30 jours" onClick={cacher}>
+        <Icon name="x" size={18} />
+      </button>
+    </section>
+  );
+}
 
 export function Dashboard() {
   const m = merchant.value!;
@@ -88,6 +147,8 @@ export function Dashboard() {
       )}
 
       {usage.data && <QuotaAlerts u={usage.data} />}
+
+      {can('settings.manage') && <ParrainageAccueil />}
 
       {k.error ? (
         <ErrorBox error={k.error} retry={k.reload} />

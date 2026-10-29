@@ -293,29 +293,6 @@ const softwareLd = {
     </div>
   </section>
 
-  <section class="section" id="parrainage">
-    <div class="container">
-      <div class="section-head">
-        <p class="eyebrow">Parrainage LOYNA</p>
-        <h2>Parrainez un commerçant&nbsp;: un mois à -50&nbsp;% chacun</h2>
-        <p>Vous connaissez un commerçant à qui une carte de fidélité rendrait service&nbsp;? Partagez votre code de parrainage depuis votre espace client.</p>
-      </div>
-      <div class="grid grid-2 ref-grid">
-        <div class="card">
-          <span class="icon"><Icon name="gift" /></span>
-          <h3>-50 % pour votre filleul</h3>
-          <p>Sur son premier mois d’abonnement, avec votre code saisi dans son panier.</p>
-        </div>
-        <div class="card">
-          <span class="icon"><Icon name="handshake" /></span>
-          <h3>-50 % pour vous</h3>
-          <p>Sur votre mois suivant, pour chaque commerçant parrainé qui s’abonne. Les mois s’enchaînent, un par filleul.</p>
-        </div>
-      </div>
-      <p class="center ref-note">Dans les trois offres, pour les abonnements mensuels, parrain comme filleul. <a href="/faq/#parrainage-loyna">Comment ça marche</a></p>
-    </div>
-  </section>
-
   <section class="section section--dark">
     <div class="container">
       <CallbackForm />
@@ -465,15 +442,6 @@ const softwareLd = {
   }
   .swipe-hint {
     display: none;
-  }
-  .ref-grid {
-    max-width: 880px;
-    margin-inline: auto;
-  }
-  .ref-note {
-    margin: 26px auto 0;
-    max-width: 720px;
-    color: var(--muted);
   }
   .reassure {
     list-style: none;
@@ -647,6 +615,10 @@ const softwareLd = {
     .step .shot {
       max-width: 240px;
       margin-bottom: 18px;
+    }
+    /* sans marge latérale : le téléphone de 290 px ne déborde plus de l'écran (page qui glissait sur 360 px) */
+    .prox-visual {
+      padding-inline: 0;
     }
     .swipe-hint {
       display: block;
