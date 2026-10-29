@@ -41,7 +41,7 @@ export const METIERS_PROCHES: Record<string, string[]> = {
 };
 
 // Guides généraux, en complément quand un métier a peu de guides propres
-const GUIDES_GENERAUX = ['idees-recompenses-carte-fidelite', 'creer-carte-de-fidelite', 'carte-de-fidelite-digitale-guide'];
+const GUIDES_GENERAUX = ['idees-recompenses-carte-fidelite', 'creer-carte-de-fidelite', 'carte-de-fidelite-digitale-guide', 'application-carte-de-fidelite'];
 
 // Mots trop courants sur ce site pour dire de quoi parle un article
 const COURANTS = new Set(['carte', 'cartes', 'fidelite', 'fidelisation', 'digitale', 'programme', 'commerce', 'commercant', 'clients', 'client', 'comment', 'guide', 'complet', 'idees', 'votre', 'pour', 'avec', 'sans', 'dans']);
