@@ -6,10 +6,12 @@ import type {Article, Sector} from './builder';
 /** Guides proches de chaque métier, dans l'ordre d'affichage (slugs d'articles). */
 export const GUIDES_PAR_METIER: Record<string, string[]> = {
   // « Fidéliser ses clients en salon de coiffure » traite aussi le barbier (section « Coiffeur ou barbier »)
-  'coiffeur-barbier': ['fideliser-clients-salon-coiffure', 'carte-fidelite-papier-ou-digitale', 'idees-recompenses-carte-fidelite'],
+  // « Carte de fidélité papier » a un exemple de carte de coiffure (requête « carte de fidélité coiffure », Haloscan 2026-10-29)
+  'coiffeur-barbier': ['fideliser-clients-salon-coiffure', 'carte-de-fidelite-papier-modele', 'idees-recompenses-carte-fidelite'],
   barbier: ['fideliser-clients-salon-coiffure', 'idees-recompenses-carte-fidelite', 'relancer-clients-inactifs'],
   // « 30 idées de récompenses » a une section « Instituts de beauté et ongleries »
-  'institut-onglerie': ['idees-recompenses-carte-fidelite', 'relancer-clients-inactifs', 'carte-de-fidelite-rgpd'],
+  // « Programme de fidélité » présente les niveaux VIP, conseillés aux instituts dans son tableau par métier
+  'institut-onglerie': ['idees-recompenses-carte-fidelite', 'programme-de-fidelite-commerce', 'relancer-clients-inactifs'],
   onglerie: ['idees-recompenses-carte-fidelite', 'relancer-clients-inactifs', 'creer-carte-de-fidelite'],
   // section « Snacks, pizzerias et restauration rapide » ; le comparatif papier / digitale parle du rush au comptoir
   'restauration-rapide': ['idees-recompenses-carte-fidelite', 'carte-fidelite-papier-ou-digitale', 'relancer-clients-inactifs'],
@@ -41,7 +43,7 @@ export const METIERS_PROCHES: Record<string, string[]> = {
 };
 
 // Guides généraux, en complément quand un métier a peu de guides propres
-const GUIDES_GENERAUX = ['idees-recompenses-carte-fidelite', 'creer-carte-de-fidelite', 'carte-de-fidelite-digitale-guide', 'application-carte-de-fidelite'];
+const GUIDES_GENERAUX = ['idees-recompenses-carte-fidelite', 'creer-carte-de-fidelite', 'programme-de-fidelite-commerce', 'carte-de-fidelite-digitale-guide', 'application-carte-de-fidelite'];
 
 // Mots trop courants sur ce site pour dire de quoi parle un article
 const COURANTS = new Set(['carte', 'cartes', 'fidelite', 'fidelisation', 'digitale', 'programme', 'commerce', 'commercant', 'clients', 'client', 'comment', 'guide', 'complet', 'idees', 'votre', 'pour', 'avec', 'sans', 'dans']);
