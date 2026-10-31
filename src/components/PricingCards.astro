@@ -3,7 +3,7 @@
 // Offres, quotas et contenu : src/data/site.ts (source : docs/OFFRES.md du dépôt LOYNA).
 // Les boutons « Choisir » mènent au panier (/panier/ : QR codes sous verre, compte LOYNA, puis paiement Stripe).
 import Icon from './Icon.astro';
-import {LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, offerActive, panierUrl, quotas} from '../data/site';
+import {CARD_PACK, LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, nombre, offerActive, panierUrl, quotas} from '../data/site';
 interface Props {
   idPrefix?: string;
   compact?: boolean;
@@ -13,6 +13,8 @@ interface Props {
 const {idPrefix = 'p', compact = false, level = 3} = Astro.props;
 const H = level === 2 ? 'h2' : 'h3';
 const offer = offerActive();
+// Option « +500 cartes » : offres concernées (« Starter et Premium »)
+const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) => p.name).join(' et ');
 ---
 
 <div class="pricing">
@@ -92,7 +94,7 @@ const offer = offerActive();
     }
   </div>
   <p class="fine">
-    Une notification correspond à un message de campagne reçu par une carte. Les messages automatiques et les notifications de proximité ne sont jamais décomptés, et un client reçoit au plus un message commercial toutes les {MARKETING_INTERVAL_HOURS}&nbsp;h (délai réglable).
+    Une campagne compte pour une, quel que soit le nombre de clients qui la reçoivent, et le compteur repart chaque lundi. Les messages automatiques et les notifications de proximité ne sont jamais décomptés, et un client reçoit au plus un message commercial toutes les {MARKETING_INTERVAL_HOURS}&nbsp;h (délai réglable). Besoin de plus de cartes&nbsp;? +{nombre(CARD_PACK.cards)} cartes pour {euro(CARD_PACK.monthly)} par mois en {packPlans} ({euro(CARD_PACK.yearly)} par an en annuel).
   </p>
   <p class="fine">
     {

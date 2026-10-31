@@ -1,4 +1,4 @@
-"""Serveur local des notes du panel commercial : même comportement que public/espace-commercial/notes.php
+"""Serveur local du panel commercial : même comportement que public/espace-commercial/notes.php et cartes.php
 (routes, codes de réponse, conflit 409, limites, sauvegardes, compteurs d'essais de jeton faux), pour les
 essais en développement : ce PC n'a pas PHP. Le serveur de développement d'Astro lui transmet les requêtes
 /espace-commercial/notes.php (astro.config.mjs, vite.server.proxy).
@@ -9,6 +9,7 @@ Le dossier joue le rôle de ~/panel-commercial chez OVH : « panel.py publier --
 Bibliothèque standard uniquement. Toute différence de comportement avec notes.php est un défaut à corriger.
 """
 import argparse
+import base64
 import hashlib
 import hmac
 import json
@@ -21,6 +22,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs
 
 TAILLE_BLOC_MAX = 65536
 TAILLE_REQUETE_MAX = 131072
@@ -28,6 +30,13 @@ ESSAIS_MAX = 20
 FENETRE_ESSAIS = 3600
 SAUVEGARDES_MAX = 50
 CHEMIN = "/espace-commercial/notes.php"
+CHEMIN_CARTES = "/espace-commercial/cartes.php"
+TAILLE_REQUETE_CARTES_MAX = 1600000
+TAILLE_LOGO_MAX = 1400000
+CARTES_MAX = 300
+PREFIXE_LOGO = "data:image/png;base64,"
+RE_ID_CARTE = re.compile(r"[a-z0-9]{16}")
+RE_COULEUR = re.compile(r"#[0-9a-f]{6}")
 RE_PROSPECT = re.compile(r"[0-9a-f]{10,64}")
 RE_IV = re.compile(r"[A-Za-z0-9+/]{16}")
 RE_B64 = re.compile(r"[A-Za-z0-9+/]+={0,2}")
@@ -200,6 +209,129 @@ class Serveur:
             return 500, {"erreur": "serveur"}, {}
 
 
+def carte_propre(c):
+    """Comme carte_propre() de cartes.php : réglages acceptés (liste fermée), None si un champ est invalide."""
+    def texte(v, mini, maxi):
+        return isinstance(v, str) and mini <= len(v.strip()) <= maxi
+
+    def entier(v, mini, maxi):
+        return isinstance(v, int) and not isinstance(v, bool) and mini <= v <= maxi
+
+    qr = c.get("qr")
+    if not (texte(c.get("nom"), 1, 60) and texte(c.get("activite", ""), 0, 60) and texte(c.get("recompense"), 1, 80)
+            and isinstance(c.get("fond"), str) and RE_COULEUR.fullmatch(c["fond"])
+            and isinstance(c.get("tampons"), str) and RE_COULEUR.fullmatch(c["tampons"])
+            and entier(c.get("passages"), 1, 100)
+            and c.get("offre") in ("starter", "premium", "pro") and c.get("periode") in ("mensuel", "annuel")
+            and isinstance(qr, dict) and entier(qr.get("unit"), 0, 20) and entier(qr.get("pack5"), 0, 4) and entier(qr.get("pack10"), 0, 4)
+            and texte(c.get("prospect", ""), 0, 64)):
+        return None
+    return {"nom": c["nom"].strip(), "activite": c.get("activite", "").strip(), "recompense": c["recompense"].strip(),
+            "fond": c["fond"], "tampons": c["tampons"], "passages": c["passages"], "offre": c["offre"], "periode": c["periode"],
+            "qr": {"unit": qr["unit"], "pack5": qr["pack5"], "pack10": qr["pack10"]}, "prospect": c.get("prospect", "").strip()}
+
+
+def logo_propre(logo):
+    """Base64 d'un vrai PNG, sinon None (comme logo_propre() de cartes.php)."""
+    if not isinstance(logo, str) or not logo.startswith(PREFIXE_LOGO):
+        return None
+    b64 = logo[len(PREFIXE_LOGO):]
+    if len(b64) > TAILLE_LOGO_MAX:
+        return None
+    try:
+        octets = base64.b64decode(b64, validate=True)
+    except ValueError:
+        return None
+    return b64 if octets.startswith(b"\x89PNG\r\n\x1a\n") else None
+
+
+def traiter_cartes(serveur: Serveur, methode, entetes, corps_brut, ip_client, requete_id):
+    """Renvoie (code, corps, entêtes) exactement comme cartes.php."""
+    cartes = serveur.chemin("cartes")
+    maintenant = lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        if methode not in ("GET", "POST"):
+            raise Reponse(405, {"erreur": "methode"}, {"Allow": "GET, POST"})
+        if methode == "GET" and requete_id is not None:
+            f = cartes / f"{requete_id}.json"
+            if not RE_ID_CARTE.fullmatch(requete_id) or not f.is_file():
+                raise Reponse(404, {"erreur": "inconnue"})
+            carte = lire_json(f)
+            carte.pop("prospect", None)
+            logo = cartes / f"{requete_id}.logo"
+            carte["logo"] = PREFIXE_LOGO + logo.read_text(encoding="ascii") if logo.is_file() else None
+            raise Reponse(200, {"carte": carte})
+        cartes.mkdir(parents=True, exist_ok=True)
+        empreinte = serveur.empreinte_attendue()
+        if empreinte is None:
+            raise Reponse(503, {"erreur": "non_active"})
+        ip = hashlib.sha256(ip_client.encode()).hexdigest()
+        if serveur.essais_recents(ip) >= ESSAIS_MAX:
+            raise Reponse(429, {"erreur": "trop_essais"}, {"Retry-After": str(FENETRE_ESSAIS)})
+        jeton = (entetes.get("X-Panel-Jeton") or "").strip().lower()
+        if not jeton:
+            raise Reponse(401, {"erreur": "jeton_absent"})
+        if not RE_JETON.fullmatch(jeton) or not hmac.compare_digest(empreinte, hashlib.sha256(bytes.fromhex(jeton)).hexdigest()):
+            serveur.noter_essai(ip)
+            raise Reponse(403, {"erreur": "jeton_refuse"})
+        if methode == "GET":
+            liste = []
+            for f in cartes.glob("*.json"):
+                if RE_ID_CARTE.fullmatch(f.stem):
+                    carte = lire_json(f)
+                    carte["id"] = f.stem
+                    carte["a_logo"] = (cartes / f"{f.stem}.logo").is_file()
+                    liste.append(carte)
+            liste.sort(key=lambda x: str(x.get("modifie_le", "")), reverse=True)
+            raise Reponse(200, {"cartes": liste})
+        if int(entetes.get("Content-Length") or 0) > TAILLE_REQUETE_CARTES_MAX or len(corps_brut) > TAILLE_REQUETE_CARTES_MAX:
+            raise Reponse(413, {"erreur": "trop_grand"})
+        try:
+            requete = json.loads(corps_brut.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            requete = None
+        if not isinstance(requete, dict):
+            raise Reponse(400, {"erreur": "requete"})
+        if "supprimer" in requete:
+            cid = requete["supprimer"]
+            if not isinstance(cid, str) or not RE_ID_CARTE.fullmatch(cid):
+                raise Reponse(400, {"erreur": "id"})
+            (cartes / f"{cid}.json").unlink(missing_ok=True)
+            (cartes / f"{cid}.logo").unlink(missing_ok=True)
+            raise Reponse(200, {"ok": True})
+        cid = requete.get("id")
+        if cid is not None and (not isinstance(cid, str) or not RE_ID_CARTE.fullmatch(cid) or not (cartes / f"{cid}.json").is_file()):
+            raise Reponse(404, {"erreur": "inconnue"})
+        brute = requete.get("carte")
+        carte = carte_propre(brute) if isinstance(brute, dict) else None
+        if carte is None:
+            raise Reponse(400, {"erreur": "carte"})
+        logo, b64 = brute.get("logo"), None
+        if logo is not None:
+            b64 = logo_propre(logo)
+            if b64 is None:
+                raise Reponse(400, {"erreur": "logo"})
+        cree_le = maintenant()
+        if cid is None:
+            if len(list(cartes.glob("*.json"))) >= CARTES_MAX:
+                raise Reponse(413, {"erreur": "trop_de_cartes"})
+            cid = secrets.token_hex(10)[:16].translate(str.maketrans("abcdef", "ghjkmn"))
+        else:
+            cree_le = str(lire_json(cartes / f"{cid}.json").get("cree_le", cree_le))
+        carte["cree_le"], carte["modifie_le"] = cree_le, maintenant()
+        if b64 is not None:
+            (cartes / f"{cid}.logo").write_text(b64, encoding="ascii")
+        else:
+            (cartes / f"{cid}.logo").unlink(missing_ok=True)
+        ecrire_json(cartes / f"{cid}.json", carte)
+        raise Reponse(200, {"ok": True, "id": cid, "modifie_le": carte["modifie_le"]})
+    except Reponse as r:
+        return r.code, r.corps, r.entetes
+    except Exception as e:
+        print("notes_local (cartes) :", repr(e), file=sys.stderr)
+        return 500, {"erreur": "serveur"}, {}
+
+
 def creer_gestionnaire(serveur: Serveur):
     class Gestionnaire(BaseHTTPRequestHandler):
         server_version = "notes-local"
@@ -224,10 +356,15 @@ def creer_gestionnaire(serveur: Serveur):
                 self.wfile.write(brut)
 
         def _traiter(self):
-            if self.path.split("?", 1)[0] != CHEMIN:
+            chemin, _, requete = self.path.partition("?")
+            if chemin not in (CHEMIN, CHEMIN_CARTES):
                 return self._repondre(404, {"erreur": "introuvable"}, {})
             longueur = int(self.headers.get("Content-Length") or 0)
-            corps = self.rfile.read(min(longueur, TAILLE_REQUETE_MAX + 1)) if longueur > 0 else b""
+            maxi = TAILLE_REQUETE_CARTES_MAX if chemin == CHEMIN_CARTES else TAILLE_REQUETE_MAX
+            corps = self.rfile.read(min(longueur, maxi + 1)) if longueur > 0 else b""
+            if chemin == CHEMIN_CARTES:
+                cid = parse_qs(requete).get("id", [None])[0]
+                return self._repondre(*traiter_cartes(serveur, self.command, self.headers, corps, self.client_address[0], cid))
             code, reponse, entetes = serveur.traiter(self.command, self.headers, corps, self.client_address[0])
             self._repondre(code, reponse, entetes)
 

@@ -2,7 +2,7 @@
 // consentements et RGPD. Les boutons suivent les droits renvoyés par le serveur (permissions de la fiche).
 import {useState} from 'preact/hooks';
 import {Icon} from '../icons';
-import {api, feature, go, merchant, toast, toastError} from '../state';
+import {api, feature, go, merchant, readOnly, toast, toastError} from '../state';
 import {Badge, Btn, ErrorBox, Field, LinkBox, Modal, PageHead, Panel, Spinner, Toggle, useBusy, useLoad} from '../ui';
 import {ago, copy, date, dateTime, download, euros, initials, joinUrl, num, plural, shortDateTime, uuid} from '../util';
 
@@ -28,6 +28,9 @@ interface Detail {
   permissions: {can_adjust: boolean; can_reverse_any: boolean; can_manage: boolean; can_redeem: boolean; can_reissue_card: boolean};
 }
 
+/** Consultation opérateur (lecture seule) : aucun bouton d'action, quels que soient les droits reçus. */
+const NO_ACTIONS: Detail['permissions'] = {can_adjust: false, can_reverse_any: false, can_manage: false, can_redeem: false, can_reissue_card: false};
+
 const TX: Record<string, string> = {EARN: 'Passage', REDEEM: 'Récompense utilisée', REVERSAL: 'Annulation', ADJUSTMENT: 'Ajustement manuel'};
 const txLabel = (t: {type: string; source: string}) => (t.source === 'REFERRAL' ? 'Bonus de parrainage' : (TX[t.type] ?? t.type));
 const REWARD_STATUS: Record<string, [string, 'gold' | 'green' | 'neutral' | 'red']> = {
@@ -52,7 +55,8 @@ export function ClientDetail({id}: {id: string}) {
       </div>
     );
 
-  const {customer: c, account: a, permissions: p} = d.data;
+  const {customer: c, account: a} = d.data;
+  const p = readOnly() ? NO_ACTIONS : d.data.permissions;
   const unit = (n: number) => (Math.abs(n) > 1 ? a?.program.unit_plural : a?.program.unit_singular) ?? 'points';
   const pct = a?.progress.target ? Math.min(100, Math.round((a.progress.current / a.progress.target) * 100)) : null;
 

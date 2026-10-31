@@ -64,11 +64,16 @@ export function texteAction(code: CodeAction, date: string, precision: string): 
   return `${MARQUE}${code}] ${date}${p ? ` · ${p}` : ''}`;
 }
 
-/** Actions notées pour un client (la première de chaque sorte compte, comme dans le coffre). */
-export function actionsNotees(notes: Note[]): Partial<Record<CodeAction, ActionNotee>> {
+/**
+ * Actions notées pour un client (la première de chaque sorte compte, comme dans le coffre). `qrLotLe` : début du
+ * lot de QR codes en cours (QR offert par le Parrainage LOYNA après une première livraison, `qr.lot_le`) ; une note
+ * « QR codes livrés » datée d'avant ne compte plus, comme dans appliquer_actions_panel() du coffre.
+ */
+export function actionsNotees(notes: Note[], qrLotLe = ''): Partial<Record<CodeAction, ActionNotee>> {
   const out: Partial<Record<CodeAction, ActionNotee>> = {};
   for (const n of [...notes].sort((a, b) => (a.cree_le || '').localeCompare(b.cree_le || ''))) {
     const a = lireAction(n);
+    if (a && a.code === 'qr_livres' && qrLotLe && a.date < qrLotLe.slice(0, 10)) continue;
     if (a && !out[a.code]) out[a.code] = a;
   }
   return out;
@@ -145,7 +150,7 @@ export interface ClientAffiche extends Client {
 
 /** Client tel qu'affiché : actions notées dans le panel prises en compte, prochaine action à la date du jour. */
 export function clientAJour(c: Client, notes: Note[], auj = new Date()): ClientAffiche {
-  const notees = actionsNotees(notes);
+  const notees = actionsNotees(notes, c.qr.lot_le ?? '');
   const enAttente: ClientAffiche['enAttente'] = {};
   const parcours: EtapeClient[] = c.parcours.map((e) => ({...e}));
   for (const [code, a] of Object.entries(notees) as [CodeAction, ActionNotee][]) {

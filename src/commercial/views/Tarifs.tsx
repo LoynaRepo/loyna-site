@@ -3,7 +3,7 @@
 // formulation validée par Ewan (contenu.ts) : jamais « HT » (TVA non applicable), engagement en clair, un seul message
 // sur la mise en service.
 import {COMPARISON, LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, euro, offerActive, quotas} from '../../data/site';
-import {ENGAGEMENT_ANNUEL, ENGAGEMENT_MENSUEL, KOVA, MENTION_PRIX, phraseMiseEnService} from '../contenu';
+import {ENGAGEMENT_ANNUEL, ENGAGEMENT_MENSUEL, KOVA, MENTION_PRIX, phraseMiseEnService, phraseOptionCartes} from '../contenu';
 import {fr} from '../format';
 import {Icon} from '../icons';
 import {Badge, Btn, Copier, PageHead, Panel} from '../ui';
@@ -145,7 +145,7 @@ export function Tarifs() {
         </div>
         <p class="muted small cp-m0">
           {fr(
-            `Une notification = un message de campagne reçu par une carte. Les messages automatiques et les notifications de proximité ne sont jamais décomptés ; un client reçoit au plus un message commercial toutes les ${MARKETING_INTERVAL_HOURS} h (réglable).`,
+            `Une campagne compte pour une, quel que soit le nombre de clients qui la reçoivent ; le compteur repart chaque lundi. Les messages automatiques et les notifications de proximité ne sont jamais décomptés ; un client reçoit au plus un message commercial toutes les ${MARKETING_INTERVAL_HOURS} h (réglable).`,
           )}
         </p>
       </Panel>
@@ -155,12 +155,13 @@ export function Tarifs() {
           <li>{fr(phraseMiseEnService())}</li>
           <li>{fr(`Mensuel : ${ENGAGEMENT_MENSUEL.charAt(0).toLowerCase()}${ENGAGEMENT_MENSUEL.slice(1)} Annuel : ${ENGAGEMENT_ANNUEL.charAt(0).toLowerCase()}${ENGAGEMENT_ANNUEL.slice(1)}`)}</li>
           <li>{fr(MENTION_PRIX)}</li>
+          <li>{fr(`${phraseOptionCartes()} Premier mois au prorata (sur la facture suivante ; en annuel, prorata facturé tout de suite). Retrait d’un pack à la fin du mois payé (en annuel, à l’échéance), refusé si les clients inscrits dépassent la limite sans ce pack.`)}</li>
           <li>{fr('Paiement en ligne par carte bancaire, sécurisé par Stripe, au nom de KOVA Elec (LOYNA, une marque de KOVA Elec) ; factures dans l’espace client.')}</li>
           <li>{fr(`Si on vous demande qui est KOVA Elec : « ${KOVA} »`)}</li>
           <li>{fr('Carte prête sous 24 h, hors personnalisation exceptionnelle. Aucun matériel : un smartphone suffit pour scanner.')}</li>
           <li>{fr('Notification de proximité dans les trois formules : dire « la carte s’affiche », jamais « à chaque passage » (localisation activée et Wallet autorisé sur l’écran verrouillé). LOYNA ne reçoit jamais la position du client.')}</li>
         </ul>
-        <p class="muted small cp-m0">Sources : src/data/site.ts (prix, quotas, formules, offre), docs/OFFRES.md du dépôt LOYNA (offres du 25/10/2026), docs/BRIEF.md (engagement), FAQ du site.</p>
+        <p class="muted small cp-m0">Sources : src/data/site.ts (prix, quotas, formules, offre), docs/OFFRES.md du dépôt LOYNA (offres du 25/10/2026, campagnes par semaine et option +500 cartes du 30/10/2026), docs/BRIEF.md (engagement), FAQ du site.</p>
       </Panel>
     </div>
   );

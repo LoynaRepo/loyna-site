@@ -1,0 +1,29 @@
+{
+  "name": "LOYNA Business",
+  "short_name": "LOYNA",
+  "lang": "fr",
+  "id": "/espace-client/",
+  "start_url": "/espace-client/#/scanner",
+  "scope": "/espace-client/",
+  "display": "standalone",
+  "background_color": "#16151a",
+  "theme_color": "#121216",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

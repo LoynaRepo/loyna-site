@@ -97,7 +97,14 @@ export async function copy(text: string): Promise<boolean> {
 /** Adresse publique de l'inscription des clients d'un commerce. */
 export const joinUrl = (slug: string) => `https://loyna.fr/join/${slug}`;
 
-/** « 1er novembre » : jour de recharge du quota de notifications (heure de Paris). */
+/** « lundi 2 novembre » : remise à zéro du compteur de campagnes de la semaine (heure de Paris). */
+export function mondayLabel(iso: string | null | undefined): string {
+  if (!iso) return 'lundi prochain';
+  const s = new Date(iso).toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris'});
+  return s.replace(/ 1 /, ' 1er ');
+}
+
+/** « 1er novembre » : premier jour du mois suivant (heure de Paris). */
 export function resetDay(iso: string | null | undefined): string {
   if (!iso) return 'le 1er du mois';
   const s = new Date(iso).toLocaleDateString('fr-FR', {day: 'numeric', month: 'long', timeZone: 'Europe/Paris'});

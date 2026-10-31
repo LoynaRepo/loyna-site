@@ -1,12 +1,13 @@
-// Abonnement : offre actuelle, quotas consommés (my_plan_usage), résumé Stripe (my_subscription),
-// Parrainage LOYNA entre commerçants (my_referral, décision d'Ewan du 2026-10-27) et comparaison des offres
-// Starter, Premium et Pro (prix et contenu : PLANS de src/data/site.ts). Factures, carte bancaire,
-// changement d'offre et résiliation : portail Stripe, comme avant.
-import {PLANS, SITE, euro, quotas, type Plan} from '../../data/site';
+// Abonnement : offre actuelle, quotas consommés (my_plan_usage : cartes, campagnes de la semaine), résumé Stripe
+// (my_subscription), option « +500 cartes » (packs.tsx, décision d'Ewan du 2026-10-30), Parrainage LOYNA entre
+// commerçants (my_referral, décision d'Ewan du 2026-10-27) et comparaison des offres Starter, Premium et Pro (prix et
+// contenu : PLANS de src/data/site.ts). Factures, carte bancaire, changement d'offre et résiliation : portail Stripe.
+import {CARD_PACK, PLANS, SITE, euro, nombre, quotas, type Plan} from '../../data/site';
 import {Icon} from '../icons';
-import {api, can, loadUsage, merchant, planLabel, session, toast} from '../state';
+import {PacksPanel, packsOffered, type PackSubscription} from '../packs';
+import {api, can, loadUsage, merchant, planLabel, readOnly, session, toast} from '../state';
 import {Badge, Btn, ErrorBox, PageHead, Panel, Spinner, UsageMeter, useLoad} from '../ui';
-import {copy, date, num, resetDay} from '../util';
+import {copy, date, mondayLabel, num} from '../util';
 
 const SUB_STATUS: Record<string, [string, 'green' | 'amber' | 'red' | 'neutral']> = {
   active: ['Actif', 'green'],
@@ -30,9 +31,9 @@ interface Referral {
   referrals?: {name: string; status: 'en_attente_paiement' | 'gagne' | 'applique'; created_at: string; won_at: string | null; applied_at: string | null}[];
 }
 const REFERRAL_STATUS: Record<string, [string, 'neutral' | 'gold' | 'green']> = {
-  en_attente_paiement: ['En attente de son paiement', 'neutral'],
-  gagne: ['Abonné : votre -50 % arrive', 'gold'],
-  applique: ['-50 % appliqué à votre abonnement', 'green'],
+  en_attente_paiement: ['En attente de sa 1re mensualité', 'neutral'],
+  gagne: ['Payé : votre mois offert arrive', 'gold'],
+  applique: ['Mois offert appliqué', 'green'],
 };
 const mois = (n: number) => `${num(n)} mois`;
 
@@ -42,19 +43,23 @@ function Parrainage() {
   if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
   if (!r) return <Spinner />;
   if (r.status !== 'OK' || !r.code || !r.link) return null;
-  const message = `Je vous recommande LOYNA, la carte de fidélité dans Apple Wallet et Google Wallet. Avec mon code ${r.code}, vous avez -50 % sur votre premier mois (abonnement mensuel) : ${r.link}`;
+  const message = `Je vous recommande LOYNA, la carte de fidélité dans Apple Wallet et Google Wallet. Avec mon code ${r.code}, votre premier mois est offert (abonnement mensuel) : ${r.link}`;
   const doCopy = async (text: string, what: string) => toast((await copy(text)) ? `${what} copié.` : 'Copie impossible : sélectionnez le texte à la main.', 'info');
   const list = r.referrals ?? [];
   return (
-    <Panel title="Parrainez un commerçant" sub="Parrainage LOYNA, abonnements mensuels" class="ref-card">
+    <Panel title="Parrainez un commerçant" sub="Parrainage LOYNA : 1 mois offert au parrain et au filleul, abonnements mensuels" class="ref-card">
       <ul class="ref-gains">
         <li>
-          <b>-50 %</b>
-          <span>sur le premier mois de votre filleul</span>
+          <b>1 mois offert</b>
+          <span>à votre filleul : son premier mois</span>
         </li>
         <li>
-          <b>-50 %</b>
-          <span>sur votre mois suivant, pour chaque filleul qui s’abonne</span>
+          <b>1 mois offert</b>
+          <span>pour vous : votre mois suivant, dès que votre filleul a payé sa première mensualité</span>
+        </li>
+        <li class="ref-gain-large">
+          <b>+ 1 QR code offert</b>
+          <span>personnalisé sous verre, à poser dans votre commerce, pour chaque filleul qui paie sa première mensualité (livré sous 15 jours)</span>
         </li>
       </ul>
       {r.eligibility === 'ACTIVE' ? (
@@ -92,7 +97,7 @@ function Parrainage() {
         </p>
       )}
       <p class="ref-months">
-        Mois à -50 % : <b>{mois(r.months_applied ?? 0)}</b> obtenu{(r.months_applied ?? 0) > 1 ? 's' : ''}, <b>{mois(r.months_waiting ?? 0)}</b> à venir
+        Mois offerts : <b>{mois(r.months_applied ?? 0)}</b> obtenu{(r.months_applied ?? 0) > 1 ? 's' : ''}, <b>{mois(r.months_waiting ?? 0)}</b> à venir
         {(r.months_waiting ?? 0) > 1 ? ' (un par facture, les mois s’enchaînent)' : ''}.
       </p>
       {list.length > 0 ? (
@@ -111,7 +116,7 @@ function Parrainage() {
         <p class="muted small">Aucun filleul pour le moment.</p>
       )}
       <p class="muted small">
-        Le filleul saisit votre code dans le panier de loyna.fr, ou ouvre votre lien. Votre -50 % s’applique à votre facture suivante dès son premier paiement ; une remise non encore appliquée est perdue si votre abonnement se termine. Conditions :{' '}
+        Le filleul saisit votre code dans le panier de loyna.fr, ou ouvre votre lien. Votre mois offert s’applique à votre facture suivante dès que votre filleul a payé sa première mensualité, en général son 2e mois ; il ne s’applique que sur un abonnement mensuel en cours, sinon il reste en attente. Conditions :{' '}
         <a href="/cgv/">CGV, article 4.8</a>.
       </p>
     </Panel>
@@ -139,6 +144,7 @@ export function Abonnement({portal}: {portal: string}) {
   const plan = PLANS[current];
   const sub = data.data?.sub;
   const u = data.data?.usage;
+  const ro = readOnly(); // consultation opérateur : ni portail Stripe, ni changement d'offre, ni parrainage du compte
 
   return (
     <div class="page">
@@ -149,7 +155,7 @@ export function Abonnement({portal}: {portal: string}) {
         <Spinner />
       ) : (
         <>
-          <div class="sub-grid">
+          <div class={`sub-grid ${packsOffered() ? 'sub-grid--packs' : ''}`}>
             <Panel dark class="plan-card">
               <p class="eyebrow">Votre offre</p>
               <h2 class="plan-name">LOYNA {planLabel(m.subscription_plan)}</h2>
@@ -184,24 +190,37 @@ export function Abonnement({portal}: {portal: string}) {
               ) : (
                 <p class="plan-note">Le détail de votre abonnement (échéances, engagement) est disponible sur le portail sécurisé.</p>
               )}
-              <Btn kind="gold" icon="credit-card" href={portalUrl} block>
-                Factures, carte bancaire et offre
-              </Btn>
-              <p class="plan-note">
-                Portail sécurisé Stripe : saisissez l’adresse utilisée lors de votre commande{email ? ` (${email})` : ''}, vous recevez un lien de connexion par e-mail.
-              </p>
+              {ro ? (
+                <p class="plan-note">Portail Stripe réservé au client{sub?.customer_email ? ` (adresse de la commande : ${sub.customer_email})` : ''}.</p>
+              ) : (
+                <>
+                  <Btn kind="gold" icon="credit-card" href={portalUrl} block>
+                    Factures, carte bancaire et offre
+                  </Btn>
+                  <p class="plan-note">
+                    Portail sécurisé Stripe : saisissez l’adresse utilisée lors de votre commande{email ? ` (${email})` : ''}, vous recevez un lien de connexion par e-mail.
+                  </p>
+                </>
+              )}
             </Panel>
 
             <Panel title="Votre consommation" sub={plan ? quotas(plan) : undefined}>
               {u ? (
                 <div class="meters meters--stack">
-                  <UsageMeter label="Cartes" used={u.cards.used} limit={u.cards.limit} />
                   <UsageMeter
-                    label="Notifications ce mois-ci"
-                    used={u.notifications.used}
-                    limit={u.notifications.limit}
-                    extra={u.notifications.limit !== null ? ` · recharge le ${resetDay(u.notifications.resets_at)}` : undefined}
+                    label="Cartes"
+                    used={u.cards.used}
+                    limit={u.cards.limit}
+                    extra={(u.cards.packs ?? 0) > 0 ? ` · dont +${nombre((u.cards.packs ?? 0) * (u.cards.pack_size ?? CARD_PACK.cards))} avec vos packs` : undefined}
                   />
+                  {u.campaigns && (
+                    <UsageMeter
+                      label="Campagnes cette semaine"
+                      used={u.campaigns.used}
+                      limit={u.campaigns.limit}
+                      extra={u.campaigns.limit !== null ? ` · le compteur repart le ${mondayLabel(u.campaigns.resets_at)}` : undefined}
+                    />
+                  )}
                   <p class="meter-t">
                     Boutiques (notification de proximité) : <b>{num(u.locations.used)}</b>
                     {u.locations.limit === null ? '' : ` / ${num(u.locations.limit)}`}
@@ -218,11 +237,13 @@ export function Abonnement({portal}: {portal: string}) {
               )}
               <ul class="plain small">
                 <li>Une carte = un client inscrit au programme (les clients supprimés ne comptent plus). Une fois la limite atteinte, les nouvelles inscriptions sont refusées.</li>
-                <li>Une notification = un message de campagne reçu par une carte. Les messages automatiques et les notifications de proximité ne sont jamais décomptés.</li>
+                <li>Une campagne = un envoi de notification à vos clients, quel que soit leur nombre. Le compteur repart chaque lundi. Les messages automatiques et les notifications de proximité ne sont jamais décomptés.</li>
               </ul>
             </Panel>
 
-            <Parrainage />
+            <PacksPanel usage={u ?? null} sub={(sub as PackSubscription) ?? null} onDone={data.reload} />
+
+            {!ro && <Parrainage />}
 
             <Panel title="Bon à savoir">
               <ul class="plain small">
@@ -268,7 +289,7 @@ export function Abonnement({portal}: {portal: string}) {
                       </li>
                     ))}
                   </ul>
-                  {i > current && current >= 0 && (
+                  {i > current && current >= 0 && !ro && (
                     <Btn kind={p.highlight ? 'gold' : 'primary'} href={portalUrl} block icon="arrow-right">
                       Passer à {p.name}
                     </Btn>

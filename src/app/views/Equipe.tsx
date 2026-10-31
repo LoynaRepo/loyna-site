@@ -1,7 +1,7 @@
 // Équipe : un compte par personne, jamais de mot de passe partagé. L'invitation crée un lien
 // d'activation à remettre à l'employé, qui choisit lui-même son mot de passe.
 import {useState} from 'preact/hooks';
-import {api, merchant, toast, toastError} from '../state';
+import {api, merchant, readOnly, toast, toastError} from '../state';
 import {Badge, Btn, ErrorBox, Field, LinkBox, Modal, PageHead, Panel, Spinner, Toggle, useBusy, useLoad} from '../ui';
 import {ago} from '../util';
 
@@ -39,7 +39,8 @@ export function Equipe() {
   const [busy, run] = useBusy();
 
   const isOwner = m.role === 'OWNER';
-  const canManage = (s: Staff) => s.id !== m.staff_id && (isOwner || s.role === 'STAFF');
+  const ro = readOnly(); // consultation opérateur : l'équipe se lit, sans invitation ni modification
+  const canManage = (s: Staff) => !ro && s.id !== m.staff_id && (isOwner || s.role === 'STAFF');
 
   const resetLink = (s: Staff) =>
     run(async () => {
@@ -64,9 +65,11 @@ export function Equipe() {
   return (
     <div class="page">
       <PageHead eyebrow={m.merchant_name} title="Équipe">
-        <Btn kind="gold" icon="user-plus" onClick={() => setInvite(true)}>
-          Inviter un membre
-        </Btn>
+        {!ro && (
+          <Btn kind="gold" icon="user-plus" onClick={() => setInvite(true)}>
+            Inviter un membre
+          </Btn>
+        )}
       </PageHead>
       <p class="lead-sm">Un compte par personne : chacun choisit son mot de passe, et vous pouvez retirer un accès à tout moment. Ne partagez jamais votre propre mot de passe.</p>
 

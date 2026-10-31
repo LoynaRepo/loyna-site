@@ -29,8 +29,14 @@ export const SITE = {
   // Modifiables aussi dans Builder (site-settings : googleVerification, bingVerification, sameAs).
   googleVerification: '',
   bingVerification: '',
-  // Comptes officiels de LOYNA (donnés par Ewan le 2026-10-28) : données structurées et liens du pied de page
-  sameAs: ['https://www.instagram.com/loyna.fr/', 'https://www.tiktok.com/@loyna.fr'] as string[],
+  // Comptes officiels de LOYNA (donnés par Ewan le 2026-10-28) : données structurées et liens du pied de page.
+  // Fiche Google Business Profile « Loyna » (donnée par Ewan le 2026-10-29, identifiant Knowledge Graph /g/11z_20p3cp) :
+  // données structurées seulement (le pied de page ne garde qu'Instagram et TikTok).
+  sameAs: [
+    'https://www.instagram.com/loyna.fr/',
+    'https://www.tiktok.com/@loyna.fr',
+    'https://www.google.com/search?kgmid=/g/11z_20p3cp',
+  ] as string[],
   // Espace commerçant (LOYNA Business) : laissé vide tant que l'application n'est pas en ligne.
   appUrl: '',
   // Portail Stripe (abonnement, factures, moyen de paiement) : rempli après création du portail.
@@ -59,8 +65,9 @@ export interface Plan {
   yearly: number; // € par an (-15 %), sans TVA
   /** Cartes clients (clients inscrits au programme) ; null = illimitées. */
   cards: number | null;
-  /** Notifications de campagne par mois (une notification = un message de campagne reçu par une carte) ; null = illimitées. */
-  notifications: number | null;
+  /** Campagnes de notifications par semaine, quel que soit le nombre de destinataires (compteur remis à zéro chaque
+   *  lundi, décision d'Ewan du 2026-10-30) ; null = illimitées. */
+  campaignsPerWeek: number | null;
   /** Boutiques (adresses), chacune avec la notification de proximité. */
   shops: number;
   pitch: string;
@@ -209,9 +216,23 @@ export const LAUNCH_OFFER = {
 };
 export const offerActive = (now = new Date()) => now < new Date(LAUNCH_OFFER.until);
 
-// Pour ne pas lasser les clients, quelle que soit l'offre : au plus un message commercial toutes les 48 h par client
-// (délai réglable par le commerçant). Les messages automatiques et la notification de proximité ne sont jamais décomptés.
-export const MARKETING_INTERVAL_HOURS = 48;
+// Pour ne pas lasser les clients, quelle que soit l'offre : au plus un message commercial toutes les 24 h par client
+// (délai réglable par le commerçant ; 24 h depuis la décision d'Ewan du 2026-10-30, 48 h avant). Les messages
+// automatiques et la notification de proximité ne sont jamais décomptés.
+export const MARKETING_INTERVAL_HOURS = 24;
+
+// Option « +500 cartes » (décision d'Ewan du 2026-10-30, dépôt LOYNA docs/OFFRES.md) : Starter et Premium seulement
+// (Pro est illimité), cumulable, sans TVA. Mensuel : 4,99 € par mois et par pack (premier mois au prorata, sur la
+// facture suivante), retirable à la fin d'un mois. Annuel : 50,90 € par an et par pack (4,99 × 12, -15 %, proposition
+// à valider : une seule valeur à changer ici), retirable à l'échéance annuelle. Cartes seulement, pas de campagnes.
+// Produit Stripe loyna_cartes_500 (prix loyna_cartes_500_mensuel et loyna_cartes_500_annuel).
+export const CARD_PACK = {
+  cards: 500,
+  monthly: 4.99,
+  yearly: 50.9,
+  maxPacks: 20,
+  plans: ['starter', 'premium'] as PlanId[],
+};
 
 export const PLANS: Plan[] = [
   {
@@ -220,7 +241,7 @@ export const PLANS: Plan[] = [
     monthly: 29,
     yearly: 295.8,
     cards: 500,
-    notifications: 2000,
+    campaignsPerWeek: 2,
     shops: 1,
     pitch: 'La carte de fidélité complète, à vos couleurs.',
     features: [
@@ -242,7 +263,7 @@ export const PLANS: Plan[] = [
     monthly: 39.99,
     yearly: 407.9,
     cards: 2000,
-    notifications: 24000,
+    campaignsPerWeek: 5,
     shops: 1,
     pitch: 'Les automatisations qui font revenir vos clients.',
     intro: 'Tout Starter, plus :',
@@ -269,7 +290,7 @@ export const PLANS: Plan[] = [
     monthly: 89,
     yearly: 907.8,
     cards: null,
-    notifications: null,
+    campaignsPerWeek: null,
     shops: 3,
     pitch: 'LOYNA travaille avec vous.',
     intro: 'Tout Premium, plus :',
@@ -288,15 +309,33 @@ export const PLANS: Plan[] = [
   },
 ];
 
+// Programme partenaires (apporteurs d'affaires, page /devenir-partenaire/), conditions validées par Ewan le 2026-10-29,
+// échéance avancée le 2026-10-30 : commission unique par nouveau client selon son offre, due dès sa 1re mensualité
+// (ou son paiement annuel), virement sous 30 jours après la facture ou la note de commission ; recommandation
+// confirmée sous 2 jours ouvrés et réservée 90 jours ; contrat résiliable avec 1 mois de préavis.
+export const PARTENAIRES = {
+  commission: {starter: 60, premium: 80, pro: 150} as Record<PlanId, number>,
+  reserveJours: 90,
+  confirmationJoursOuvres: 2,
+  virementJours: 30,
+  preavisMois: 1,
+};
+
 /** Nombre à la française, espace insécable entre les milliers : « 24 000 ». */
 export const nombre = (n: number) => n.toLocaleString('fr-FR').replace(/[   ]/g, ' ');
 
-/** Quotas d'une offre en clair : « 500 cartes et 2 000 notifications par mois », « Cartes et notifications illimitées ». */
+/** « 2 campagnes par semaine », « Campagnes illimitées » (campagnes de notifications, quel que soit le nombre de clients). */
+export function campagnesParSemaine(p: Plan): string {
+  if (p.campaignsPerWeek === null) return 'Campagnes illimitées';
+  return `${nombre(p.campaignsPerWeek)} campagne${p.campaignsPerWeek > 1 ? 's' : ''} par semaine`;
+}
+
+/** Quotas d'une offre en clair : « 500 cartes et 2 campagnes par semaine », « Cartes et campagnes illimitées ». */
 export function quotas(p: Plan): string {
-  if (p.cards === null && p.notifications === null) return 'Cartes et notifications illimitées';
+  if (p.cards === null && p.campaignsPerWeek === null) return 'Cartes et campagnes illimitées';
   const cartes = p.cards === null ? 'cartes illimitées' : `${nombre(p.cards)} cartes`;
-  const notifs = p.notifications === null ? 'notifications illimitées' : `${nombre(p.notifications)} notifications par mois`;
-  return `${cartes} et ${notifs}`;
+  const campagnes = campagnesParSemaine(p);
+  return `${cartes} et ${campagnes.charAt(0).toLowerCase()}${campagnes.slice(1)}`;
 }
 
 const parOffre = <T,>(f: (p: Plan) => T) => PLANS.map(f) as [T, T, T];
@@ -308,8 +347,12 @@ export interface ComparisonRow {
   values: [string | boolean, string | boolean, string | boolean];
 }
 export const COMPARISON: ComparisonRow[] = [
-  {group: 'Cartes et notifications', label: 'Cartes clients', values: parOffre((p) => (p.cards === null ? 'Illimitées' : nombre(p.cards)))},
-  {label: 'Notifications de campagne par mois', values: parOffre((p) => (p.notifications === null ? 'Illimitées' : nombre(p.notifications)))},
+  {group: 'Cartes et campagnes', label: 'Cartes clients', values: parOffre((p) => (p.cards === null ? 'Illimitées' : nombre(p.cards)))},
+  {label: 'Campagnes de notifications par semaine', values: parOffre((p) => (p.campaignsPerWeek === null ? 'Illimitées' : nombre(p.campaignsPerWeek)))},
+  {
+    label: `Option +${nombre(CARD_PACK.cards)} cartes`,
+    values: parOffre((p) => (CARD_PACK.plans.includes(p.id) ? `${nombre(CARD_PACK.monthly)} € par mois` : 'Cartes illimitées')),
+  },
   {label: 'Boutiques (adresses)', values: parOffre((p) => (p.shops > 1 ? `Jusqu’à ${p.shops}` : String(p.shops)))},
   {group: 'La carte de fidélité', label: 'Carte Apple Wallet et Google Wallet à vos couleurs', values: [true, true, true]},
   {label: 'Notification de proximité', values: [true, true, true]},

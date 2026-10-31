@@ -2,14 +2,16 @@
 // LOYNA) : commandes à traiter (RPC op_orders), création du commerce d'un client à partir de sa commande (formulaire
 // prérempli, aperçu de la carte, logo, adresse d'inscription → Edge Function merchant-bootstrap), accès du
 // propriétaire (lien « Choisir mon mot de passe », e-mail « Votre carte LOYNA est prête » : action send_access) et
-// commerces existants (RPC op_merchants). Le serveur contrôle chaque appel : l'onglet n'est qu'un affichage.
+// commerces existants (RPC op_merchants), dont l'espace s'ouvre en consultation, lecture seule (« Ouvrir son espace »,
+// demande d'Ewan du 2026-10-29 : op_merchant_context). Le serveur contrôle chaque appel : l'onglet n'est qu'un affichage.
 import type {ComponentChildren} from 'preact';
 import {useEffect, useRef, useState} from 'preact/hooks';
 import {CARD_ACCENTS, CARD_ACTIVITES, CARD_BGS} from '../../data/site';
 import {STATUS} from '../Commande';
 import {Icon} from '../icons';
 import {LOGO_ACCEPT, LOGO_MIN_SIDE, logoToPng, type PngLogo} from '../logo-png';
-import {api, go, merchant, PLAN_ORDER, planLabel, rememberMerchant, staffCtx, toast, toastError, type PlanCode} from '../state';
+import {idDuLien, lireCartePreparee} from '../../lib/carte-preparee';
+import {api, go, merchant, openConsultation, PLAN_ORDER, planLabel, rememberMerchant, staffCtx, toast, toastError, type PlanCode} from '../state';
 import {Badge, Btn, CardPreview, Empty, ErrorBox, Field, LinkBox, PageHead, Panel, Segmented, Spinner, useBusy, useLoad} from '../ui';
 import {contrast, copy, date, download, euros, initials, joinUrl, num, plural, qrSvg} from '../util';
 
@@ -80,9 +82,9 @@ export interface Created {
 }
 
 const REF_STATUS: Record<OpReferral['status'], string> = {
-  en_attente_paiement: 'en attente du premier paiement',
-  gagne: 'gagné : remise du parrain à venir',
-  applique: 'remise du parrain appliquée',
+  en_attente_paiement: 'premier mois offert, en attente de sa première mensualité',
+  gagne: 'première mensualité payée : mois offert du parrain à venir',
+  applique: 'mois offert du parrain posé',
   annule: 'annulé',
 };
 const MERCHANT_STATUS = {ACTIVE: 'Actif', SUSPENDED: 'Suspendu', CLOSED: 'Fermé'} as const;
@@ -351,10 +353,12 @@ function Merchants({list}: {list: OpMerchant[]}) {
                     <Btn kind="ghost" small icon="download" onClick={() => download(`qr-${m.slug}.svg`, qrSvg(joinUrl(m.slug)), 'image/svg+xml')}>
                       QR code
                     </Btn>
-                    {m.is_member && (
+                    {m.is_member ? (
                       <Btn kind="ghost" small icon="arrow-right" onClick={() => open(m)}>
                         Ouvrir
                       </Btn>
+                    ) : (
+                      <OuvrirEspace m={m} />
                     )}
                   </span>
                 </td>
@@ -364,9 +368,29 @@ function Merchants({list}: {list: OpMerchant[]}) {
         </table>
       </div>
       <p class="muted small op-foot">
-        « Ouvrir » n’apparaît que pour les commerces dont votre compte fait partie de l’équipe : l’espace d’un autre commerce (clients, passages) reste réservé à son équipe.
+        « Ouvrir son espace » affiche l’espace du commerce tel que son propriétaire le voit (statistiques, clients, campagnes, réglages), en lecture seule : rien ne peut y être modifié ni envoyé. Chaque ouverture est
+        notée dans le journal du commerce. « Ouvrir » (commerces dont vous faites partie de l’équipe) donne votre accès habituel.
       </p>
     </Panel>
+  );
+}
+
+/** Consultation de l'espace du commerce, en lecture seule (bandeau « Quitter » pour revenir ici). */
+function OuvrirEspace({m}: {m: OpMerchant}) {
+  const [busy, run] = useBusy();
+  const open = () =>
+    run(async () => {
+      try {
+        await openConsultation(m.id);
+        go('accueil');
+      } catch (e) {
+        toastError(e);
+      }
+    });
+  return (
+    <Btn kind="ghost" small icon="eye" busy={busy} onClick={open} title={`Voir l’espace de ${m.name}, en lecture seule`}>
+      Ouvrir son espace
+    </Btn>
   );
 }
 
@@ -421,7 +445,10 @@ function initialForm(order: OpOrder | null, taken: Set<string>): Form {
     postal_code: '',
     city: '',
     owner_email: (acc?.email || order?.customer_email || '').trim().toLowerCase(),
-    owner_name: (order?.customer_name || acc?.display_name || '').trim(),
+    // nom de la personne (« Bonjour Benjamin » dans l'e-mail d'accès) : jamais le nom du commerce, que Stripe
+    // enregistre parfois comme nom du client (paiement par lien, Barber Kong 2026-10-29)
+    owner_name: [order?.customer_name, acc?.display_name].map((x) => (x || '').trim())
+      .find((x) => x && x.toLowerCase() !== name.toLowerCase()) ?? '',
     plan: order && PLAN_ORDER.includes(order.plan) ? order.plan : 'STARTER',
     threshold: 10,
     reward: '',
@@ -481,6 +508,42 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
       setLogoErr(e instanceof Error ? e.message : 'Ce logo est illisible.');
     } finally {
       setConverting(false);
+    }
+  };
+
+  // Carte préparée avec le client dans le panel commercial : son lien de paiement remplit le formulaire et le logo
+  const [lienCarte, setLienCarte] = useState('');
+  const [carteErr, setCarteErr] = useState('');
+  const [carteBusy, setCarteBusy] = useState(false);
+  const reprendreCarte = async () => {
+    const cid = idDuLien(lienCarte);
+    if (!cid) return setCarteErr('Collez le lien de paiement de la carte (loyna.fr/panier/?carte=…).');
+    setCarteErr('');
+    setCarteBusy(true);
+    try {
+      const c = await lireCartePreparee(cid);
+      if (!c) throw new Error('Aucune carte ne correspond à ce lien.');
+      setF((x) => ({
+        ...x,
+        name: x.name || c.nom,
+        slug: x.name || touched.slug ? x.slug : freeSlug(slugify(c.nom), taken.current),
+        business_type: c.activite || x.business_type,
+        threshold: c.passages,
+        reward: c.recompense,
+        bg: c.fond,
+        accent: c.tampons,
+        plan: order ? x.plan : (c.offre.toUpperCase() as PlanCode),
+      }));
+      setTouched((t) => ({...t, reward: true, bg: true, accent: true}));
+      if (c.logo) {
+        const octets = Uint8Array.from(atob(c.logo.split(',')[1]), (ch) => ch.charCodeAt(0));
+        await pickLogo(new File([octets], 'logo.png', {type: 'image/png'}));
+      }
+      toast(`Carte de ${c.nom} reprise : vérifiez puis créez le commerce.`, 'info');
+    } catch (e) {
+      setCarteErr(e instanceof Error ? e.message : 'Lecture de la carte impossible.');
+    } finally {
+      setCarteBusy(false);
     }
   };
 
@@ -555,6 +618,20 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
       )}
       <form class="prog op-form" onSubmit={submit} noValidate>
         <div class="form">
+          <Panel title="Carte préparée avec le client (facultatif)">
+            <div class="form">
+              <Field label="Lien de paiement de la carte" hint="Depuis « Préparer une carte » de l’espace commercial : récompense, passages, couleurs et logo sont repris.">
+                <input type="text" spellcheck={false} autoComplete="off" placeholder="https://loyna.fr/panier/?carte=…" value={lienCarte} onInput={(e) => setLienCarte((e.target as HTMLInputElement).value)} />
+              </Field>
+              {carteErr && <span class="fld-err">{carteErr}</span>}
+              <div class="btn-row">
+                <Btn kind="ghost" small icon="download" busy={carteBusy} onClick={reprendreCarte}>
+                  Reprendre cette carte
+                </Btn>
+              </div>
+            </div>
+          </Panel>
+
           <Panel title="Commerce">
             <div class="form">
               <div class="row2">
@@ -610,8 +687,8 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
                 <Field label="E-mail du propriétaire" hint={order?.account ? 'Gardez l’adresse du compte LOYNA : le client se connecte avec son mot de passe.' : 'Un compte LOYNA est créé avec cette adresse s’il n’existe pas.'}>
                   <input type="email" required autoComplete="off" value={f.owner_email} onInput={(e) => set('owner_email', (e.target as HTMLInputElement).value)} />
                 </Field>
-                <Field label="Nom du propriétaire" hint="Affiché dans l’équipe du commerce.">
-                  <input type="text" maxLength={80} value={f.owner_name} onInput={(e) => set('owner_name', (e.target as HTMLInputElement).value)} />
+                <Field label="Prénom et nom du propriétaire" hint="Pour « Bonjour Benjamin » dans l’e-mail d’accès, et affiché dans l’équipe du commerce. Pas le nom du commerce.">
+                  <input type="text" maxLength={80} placeholder="ex. Benjamin Psaume" value={f.owner_name} onInput={(e) => set('owner_name', (e.target as HTMLInputElement).value)} />
                 </Field>
               </div>
               {emails.length > 1 && (

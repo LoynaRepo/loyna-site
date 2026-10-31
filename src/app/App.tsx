@@ -1,8 +1,8 @@
 // LOYNA Business dans l'espace client de loyna.fr : connexion, choix du commerce, menu et pages.
 import type {ComponentChildren} from 'preact';
-import {useEffect, useState} from 'preact/hooks';
+import {useEffect, useRef, useState} from 'preact/hooks';
 import {Icon} from './icons';
-import {api, can, go, isOperator, loadPlans, merchant, PLAN_ORDER, planLabel, rememberMerchant, rememberedMerchant, route, session, setBackend, staffCtx, toastError, type Membership, type StaffContext} from './state';
+import {api, can, canSee, closeConsultation, go, isOperator, loadPlans, merchant, PLAN_ORDER, planLabel, readOnly, rememberMerchant, rememberedMerchant, route, session, setBackend, staffCtx, toastError, type Membership, type StaffContext} from './state';
 import {Btn, Field, Spinner, Toasts} from './ui';
 import {frenchTypography} from './util';
 import {Commande} from './Commande';
@@ -40,20 +40,22 @@ interface NavItem {
   show: () => boolean;
   highlight?: boolean; // mis en avant (icône dorée) : les automatisations, demande d'Ewan du 2026-10-25
 }
-// Ordre du menu ; sur téléphone, les trois premiers (hors scanner) sont dans la barre du bas.
+// Ordre du menu ; sur téléphone, les trois premiers (hors scanner) sont dans la barre du bas. En consultation
+// opérateur (lecture seule), les pages de gestion restent visibles (canSee) mais sans leurs actions ; le scanner non.
 const NAV: NavItem[] = [
   {view: 'accueil', label: 'Accueil', icon: 'layout-dashboard', show: () => can('analytics.read')},
   {view: 'scanner', label: 'Scanner', icon: 'scan-line', show: () => can('scan.validate')},
   {view: 'clients', label: 'Clients', icon: 'users', show: () => can('customers.read_basic')},
-  {view: 'automatisations', label: 'Automatisations', icon: 'zap', show: () => can('settings.manage'), highlight: true},
-  {view: 'campagnes', label: 'Campagnes', icon: 'megaphone', show: () => can('campaigns.manage')},
+  {view: 'automatisations', label: 'Automatisations', icon: 'zap', show: () => canSee('settings.manage'), highlight: true},
+  {view: 'campagnes', label: 'Campagnes', icon: 'megaphone', show: () => canSee('campaigns.manage')},
   {view: 'rapport', label: 'Rapport', icon: 'file-chart-column', show: () => can('analytics.read')},
-  {view: 'programme', label: 'Programme', icon: 'gift', show: () => can('program.manage') || can('rewards.manage')},
-  {view: 'equipe', label: 'Équipe', icon: 'users-round', show: () => can('team.manage')},
-  {view: 'reglages', label: 'Réglages', icon: 'settings', show: () => can('settings.manage')},
-  {view: 'abonnement', label: 'Abonnement', icon: 'credit-card', show: () => can('settings.manage')},
-  // Opérateur LOYNA (platform_admins, vérifié par le serveur) : commandes à traiter et création des commerces
-  {view: 'operateur', label: 'Opérateur', icon: 'shield-check', show: isOperator},
+  {view: 'programme', label: 'Programme', icon: 'gift', show: () => canSee('program.manage') || can('rewards.manage')},
+  {view: 'equipe', label: 'Équipe', icon: 'users-round', show: () => canSee('team.manage')},
+  {view: 'reglages', label: 'Réglages', icon: 'settings', show: () => canSee('settings.manage')},
+  {view: 'abonnement', label: 'Abonnement', icon: 'credit-card', show: () => canSee('settings.manage')},
+  // Opérateur LOYNA (platform_admins, vérifié par le serveur) : commandes à traiter et création des commerces ;
+  // pendant une consultation, retour par « Quitter » dans le bandeau
+  {view: 'operateur', label: 'Opérateur', icon: 'shield-check', show: () => isOperator() && !readOnly()},
 ];
 
 /** Un logo par emplacement : chaque copie reçoit son propre identifiant de dégradé. */
@@ -67,6 +69,20 @@ function defaultView(): string {
 
 export default function App({logo, demo = false, staticSide = false}: {logo: string; demo?: boolean; staticSide?: boolean}) {
   const [booted, setBooted] = useState(false);
+  const [horsLigne, setHorsLigne] = useState(false); // session gardée, mais serveur injoignable à l'ouverture
+  const ouverture = useRef(false);
+  const ouvrir = async () => {
+    if (ouverture.current) return;
+    ouverture.current = true;
+    try {
+      session.value = await api.getSession();
+      setHorsLigne(false);
+    } catch {
+      setHorsLigne(true);
+    } finally {
+      ouverture.current = false;
+    }
+  };
 
   useEffect(() => frenchTypography(), []);
   useEffect(() => {
@@ -84,16 +100,40 @@ export default function App({logo, demo = false, staticSide = false}: {logo: str
           merchant.value = null;
         }
       });
-      session.value = await api.getSession().catch(() => null);
+      await ouvrir();
       setBooted(true);
     })();
   }, []);
+  // Le réseau revient : l'espace se rouvre tout seul, sans redemander le mot de passe. Recharger la page repart tout de
+  // suite ; sans cela, la bibliothèque d'authentification rend le même échec pendant 60 s.
+  const recharger = () => location.reload();
+  useEffect(() => {
+    if (!horsLigne) return;
+    const minuteur = setInterval(ouvrir, 10000);
+    window.addEventListener('online', recharger);
+    return () => {
+      clearInterval(minuteur);
+      window.removeEventListener('online', recharger);
+    };
+  }, [horsLigne]);
 
   // Page /espace-client/ : la colonne de présentation est dans le HTML ; elle disparaît une fois connecté.
   useEffect(() => {
-    if (staticSide) document.documentElement.classList.toggle('in-app', !!session.value);
-  }, [session.value]);
+    if (staticSide) document.documentElement.classList.toggle('in-app', !!session.value || horsLigne);
+  }, [session.value, horsLigne]);
 
+  if (booted && horsLigne)
+    return (
+      <Center logo={logo}>
+        <h1>Connexion impossible</h1>
+        <p class="muted">Vous êtes toujours connecté : votre espace se rouvre dès que le téléphone retrouve Internet.</p>
+        <div class="btn-row">
+          <Btn icon="refresh-cw" onClick={() => (navigator.onLine ? recharger() : ouvrir())}>
+            Réessayer
+          </Btn>
+        </div>
+      </Center>
+    );
   if (!booted || session.value === undefined) return staticSide ? <LoginWait /> : <Splash />;
   if (!session.value) return <Login logo={logo} withSide={!staticSide} />;
   return <Workspace logo={logo} />;
@@ -270,10 +310,11 @@ function Workspace({logo}: {logo: string}) {
     );
   if (!ctx) return <Splash />;
   const operator = isOperator();
-  // Opérateur LOYNA sans commerce à lui (ou sans commerce choisi) : écran Opérateur seul.
-  if (operator && (!ctx.memberships.length || (!merchant.value && route.value.view === 'operateur'))) return <OperatorShell logo={logo} />;
+  // Opérateur LOYNA sans commerce à lui (ou sans commerce choisi) : écran Opérateur seul. Un commerce ouvert en
+  // consultation depuis cet écran s'affiche comme les autres (Shell, en lecture seule).
+  if (operator && !merchant.value && (!ctx.memberships.length || route.value.view === 'operateur')) return <OperatorShell logo={logo} />;
   // Compte sans commerce (commande passée dans le panier de loyna.fr) : « Votre commande », LOYNA prépare la carte.
-  if (!ctx.memberships.length)
+  if (!ctx.memberships.length && !merchant.value)
     return (
       <Center logo={logo}>
         <Commande email={session.value?.email ?? ''} portal={PORTAL} onSignOut={() => api.signOut().then(() => (session.value = null))} />
@@ -421,7 +462,8 @@ function Shell({logo}: {logo: string}) {
   const switchMerchant = () => {
     merchant.value = null;
   };
-  const multi = (staffCtx.value?.memberships.length ?? 0) > 1;
+  const ro = readOnly(); // consultation opérateur : bandeau permanent, pas de changement de commerce
+  const multi = !ro && (staffCtx.value?.memberships.length ?? 0) > 1;
 
   // Barre du bas (téléphone) : deux raccourcis, le scanner au centre, un raccourci, puis « Plus ».
   const others = items.filter((n) => n.view !== 'scanner');
@@ -463,7 +505,7 @@ function Shell({logo}: {logo: string}) {
             <span class="side-avatar">{m.display_name.slice(0, 1).toUpperCase()}</span>
             <span>
               <strong>{m.display_name}</strong>
-              <small>{ROLE_LABEL[m.role]}</small>
+              <small>{ro ? 'Consultation, lecture seule' : ROLE_LABEL[m.role]}</small>
             </span>
           </div>
           <button type="button" class="side-out" onClick={logout}>
@@ -482,7 +524,8 @@ function Shell({logo}: {logo: string}) {
       </header>
 
       <div class="main">
-        {api.demo && <DemoBar />}
+        {ro && <ConsultationBar name={m.merchant_name} />}
+        {api.demo && !ro && <DemoBar />}
         {m.merchant_status === 'SUSPENDED' && (
           <div class="banner">
             <Icon name="triangle-alert" />
@@ -530,6 +573,12 @@ function Shell({logo}: {logo: string}) {
               <button type="button" onClick={switchMerchant}>
                 <Icon name="store" />
                 Changer de commerce
+              </button>
+            )}
+            {ro && (
+              <button type="button" onClick={closeConsultation}>
+                <Icon name="shield-check" />
+                Quitter la consultation
               </button>
             )}
             <a href={GUIDE} target="_blank" rel="noopener">
@@ -589,6 +638,28 @@ function View({view, id}: {view: string; id?: string}) {
       </div>
     );
   return C ? <C {...props} /> : <Spinner />;
+}
+
+/** Bandeau permanent d'une consultation opérateur (écran Opérateur → « Ouvrir son espace ») : lecture seule. */
+function ConsultationBar({name}: {name: string}) {
+  const de = /^[aeiouyàâäéèêëîïôöùûü]/i.test(name) ? 'd’' : 'de '; // « Espace d’Atelier… », « Espace de Barber Kong »
+  return (
+    <div class="ro-bar" role="status">
+      <span class="ro-bar-t">
+        <Icon name="eye" size={18} />
+        <span>
+          <strong>
+            Espace {de}
+            {name}
+          </strong>{' '}
+          · consultation opérateur, lecture seule
+        </span>
+      </span>
+      <Btn kind="gold" small icon="log-out" onClick={closeConsultation}>
+        Quitter
+      </Btn>
+    </div>
+  );
 }
 
 /** Bandeau de la démonstration : données fictives, rien n'est enregistré ; l'offre affichée se change ici. */

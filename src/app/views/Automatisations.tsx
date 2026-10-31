@@ -9,7 +9,7 @@ import type {ComponentChildren} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
 import {Icon} from '../icons';
 import {api, feature, includedIn, merchant, toast} from '../state';
-import {Badge, Btn, ErrorBox, Field, LockBadge, NotifPreview, OffersLink, PageHead, Spinner, Toggle, useBusy, useLoad} from '../ui';
+import {Badge, Btn, ErrorBox, Field, LockBadge, NotifPreview, OffersLink, PageHead, ReadOnlyZone, Spinner, Toggle, useBusy, useLoad} from '../ui';
 import {joinUrl, renderTemplate} from '../util';
 
 interface Settings {
@@ -98,58 +98,61 @@ export function Automatisations() {
         Les bons messages partent tout seuls, au bon moment, sur l’écran de vos clients. Vous choisissez le texte et l’avantage ; ces messages automatiques ne sont jamais décomptés de vos notifications.
       </p>
 
-      <div class="auto-grid">
-        <PassNotif ctx={ctx} />
-        <Proximity ctx={ctx} />
-        <Pace ctx={ctx} />
-      </div>
-
-      <section class="auto-sec">
-        <header class="auto-sec-h">
-          <div>
-            <p class="eyebrow">Premium</p>
-            <h2>Les automatisations qui font revenir vos clients</h2>
-          </div>
-          {premium ? <Badge tone="green">Inclus dans votre offre</Badge> : <LockBadge feature="automation.birthday" />}
-        </header>
+      {/* consultation opérateur : réglages affichés, interrupteurs et champs désactivés */}
+      <ReadOnlyZone>
         <div class="auto-grid">
-          <Birthday ctx={ctx} />
-          <Inactive ctx={ctx} />
-          <NearReward ctx={ctx} />
-          <Review ctx={ctx} />
-          <Tiers ctx={ctx} />
+          <PassNotif ctx={ctx} />
+          <Proximity ctx={ctx} />
+          <Pace ctx={ctx} />
         </div>
-        <p class="auto-more">
-          <Icon name="sparkles" size={16} />
-          <span>
-            Aussi avec Premium : <a href="#/campagnes">campagnes programmées et groupes de clients</a>, <a href="#/rapport">rapport mensuel avec 3 conseils</a> et statistiques avancées.
-          </span>
-        </p>
-      </section>
 
-      <section class="auto-sec">
-        <header class="auto-sec-h">
-          <div>
-            <p class="eyebrow">Pro</p>
-            <h2>LOYNA travaille avec vous</h2>
+        <section class="auto-sec">
+          <header class="auto-sec-h">
+            <div>
+              <p class="eyebrow">Premium</p>
+              <h2>Les automatisations qui font revenir vos clients</h2>
+            </div>
+            {premium ? <Badge tone="green">Inclus dans votre offre</Badge> : <LockBadge feature="automation.birthday" />}
+          </header>
+          <div class="auto-grid">
+            <Birthday ctx={ctx} />
+            <Inactive ctx={ctx} />
+            <NearReward ctx={ctx} />
+            <Review ctx={ctx} />
+            <Tiers ctx={ctx} />
           </div>
-          {pro ? <Badge tone="green">Inclus dans votre offre</Badge> : <LockBadge feature="referral" />}
-        </header>
-        <div class="auto-grid">
-          <Referral ctx={ctx} />
-        </div>
-        <p class="auto-more">
-          <Icon name="sparkles" size={16} />
-          <span>
-            Aussi avec Pro : <a href="#/campagnes">campagnes clés en main préparées par LOYNA</a>, un point mensuel de 30 minutes avec LOYNA, <a href="#/reglages">jusqu’à 3 boutiques</a> et le kit comptoir imprimé.
-          </span>
-        </p>
-        {!pro && (
-          <div class="btn-row">
-            <OffersLink label="Découvrir l’offre Pro" />
+          <p class="auto-more">
+            <Icon name="sparkles" size={16} />
+            <span>
+              Aussi avec Premium : <a href="#/campagnes">campagnes programmées et groupes de clients</a>, <a href="#/rapport">rapport mensuel avec 3 conseils</a> et statistiques avancées.
+            </span>
+          </p>
+        </section>
+
+        <section class="auto-sec">
+          <header class="auto-sec-h">
+            <div>
+              <p class="eyebrow">Pro</p>
+              <h2>LOYNA travaille avec vous</h2>
+            </div>
+            {pro ? <Badge tone="green">Inclus dans votre offre</Badge> : <LockBadge feature="referral" />}
+          </header>
+          <div class="auto-grid">
+            <Referral ctx={ctx} />
           </div>
-        )}
-      </section>
+          <p class="auto-more">
+            <Icon name="sparkles" size={16} />
+            <span>
+              Aussi avec Pro : <a href="#/campagnes">campagnes clés en main préparées par LOYNA</a>, un point mensuel de 30 minutes avec LOYNA, <a href="#/reglages">jusqu’à 3 boutiques</a> et le kit comptoir imprimé.
+            </span>
+          </p>
+          {!pro && (
+            <div class="btn-row">
+              <OffersLink label="Découvrir l’offre Pro" />
+            </div>
+          )}
+        </section>
+      </ReadOnlyZone>
     </div>
   );
 }
@@ -331,11 +334,11 @@ function Pace({ctx}: {ctx: Ctx}) {
       text={(s) =>
         s.marketing_min_interval_hours > 0
           ? `Un même client reçoit au plus un message commercial (campagne, relance, rappel, demande d’avis) toutes les ${s.marketing_min_interval_hours} heures.`
-          : 'Aucun délai entre deux messages commerciaux : 48 heures sont conseillées.'
+          : 'Aucun délai entre deux messages commerciaux : 24 heures sont conseillées.'
       }
       bodyAlways
       body={(s, set) => (
-        <Field label="Délai minimum entre deux messages commerciaux (heures)" hint="De 0 à 720 heures ; 48 h conseillées. Les messages de service (passage, récompense, niveau VIP, parrainage) ne sont pas concernés.">
+        <Field label="Délai minimum entre deux messages commerciaux (heures)" hint="De 0 à 720 heures ; 24 h conseillées (valeur par défaut). Les messages de service (passage, récompense, niveau VIP, parrainage) ne sont pas concernés.">
           <input type="number" min={0} max={720} value={s.marketing_min_interval_hours} onInput={(e) => set('marketing_min_interval_hours', intOf(e, 0))} />
         </Field>
       )}
@@ -625,7 +628,7 @@ function Referral({ctx}: {ctx: Ctx}) {
       keys={['referral_enabled', 'referral_bonus']}
       toggle="referral_enabled"
       icon="share-2"
-      title="Parrainage"
+      title="Parrainage entre vos clients"
       text={(s) => `Chaque client a son lien de parrainage au dos de sa carte. À la première visite de l’ami parrainé, chacun reçoit ${s.referral_bonus} ${unit(s.referral_bonus)} de bonus, et le parrain est prévenu.`}
       body={(s, set) => (
         <div class="row2">

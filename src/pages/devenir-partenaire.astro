@@ -1,0 +1,717 @@
+---
+// Programme partenaires (apporteurs d'affaires) : conditions dans PARTENAIRES (src/data/site.ts), prix des offres dans
+// PLANS. Les deux formulaires passent par /contact.php (sujets « Devenir partenaire » et « Recommandation partenaire ») :
+// mail « [Site LOYNA] … » vers contact@loyna.fr, puis /devenir-partenaire/envoye/.
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Icon from '../components/Icon.astro';
+import {PARTENAIRES, PLANS, SITE, euro} from '../data/site';
+
+const crumbs = [
+  {name: 'Accueil', url: '/'},
+  {name: 'Devenir partenaire', url: '/devenir-partenaire/'},
+];
+const P = PARTENAIRES;
+const montants = PLANS.map((p) => P.commission[p.id]);
+const fourchette = `de ${euro(Math.min(...montants))} à ${euro(Math.max(...montants))}`;
+const commissions = PLANS.map((p) => `${euro(P.commission[p.id])} pour un client ${p.name}`);
+const listeCommissions = `${commissions.slice(0, -1).join(', ')} et ${commissions[commissions.length - 1]}`;
+
+const steps = [
+  {
+    icon: 'handshake',
+    title: 'Vous recommandez un commerce',
+    text: `Un commerçant de votre entourage veut fidéliser ses clients ? Avec son accord, transmettez-nous ses coordonnées. Nous vous confirmons sous ${P.confirmationJoursOuvres} jours ouvrés si la recommandation est retenue.`,
+  },
+  {
+    icon: 'presentation',
+    title: 'LOYNA s’occupe de tout',
+    text: 'Nous contactons le commerçant, nous lui faisons la démo et, s’il choisit LOYNA, nous mettons sa carte en place. Vous n’avez rien à vendre.',
+  },
+  {
+    icon: 'banknote',
+    title: 'Vous touchez votre commission',
+    text: `Dès que le commerce a réglé sa première mensualité, votre commission est due : ${fourchette} selon l’offre choisie, versée par virement.`,
+  },
+];
+
+// Ce que contient chaque offre, en une ligne (docs/BRIEF.md)
+const resume: Record<string, string> = {
+  starter: 'La carte de fidélité complète',
+  premium: 'La carte, plus les automatisations',
+  pro: 'Tout Premium, plus le suivi par LOYNA',
+};
+
+const profils = [
+  {icon: 'calculator', title: 'Expert-comptable', text: 'Vous suivez des commerçants indépendants tout au long de l’année.'},
+  {icon: 'credit-card', title: 'Vendeur de caisses ou de terminaux de paiement', text: 'Vous êtes déjà au comptoir, là où la carte de fidélité se scanne.'},
+  {icon: 'store', title: 'Grossiste ou fournisseur', text: 'Coiffure, boulangerie, restauration : vous passez régulièrement chez vos clients commerçants.'},
+  {icon: 'printer', title: 'Imprimeur, enseigniste', text: 'Vous préparez déjà la vitrine, l’enseigne et les supports du commerce.'},
+  {icon: 'globe', title: 'Agence web, community manager', text: 'Vous aidez les commerçants à attirer des clients : LOYNA les aide à les faire revenir.'},
+  {icon: 'users', title: 'Union de commerçants', text: 'Vous animez les commerces de votre ville ou de votre quartier.'},
+];
+const commerces = ['Barbiers', 'Salons de coiffure', 'Ongleries', 'Instituts de beauté', 'Snacks', 'Pizzerias', 'Boulangeries', 'Cafés', 'Boutiques indépendantes'];
+
+// Valeurs acceptées par contact.php (PROFILS) : à garder identiques des deux côtés.
+const PROFILS = [
+  'Expert-comptable',
+  'Vendeur de caisses ou de terminaux de paiement',
+  'Fournisseur ou grossiste',
+  'Agence web ou community manager',
+  'Union de commerçants',
+  'Commercial indépendant',
+  'Particulier',
+  'Autre',
+];
+
+const faq = [
+  {
+    q: 'Qui peut devenir partenaire LOYNA ?',
+    a: 'Toute personne qui rencontre régulièrement des commerçants indépendants : expert-comptable, vendeur de caisses ou de terminaux de paiement, grossiste ou fournisseur (coiffure, boulangerie, restauration), imprimeur, enseigniste, agence web, community manager, union de commerçants… Un particulier peut aussi recommander un commerce de temps en temps. Le programme est gratuit.',
+  },
+  {
+    q: 'Combien et quand suis-je payé ?',
+    a: `${listeCommissions.charAt(0).toUpperCase()}${listeCommissions.slice(1)}, une seule fois par nouveau client. La commission est due quand le commerce a réglé sa première mensualité, ou son abonnement annuel s’il paie à l’année. Au début de chaque mois, LOYNA vous envoie un relevé, et le virement part dans les ${P.virementJours} jours qui suivent la réception de votre facture (professionnel) ou de votre note de commission (particulier).`,
+  },
+  {
+    q: 'Et si le commerce connaît déjà LOYNA ?',
+    a: `La commission concerne les nouveaux clients : un commerce qui n’est pas déjà client LOYNA et qui n’a eu aucun échange avec nous (réponse, appel, rendez-vous) dans les ${P.reserveJours} jours avant votre recommandation. Nous vous confirmons sous ${P.confirmationJoursOuvres} jours ouvrés si elle est retenue ; elle vous est alors réservée pendant ${P.reserveJours} jours.`,
+  },
+  {
+    q: 'Faut-il avoir une entreprise ?',
+    a: 'Non. Un professionnel nous envoie une facture ; un particulier, une note de commission. Un particulier déclare ses commissions dans sa déclaration de revenus. Si ses recommandations deviennent régulières, il doit s’inscrire comme micro-entrepreneur.',
+  },
+  {
+    q: 'Y a-t-il un contrat ou une exclusivité ?',
+    a: `Un contrat d’apporteur d’affaires est signé avant votre première recommandation. Pas d’exclusivité, pas de volume minimum, et vous pouvez y mettre fin à tout moment avec ${P.preavisMois === 1 ? 'un mois' : `${P.preavisMois} mois`} de préavis.`,
+  },
+  {
+    q: 'Comment recommander un commerce ?',
+    a: `Demandez d’abord au commerçant s’il est d’accord pour être contacté par LOYNA. Ensuite, remplissez le formulaire <a href="#recommandation">Recommander un commerce</a> ou écrivez à <a href="mailto:${SITE.email}">${SITE.email}</a> avec le nom du commerce, sa ville et le moyen de joindre le commerçant.`,
+  },
+  {
+    q: 'Dois-je vendre LOYNA moi-même ?',
+    a: 'Non. Vous mettez simplement en relation : LOYNA fait la démo, la vente et la mise en place. Vous ne signez rien et n’annoncez aucun prix au nom de LOYNA. Si le commerçant veut se faire une idée avant notre appel, les prix sont publics sur la page <a href="/tarifs/">Tarifs</a>.',
+  },
+];
+
+const pageLd = {
+  '@type': 'WebPage',
+  '@id': `${SITE.url}/devenir-partenaire/#page`,
+  name: 'Devenir partenaire LOYNA',
+  url: `${SITE.url}/devenir-partenaire/`,
+  inLanguage: 'fr-FR',
+  about: {'@id': `${SITE.url}/#organisation`},
+};
+const faqLd = {
+  '@type': 'FAQPage',
+  mainEntity: faq.map((f) => ({'@type': 'Question', name: f.q, acceptedAnswer: {'@type': 'Answer', text: f.a.replace(/<[^>]+>/g, '')}})),
+};
+---
+
+<Base
+  title="Devenir partenaire LOYNA : apporteur d’affaires"
+  description={`Recommandez LOYNA aux commerçants : ${fourchette} de commission par nouveau client. Gratuit, sans exclusivité, LOYNA s’occupe de la vente.`}
+  breadcrumbs={crumbs}
+  jsonLd={[pageLd, faqLd]}
+  stickyCta={{primary: {href: '#candidature', label: 'Devenir partenaire'}, secondary: {href: '#recommandation', label: 'Recommander'}}}
+>
+  <section class="page-hero">
+    <div class="container">
+      <Breadcrumbs items={crumbs} />
+      <p class="eyebrow">Partenaires</p>
+      <h1>Recommandez LOYNA, <span class="gold-text">touchez une commission</span></h1>
+      <p class="lead">Vous rencontrez des commerçants indépendants dans votre métier&nbsp;? Recommandez-leur LOYNA&nbsp;: nous faisons la démo, la vente et la mise en place, et vous touchez une commission pour chaque nouveau client.</p>
+      <div class="btn-row hero-cta">
+        <a class="btn btn--primary" href="#candidature">Devenir partenaire <Icon name="arrow-down" size={18} /></a>
+        <a class="btn btn--ghost" href="#recommandation">Déjà partenaire&nbsp;? Recommander un commerce</a>
+      </div>
+      <ul class="pills" aria-label="L’essentiel du programme">
+        <li><Icon name="badge-euro" size={18} /> {fourchette.charAt(0).toUpperCase() + fourchette.slice(1)} par nouveau client</li>
+        <li><Icon name="shield-check" size={18} /> Recommandation réservée {P.reserveJours}&nbsp;jours</li>
+        <li><Icon name="sparkles" size={18} /> Gratuit et sans exclusivité</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section pt0" id="comment-ca-marche">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Comment ça marche</p>
+        <h2>Vous recommandez, nous faisons le reste</h2>
+        <p>Pas de démonstration à préparer, pas de prix à négocier&nbsp;: vous mettez simplement en relation.</p>
+      </div>
+      <ol class="p-steps" aria-label="Les trois étapes">
+        {
+          steps.map((s, i) => (
+            <li class="card p-step">
+              <span class="p-num" aria-hidden="true">{i + 1}</span>
+              <span class="icon">
+                <Icon name={s.icon} />
+              </span>
+              <h3>{s.title}</h3>
+              <p>{s.text}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </section>
+
+  <section class="section section--warm" id="commissions">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Votre commission</p>
+        <h2>Une commission pour chaque nouveau client</h2>
+        <p>Versée une seule fois, selon l’offre que choisit le commerce.</p>
+      </div>
+      <div class="grid grid-3">
+        {
+          PLANS.map((p) => (
+            <article class="card com-card">
+              <h3 class="com-plan">Client {p.name}</h3>
+              <p class="com-amount">{euro(P.commission[p.id])}</p>
+              <p class="com-unit">pour vous, une seule fois</p>
+              <p class="com-client">
+                {resume[p.id]}. Le commerce paie <strong>{euro(p.monthly)} par mois</strong> ou {euro(p.yearly)} par an, sans TVA.
+              </p>
+            </article>
+          ))
+        }
+      </div>
+      <div class="card com-when">
+        <h3>Quand est-elle versée&nbsp;?</h3>
+        <ul class="checks">
+          <li>Elle est due quand le commerce a réglé sa première mensualité, ou son abonnement annuel s’il paie à l’année.</li>
+          <li>Au début de chaque mois, LOYNA vous envoie un relevé de vos commissions.</li>
+          <li>Virement dans les {P.virementJours}&nbsp;jours qui suivent la réception de votre facture (professionnel) ou de votre note de commission (particulier).</li>
+        </ul>
+        <p class="com-note">Le détail des offres&nbsp;: <a href="/tarifs/">voir les tarifs</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="pour-qui">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Pour qui&nbsp;?</p>
+        <h2>Pour ceux qui côtoient des commerçants</h2>
+        <p>Vous travaillez avec les commerces de proximité, ou vous connaissez simplement un commerçant&nbsp;: le programme est fait pour vous.</p>
+      </div>
+      <div class="grid grid-3">
+        {
+          profils.map((m) => (
+            <div class="card">
+              <span class="icon">
+                <Icon name={m.icon} />
+              </span>
+              <h3>{m.title}</h3>
+              <p>{m.text}</p>
+            </div>
+          ))
+        }
+      </div>
+      <div class="grid grid-2 who-more">
+        <div class="card">
+          <span class="icon"><Icon name="hand-heart" /></span>
+          <h3>Particuliers</h3>
+          <p>Vous connaissez un commerçant qui pourrait en profiter&nbsp;? Une recommandation de temps en temps suffit, sans créer d’entreprise.</p>
+        </div>
+        <div class="card">
+          <span class="icon"><Icon name="map-pin" /></span>
+          <h3>Les commerces à recommander</h3>
+          <ul class="chips" aria-label="Exemples de commerces">
+            {commerces.map((c) => <li>{c}</li>)}
+          </ul>
+          <p>Des commerces indépendants&nbsp;: pas les chaînes ni les franchises.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt" id="cadre">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Le cadre</p>
+        <h2>Un programme simple et écrit</h2>
+      </div>
+      <div class="grid grid-2">
+        <div class="card">
+          <span class="icon"><Icon name="shield-check" /></span>
+          <h3>Votre recommandation est protégée</h3>
+          <p>
+            Nous vous confirmons sous {P.confirmationJoursOuvres}&nbsp;jours ouvrés si la recommandation est retenue. Une fois retenue, elle vous est réservée pendant {P.reserveJours}&nbsp;jours.
+          </p>
+          <p class="cadre-detail">
+            Un commerce compte comme nouveau s’il n’est pas déjà client LOYNA et n’a eu aucun échange avec nous (réponse, appel, rendez-vous) dans les {P.reserveJours}&nbsp;jours qui précèdent votre recommandation.
+          </p>
+        </div>
+        <div class="card">
+          <span class="icon"><Icon name="file-signature" /></span>
+          <h3>Un contrat clair</h3>
+          <ul class="checks">
+            <li>Gratuit, sans exclusivité ni volume minimum</li>
+            <li>Contrat d’apporteur d’affaires signé avant votre première recommandation</li>
+            <li>Résiliable à tout moment, avec {P.preavisMois === 1 ? 'un mois' : `${P.preavisMois} mois`} de préavis</li>
+            <li>Vous ne signez rien et n’annoncez aucun prix au nom de LOYNA</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="questions">
+    <div class="container narrow">
+      <div class="section-head">
+        <h2>Questions fréquentes</h2>
+      </div>
+      <div class="faq">
+        {
+          faq.map((f) => (
+            <details>
+              <summary>{f.q}</summary>
+              <div class="answer">
+                <p set:html={f.a} />
+              </div>
+            </details>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt" id="candidature">
+    <div class="container p-form-wrap">
+      <div class="p-copy">
+        <p class="eyebrow">Candidature</p>
+        <h2>Devenir partenaire</h2>
+        <p class="lead">Présentez-vous en quelques lignes. Nous revenons vers vous par e-mail pour faire connaissance et préparer votre contrat d’apporteur d’affaires, signé avant votre première recommandation.</p>
+        <ul class="checks">
+          <li>Gratuit, sans exclusivité ni volume minimum</li>
+          <li>{fourchette.charAt(0).toUpperCase() + fourchette.slice(1)} par nouveau client</li>
+          <li>Une question&nbsp;? <a href={`mailto:${SITE.email}`}>{SITE.email}</a></li>
+        </ul>
+      </div>
+      <form class="panel" method="post" action="/contact.php" data-partenaire="candidature">
+        <input type="hidden" name="sujet" value="Devenir partenaire" />
+        <input type="hidden" name="page" value="/devenir-partenaire/" />
+        <input type="hidden" name="t" value="" />
+        <p class="alert" role="alert" tabindex="-1" hidden></p>
+        <div class="hp" aria-hidden="true">
+          <label for="pa-site">Ne pas remplir</label>
+          <input id="pa-site" name="site_web" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="pa-nom">Votre nom *</label>
+            <input id="pa-nom" name="nom" type="text" required maxlength="80" autocomplete="name" aria-describedby="pa-nom-err" />
+            <p class="err" id="pa-nom-err">Indiquez votre nom.</p>
+          </div>
+          <div class="field">
+            <label for="pa-email">E-mail *</label>
+            <input id="pa-email" name="email" type="email" required maxlength="120" autocomplete="email" aria-describedby="pa-email-err" />
+            <p class="err" id="pa-email-err">Indiquez une adresse e-mail valide, par exemple nom@domaine.fr.</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="pa-tel">Téléphone</label>
+            <input id="pa-tel" name="telephone" type="tel" maxlength="30" autocomplete="tel" pattern="[0-9+ \(\)\.\-]{6,30}" aria-describedby="pa-tel-err" />
+            <p class="err" id="pa-tel-err">Ce numéro semble incomplet (chiffres, espaces et + uniquement).</p>
+          </div>
+          <div class="field">
+            <label for="pa-ville">Ville *</label>
+            <input id="pa-ville" name="ville" type="text" required maxlength="80" autocomplete="address-level2" aria-describedby="pa-ville-err" />
+            <p class="err" id="pa-ville-err">Indiquez votre ville.</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="pa-profil">Votre profil</label>
+            <select id="pa-profil" name="profil">
+              <option value="">Choisissez</option>
+              {PROFILS.map((p) => <option>{p}</option>)}
+            </select>
+          </div>
+          <div class="field">
+            <label for="pa-structure">Votre structure</label>
+            <input id="pa-structure" name="structure" type="text" maxlength="100" autocomplete="organization" placeholder="Société, cabinet… (facultatif)" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="pa-message">Votre activité en quelques mots</label>
+          <textarea id="pa-message" name="message" rows="4" maxlength="3000" placeholder="Combien de commerçants rencontrez-vous, et dans quels secteurs ?"></textarea>
+        </div>
+        <p class="legal">
+          Vos informations servent uniquement à étudier votre candidature et à vous répondre. Voir notre <a href="/confidentialite/">politique de confidentialité</a>.
+        </p>
+        <button type="submit" class="btn btn--primary" data-loading="Envoi en cours…">Envoyer ma candidature <Icon name="send" size={18} /></button>
+      </form>
+    </div>
+  </section>
+
+  <section class="section section--dark" id="recommandation">
+    <div class="container p-form-wrap">
+      <div class="p-copy">
+        <p class="eyebrow">Déjà partenaire&nbsp;?</p>
+        <h2>Recommandez un commerce</h2>
+        <p class="lead">Le commerçant est d’accord pour que nous le contactions&nbsp;? Donnez-nous ses coordonnées&nbsp;: nous vous confirmons sous {P.confirmationJoursOuvres}&nbsp;jours ouvrés si la recommandation est retenue.</p>
+        <ul class="checks">
+          <li>Une recommandation retenue vous est réservée {P.reserveJours}&nbsp;jours</li>
+          <li>LOYNA fait la démo, la vente et la mise en place</li>
+          <li>Vous pouvez aussi écrire à <a href={`mailto:${SITE.email}`}>{SITE.email}</a></li>
+        </ul>
+        <p class="p-note">Pas encore partenaire&nbsp;? Le contrat est signé avant la première recommandation&nbsp;: commencez par <a href="#candidature">la candidature</a>.</p>
+      </div>
+      <form class="panel" method="post" action="/contact.php" data-partenaire="recommandation">
+        <input type="hidden" name="sujet" value="Recommandation partenaire" />
+        <input type="hidden" name="page" value="/devenir-partenaire/" />
+        <input type="hidden" name="t" value="" />
+        <p class="alert" role="alert" tabindex="-1" hidden></p>
+        <div class="hp" aria-hidden="true">
+          <label for="re-site">Ne pas remplir</label>
+          <input id="re-site" name="site_web" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="re-nom">Votre nom *</label>
+            <input id="re-nom" name="nom" type="text" required maxlength="80" autocomplete="name" aria-describedby="re-nom-err" />
+            <p class="err" id="re-nom-err">Indiquez votre nom.</p>
+          </div>
+          <div class="field">
+            <label for="re-email">Votre e-mail *</label>
+            <input id="re-email" name="email" type="email" required maxlength="120" autocomplete="email" aria-describedby="re-email-err" />
+            <p class="err" id="re-email-err">Indiquez une adresse e-mail valide, par exemple nom@domaine.fr.</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="re-commerce">Nom du commerce *</label>
+            <input id="re-commerce" name="commerce" type="text" required maxlength="100" autocomplete="off" aria-describedby="re-commerce-err" />
+            <p class="err" id="re-commerce-err">Indiquez le nom du commerce.</p>
+          </div>
+          <div class="field">
+            <label for="re-ville">Ville du commerce *</label>
+            <input id="re-ville" name="ville_commerce" type="text" required maxlength="80" autocomplete="off" aria-describedby="re-ville-err" />
+            <p class="err" id="re-ville-err">Indiquez la ville du commerce.</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="re-commercant">Nom du commerçant</label>
+            <input id="re-commercant" name="commercant" type="text" maxlength="80" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="re-joindre">Son téléphone ou son e-mail *</label>
+            <input id="re-joindre" name="contact_commercant" type="text" required maxlength="120" autocomplete="off" pattern="[0-9+ \(\)\.\-]{8,30}|[^@\s]+@[^@\s]+\.[^@\s]+" aria-describedby="re-joindre-err" />
+            <p class="err" id="re-joindre-err">Indiquez le téléphone ou l’e-mail du commerçant.</p>
+          </div>
+        </div>
+        <div class="field">
+          <label for="re-message">Message</label>
+          <textarea id="re-message" name="message" rows="3" maxlength="3000" placeholder="Son activité, le meilleur moment pour l’appeler…"></textarea>
+        </div>
+        <div class="field">
+          <div class="accord">
+            <input id="re-accord" name="accord" type="checkbox" value="oui" required aria-describedby="re-accord-err" />
+            <label for="re-accord">Le commerçant est d’accord pour être contacté par LOYNA&nbsp;*</label>
+          </div>
+          <p class="err" id="re-accord-err">Cochez cette case&nbsp;: nous ne contactons un commerçant qu’avec son accord.</p>
+        </div>
+        <p class="legal">
+          Ces informations servent uniquement à contacter le commerçant et à suivre votre recommandation. Voir notre <a href="/confidentialite/">politique de confidentialité</a>.
+        </p>
+        <button type="submit" class="btn btn--gold" data-loading="Envoi en cours…">Envoyer la recommandation <Icon name="send" size={18} /></button>
+      </form>
+    </div>
+  </section>
+</Base>
+
+<script>
+  // Formulaires partenaires : horodatage (anti-robots) et message d'erreur renvoyé par /contact.php
+  // (?erreur=…&form=candidature|recommandation). Les champs sont contrôlés par le navigateur (required, pattern).
+  const forms = [...document.querySelectorAll<HTMLFormElement>('form[data-partenaire]')];
+  forms.forEach((f) => {
+    (f.elements.namedItem('t') as HTMLInputElement).value = String(Date.now());
+    f.addEventListener('submit', () => {
+      if (f.checkValidity()) (window as unknown as {loynaTrack?: (n: string, p?: object) => void}).loynaTrack?.('generate_lead', {form: f.dataset.partenaire});
+    });
+  });
+
+  const ERREURS: Record<string, string> = {
+    email: 'Cette adresse e-mail semble incorrecte : pouvez-vous la vérifier ?',
+    delai: 'Le formulaire a expiré ou a été envoyé trop vite. Merci de le renvoyer.',
+    liens: 'Votre message contient trop de liens. Merci de les retirer.',
+    limite: 'Vous avez envoyé plusieurs messages en peu de temps. Merci de réessayer dans une heure.',
+    envoi: 'L’envoi a échoué de notre côté. Écrivez-nous directement à contact@loyna.fr.',
+    contact: 'Indiquez le téléphone ou l’e-mail du commerçant.',
+    accord: 'Cochez la case pour confirmer que le commerçant est d’accord pour être contacté par LOYNA.',
+  };
+  const CHAMPS: Record<string, string> = {
+    candidature: 'Merci de renseigner votre nom, votre e-mail et votre ville.',
+    recommandation: 'Merci de renseigner votre nom, le nom et la ville du commerce, et le moyen de joindre le commerçant.',
+  };
+  const p = new URLSearchParams(location.search);
+  const err = p.get('erreur') || '';
+  const cible = forms.find((f) => f.dataset.partenaire === p.get('form'));
+  const texte = err === 'champs' ? CHAMPS[cible?.dataset.partenaire || ''] : ERREURS[err];
+  if (cible && texte) {
+    const box = cible.querySelector<HTMLParagraphElement>('.alert')!;
+    box.textContent = texte;
+    box.hidden = false;
+    box.focus();
+  }
+</script>
+
+<style>
+  .pt0 {
+    padding-top: 0;
+  }
+  .hero-cta {
+    justify-content: center;
+    margin-top: 30px;
+  }
+  .pills {
+    list-style: none;
+    padding: 0;
+    margin: 28px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px 12px;
+  }
+  .pills li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  .pills :global(svg) {
+    color: var(--gold);
+    flex-shrink: 0;
+  }
+  .btn :global(svg) {
+    flex-shrink: 0;
+  }
+
+  /* Les trois étapes */
+  .p-steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: clamp(18px, 2.4vw, 28px);
+  }
+  .p-step {
+    position: relative;
+  }
+  .p-num {
+    position: absolute;
+    top: clamp(22px, 3vw, 36px);
+    right: clamp(22px, 3vw, 36px);
+    display: inline-grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #faf7f0;
+    font-weight: 800;
+  }
+
+  /* Commissions */
+  .com-card {
+    text-align: center;
+  }
+  .com-plan {
+    margin: 0 0 6px;
+    font-size: 1.1rem;
+    color: var(--muted);
+    letter-spacing: 0;
+  }
+  .card .com-amount {
+    margin: 0;
+    font-size: clamp(2.6rem, 5vw, 3.4rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+  .card .com-unit {
+    margin: 4px 0 16px;
+    font-weight: 600;
+    color: var(--gold-strong);
+  }
+  .com-client {
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+  .com-client strong {
+    color: var(--ink);
+  }
+  .com-when {
+    max-width: 860px;
+    margin: clamp(22px, 3vw, 32px) auto 0;
+  }
+  .com-when h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+  }
+  .card .com-note {
+    margin-top: 16px;
+  }
+
+  /* Pour qui */
+  .who-more {
+    margin-top: clamp(18px, 2.4vw, 28px);
+  }
+  .chips {
+    list-style: none;
+    padding: 0;
+    margin: 4px 0 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chips li {
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--gold-soft);
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 0.92rem;
+  }
+  .card .cadre-detail {
+    margin-top: 12px;
+  }
+  .card .checks {
+    margin-top: 16px;
+  }
+
+  /* Formulaires */
+  .p-form-wrap {
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: clamp(28px, 5vw, 64px);
+    align-items: start;
+  }
+  .p-copy .checks {
+    margin-top: 22px;
+  }
+  .p-note {
+    margin-top: 22px;
+    font-size: 0.95rem;
+  }
+  .alert {
+    margin: 0;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #fdecea;
+    color: #8a1c12;
+    font-weight: 600;
+  }
+  .panel {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: clamp(24px, 3vw, 40px);
+    box-shadow: var(--shadow);
+    display: grid;
+    gap: 20px;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .field {
+    display: grid;
+    gap: 8px;
+    align-content: start;
+  }
+  label {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  input:not([type='checkbox']),
+  select,
+  textarea {
+    width: 100%;
+    min-height: 50px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    border: 1.5px solid var(--line);
+    background: var(--bg);
+    font: 500 1rem var(--font);
+    color: var(--ink);
+  }
+  textarea {
+    resize: vertical;
+  }
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--gold);
+    outline: none;
+  }
+  ::placeholder {
+    color: #8d877c;
+  }
+  .accord {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .accord input {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    margin: 2px 0 0;
+    accent-color: var(--ink);
+  }
+  .field .accord input:user-invalid {
+    outline: 2px solid #b3261e;
+    outline-offset: 2px;
+  }
+  .hp {
+    position: absolute;
+    left: -9999px;
+  }
+  .panel .legal {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin: 0;
+  }
+  .section--dark .panel a {
+    color: var(--gold-strong);
+  }
+  .panel .btn {
+    justify-self: start;
+  }
+  @media (max-width: 900px) {
+    .p-form-wrap {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 640px) {
+    .row {
+      grid-template-columns: 1fr;
+    }
+    .panel .btn {
+      justify-self: stretch;
+      white-space: normal;
+    }
+    .hero-cta .btn {
+      width: 100%;
+      white-space: normal;
+    }
+  }
+</style>

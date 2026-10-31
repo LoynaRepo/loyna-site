@@ -1,0 +1,65 @@
+---
+// Après un formulaire de /devenir-partenaire/ (contact.php) : candidature par défaut, recommandation avec ?f=recommandation.
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import {PARTENAIRES, SITE} from '../../data/site';
+---
+
+<Base stickyCta={false} title="Demande envoyée" description="Votre demande a bien été envoyée à l'équipe LOYNA. Nous vous répondons par e-mail." noindex>
+  <section class="page-hero">
+    <div class="narrow center">
+      <span class="done"><Icon name="check" size={34} /></span>
+      <div data-envoye="candidature">
+        <h1>Merci, votre candidature est bien partie&nbsp;!</h1>
+        <p class="lead">Nous revenons vers vous par e-mail pour faire connaissance et préparer votre contrat d’apporteur d’affaires. Pensez à vérifier vos indésirables.</p>
+      </div>
+      <div data-envoye="recommandation" hidden>
+        <h1>Merci pour votre recommandation&nbsp;!</h1>
+        <p class="lead">Nous vous confirmons sous {PARTENAIRES.confirmationJoursOuvres}&nbsp;jours ouvrés si elle est retenue, à l’adresse e-mail que vous avez indiquée. Pensez à vérifier vos indésirables.</p>
+      </div>
+      <div class="btn-row">
+        <a class="btn btn--primary" href="/devenir-partenaire/#recommandation" data-envoye="recommandation" hidden>Recommander un autre commerce <Icon name="arrow-right" size={18} /></a>
+        <a class="btn btn--primary" href="/devenir-partenaire/" data-envoye="candidature">Revoir le programme partenaires <Icon name="arrow-right" size={18} /></a>
+        <a class="btn btn--ghost" href="/demo/">Découvrir LOYNA en vidéo</a>
+      </div>
+      <p class="small">Une question&nbsp;? <a href={`mailto:${SITE.email}`}>{SITE.email}</a></p>
+    </div>
+  </section>
+</Base>
+
+<script>
+  if (new URLSearchParams(location.search).get('f') === 'recommandation') {
+    document.querySelectorAll<HTMLElement>('[data-envoye]').forEach((el) => (el.hidden = el.dataset.envoye !== 'recommandation'));
+  }
+</script>
+
+<style>
+  .done {
+    display: inline-grid;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--green);
+    color: #fff;
+    margin-bottom: 20px;
+  }
+  .btn-row {
+    justify-content: center;
+    margin: 28px 0 18px;
+  }
+  .btn[hidden] {
+    display: none;
+  }
+  .btn :global(svg) {
+    flex-shrink: 0;
+  }
+  @media (max-width: 420px) {
+    .btn {
+      white-space: normal;
+    }
+  }
+  .small {
+    color: var(--muted);
+  }
+</style>

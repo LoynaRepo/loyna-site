@@ -24,6 +24,7 @@ interface Props {
   modified?: string;
   ogImageAlt?: string;
   bare?: boolean;
+  manifest?: string; // application ajoutée à l'écran d'accueil (espace client) ; par défaut, celui du site
   /** Barre d'action fixe sur mobile : false pour la masquer, ou liens personnalisés. */
   stickyCta?: false | {primary?: Link; secondary?: Link};
 }
@@ -57,10 +58,14 @@ const gaId = (settings.ga4Id || SITE.ga4Id || '').trim();
     />
     <meta name="theme-color" content="#121216" />
     <meta name="format-detection" content="telephone=no" />
-    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <!-- Logo dans les résultats Google : icône carrée d'un multiple de 48 px (2026-10-29). favicon.ico contient 16, 32 et 48 px. -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="manifest" href={props.manifest ?? '/site.webmanifest'} />
+    {props.manifest && <meta name="apple-mobile-web-app-capable" content="yes" />}
+    {props.manifest && <meta name="apple-mobile-web-app-title" content="LOYNA Business" />}
     <link rel="alternate" type="application/rss+xml" title="Blog LOYNA" href="/rss.xml" />
     <link rel="sitemap" href="/sitemap.xml" />
     <slot name="head" />

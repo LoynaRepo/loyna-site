@@ -11,7 +11,7 @@ RENOMMEES ; une question du dépôt absente de Builder y est créée et publiée
 dès qu'il en a une). Rien n'est jamais supprimé : une entrée Builder sans équivalent est seulement signalée. Les
 réglages du site (site-settings) ne sont pas recopiés, seulement contrôlés.
 
-Contrôle final : aucun terme retiré (SMS, anciennes offres et anciens prix, « HT », API et webhooks, double tampon) ne doit rester
+Contrôle final : aucun terme retiré (SMS, anciennes offres et anciens prix, « HT », API et webhooks, double tampon, -50 % du parrainage) ne doit rester
 dans Builder. La clé privée n'est jamais affichée. Après --appliquer : construire et publier le site (les contenus
 Builder sont lus au build).
 """
@@ -32,6 +32,10 @@ ECRIRE = "https://builder.io/api/v1/write"
 # Questions de FAQ renommées : ancienne question (dans Builder) → question du dépôt
 RENOMMEES = {
     "Quelle différence entre une notification Wallet et un SMS ?": "Qu’est-ce que la notification de proximité ?",
+    # campagnes par semaine au lieu du quota mensuel de notifications (décision d'Ewan du 2026-10-30)
+    "Que comptent les quotas de cartes et de notifications ?": "Que comptent les quotas de cartes et de campagnes ?",
+    # 1 mois offert au parrain et au filleul au lieu de -50 % (décision d'Ewan du 2026-10-31)
+    "Les remises du parrainage se cumulent-elles ?": "Les mois offerts du parrainage se cumulent-ils ?",
 }
 # Champs « liste de textes » de Builder, stockés sous la forme [{"value": …}]
 LISTES = {"secteur": {"recompenses", "messages"}, "article": {"tags"}}
@@ -48,6 +52,11 @@ RETIRES = [
     ("API et webhooks", re.compile(r"webhooks", re.I)),
     # double tampon aux heures creuses : retiré des offres le 2026-10-27 (décision d'Ewan)
     ("double tampon", re.compile(r"double tampon|compter double|compte double", re.I)),
+    # quota mensuel de notifications remplacé par des campagnes par semaine, délai de 48 h passé à 24 h (2026-10-30)
+    ("quota mensuel de notifications", re.compile(rf"notifications par mois|volume mensuel de notifications|quota de notifications|\b24{E}000\b|décompté\w* (?:de vos|des) notifications", re.I)),
+    ("48 h entre deux messages", re.compile(rf"toutes les 48{E}(?:h\b|heures)", re.I)),
+    # Parrainage LOYNA : -50 % remplacé par 1 mois offert au parrain et au filleul (2026-10-31)
+    ("-50 % du parrainage", re.compile(rf"[-−]{E}50{E}%|50{E}%{E}de remise|remises? du parrainage", re.I)),
 ]
 
 

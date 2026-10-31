@@ -154,6 +154,7 @@ export function ClientFiche({id}: {id: string}) {
                 <Ligne t="Montant payé">
                   {c.montant_paye}
                   {c.code_promo && <small>code {c.code_promo}</small>}
+                  {c.parrainage_filleul && <small>Parrainage LOYNA ({c.parrainage_filleul}) : premier mois offert</small>}
                 </Ligne>
               )}
               <Ligne t="Paiement">
@@ -377,7 +378,7 @@ function BoutonAction({c, code, principal = false}: {c: ClientAffiche; code: Cod
     setEnvoi(true);
     setErreur('');
     try {
-      await noterAction(c.id, code, date, precision);
+      await noterAction(c.id, code, date, precision, c.qr.lot_le ?? '');
       setOuvert(false);
       toast(`${a.fait} : noté. La fiche du coffre sera mise à jour au prochain passage d’un agent.`);
     } catch (e) {

@@ -8,6 +8,7 @@ import {Badge, Btn, Empty, Lien, PageHead, Panel, TexteLie} from '../ui';
 import {Action, BadgeCible, BadgeStatut, Recu} from './commun';
 import {MarqueNotes, NotesProspect} from './Notes';
 import {BoutonMailPerso, boutonVisible, EtatMailPerso, FenetreMailPerso} from './MailPerso';
+import {preparerPour} from '../cartes';
 import {useState} from 'preact/hooks';
 import {annulerRefus, ErreurNotes, noterRefus, notesEtat, refusDe} from '../notes';
 import {aller, toast} from '../store';
@@ -69,6 +70,18 @@ export function Fiche({id}: {id: string}) {
                 </Btn>
               )}
               {boutonVisible(p) && <BoutonMailPerso ouvrir={() => setMailPerso(true)} />}
+              <Btn
+                kind="ghost"
+                icon="palette"
+                class="cp-btn-clair"
+                title="Régler sa carte et son offre en direct, puis lui envoyer le lien de paiement"
+                onClick={() => {
+                  preparerPour.value = {id: p.id, nom: p.nom, activite: p.secteur ?? ''};
+                  aller('preparer');
+                }}
+              >
+                Préparer sa carte
+              </Btn>
               {mail && (
                 <Btn kind="ghost" icon="mail" href={mail} class="cp-btn-clair">
                   E-mail

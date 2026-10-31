@@ -295,7 +295,7 @@
       },
       {
         "q": "Comment annoncer une nouveauté ou une offre du moment ?",
-        "a": "Envoyez une notification Wallet aux clients qui ont accepté de recevoir vos offres, sans coût par message : chaque formule comprend un volume mensuel de notifications. Avec Premium et Pro, vous pouvez aussi programmer la campagne à l’avance et cibler un groupe de clients. Un client reçoit au plus un message commercial toutes les 48 h, pour ne pas lasser vos habitués."
+        "a": "Envoyez une notification Wallet aux clients qui ont accepté de recevoir vos offres, sans coût par message : chaque formule comprend un nombre de campagnes par semaine, quel que soit le nombre de clients (2 avec Starter, 5 avec Premium, illimitées avec Pro). Avec Premium et Pro, vous pouvez aussi programmer la campagne à l’avance et cibler un groupe de clients. Un client reçoit au plus un message commercial toutes les 24 h, pour ne pas lasser vos habitués."
       }
     ]
   },

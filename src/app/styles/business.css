@@ -3457,6 +3457,63 @@ label.b {
   color: #e9d6ae;
 }
 
+/* Consultation opérateur (écran Opérateur → « Ouvrir son espace ») : bandeau permanent, sous la barre du haut
+   sur téléphone, en haut de l'écran sur ordinateur */
+.ro-bar {
+  position: sticky;
+  top: 66px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  max-width: 1180px;
+  margin: 0 auto 18px;
+  padding: 8px 10px 8px 14px;
+  border-radius: 16px;
+  background: var(--ink);
+  border: 1px solid rgba(230, 194, 122, 0.45);
+  box-shadow: 0 8px 24px rgba(18, 18, 22, 0.18);
+  color: #faf7f0;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+.ro-bar-t {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+.ro-bar-t > .ic {
+  flex: none;
+  color: var(--gold);
+}
+.ro-bar strong {
+  color: #fff;
+}
+.ro-bar .b {
+  flex: none; /* « Quitter » toujours à droite, le texte passe à la ligne */
+}
+@media (min-width: 1000px) {
+  .ro-bar {
+    top: 14px;
+    padding: 10px 12px 10px 16px;
+  }
+}
+/* Zone de formulaires en lecture seule : champs désactivés, boutons d'action masqués, liens actifs */
+.ro-zone {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ro-zone .b:disabled,
+.ro-zone .chip:disabled {
+  display: none;
+}
+
 /* Page /espace-client/ : colonne de présentation dans le HTML, masquée une fois connecté */
 .login-card--wait {
   min-height: 360px;
@@ -3548,12 +3605,16 @@ label.b {
 }
 .ref-gains li {
   display: grid;
+  align-content: start;
   gap: 2px;
   padding: 12px 14px;
   border-radius: 14px;
   background: var(--gold-soft, #f3e3c3);
   font-size: 0.88rem;
   line-height: 1.35;
+}
+.ref-gains .ref-gain-large {
+  grid-column: 1 / -1; /* QR code offert au parrain (CGV 4.8, 2026-10-29) : toute la largeur */
 }
 .ref-gains b {
   font-size: 1.35rem;
@@ -3878,5 +3939,77 @@ a.top-merchant {
   .ref-banner .rb-i {
     width: 40px;
     height: 40px;
+  }
+}
+/* Option « +500 cartes » (2026-10-30) : bouton sous la jauge et dans les alertes, panneau de l'Abonnement, confirmation */
+.alert-t {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.alert-b {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.meter-w {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+.meter-w > .meter {
+  width: 100%;
+}
+.packs-card {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.packs-card > .pnl-h {
+  margin-bottom: 0;
+}
+.packs-card p,
+.packs-card .btn-row,
+.packs-card ul {
+  margin: 0;
+}
+.packs-now {
+  display: grid;
+  gap: 2px;
+}
+.packs-n {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.packs-pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pack-confirm {
+  display: grid;
+  gap: 12px;
+}
+.pack-confirm p,
+.pack-confirm ul {
+  margin: 0;
+}
+.pack-price {
+  font-size: 1.05rem;
+}
+.pack-price b {
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+/* Abonnement avec l'option : offre et consommation côte à côte, puis cartes supplémentaires sous l'offre */
+@media (min-width: 1000px) {
+  .sub-grid--packs .plan-card {
+    grid-row: auto;
+  }
+  .sub-grid--packs .packs-card {
+    grid-column: 1;
   }
 }

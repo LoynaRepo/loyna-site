@@ -126,6 +126,7 @@ export interface Client {
   date_souscription: string;
   montant_paye: string;
   code_promo: string;
+  parrainage_filleul?: string; // code du parrain si ce client est un filleul (Parrainage LOYNA : premier mois offert)
   paiement: {statut: string; echoue_le: string; document: string};
   engagement: {fin: string; libelle: string};
   compte: string; // e-mail du compte de l'espace client
@@ -134,7 +135,8 @@ export interface Client {
   identifiant_commerce: string;
   lien_inscription: string;
   stripe: {session: string; abonnement: string; client: string; facture: string; liens: {libelle: string; href: string}[]};
-  qr: {commandes: number; detail: string; limite: string; livres_le: string; a_livrer: number; jours_restants: number | null};
+  // lot_le : début du lot en cours quand un QR offert (Parrainage LOYNA) suit une première livraison
+  qr: {commandes: number; detail: string; limite: string; livres_le: string; a_livrer: number; jours_restants: number | null; lot_le?: string};
   parcours: EtapeClient[];
   etape: {code: CodeEtape; libelle: string};
   etat: EtatClient | null;

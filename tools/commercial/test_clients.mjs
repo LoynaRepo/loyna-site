@@ -67,6 +67,16 @@ verifier(estNoteAction(note(5, '[CLIENT:inconnue] x')) && !lireAction(note(5, '[
 verifier(texteAction('qr_livres', '2026-10-30', '  remis  en main propre ') === '[CLIENT:qr_livres] 2026-10-30 · remis en main propre', 'texte d’une action (format lu par clients.py)');
 const deux = actionsNotees([note(7, '[CLIENT:documents] 2026-10-25', '2026-10-25T08:00:00.000Z'), note(8, '[CLIENT:documents] 2026-10-24', '2026-10-24T08:00:00.000Z')]);
 verifier(deux.documents?.date === '2026-10-24', 'deux notes de la même action : la plus ancienne compte (comme dans le coffre)');
+// QR code offert par le Parrainage LOYNA après une première livraison (qr.lot_le) : l'ancienne note ne compte plus
+const lots = [note(9, '[CLIENT:qr_livres] 2026-10-30', '2026-10-30T15:00:00.000Z')];
+verifier(actionsNotees(lots).qr_livres && !actionsNotees(lots, '2026-11-05').qr_livres,
+  'QR offert (nouveau lot du 05/11) : la note « QR codes livrés » du 30/10 ne compte plus');
+lots.push(note(10, '[CLIENT:qr_livres] 2026-11-12', '2026-11-12T10:00:00.000Z'));
+verifier(actionsNotees(lots, '2026-11-05').qr_livres?.date === '2026-11-12', 'note posée après le début du lot : QR offert livré');
+const avecLot = clientAJour({...py.avant[0], qr: {...py.avant[0].qr, commandes: 1, livres_le: '', lot_le: '2026-11-05'},
+  parcours: py.avant[0].parcours.map((e) => (e.code === 'qr' ? {...e, fait: false, date: ''} : e))}, lots.slice(0, 1), auj);
+verifier(!avecLot.parcours.find((e) => e.code === 'qr').fait && !avecLot.enAttente.qr_livres,
+  'panel : le nouveau lot reste « à livrer » malgré l’ancienne note');
 
 console.log(ok ? 'TOUT EST BON' : 'DES TESTS ÉCHOUENT');
 process.exit(ok ? 0 : 1);

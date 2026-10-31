@@ -1,7 +1,7 @@
 // LOYNA Business : accès aux données. Le navigateur parle directement à Supabase avec la clé
 // publishable (jamais de clé secrète) : la sécurité réelle est la RLS et les contrôles des Edge
 // Functions. Toute la logique métier (points, récompenses, quotas, permissions) reste côté serveur.
-import {createClient, type SupabaseClient} from '@supabase/supabase-js';
+import {createClient, isAuthRetryableFetchError, type SupabaseClient} from '@supabase/supabase-js';
 import {ApiError, FUNCTIONS_URL, SUPABASE_KEY, SUPABASE_URL, send} from './http';
 
 export {ApiError, SUPABASE_URL};
@@ -118,9 +118,17 @@ function sb(): SupabaseClient {
 export const supabaseBackend: Backend = {
   demo: false,
   geocode: banSearch,
+  // Téléphone qui se réveille sans réseau (téléphone de caisse, Barber Kong, 2026-10-30) : le jeton n'a pas pu être
+  // renouvelé (la bibliothèque a réessayé pendant 30 s), mais la session est intacte : on le signale (ApiError), ce
+  // n'est pas une déconnexion.
   async getSession() {
-    const {data} = await sb().auth.getSession();
-    return data.session ? {email: data.session.user.email ?? ''} : null;
+    const {data, error} = await sb().auth.getSession();
+    if (data.session) {
+      navigator.storage?.persist?.().catch(() => {}); // demande au navigateur de ne pas effacer la session de lui-même
+      return {email: data.session.user.email ?? ''};
+    }
+    if (error && isAuthRetryableFetchError(error)) throw new ApiError('NETWORK', 'Connexion impossible : vérifiez votre accès à Internet.', 0);
+    return null;
   },
   onAuthChange(cb) {
     sb().auth.onAuthStateChange((event, session) => cb(event, !!session));
@@ -129,8 +137,9 @@ export const supabaseBackend: Backend = {
     const {error} = await sb().auth.signInWithPassword({email: email.trim().toLowerCase(), password});
     if (error) throw new ApiError('AUTH', authMessage(error.message), error.status ?? 0);
   },
+  // Seulement cet appareil : par défaut, Supabase ferme toutes les sessions du compte, téléphone de caisse compris
   async signOut() {
-    await sb().auth.signOut();
+    await sb().auth.signOut({scope: 'local'});
   },
   async updatePassword(password) {
     const {error} = await sb().auth.updateUser({password});
@@ -180,6 +189,48 @@ export const supabaseBackend: Backend = {
     return sb().storage.from(bucket).getPublicUrl(path).data.publicUrl;
   },
 };
+
+// --- Consultation opérateur (lecture seule) ---------------------------------------------------------------
+/** RPC de lecture autorisées pendant une consultation (tout le reste est refusé avant l'envoi). */
+const READ_RPCS = new Set([
+  'dashboard_kpis',
+  'analytics_timeseries',
+  'monthly_report',
+  'my_plan_usage',
+  'search_customers',
+  'get_customer_detail',
+  'my_subscription',
+  'op_orders',
+  'op_merchants',
+]);
+const READ_ONLY_MESSAGE = 'Consultation en lecture seule : aucune modification n’est possible dans l’espace de ce commerce.';
+const refuse = (): never => {
+  throw new ApiError('READ_ONLY', READ_ONLY_MESSAGE);
+};
+
+/**
+ * Accès aux données pendant qu'un opérateur LOYNA consulte l'espace d'un commerce : lectures seulement. Filet de
+ * sécurité côté navigateur (les écrans masquent déjà les actions) ; le serveur refuse de toute façon toute écriture
+ * d'un compte qui n'est pas membre du commerce (migration 0039 du dépôt LOYNA).
+ */
+export function readOnlyBackend(inner: Backend): Backend {
+  return {
+    demo: inner.demo,
+    geocode: (q) => inner.geocode(q),
+    getSession: () => inner.getSession(),
+    onAuthChange: (cb) => inner.onAuthChange(cb),
+    signIn: () => refuse(),
+    signOut: () => inner.signOut(),
+    updatePassword: () => refuse(),
+    rpc: (fn, args) => (READ_RPCS.has(fn) ? inner.rpc(fn, args) : refuse()),
+    edge: () => refuse(),
+    select: (table, opts) => inner.select(table, opts),
+    insert: () => refuse(),
+    update: () => refuse(),
+    remove: () => refuse(),
+    uploadPublic: () => refuse(),
+  };
+}
 
 /**
  * Lien « Confirmez votre adresse » d'un compte créé dans le panier (e-mail envoyé par la fonction checkout-create

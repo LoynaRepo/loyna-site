@@ -2,7 +2,7 @@
 import type {ComponentChildren} from 'preact';
 import {useEffect, useRef, useState} from 'preact/hooks';
 import {Icon} from './icons';
-import {can, lockLabel, merchant, toast, toasts} from './state';
+import {can, lockLabel, merchant, readOnly, toast, toasts} from './state';
 import {copy, num, qrSvg} from './util';
 
 type BtnKind = 'primary' | 'gold' | 'ghost' | 'danger' | 'quiet';
@@ -279,6 +279,20 @@ export function LockBadge({feature}: {feature: string}) {
       <Icon name="lock" size={13} />
       {lockLabel(feature)}
     </span>
+  );
+}
+
+/**
+ * Zone de formulaires et d'actions : en consultation opérateur (lecture seule), tous ses champs et boutons sont
+ * désactivés (fieldset disabled) et ses boutons d'action masqués ; les liens restent utilisables. Hors consultation,
+ * aucun effet sur la page.
+ */
+export function ReadOnlyZone({children}: {children: ComponentChildren}) {
+  if (!readOnly()) return <>{children}</>;
+  return (
+    <fieldset class="ro-zone" disabled>
+      {children}
+    </fieldset>
   );
 }
 

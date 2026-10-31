@@ -2,7 +2,7 @@
 // Guide de démarrage de l'espace client (LOYNA Business), demande d'Ewan du 2026-10-28 : une courte section par
 // partie de l'espace, dans l'ordre de la mise en place, avec une capture de la démonstration. Lien dans l'e-mail
 // « Votre carte LOYNA est prête » (dépôt LOYNA, _shared/owner-access-email.ts) et dans le menu de l'espace client.
-// Page publique, noindex et hors du plan du site ; elle s'imprime en PDF A4 de 3 pages.
+// Page publique, noindex et hors du plan du site ; elle s'imprime en PDF A4 de 4 pages.
 //   - captures : node tools/guide-captures.mjs [adresse du site]  → public/espace-client/guide/*.webp
 //   - PDF publié à côté : node tools/guide-pdf.mjs [adresse du site] → public/espace-client/guide/guide-demarrage-loyna.pdf
 // Ne rien écrire ici qui n'existe pas dans l'espace client (src/app/views/) ni dans les offres (src/data/site.ts).
@@ -73,7 +73,7 @@ const ETAPES: Etape[] = [
     img: '06-automatisations',
     alt: 'Automatisations : message d’anniversaire avec son interrupteur et son texte.',
     texte:
-      'Menu <strong>Automatisations</strong> : chaque message automatique a son interrupteur ; activez-le, adaptez le texte, puis touchez « Enregistrer ». Message après chaque passage : toutes les offres ; anniversaire, relance des clients absents, « Plus qu’un passage ! », avis Google et niveaux VIP : dès l’offre Premium ; parrainage : offre Pro.',
+      'Menu <strong>Automatisations</strong> : chaque message automatique a son interrupteur ; activez-le, adaptez le texte, puis touchez « Enregistrer ». Message après chaque passage : toutes les offres ; anniversaire, relance des clients absents, « Plus qu’un passage ! », avis Google et niveaux VIP : dès l’offre Premium ; parrainage entre vos clients : offre Pro.',
   },
   {
     id: 'campagnes',
@@ -155,12 +155,12 @@ const PREMIERES = [
 
     <div class="g-main">
       <!-- Offre de parrainage LOYNA mise en avant dès le début du guide (demande d'Ewan du 2026-10-28) ; règles :
-           panneau « Parrainez un commerçant » du menu Abonnement (views/Abonnement.tsx) et carte « Parrainez un commerçant » de l'accueil de l'espace client (29/10/2026 : plus sur l'accueil du site) -->
+           panneau « Parrainez un commerçant » du menu Abonnement (views/Abonnement.tsx) et carte « Parrainez un commerçant » de l'accueil de l'espace client -->
       <section class="g-promo" aria-labelledby="g-promo-h">
         <p class="g-promo-tag">Offre parrainage</p>
-        <h2 id="g-promo-h">-50 % pour vous, -50 % pour le commerçant que vous recommandez</h2>
+        <h2 id="g-promo-h">1 mois offert et un QR code offert pour vous, 1 mois offert pour le commerçant que vous recommandez</h2>
         <p>
-          Vous connaissez un commerçant à qui une carte de fidélité rendrait service ? Partagez votre code depuis le menu <strong>Abonnement</strong> : il a <strong>-50 % sur son premier mois</strong>, et vous <strong>-50 % sur votre mois suivant</strong>, pour chaque filleul qui s’abonne. Dans les trois offres, pour les abonnements mensuels.
+          Vous connaissez un commerçant à qui une carte de fidélité rendrait service ? Partagez votre code depuis le menu <strong>Abonnement</strong> : il a <strong>son premier mois offert</strong>, et vous <strong>votre mois suivant offert</strong> plus <strong>1 QR code sous verre offert</strong>, dès qu’il a payé sa première mensualité. Dans les trois offres, pour les abonnements mensuels.
         </p>
         <p class="g-promo-liens"><a href="/espace-client/#/abonnement">Voir mon code de parrainage</a> · <a href="/faq/#parrainage-loyna">Comment ça marche</a></p>
       </section>

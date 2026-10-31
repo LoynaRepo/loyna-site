@@ -43,7 +43,7 @@ let orders: any[] = [
       {lookup_key: 'loyna_qr_verre_5', label: 'Pack de 5 QR codes personnalisés sous verre', quantity: 1, amount: 4249},
     ],
     account: {user_id: 'u-demo-panier', email: 'ines.garcia@example.com', email_confirmed: true, display_name: 'Inès Garcia', business_name: 'Fleurs de la Comédie (démo)', found_by: 'order', owned_merchants: 0},
-    referral: {code: 'LOYNA-K7Q2MX', status: 'gagne', referrer_name: 'Atelier Barbe & Co (démo)', referrer_email: 'atelier.barbe@example.com'},
+    referral: {code: 'LOYNA-K7Q2MX', status: 'en_attente_paiement', referrer_name: 'Atelier Barbe & Co (démo)', referrer_email: 'atelier.barbe@example.com'},
   },
   {
     id: 'sub_DemoMail1', business_name: 'Café Saint-Roch (démo)', customer_name: 'Louis Bernard', customer_email: 'cafe.saintroch@example.com',

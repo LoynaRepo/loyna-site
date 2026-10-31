@@ -24,7 +24,7 @@ changé (`--sans-indexnow` pour s'en passer ; un refus d'IndexNow n'annule pas l
 ```
 npm install
 npx astro dev            # http://localhost:4321
-npx astro build          # dist/
+npx astro build          # dist/ (réécrit aussi node_modules/.vite/deps : redémarrer un astro dev lancé dans ce dossier, sinon 504 « Outdated Optimize Dep » sur le panier, l'espace client et le panel)
 node tools/qa.mjs 390 / /tarifs/          # captures pleine page dans out/qa (aperçu lancé sur 127.0.0.1:4321)
 node tools/lh.mjs / /tarifs/              # audit Lighthouse mobile
 ```
@@ -82,9 +82,10 @@ ouvre une session Stripe Checkout aux mêmes réglages que les liens ; si Stripe
 (les QR codes s'y rechoisissent). Retour : `/merci/?…&compte=1` (étapes du compte). Un compte sans commerce voit
 « Votre commande » dans l'espace client (`my_orders`) ; essai local : `/espace-client/?demo&commande` (ou `commande=0`).
 Depuis le 2026-10-27 : mise en service offerte d'office dans le panier jusqu'au 31/12/2026 (aucun code à saisir) et
-**Parrainage LOYNA** entre commerçants (mensuel seulement, -50 % sur le premier mois du filleul, -50 % sur le mois suivant
-du parrain par filleul payant) : champ « Code de parrainage » du panier (`?parrain=LOYNA-XXXXXX`), carte « Parrainez un
-commerçant » dans Abonnement (`my_referral`), section `#parrainage` de l'accueil, FAQ (catégorie « Parrainage LOYNA »),
+**Parrainage LOYNA** entre commerçants (mensuel seulement ; depuis le 2026-10-31, décision d'Ewan : 1 mois offert au parrain
+et au filleul, premier mois du filleul offert, mois suivant du parrain offert dès que le filleul a payé sa première
+mensualité) : champ « Code de parrainage » du panier (`?parrain=LOYNA-XXXXXX`), carte « Parrainez un commerçant » dans
+Abonnement (`my_referral`) et sur l'accueil de l'espace client, FAQ (catégorie « Parrainage LOYNA »),
 CGV article 4.8. Le double tampon aux heures creuses est retiré de toutes les offres.
 
 Chaque lien : adresse de facturation, téléphone, nom du commerce et du contact (le numéro de TVA n'est plus
@@ -117,8 +118,8 @@ des Edge Functions (contrats : dépôt LOYNA, `docs/API.md` et `docs/WEWEB_SETUP
 
 | Adresse | Contenu |
 |---|---|
-| `/espace-client/` | connexion puis accueil (indicateurs, jauges des cartes et des notifications du mois), scanner (caméra, BarcodeDetector ou jsQR), clients et fiche (niveau VIP, parrainage), programme et récompenses, campagnes Wallet (temps forts, campagnes préparées par LOYNA), automatisations (anniversaire, inactifs, « Plus qu'un passage ! », avis Google, double tampon ; niveaux VIP et parrainage en Pro), rapport mensuel, équipe, réglages (logo, couleurs, affiche du comptoir, boutiques et message de proximité), abonnement (portail Stripe) — navigation `#/scanner`, `#/client/<id>`… |
-| `/espace-client/#/operateur` | **écran Opérateur** (2026-10-27), visible seulement pour un compte de `platform_admins` (contrôlé par le serveur : RPC `op_orders`, `op_merchants` et fonction `merchant-bootstrap` du dépôt LOYNA refusent tout autre compte) : commandes à traiter (abonnements Stripe sans commerce : contact, offre, QR codes, compte LOYNA, parrainage), création du commerce depuis une commande (formulaire prérempli, aperçu de la carte, logo PNG/JPG/WEBP/SVG converti en PNG dans le navigateur puis téléversé dans `merchant-assets/<id>/logo.png`, adresse d'inscription), résultat : lien `loyna.fr/join/<slug>` et QR code, accès du propriétaire (compte existant : son mot de passe ; compte créé : lien « Choisir mon mot de passe » et bouton « Envoyer l'accès par e-mail »), liste des commerces (offre, cartes, lien d'inscription ; « Ouvrir » seulement pour un commerce dont l'opérateur fait partie). Un opérateur sans commerce arrive directement sur cet écran. Absent de la démonstration publique ; essai local : `/espace-client/?demo&operateur` (ou `operateur=seul`), réponses fictives de `src/app/mock-operateur.ts`, chargé en développement seulement |
+| `/espace-client/` | connexion puis accueil (indicateurs, jauges des cartes et des campagnes de la semaine), scanner (caméra, BarcodeDetector ou jsQR), clients et fiche (niveau VIP, parrainage), programme et récompenses, campagnes Wallet (temps forts, campagnes préparées par LOYNA), automatisations (anniversaire, inactifs, « Plus qu'un passage ! », avis Google, double tampon ; niveaux VIP et parrainage en Pro), rapport mensuel, équipe, réglages (logo, couleurs, affiche du comptoir, boutiques et message de proximité), abonnement (portail Stripe ; option « +500 cartes » : ajout et retrait de packs par la fonction `card-packs` du dépôt LOYNA, `src/app/packs.tsx`, aussi proposée sous la jauge des cartes et dans les alertes 80 %/100 % de l'accueil) — navigation `#/scanner`, `#/client/<id>`… |
+| `/espace-client/#/operateur` | **écran Opérateur** (2026-10-27), visible seulement pour un compte de `platform_admins` (contrôlé par le serveur : RPC `op_orders`, `op_merchants` et fonction `merchant-bootstrap` du dépôt LOYNA refusent tout autre compte) : commandes à traiter (abonnements Stripe sans commerce : contact, offre, QR codes, compte LOYNA, parrainage), création du commerce depuis une commande (formulaire prérempli, aperçu de la carte, logo PNG/JPG/WEBP/SVG converti en PNG dans le navigateur puis téléversé dans `merchant-assets/<id>/logo.png`, adresse d'inscription), résultat : lien `loyna.fr/join/<slug>` et QR code, accès du propriétaire (compte existant : son mot de passe ; compte créé : lien « Choisir mon mot de passe » et bouton « Envoyer l'accès par e-mail »), liste des commerces (offre, cartes, lien d'inscription ; « Ouvrir » pour un commerce dont l'opérateur fait partie, « Ouvrir son espace » pour tous les autres : consultation en lecture seule de l'espace du commerce, avec bandeau « consultation opérateur, lecture seule » et « Quitter », RPC op_merchant_context et lectures réservées aux opérateurs (migration 20261029213015 du dépôt LOYNA), chaque ouverture inscrite au journal d'audit du commerce ; publié le 2026-10-29). Un opérateur sans commerce arrive directement sur cet écran. Absent de la démonstration publique ; essai local : `/espace-client/?demo&operateur` (ou `operateur=seul`), réponses fictives de `src/app/mock-operateur.ts`, chargé en développement seulement |
 | `/espace-client/guide/` | **guide de démarrage** (2026-10-28) : une courte section par partie de l'espace, dans l'ordre de la mise en place, avec une capture de la démonstration ; lien dans l'e-mail « Votre carte LOYNA est prête » (dépôt LOYNA, `_shared/owner-access-email.ts`), dans le menu de l'espace (« Guide de démarrage ») et dans l'aide de connexion. Public, `noindex`, hors du plan du site. S'imprime en A4 (3 pages) ; PDF publié à côté : `guide-demarrage-loyna.pdf`. Captures : `node tools/guide-captures.mjs [adresse]` (démo, graine 268380, offre Premium, téléphone) ; PDF : `node tools/guide-pdf.mjs [adresse]` (Edge sans fenêtre, après `npx astro build` et `npx astro preview`) |
 | `/espace-client/mot-de-passe/` | choix du mot de passe depuis un lien d'activation : `?token_hash=…&type=recovery` (liens de `staff-manage` et `merchant-bootstrap` depuis le 2026-10-27, vérifiés par la page avec `verifyOtp`) ou ancien lien avec les jetons après `#` (`/set-password` y est redirigé) |
 | `/espace-client/confirmer/` | confirmation de l'adresse d'un compte créé dans le panier (`?token_hash=…&type=signup`, `verifyOtp`), puis ouverture de l'espace client |
@@ -130,7 +131,7 @@ des Edge Functions (contrats : dépôt LOYNA, `docs/API.md` et `docs/WEWEB_SETUP
   (même générateur `src/app/mock.ts`, chargé à part : absent des pages réelles) ; `/join/?slug=demo-loyna` en
   développement. Captures : `node tools/qa-app.mjs 1366 accueil scanner clients …` et `node tools/qa-flow.mjs`
   (serveur de développement sur le port 4322).
-- Les mentions « inclus dans la formule … », les verrous et les jauges (cartes, notifications du mois, boutiques)
+- Les mentions « inclus dans la formule … », les verrous et les jauges (cartes, campagnes de la semaine, boutiques)
   sont lus dans `plan_entitlements` et `my_plan_usage` (jamais de nom d'offre en dur).
 - `.htaccess` : caméra autorisée seulement sous `/espace-client/`, Supabase ajouté à `connect-src` et
   `img-src`, géocodage des adresses de boutique (Base adresse nationale servie par l'IGN, `data.geopf.fr`)
@@ -220,6 +221,30 @@ entre les deux est un défaut.
 Identifiants de test (localhost uniquement) : `tools/commercial/acces-local.exemple.json` ; `panel.py` refuse de
 publier en ligne avec eux. Après un essai sur les vraies données, remettre le jeu fictif (`--exemple`).
 
+### Session de l'espace client (téléphone de caisse)
+
+La session reste dans le navigateur (`localStorage`, clé `loyna-business-auth`) et se renouvelle seule ; aucun délai d'expiration n'est
+réglé côté Supabase. « Se déconnecter » ne ferme que l'appareil (`scope: 'local'`). Réseau coupé à l'ouverture : écran « Connexion
+impossible » sans perdre la session, reprise automatique. `/espace-client/` a son manifeste (`public/espace-client/app.webmanifest`) :
+ajoutée à l'écran d'accueil, l'application s'ouvre en plein écran sur le scanner. La navigation privée efface la session à la
+fermeture de l'onglet : le site n'y peut rien. Essai : `node tools/qa-session.mjs` (réseau simulé, serveur de développement).
+
+### Préparer une carte (rendez-vous avec un commerçant)
+
+Onglet « Préparer une carte » du panel (`#/preparer`, aussi depuis la fiche d'un prospect) : nom, logo, couleurs (dont celles
+du logo), passages, récompense, offre et QR codes sous verre, avec l'aperçu iPhone et Android en direct. « Créer le lien de
+paiement » range tout dans `cartes.php` et donne `loyna.fr/panier/?carte=<id>` (copier, WhatsApp, SMS, QR code à scanner à
+l'écran). Le panier montre la carte et l'offre, replie les étapes offre et QR, et le commerçant crée son compte puis paie
+sur Stripe par le circuit habituel (`checkout-create`). `/merci/` ne redemande pas les éléments. Pour créer le commerce,
+coller le lien dans l'écran Opérateur (« Reprendre cette carte ») : récompense, passages, couleurs et logo sont repris.
+
+- `public/espace-commercial/cartes.php` : lecture publique par identifiant aléatoire ; liste, écriture et suppression avec
+  le jeton des notes. Fichiers hors de `www/` : `~/panel-commercial/cartes/<id>.json` et `<id>.logo` (PNG vérifié). Ni contact
+  ni e-mail : seulement ce qui figure sur la carte et l'offre.
+- `tools/commercial/notes_local.py` reproduit aussi `cartes.php` en local ; `python tools/commercial/test_cartes_serveur.py` ;
+  `node tools/qa-preparer.mjs 1440 390` (de bout en bout, sur le serveur de développement).
+- Le lien ne fixe pas les prix : `checkout-create` les prend dans Stripe. L'option « +500 cartes » s'ajoute depuis l'espace client.
+
 ### Mail perso après un appel (bouton « Envoyer mail perso »)
 
 Dans la fiche d'un prospect (adresse valide, ni refus, ni stop, ni hors cible) : compositeur avec le récap de l'appel
@@ -268,7 +293,7 @@ node tools/qa-mail-perso.mjs 1366              # bout en bout (ou 390) : composi
 `loynafb.cluster129.hosting.ovh.net` (offre gratuite 100 Mo, PHP), FTP `ftp.cluster129.hosting.ovh.net`,
 compte `loynafb`, dossier `www/`. `public/.htaccess` : HTTPS et domaine sans www, cache, compression,
 en-têtes de sécurité. `public/contact.php` : formulaire de contact → e-mail « [Site LOYNA] … » vers
-contact@loyna.fr (réponse directe au visiteur), repris par l'agent Trieur du coffre de prospection.
+contact@loyna.fr (réponse directe au visiteur), repris par l'agent Trieur du coffre de prospection. Page `/devenir-partenaire/` (2026-10-29, programme apporteurs d'affaires, montants dans `PARTENAIRES` de `src/data/site.ts`) : sujets « Devenir partenaire » et « Recommandation partenaire » (accord du commerçant obligatoire), remerciement `/devenir-partenaire/envoye/`.
 
 ## Ce que le site contient (contrôle du 2026-10-09)
 

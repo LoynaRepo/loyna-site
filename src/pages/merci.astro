@@ -7,6 +7,8 @@ import {CARD_ACCENTS, CARD_BGS, PLANS, SETUP_FEE, offerActive} from '../data/sit
 // &session_id=… (liens de paiement de src/data/site.ts).
 // Montant du premier paiement par offre, pour la mesure de conversion (sans donnée personnelle).
 const montants = Object.fromEntries(PLANS.flatMap((p) => [[`${p.id}-mensuel`, p.monthly + (offerActive() ? 0 : SETUP_FEE)], [`${p.id}-annuel`, p.yearly]]));
+// Filleul du Parrainage LOYNA : offre à 0 €, seule la mise en service est encaissée une fois l'offre de lancement finie.
+const montantFilleul = offerActive() ? 0 : SETUP_FEE;
 const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
 ---
 
@@ -16,7 +18,7 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
       <span class="done"><Icon name="check" size={34} /></span>
       <h1>Merci, votre abonnement est confirmé&nbsp;!</h1>
       <p class="lead">
-        <span id="offre-payee" hidden></span>Vous allez recevoir un reçu par e-mail, au nom de KOVA Elec (LOYNA est une marque de KOVA Elec). Plus qu’une étape pour lancer votre carte.
+        <span id="offre-payee" hidden></span><span id="recu-filleul" hidden>Votre premier mois est offert : le prélèvement de l’abonnement commence le mois prochain. </span><span id="recu-paiement">Vous allez recevoir un reçu par e-mail, au nom de KOVA Elec (LOYNA est une marque de KOVA Elec). </span>Plus qu’une étape pour lancer votre carte.
       </p>
     </div>
   </section>
@@ -35,7 +37,7 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
         </div>
         <h2 class="h3">La suite, en 4 étapes</h2>
         <ol class="next">
-          <li><strong>Envoyez vos éléments</strong> avec le formulaire : logo, couleurs, récompense. Deux minutes suffisent.</li>
+          <li data-sans-preparee><strong>Envoyez vos éléments</strong> avec le formulaire : logo, couleurs, récompense. Deux minutes suffisent.</li>
           <li><strong>Votre carte est prête sous 24&nbsp;h</strong>, avec votre QR code d’inscription et l’affiche du comptoir à imprimer ou à partager.</li>
           <li data-sans-compte><strong>Vous recevez votre accès à LOYNA Business</strong> pour scanner les cartes depuis votre téléphone.</li>
           <li data-compte hidden><strong>LOYNA Business s’ouvre dans votre espace client</strong>, avec le compte que vous venez de créer, pour scanner les cartes depuis votre téléphone.</li>
@@ -49,17 +51,17 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
           <h2 class="h3">Avec Pro</h2>
           <p>Nous fixons ensemble votre premier point mensuel de 30&nbsp;minutes, nous préparons vos premières campagnes (elles ne partent qu’après votre validation) et votre kit comptoir imprimé (chevalet QR code et vitrophanie) est envoyé à votre commerce. Indiquez vos disponibilités dans «&nbsp;Précisions&nbsp;».</p>
         </div>
-        <!-- Parrainage LOYNA (CGV 4.8), montré après une commande mensuelle : demande d'Ewan du 29/10/2026 (le parrainage
-             parle aux commerçants déjà clients, pas aux visiteurs de l'accueil) -->
+        <!-- Parrainage LOYNA (CGV 4.8), montré après une commande mensuelle : demande d'Ewan du 29/10/2026. Depuis le 31/10, le
+             bandeau de la refonte l'annonce aussi à tous les visiteurs. -->
         <div class="suite" data-parrainage hidden>
-          <h2 class="h3">Parrainez un commerçant : -50&nbsp;% chacun</h2>
-          <p>Vous connaissez un commerçant à qui une carte de fidélité rendrait service&nbsp;? Dès que votre abonnement mensuel est actif, votre code de parrainage vous attend dans votre <a href="/espace-client/#/abonnement">espace client</a> (menu Abonnement) : -50&nbsp;% sur son premier mois, et -50&nbsp;% sur votre mois suivant pour chaque commerçant qui s’abonne. <a href="/faq/#parrainage-loyna">Comment ça marche</a></p>
+          <h2 class="h3">Parrainez un commerçant : 1&nbsp;mois offert chacun</h2>
+          <p>Vous connaissez un commerçant à qui une carte de fidélité rendrait service&nbsp;? Dès que votre abonnement mensuel est actif, votre code de parrainage vous attend dans votre <a href="/espace-client/#/abonnement">espace client</a> (menu Abonnement) : son premier mois est offert ; pour vous, votre mois suivant offert et 1&nbsp;QR code sous verre offert, dès qu’il a payé sa première mensualité. <a href="/faq/#parrainage-loyna">Comment ça marche</a></p>
         </div>
         <p class="small">
           Notification de proximité : elle utilise l’adresse de votre boutique. Si elle diffère de votre adresse de facturation, indiquez-la dans «&nbsp;Précisions&nbsp;» (jusqu’à 3 boutiques avec Pro).
         </p>
         <p class="small">
-          Rappel de votre engagement : en mensuel, 12 mois réglés chaque mois, puis résiliable à la fin de n’importe quel mois, sans frais ; en annuel, 12 mois payés d’avance. Factures et
+          Rappel de votre engagement : en mensuel, 12 mois réglés chaque mois, puis résiliable à la fin de n’importe quel mois, sans frais ; en annuel, 12 mois payés d’avance. <span id="engagement-filleul" hidden>Votre mois offert compte dans ces 12 mois. </span>Factures et
           abonnement se gèrent depuis votre <a href="/espace-client/">espace client</a>.
         </p>
       </div>
@@ -70,6 +72,13 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
           <h2 class="h3">Bien reçu, merci&nbsp;!</h2>
           <p>Nous créons votre carte et revenons vers vous sous 24&nbsp;h avec votre QR code et votre accès LOYNA Business.</p>
           <a class="btn btn--primary" href="/espace-client/">Mon espace client</a>
+        </div>
+
+        <div class="recu" id="preparee" hidden>
+          <span class="done small-done"><Icon name="check" size={24} /></span>
+          <h2 class="h3">Votre carte est déjà préparée</h2>
+          <p>Vous n’avez rien à renvoyer : nous la créons avec les réglages préparés ensemble et revenons vers vous sous 24&nbsp;h avec votre QR code et votre accès LOYNA Business.</p>
+          <button type="button" class="btn btn--ghost" id="preparee-plus">Ajouter une précision</button>
         </div>
 
         <form method="post" action="/elements.php" enctype="multipart/form-data" id="elements-form">
@@ -113,7 +122,7 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
             </div>
           </div>
           <div class="field">
-            <label for="el-email">E-mail utilisé pour le paiement *</label>
+            <label for="el-email">E-mail de votre commande *</label>
             <input id="el-email" name="email" type="email" required maxlength="120" autocomplete="email" />
             <p class="err">Indiquez une adresse e-mail valide.</p>
           </div>
@@ -156,13 +165,13 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
             <textarea id="el-message" name="message" rows="3" maxlength="2000" placeholder="Horaires, réseaux sociaux, idée de récompense…"></textarea>
           </div>
           <button type="submit" class="btn btn--gold btn--block" data-loading="Envoi en cours…">Envoyer mes éléments <Icon name="send" size={18} /></button>
-          <p class="small center">Pas votre logo sous la main ? Envoyez le formulaire quand même, ou répondez plus tard au reçu.</p>
+          <p class="small center">Pas votre logo sous la main ? Envoyez le formulaire quand même, ou écrivez-nous plus tard à contact@loyna.fr.</p>
         </form>
       </div>
     </div>
   </section>
 
-  <div id="merci-data" data-montants={JSON.stringify(montants)} data-noms={JSON.stringify(noms)} hidden></div>
+  <div id="merci-data" data-montants={JSON.stringify(montants)} data-noms={JSON.stringify(noms)} data-filleul={montantFilleul} hidden></div>
 </Base>
 
 <script>
@@ -263,6 +272,13 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
     const parrainage = document.querySelector<HTMLElement>('[data-parrainage]');
     if (parrainage) parrainage.hidden = offrePayee[2] !== 'mensuel';
   }
+  // Filleul du Parrainage LOYNA (?filleul=1 au retour de Stripe) : premier mois offert (CGV 4.8), pas de reçu de paiement annoncé
+  const filleul = q.get('filleul') === '1';
+  if (filleul) {
+    (document.getElementById('recu-filleul') as HTMLElement).hidden = false;
+    (document.getElementById('recu-paiement') as HTMLElement).hidden = true;
+    (document.getElementById('engagement-filleul') as HTMLElement).hidden = false;
+  }
   set('session', /^cs_[A-Za-z0-9_]{10,200}$/.test(q.get('session_id') || '') ? q.get('session_id')! : '');
   // Commande passée avec un compte LOYNA (panier) : ?compte=1 au retour de Stripe, ou repère posé par le panier avant
   // un paiement par lien de secours (src/app/Panier.tsx, même nom de clé). Étapes du compte affichées.
@@ -288,6 +304,18 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
       if (/^#[0-9a-f]{6}$/i.test(c.accent)) set('accent', c.accent);
       if (c.total) set('passages', String(c.total));
       set('recompense', c.reward || '');
+      // Carte préparée avec nous (lien du panier ?carte=…) : rien à renvoyer, le formulaire reste possible pour une précision
+      if (c.preparee && q.get('recu') !== '1' && !q.get('erreur')) {
+        form.hidden = true;
+        const bloc = document.getElementById('preparee') as HTMLElement;
+        bloc.hidden = false;
+        document.querySelectorAll<HTMLElement>('[data-sans-preparee]').forEach((el) => (el.hidden = true));
+        document.getElementById('preparee-plus')?.addEventListener('click', () => {
+          bloc.hidden = true;
+          form.hidden = false;
+          form.scrollIntoView({behavior: 'smooth', block: 'start'});
+        });
+      }
     }
   } catch {
     /* stockage indisponible */
@@ -301,7 +329,8 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
     if (!montants[offre] || q.get('recu')) return;
     (window as unknown as {loynaTrack?: (n: string, p?: object) => void}).loynaTrack?.('purchase', {
       transaction_id: q.get('session_id') || undefined,
-      value: montants[offre],
+      // filleul : premier mois offert, seule la mise en service est encaissée après l'offre de lancement
+      value: filleul ? Number(document.getElementById('merci-data')?.dataset.filleul || 0) : montants[offre],
       currency: 'EUR',
       items: [{item_id: offre}],
     });

@@ -7,7 +7,7 @@ import {CARD_BGS} from '../../data/site';
 import type {GeoResult} from '../backend';
 import {Icon} from '../icons';
 import {api, feature, featureLimit, lowestPlanAbove, maxAnyPlan, merchant, staffCtx, toast, toastError} from '../state';
-import {Badge, Btn, CardPreview, ErrorBox, Field, LinkBox, LockBadge, Modal, PageHead, Panel, Segmented, Spinner, Toggle, useBusy, useLoad} from '../ui';
+import {Badge, Btn, CardPreview, ErrorBox, Field, LinkBox, LockBadge, Modal, PageHead, Panel, ReadOnlyZone, Segmented, Spinner, Toggle, useBusy, useLoad} from '../ui';
 import {contrast, download, joinUrl, qrSvg} from '../util';
 
 interface Merchant {
@@ -93,18 +93,21 @@ export function Reglages() {
           Messages automatiques →
         </a>
       </nav>
-      <Branding initial={data.data.merchant} />
-      {data.data.settings && (
-        <Boutique
-          merchant={data.data.merchant}
-          shops={data.data.shops}
-          message={data.data.settings.proximity_message}
-          enabled={data.data.settings.proximity_enabled !== false}
-          program={data.data.program}
-        />
-      )}
+      {/* consultation opérateur : réglages affichés, champs et boutons désactivés (l'affiche reste téléchargeable) */}
+      <ReadOnlyZone>
+        <Branding initial={data.data.merchant} />
+        {data.data.settings && (
+          <Boutique
+            merchant={data.data.merchant}
+            shops={data.data.shops}
+            message={data.data.settings.proximity_message}
+            enabled={data.data.settings.proximity_enabled !== false}
+            program={data.data.program}
+          />
+        )}
+      </ReadOnlyZone>
       <Poster slug={data.data.merchant.slug} name={data.data.merchant.name} />
-      {data.data.settings && <SettingsForm initial={data.data.settings} />}
+      <ReadOnlyZone>{data.data.settings && <SettingsForm initial={data.data.settings} />}</ReadOnlyZone>
     </div>
   );
 }

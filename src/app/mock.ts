@@ -72,18 +72,19 @@ function mulberry32(a: number) {
   };
 }
 
-// --- Référentiels : même matrice que le serveur (migration 20261025111847, plan_entitlements) -----------
+// --- Référentiels : même matrice que le serveur (migrations 20261025111847 et 20261030120000, plan_entitlements) ---
 const PLAN_FEATURES: Record<Plan, string[]> = {
-  STARTER: ['wallet.apple', 'wallet.google', 'wallet.notifications', 'wallet.proximity', 'enrollment.qr', 'loyalty.visits', 'loyalty.points', 'loyalty.spend', 'rewards', 'scanner', 'dashboard', 'campaigns.wallet', 'cards.max', 'notifications.monthly_quota', 'locations.max'],
+  STARTER: ['wallet.apple', 'wallet.google', 'wallet.notifications', 'wallet.proximity', 'enrollment.qr', 'loyalty.visits', 'loyalty.points', 'loyalty.spend', 'rewards', 'scanner', 'dashboard', 'campaigns.wallet', 'cards.max', 'campaigns.weekly_quota', 'cards.pack', 'locations.max'],
   PREMIUM: [],
   PRO: [],
 };
 PLAN_FEATURES.PREMIUM = [...PLAN_FEATURES.STARTER, 'segmentation', 'automation.birthday', 'automation.inactive', 'automation.near_reward', 'automation.review', 'campaigns.scheduled', 'analytics.advanced', 'reports.monthly', 'loyalty.tiers'];
-PLAN_FEATURES.PRO = [...PLAN_FEATURES.PREMIUM, 'referral', 'campaigns.prepared', 'support.followup', 'support.priority', 'integrations', 'validation.automatic', 'automation.advanced', 'api.webhooks'];
-// Limites (null = illimité) : cartes, notifications de campagne par mois, boutiques
+PLAN_FEATURES.PRO = [...PLAN_FEATURES.PREMIUM.filter((f) => f !== 'cards.pack'), 'referral', 'campaigns.prepared', 'support.followup', 'support.priority', 'integrations', 'validation.automatic', 'automation.advanced', 'api.webhooks'];
+// Limites (null = illimité) : cartes, campagnes par semaine (2026-10-30), cartes par pack « +500 cartes », boutiques
 const LIMITS: Record<string, Record<Plan, number | null>> = {
   'cards.max': {STARTER: 500, PREMIUM: 2000, PRO: null},
-  'notifications.monthly_quota': {STARTER: 2000, PREMIUM: 24000, PRO: null},
+  'campaigns.weekly_quota': {STARTER: 2, PREMIUM: 5, PRO: null},
+  'cards.pack': {STARTER: 500, PREMIUM: 500, PRO: null},
   'locations.max': {STARTER: 1, PREMIUM: 1, PRO: 3},
 };
 
@@ -91,7 +92,8 @@ const FEATURES_CATALOG: [string, string][] = [
   ['wallet.apple', 'Carte Apple Wallet'], ['wallet.google', 'Carte Google Wallet'], ['wallet.notifications', 'Notifications Wallet'], ['wallet.proximity', 'Notification de proximité (carte affichée près de la boutique)'],
   ['enrollment.qr', 'Inscription par QR code'], ['loyalty.visits', 'Programme au passage'], ['loyalty.points', 'Programme à points'], ['loyalty.spend', 'Programme au montant dépensé'], ['rewards', 'Récompenses'],
   ['scanner', 'Scanner LOYNA Business'], ['dashboard', 'Tableau de bord'], ['campaigns.wallet', 'Campagnes par notification Wallet'], ['cards.max', 'Cartes clients incluses (clients inscrits, hors supprimés)'],
-  ['notifications.monthly_quota', 'Notifications de campagne par mois (une par carte destinataire)'], ['locations.max', 'Boutiques (adresses de la notification de proximité)'], ['segmentation', 'Segmentation des campagnes'],
+  ['campaigns.weekly_quota', 'Campagnes de notifications par semaine, quel que soit le nombre de destinataires (le compteur repart chaque lundi)'],
+  ['cards.pack', 'Option « +500 cartes » : cartes ajoutées par pack souscrit'], ['locations.max', 'Boutiques (adresses de la notification de proximité)'], ['segmentation', 'Segmentation des campagnes'],
   ['automation.birthday', 'Automatisation anniversaires'], ['automation.inactive', 'Relance des clients inactifs'], ['automation.near_reward', 'Rappel « Plus qu’un passage ! »'], ['automation.review', 'Demande d’avis Google après la Ne visite'],
   ['campaigns.scheduled', 'Campagnes programmées'], ['analytics.advanced', 'Statistiques avancées'], ['reports.monthly', 'Rapport mensuel de statistiques avec conseils'],
   ['loyalty.tiers', 'Niveaux VIP (bronze, argent, or)'], ['referral', 'Parrainage entre clients'], ['campaigns.prepared', 'Campagnes clés en main préparées par LOYNA'], ['support.followup', 'Suivi personnalisé mensuel'],
@@ -231,8 +233,24 @@ interface Cust {
   referral_rewarded_at: string | null;
 }
 
-export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backend {
+/** Identité imposée au commerce fictif (consultation d'un commerce de l'écran Opérateur, développement seulement). */
+interface Identity {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  primary_color: string;
+  secondary_color: string;
+}
+
+export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Identity): Backend {
   const d = demoMerchant(seed, plan);
+  if (as) {
+    Object.assign(d.merchant, as);
+    d.program.merchant_id = as.id;
+    d.program.name = `Carte fidélité ${as.name}`;
+    for (const rw of d.rewards) rw.merchant_id = as.id;
+  }
   const r = mulberry32(seed * 7 + 13);
   const pick = <T,>(a: T[]) => a[Math.floor(r() * a.length)];
   const int = (a: number, b: number) => a + Math.floor(r() * (b - a + 1));
@@ -378,7 +396,8 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
   const campaign = (c: Record<string, any>) => ({id: id(), merchant_id: d.merchant.id, channel: 'WALLET', audience_type: 'ALL', audience_filter: {}, scheduled_at: null, sent_at: null, stats: {}, error: null, prepared_by_loyna: false, ...c});
   const campaigns: any[] = [];
   for (let k = 0; k < int(1, 3); k++) {
-    const sentAt = now - int(6, 85) * DAY;
+    // la plus récente part cette semaine (compteur « Campagnes cette semaine » de l'accueil), les autres avant
+    const sentAt = k === 0 ? now - ((int(6, 85) % 30) + 2) * 3600000 : now - int(6, 85) * DAY;
     const reach = customers.filter((c) => new Date(c.created_at).getTime() < sentAt && c.consents.marketing_wallet).length;
     campaigns.push(
       campaign({
@@ -422,7 +441,7 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
         terms_url: null, privacy_url: null, wallet_back_text: d.tpl.closed.includes(0) ? 'Du mardi au samedi, 9 h – 19 h.' : 'Tous les jours sauf le lundi, 7 h – 20 h.', notify_balance_updates: true,
         birthday_enabled: has('automation.birthday'), birthday_channel: 'WALLET', birthday_message: 'Joyeux anniversaire {prenom} ! Une surprise vous attend chez {commerce}.',
         inactive_enabled: has('automation.inactive'), inactive_after_days: 60, inactive_channel: 'WALLET', inactive_message: '{prenom}, cela fait longtemps ! Revenez nous voir chez {commerce}.',
-        reengagement_cooldown_days: 30, marketing_min_interval_hours: 48, scan_undo_window_seconds: 120, proximity_message: d.tpl.proximity, proximity_enabled: true,
+        reengagement_cooldown_days: 30, marketing_min_interval_hours: 24, scan_undo_window_seconds: 120, proximity_message: d.tpl.proximity, proximity_enabled: true,
         near_reward_enabled: has('automation.near_reward'), near_reward_after_days: 7, near_reward_remaining: null, near_reward_message: '{prenom}, plus que {reste} {unite} avant votre récompense chez {commerce} !',
         review_enabled: has('automation.review'), review_url: has('automation.review') ? 'https://example.com/avis-google-demo' : null, review_after_visits: 3,
         review_message: 'Merci pour votre fidélité, {prenom} ! Votre avis compte beaucoup pour {commerce} : le lien pour laisser un avis Google est au dos de votre carte.',
@@ -509,18 +528,45 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
     };
   }
 
-  // Quota de notifications : destinataires des campagnes envoyées depuis le 1er du mois
-  const monthStart = () => {
-    const x = new Date();
-    return new Date(x.getFullYear(), x.getMonth(), 1).getTime();
+  // Campagnes par semaine (comme private.campaign_quota) : campagnes programmées, en cours ou envoyées dont l'envoi
+  // tombe dans la semaine (lundi 0 h → lundi suivant, heure du navigateur), quel que soit le nombre de destinataires.
+  const weekStart = (at: number) => {
+    const x = new Date(at);
+    x.setHours(0, 0, 0, 0);
+    x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+    return x.getTime();
   };
-  function quota() {
-    const lim = limit('notifications.monthly_quota');
-    const x = new Date();
-    let used = db.campaigns.filter((c) => c.sent_at && new Date(c.sent_at).getTime() >= monthStart()).reduce((a, c) => a + (c.stats?.sent ?? 0), 0);
-    if (usagePct && lim) used = Math.round((lim * usagePct) / 100);
-    return {limit: lim, used, remaining: lim === null ? null : Math.max(lim - used, 0), resets_at: iso(new Date(x.getFullYear(), x.getMonth() + 1, 1).getTime())};
+  const sendTime = (c: any) => new Date(c.sent_at ?? c.scheduled_at ?? c.created_at).getTime();
+  function weekQuota(at = Date.now()) {
+    const lim = limit('campaigns.weekly_quota');
+    const from = weekStart(at);
+    const to = weekStart(from + 8 * DAY);
+    let used = db.campaigns.filter((c) => ['SCHEDULED', 'SENDING', 'SENT'].includes(c.status) && sendTime(c) >= from && sendTime(c) < to).length;
+    if (usagePct && lim && from === weekStart(Date.now())) used = Math.max(used, Math.round((lim * usagePct) / 100));
+    return {period: 'week', limit: lim, used, remaining: lim === null ? null : Math.max(lim - used, 0), week_start: iso(from), resets_at: iso(to)};
   }
+  const mondayFr = (t: number) => new Date(t).toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long'}).replace(/ 1 /, ' 1er ');
+  /** Refus d'une campagne de plus (mêmes messages que private.campaign_quota_error). */
+  function weekQuotaError(at: number, scheduled: boolean) {
+    const q = weekQuota(at);
+    if (q.limit === null || q.used < q.limit) return null;
+    const offre = d.plan.charAt(0) + d.plan.slice(1).toLowerCase();
+    const message = scheduled
+      ? `La semaine du ${mondayFr(new Date(q.week_start).getTime())} compte déjà ${q.used > 1 ? `${q.used} campagnes envoyées ou programmées` : '1 campagne envoyée ou programmée'}, le maximum de votre offre ${offre}. Choisissez une date dans une autre semaine : le compteur repart chaque lundi.`
+      : `Votre offre ${offre} comprend ${q.limit > 1 ? `${q.limit} campagnes` : '1 campagne'} par semaine : ${q.limit > 1 ? 'elles sont déjà utilisées' : 'elle est déjà utilisée'} cette semaine. Le compteur repart le ${mondayFr(new Date(q.resets_at).getTime())}.${has('campaigns.scheduled') ? ' Vous pouvez programmer cette campagne à partir de ce jour-là.' : ' Vous pourrez alors envoyer cette campagne.'}`;
+    return {status: 'QUOTA_EXCEEDED', reason: 'CAMPAIGNS_PER_WEEK', message, ...q};
+  }
+
+  // Option « +500 cartes » (packs.tsx) : packs facturés, et packs encore utilisables après un retrait (jusqu'à la fin
+  // de la période payée). Un commerce sur trois en a déjà un en Starter et Premium.
+  const periodEnd = now + ((seed % 27) + 2) * DAY;
+  const packs = {billed: has('cards.pack') && seed % 3 === 0 ? 1 : 0, kept: 0, keptUntil: null as string | null};
+  const packsUsable = () => Math.max(packs.billed, packs.keptUntil && new Date(packs.keptUntil).getTime() > Date.now() ? packs.kept : 0);
+  const packSize = () => limit('cards.pack') ?? 0;
+  const cardsLimit = () => {
+    const base = limit('cards.max');
+    return base === null ? null : base + packSize() * packsUsable();
+  };
 
   // Destinataires d'une campagne : groupe choisi, puis accord pour les offres Wallet
   function audience(c: any): {total: number; eligible: number} {
@@ -752,10 +798,11 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
           };
         }
         case 'my_plan_usage': {
-          const cl = limit('cards.max');
+          const cl = cardsLimit();
           return {
-            merchant_id: d.merchant.id, plan: d.plan, cards: {used: usagePct && cl ? Math.round((cl * usagePct) / 100) : alive().length, limit: cl},
-            notifications: quota(), locations: {used: db.merchant_locations.length, limit: limit('locations.max')},
+            merchant_id: d.merchant.id, plan: d.plan,
+            cards: {used: usagePct && cl ? Math.round((cl * usagePct) / 100) : alive().length, limit: cl, base_limit: limit('cards.max'), packs: packsUsable(), pack_size: has('cards.pack') ? packSize() : null},
+            campaigns: weekQuota(), locations: {used: db.merchant_locations.length, limit: limit('locations.max')},
           };
         }
         case 'monthly_report':
@@ -794,7 +841,8 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
           return {status: 'OK'};
         }
         case 'my_referral': {
-          // Parrainage LOYNA fictif : code tiré de la graine, filleuls aux noms de commerces inventés
+          // Parrainage LOYNA fictif : code tiré de la graine, filleuls aux noms de commerces inventés ; un filleul « gagné » a payé
+          // sa première mensualité, environ un mois après sa souscription (premier mois offert)
           const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
           const code = 'LOYNA-' + Array.from({length: 6}, (_, k) => alphabet[(seed * (k + 7) + k * 13) % 32]).join('');
           const yearly = seed % 4 === 0;
@@ -802,8 +850,8 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
             status: 'OK', code, link: `https://loyna.fr/panier/?parrain=${code}`, eligibility: yearly ? 'YEARLY' : 'ACTIVE',
             months_applied: yearly ? 0 : 1, months_waiting: yearly ? 0 : 1,
             referrals: yearly ? [] : [
-              {name: 'Fleurs de la Place (démo)', status: 'gagne', created_at: iso(now - 9 * DAY), won_at: iso(now - 8 * DAY), applied_at: null},
-              {name: 'Le Fournil du Coin (démo)', status: 'applique', created_at: iso(now - 50 * DAY), won_at: iso(now - 49 * DAY), applied_at: iso(now - 49 * DAY)},
+              {name: 'Fleurs de la Place (démo)', status: 'gagne', created_at: iso(now - 38 * DAY), won_at: iso(now - 8 * DAY), applied_at: null},
+              {name: 'Le Fournil du Coin (démo)', status: 'applique', created_at: iso(now - 80 * DAY), won_at: iso(now - 49 * DAY), applied_at: iso(now - 49 * DAY)},
               {name: 'Atelier Barbe & Co (démo)', status: 'en_attente_paiement', created_at: iso(now - DAY), won_at: null, applied_at: null},
             ],
           };
@@ -812,9 +860,29 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
         case 'op_merchants':
           if (import.meta.env.DEV && operatorDemo !== null) return (await import('./mock-operateur')).operatorRpc(fn, operatorSelf());
           break;
+        case 'op_merchant_context':
+          // « Ouvrir son espace » (écran Opérateur) : commerce de la liste fictive, avec les fonctions de son offre
+          if (import.meta.env.DEV && operatorDemo !== null) {
+            const list: any[] = (await (await import('./mock-operateur')).operatorRpc('op_merchants', operatorSelf())).merchants;
+            const x = list.find((m) => m.id === a.p_merchant_id);
+            if (!x) return {status: 'NOT_FOUND'};
+            const p: Plan = PLANS.includes(x.subscription_plan) ? x.subscription_plan : 'STARTER';
+            return {
+              status: 'OK',
+              merchant: {
+                merchant_id: x.id, merchant_name: x.name, merchant_slug: x.slug, merchant_status: x.status, logo_url: x.logo_url, primary_color: x.primary_color,
+                secondary_color: x.secondary_color, subscription_plan: p, features: Object.fromEntries(PLAN_FEATURES[p].map((f) => [f, {enabled: true, limit: LIMITS[f]?.[p] ?? null}])),
+              },
+            };
+          }
+          break;
         case 'my_subscription': {
           const yearly = seed % 4 === 0;
-          return {status: 'OK', plan: d.plan, billing_period: yearly ? 'yearly' : 'monthly', subscription_status: 'active', cancel_at_period_end: false, cancel_at: null, canceled_at: null, current_period_end: iso(now + ((seed % 27) + 2) * DAY), commitment_end: iso(now + ((seed % 300) + 30) * DAY), customer_email: staff[0].email};
+          return {
+            status: 'OK', plan: d.plan, billing_period: yearly ? 'yearly' : 'monthly', subscription_status: 'active', cancel_at_period_end: false, cancel_at: null, canceled_at: null,
+            current_period_end: iso(periodEnd), commitment_end: iso(now + ((seed % 300) + 30) * DAY), customer_email: staff[0].email,
+            card_packs: packs.billed, card_packs_usable: packsUsable(), card_packs_kept_until: packsUsable() > packs.billed ? packs.keptUntil : null,
+          };
         }
       }
       throw new ApiError('UNKNOWN', 'Fonction non disponible en démonstration.');
@@ -886,16 +954,35 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
           }
           return {status: 'NOT_AVAILABLE', display: {tone: 'error', title: 'Récompense indisponible', lines: [], actions: []}};
         }
+        case 'card-packs': {
+          // Mêmes règles que srv_card_pack_state et la fonction card-packs (dépôt LOYNA)
+          if (!has('cards.pack')) throw new ApiError('FEATURE_NOT_AVAILABLE', 'L’option +500 cartes est proposée avec Starter et Premium : votre offre a déjà des cartes illimitées.', 403);
+          const base = limit('cards.max') ?? 0;
+          if (b.action === 'add') {
+            if (packs.billed >= 20) throw new ApiError('MAX_PACKS', 'Vous avez déjà 20 packs : écrivez à contact@loyna.fr, l’offre supérieure est sans doute plus avantageuse.', 409);
+            const restore = packsUsable() > packs.billed;
+            packs.billed += 1;
+            if (packs.billed >= packsUsable()) Object.assign(packs, {kept: 0, keptUntil: null});
+            return {status: 'OK', change: restore ? 'restore' : 'add', card_packs: packs.billed, card_packs_usable: packsUsable(), card_packs_kept_until: null, invoice: restore ? 'none' : 'next'};
+          }
+          if (packs.billed <= 0) throw new ApiError('NO_PACK', 'Vous n’avez aucun pack +500 cartes à retirer.', 409);
+          const after = base + packSize() * (packs.billed - 1);
+          if (alive().length > after)
+            throw new ApiError('PACK_IN_USE', `Vous avez ${alive().length} clients inscrits : sans ce pack, votre offre en compte ${after}. Vous pourrez le retirer quand vos cartes tiendront dans cette limite.`, 409);
+          if (!(packs.keptUntil && new Date(packs.keptUntil).getTime() > Date.now())) Object.assign(packs, {kept: packsUsable(), keptUntil: iso(periodEnd)});
+          packs.billed -= 1;
+          return {status: 'OK', change: 'remove', card_packs: packs.billed, card_packs_usable: packsUsable(), card_packs_kept_until: packs.keptUntil, invoice: 'none'};
+        }
         case 'campaign-send': {
           const c = db.campaigns.find((x) => x.id === b.campaign_id);
           if (!c) throw new ApiError('NOT_FOUND', 'Campagne introuvable.', 404);
           const missing = c.audience_type !== 'ALL' && !has('segmentation') ? 'segmentation' : null;
           if (b.action === 'preview') {
             const aud = audience(c);
-            const q = quota();
+            const q = weekQuota(c.scheduled_at && new Date(c.scheduled_at).getTime() > Date.now() ? new Date(c.scheduled_at).getTime() : Date.now());
             return {
               status: 'OK', campaign_id: c.id, channel: 'WALLET', audience_type: c.audience_type, audience_total: aud.total, eligible: aud.eligible, skipped: {NO_CONSENT: aud.total - aud.eligible},
-              feature_missing: missing, prepared_by_loyna: !!c.prepared_by_loyna, notifications_quota: q, quota_ok: q.remaining === null || aud.eligible <= q.remaining,
+              feature_missing: missing, prepared_by_loyna: !!c.prepared_by_loyna, campaigns_quota: q, quota_ok: q.remaining === null || q.remaining > 0,
             };
           }
           if (b.action === 'launch') {
@@ -904,8 +991,8 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
             const scheduled = !!when && new Date(when).getTime() > Date.now() + 60000;
             if (missing || (scheduled && !has('campaigns.scheduled'))) return {status: 'FEATURE_NOT_AVAILABLE', feature: missing ?? 'campaigns.scheduled'};
             const aud = audience(c);
-            const q = quota();
-            if (q.remaining !== null && aud.eligible > q.remaining) return {status: 'QUOTA_EXCEEDED', needed: aud.eligible, ...q, campaign_id: c.id};
+            const refused = weekQuotaError(scheduled ? new Date(when).getTime() : Date.now(), scheduled);
+            if (refused) return {...refused, campaign_id: c.id};
             c.status = scheduled ? 'SCHEDULED' : 'SENT';
             c.scheduled_at = scheduled ? when : null;
             c.sent_at = scheduled ? null : iso(Date.now());
@@ -997,6 +1084,17 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan()): Backen
     },
   };
   return backend as unknown as Backend;
+}
+
+/**
+ * Espace d'un commerce de l'écran Opérateur, ouvert en consultation dans la démonstration locale (?demo&operateur) :
+ * clients, passages et campagnes fictifs tirés d'une graine propre à ce commerce, sous son nom et ses couleurs.
+ */
+export function consultationBackend(m: {merchant_id: string; merchant_name: string; merchant_slug: string; logo_url: string | null; primary_color: string; secondary_color: string; subscription_plan: string}): Backend {
+  let h = 7;
+  for (const ch of m.merchant_id) h = (h * 31 + ch.charCodeAt(0)) % 899999;
+  const plan: Plan = PLANS.find((p) => p === m.subscription_plan) ?? 'STARTER';
+  return createMockBackend(100000 + h, plan, {id: m.merchant_id, name: m.merchant_name, slug: m.merchant_slug, logo_url: m.logo_url, primary_color: m.primary_color, secondary_color: m.secondary_color});
 }
 
 /** Mêmes contrôles que le serveur (private.validate_merchant_settings et contraintes de la table). */

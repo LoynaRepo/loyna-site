@@ -1,13 +1,15 @@
 // Campagnes de notifications Wallet : brouillons dans la table campaigns (RLS), aperçu, envoi et suivi par
-// la fonction campaign-send. Quota mensuel de notifications (une par carte destinataire) affiché avant
-// l'envoi ; au-delà, le serveur refuse (QUOTA_EXCEEDED). Pro : calendrier des temps forts et campagnes
-// préparées par LOYNA (prepared_by_loyna), qui ne partent jamais sans la validation du commerçant.
+// la fonction campaign-send. Campagnes par semaine (décision d'Ewan du 2026-10-30 : Starter 2, Premium 5, Pro
+// illimitées, quel que soit le nombre de destinataires ; le compteur repart chaque lundi) affichées avant l'envoi ;
+// au-delà, le serveur refuse (QUOTA_EXCEEDED, avec son message en français et la date du lundi). Une campagne programmée
+// compte dans la semaine de son envoi. Pro : calendrier des temps forts et campagnes préparées par LOYNA
+// (prepared_by_loyna), qui ne partent jamais sans la validation du commerçant.
 import {useEffect, useState} from 'preact/hooks';
 import {Icon} from '../icons';
-import {api, can, feature, go, includedIn, loadUsage, merchant, toast, toastError, type PlanUsage} from '../state';
+import {api, can, feature, go, includedIn, loadUsage, merchant, readOnly, toast, toastError, type CampaignQuota, type PlanUsage} from '../state';
 import {campaignName, sendAt, tempsForts, type TempsFort} from '../temps-forts';
 import {Badge, Btn, Empty, ErrorBox, Field, LockBadge, Modal, NotifPreview, OffersLink, PageHead, Panel, Spinner, useBusy, useLoad} from '../ui';
-import {date, dateTime, localInput, num, plural, resetDay} from '../util';
+import {date, dateTime, localInput, mondayLabel, num, plural} from '../util';
 
 type Audience = 'ALL' | 'ACTIVE' | 'INACTIVE_30' | 'INACTIVE_60' | 'INACTIVE_90' | 'BIRTHDAY' | 'REWARD_AVAILABLE' | 'CUSTOM';
 interface Campaign {
@@ -26,12 +28,7 @@ interface Campaign {
   created_at: string;
   prepared_by_loyna?: boolean;
 }
-interface Quota {
-  limit: number | null;
-  used: number;
-  remaining: number | null;
-  resets_at: string;
-}
+type Quota = CampaignQuota;
 const STATUS: Record<Campaign['status'], [string, 'neutral' | 'blue' | 'amber' | 'green' | 'red' | 'gold']> = {
   DRAFT: ['Brouillon', 'neutral'],
   SCHEDULED: ['Programmée', 'blue'],
@@ -64,10 +61,11 @@ const FEATURES: Record<string, string> = {
 const MAX_LEN = 300;
 const prepared = (c: Pick<Campaign, 'prepared_by_loyna' | 'status'>) => !!c.prepared_by_loyna && c.status === 'DRAFT';
 
-/** « 1 240 / 2 000 notifications ce mois-ci · il en reste 760 · recharge le 1er novembre » */
+/** « Campagnes cette semaine : 1 / 2 · il en reste 1 · le compteur repart le lundi 2 novembre » */
 function quotaText(q: Quota): string {
-  if (q.limit === null) return `${num(q.used)} notifications ce mois-ci · illimitées avec votre offre`;
-  return `${num(q.used)} / ${num(q.limit)} notifications ce mois-ci · il en reste ${num(q.remaining ?? 0)} · recharge le ${resetDay(q.resets_at)}`;
+  if (q.limit === null) return `Campagnes cette semaine : ${num(q.used)} · illimitées avec votre offre`;
+  const left = q.remaining ?? 0;
+  return `Campagnes cette semaine : ${num(q.used)} / ${num(q.limit)} · ${left > 0 ? `il en reste ${num(left)}` : 'toutes utilisées'} · le compteur repart le ${mondayLabel(q.resets_at)}`;
 }
 
 export function Campagnes({id}: {id?: string}) {
@@ -84,16 +82,16 @@ function List() {
   return (
     <div class="page">
       <PageHead eyebrow={m.merchant_name} title="Campagnes">
-        {enabled && (
+        {enabled && !readOnly() && (
           <Btn kind="gold" icon="plus" onClick={() => go('campagne/nouvelle')}>
             Nouvelle campagne
           </Btn>
         )}
       </PageHead>
-      {usage.data && enabled && (
+      {usage.data?.campaigns && enabled && (
         <p class="quota-line">
           <Icon name="bell" size={16} />
-          {quotaText(usage.data.notifications)}
+          {quotaText(usage.data.campaigns)}
         </p>
       )}
       {!enabled && (
@@ -156,7 +154,7 @@ function List() {
           ))}
         </ul>
       )}
-      {enabled && list.data && (feature('campaigns.prepared') ? <Calendar campaigns={list.data} onCreated={list.reload} /> : <ProTeaser />)}
+      {enabled && list.data && !readOnly() && (feature('campaigns.prepared') ? <Calendar campaigns={list.data} onCreated={list.reload} /> : <ProTeaser />)}
     </div>
   );
 }
@@ -304,6 +302,14 @@ function Editor({id}: {id: string}) {
         <PageHead title="Campagne introuvable" back={{href: '#/campagnes', label: 'Campagnes'}} />
       </div>
     );
+  const ro = readOnly();
+  if (ro && isNew)
+    return (
+      <div class="page">
+        <PageHead title="Nouvelle campagne" back={{href: '#/campagnes', label: 'Campagnes'}} />
+        <p class="muted">Consultation en lecture seule : aucune campagne ne peut être créée dans l’espace de ce commerce.</p>
+      </div>
+    );
 
   const draft = c.status === 'DRAFT';
   const byLoyna = !!c.prepared_by_loyna;
@@ -372,9 +378,7 @@ function Editor({id}: {id: string}) {
         if (r.status === 'SENDING') toast(`Envoi lancé à ${plural(r.eligible ?? 0, 'client', 'clients')}`);
         else if (r.status === 'SCHEDULED') toast(`Campagne programmée le ${dateTime(r.scheduled_at)}`);
         else if (r.status === 'QUOTA_EXCEEDED')
-          return setError(
-            `Quota de notifications insuffisant : cette campagne en demande ${num(r.needed)}, il en reste ${num(r.remaining ?? 0)} sur ${num(r.limit)} ce mois-ci. Le quota se recharge le ${resetDay(r.resets_at)} ; vous pouvez aussi choisir un groupe de clients plus petit, ou passer à l’offre supérieure.`,
-          );
+          return setError(r.message ?? `Toutes les campagnes de la semaine sont utilisées. Le compteur repart le ${mondayLabel(r.resets_at)}.`);
         else if (r.status === 'FEATURE_NOT_AVAILABLE') return setError(`Cette campagne utilise une fonction non incluse dans votre offre${FEATURES[r.feature] ? ` (${FEATURES[r.feature]})` : ''}.`);
         else return setError('Envoi impossible : la campagne n’est plus un brouillon.');
         go('campagnes');
@@ -409,13 +413,13 @@ function Editor({id}: {id: string}) {
 
   const sample = (t: string) => t.replace(/\{prenom\}/g, 'Léa').replace(/\{commerce\}/g, m.merchant_name);
   const insert = (token: string) => set('message_body', (c.message_body + (c.message_body && !/\s$/.test(c.message_body) ? ' ' : '') + token).slice(0, MAX_LEN));
-  const q: Quota | null = preview?.notifications_quota ?? usage.data?.notifications ?? null;
+  const q: Quota | null = preview?.campaigns_quota ?? usage.data?.campaigns ?? null;
   const sendLabel = byLoyna ? (when ? 'Valider et programmer' : 'Valider et envoyer') : when ? 'Programmer l’envoi' : 'Envoyer maintenant';
 
   return (
     <div class="page">
       <PageHead eyebrow={draft ? (isNew ? 'Nouvelle campagne' : 'Brouillon') : STATUS[c.status][0]} title={c.name || 'Nouvelle campagne'} back={{href: '#/campagnes', label: 'Campagnes'}}>
-        {draft && c.id && (
+        {draft && c.id && !ro && (
           <Btn kind="ghost" icon="trash-2" busy={busy} onClick={remove}>
             Supprimer
           </Btn>
@@ -438,7 +442,7 @@ function Editor({id}: {id: string}) {
         </div>
       )}
 
-      {!draft ? (
+      {!draft || ro ? (
         <Sent c={c as Campaign} />
       ) : (
         <div class="camp-grid">
@@ -504,7 +508,9 @@ function Editor({id}: {id: string}) {
                 <p class="quota-line">
                   <Icon name="bell" size={16} />
                   <span>
-                    {q.limit === null ? 'Notifications illimitées avec votre offre.' : `${quotaText(q)}. Chaque client destinataire compte une notification ; les messages automatiques ne sont jamais décomptés.`}
+                    {q.limit === null
+                      ? 'Campagnes illimitées avec votre offre.'
+                      : `${quotaText(q)}. Une campagne compte une fois, quel que soit le nombre de clients ; les messages automatiques ne sont jamais décomptés.`}
                   </span>
                 </p>
               )}
@@ -552,29 +558,23 @@ function Editor({id}: {id: string}) {
                       ))}
                   </ul>
                 )}
-                {preview.notifications_quota && (
+                {preview.campaigns_quota && (
                   <dl class="totals totals--small">
                     <div>
-                      <dt>Notifications de cet envoi</dt>
-                      <dd>{num(preview.eligible)}</dd>
+                      <dt>Campagnes cette semaine</dt>
+                      <dd>{preview.campaigns_quota.limit === null ? num(preview.campaigns_quota.used) : `${num(preview.campaigns_quota.used)} / ${num(preview.campaigns_quota.limit)}`}</dd>
                     </div>
                     <div>
-                      <dt>Restantes ce mois-ci</dt>
-                      <dd>{preview.notifications_quota.remaining === null ? 'illimitées' : num(preview.notifications_quota.remaining)}</dd>
+                      <dt>Restantes</dt>
+                      <dd>{preview.campaigns_quota.remaining === null ? 'illimitées' : num(preview.campaigns_quota.remaining)}</dd>
                     </div>
-                    {preview.notifications_quota.limit !== null && (
-                      <div>
-                        <dt>Quota du mois</dt>
-                        <dd>{num(preview.notifications_quota.limit)}</dd>
-                      </div>
-                    )}
                   </dl>
                 )}
                 {preview.quota_ok === false && (
                   <div class="form-err" role="alert">
                     <span>
-                      Quota de notifications insuffisant : cet envoi en compte {num(preview.eligible)}, il en reste {num(preview.notifications_quota?.remaining ?? 0)} jusqu’au {resetDay(preview.notifications_quota?.resets_at)}.
-                      Choisissez un groupe de clients plus petit, attendez la recharge, ou passez à l’offre supérieure.
+                      Toutes les campagnes de la semaine sont utilisées. Le compteur repart le {mondayLabel(preview.campaigns_quota?.resets_at)}
+                      {feature('campaigns.scheduled') ? ' : choisissez une date à partir de ce jour-là, ou passez à l’offre supérieure.' : ' : vous pourrez alors envoyer cette campagne, ou passer à l’offre supérieure.'}
                     </span>
                   </div>
                 )}
@@ -593,7 +593,7 @@ function Editor({id}: {id: string}) {
                         <input type="datetime-local" value={when} min={localInput(new Date(Date.now() + 10 * 60000))} onInput={(e) => setWhen((e.target as HTMLInputElement).value)} />
                       </Field>
                     )}
-                    <Btn kind="gold" icon={when ? 'calendar-clock' : 'send'} block disabled={!preview.eligible || !!preview.feature_missing || preview.quota_ok === false} onClick={() => setConfirm(true)}>
+                    <Btn kind="gold" icon={when ? 'calendar-clock' : 'send'} block disabled={!preview.eligible || !!preview.feature_missing || (preview.quota_ok === false && !when)} onClick={() => setConfirm(true)}>
                       {sendLabel}
                     </Btn>
                   </div>
@@ -624,7 +624,7 @@ function Editor({id}: {id: string}) {
         <p>
           La notification « {c.name} » sera envoyée à <strong>{plural(preview?.eligible ?? 0, 'client', 'clients')}</strong>
           {when ? ` le ${dateTime(new Date(when).toISOString())}` : ' immédiatement'}.
-          {q && q.limit !== null ? ` Elle compte ${plural(preview?.eligible ?? 0, 'notification', 'notifications')} de votre quota du mois.` : ''} Un envoi ne peut pas être rappelé
+          {q && q.limit !== null ? (when ? ' Elle compte pour une campagne dans la semaine de son envoi.' : ' Elle compte pour une campagne de la semaine.') : ''} Un envoi ne peut pas être rappelé
           {when ? ' (une campagne programmée peut être annulée jusqu’à son envoi)' : ''}.
         </p>
       </Modal>
@@ -638,7 +638,7 @@ function numOrNull(e: Event): number | null {
 }
 
 function Sent({c}: {c: Campaign}) {
-  const perf = useLoad(() => (c.status === 'SENT' || c.status === 'SENDING' ? api.edge('campaign-send', {action: 'performance', campaign_id: c.id}) : Promise.resolve(null)), [c.id]);
+  const perf = useLoad(() => ((c.status === 'SENT' || c.status === 'SENDING') && !readOnly() ? api.edge('campaign-send', {action: 'performance', campaign_id: c.id}) : Promise.resolve(null)), [c.id]);
   const s = c.stats ?? {};
   return (
     <div class="camp-grid">
@@ -650,32 +650,42 @@ function Sent({c}: {c: Campaign}) {
           {c.sent_at ? ` · envoyée le ${dateTime(c.sent_at)}` : c.scheduled_at ? ` · prévue le ${dateTime(c.scheduled_at)}` : ''}
           {c.prepared_by_loyna ? ' · préparée par LOYNA' : ''}
         </p>
-        {c.error && <p class="form-err">{c.error === 'QUOTA_EXCEEDED' ? 'Non envoyée : le quota de notifications du mois était atteint à l’heure prévue.' : c.error}</p>}
+        {c.error && <p class="form-err">{c.error === 'QUOTA_EXCEEDED' ? 'Non envoyée : les campagnes de la semaine étaient toutes utilisées à l’heure prévue.' : c.error}</p>}
       </Panel>
-      <Panel title="Résultats">
-        <dl class="totals">
-          <div>
-            <dt>Destinataires</dt>
-            <dd>{num(typeof s.sent === 'number' ? s.sent : (s.eligible ?? 0))}</dd>
-          </div>
-          {typeof s.failed === 'number' && (
+      {c.status === 'DRAFT' ? (
+        <Panel title="Résultats">
+          <p class="muted">Brouillon : pas encore envoyé.</p>
+        </Panel>
+      ) : (
+        <Panel title="Résultats">
+          <dl class="totals">
             <div>
-              <dt>Échecs</dt>
-              <dd>{num(s.failed)}</dd>
+              <dt>Destinataires</dt>
+              <dd>{num(typeof s.sent === 'number' ? s.sent : (s.eligible ?? 0))}</dd>
             </div>
-          )}
-          {perf.data?.status === 'OK' && (
-            <div>
-              <dt>Revenus sous 7 jours</dt>
-              <dd>
-                {num(perf.data.returned_within_7_days)}
-                {perf.data.return_rate_7_days !== null && <small> ({num(perf.data.return_rate_7_days)} %)</small>}
-              </dd>
-            </div>
-          )}
-        </dl>
-        <p class="muted small">« Revenus sous 7 jours » : destinataires venus au moins une fois dans les 7 jours suivant l’envoi.</p>
-      </Panel>
+            {typeof s.failed === 'number' && (
+              <div>
+                <dt>Échecs</dt>
+                <dd>{num(s.failed)}</dd>
+              </div>
+            )}
+            {perf.data?.status === 'OK' && (
+              <div>
+                <dt>Revenus sous 7 jours</dt>
+                <dd>
+                  {num(perf.data.returned_within_7_days)}
+                  {perf.data.return_rate_7_days !== null && <small> ({num(perf.data.return_rate_7_days)} %)</small>}
+                </dd>
+              </div>
+            )}
+          </dl>
+          <p class="muted small">
+            {readOnly()
+              ? '« Revenus sous 7 jours » (destinataires revenus dans la semaine) n’est pas affiché en consultation opérateur.'
+              : '« Revenus sous 7 jours » : destinataires venus au moins une fois dans les 7 jours suivant l’envoi.'}
+          </p>
+        </Panel>
+      )}
     </div>
   );
 }

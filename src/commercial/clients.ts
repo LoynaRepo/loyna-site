@@ -18,8 +18,8 @@ export function clientsAffiches(clients: Client[] | undefined, blocs: Record<str
 /** Notes libres d'un client (sans les notes d'action). */
 export const noteLibre = (n: Note) => !estNoteAction(n);
 
-export async function noterAction(client: string, code: CodeAction, date: string, precision: string): Promise<void> {
-  const deja = actionsNotees(notesEtat.value.blocs[client]?.notes ?? [])[code];
+export async function noterAction(client: string, code: CodeAction, date: string, precision: string, qrLotLe = ''): Promise<void> {
+  const deja = actionsNotees(notesEtat.value.blocs[client]?.notes ?? [], qrLotLe)[code];
   if (deja) return;
   const maintenant = new Date().toISOString();
   await enregistrer(client, {type: 'ajout', note: {id: nouvelId(), cree_le: maintenant, modifie_le: maintenant, texte: texteAction(code, date, precision)}});

@@ -1,0 +1,241 @@
+/* Aperçu Wallet (CarteWallet.tsx) : tailles en em, la largeur de la carte règle tout. */
+.cw {
+  font-size: 15px;
+  font-family: Inter, 'Plus Jakarta Sans Variable', system-ui, -apple-system, sans-serif;
+  color: var(--cw-texte);
+  background: var(--cw-fond);
+  overflow: hidden;
+  line-height: 1.25;
+  text-align: left;
+}
+.cw small {
+  display: block;
+  font-size: 0.64em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--cw-accent);
+}
+.cw b {
+  display: block;
+  font-weight: 400;
+  font-size: 1.12em;
+  overflow-wrap: anywhere;
+}
+.cw-logo {
+  flex: none;
+  width: 2.8em;
+  height: 2.8em;
+  border-radius: 0.5em;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-weight: 800;
+  background: var(--cw-accent);
+  color: var(--cw-fond);
+}
+.cw-logo:has(img) {
+  background: transparent;
+}
+.cw-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.cw--apple {
+  border-radius: 0.95em;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 0.7em 1.8em rgba(0, 0, 0, 0.35);
+}
+.cw-a-h {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  padding: 0.65em 0.95em;
+}
+.cw-a-n {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 1.22em;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+.cw-a-c {
+  flex: none;
+  text-align: right;
+}
+.cw-a-c b {
+  font-size: 1.32em;
+}
+.cw-bande {
+  padding: 0.85em 0.95em;
+  background: linear-gradient(color-mix(in srgb, var(--cw-accent) 11%, var(--cw-fond)), color-mix(in srgb, #000 16%, var(--cw-fond)));
+}
+.cw-tampons {
+  display: grid;
+  gap: 0.5em 0.62em;
+  justify-content: center;
+  justify-items: center;
+}
+.cw-tampons span {
+  width: 100%;
+  max-width: 2.9em;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--cw-accent);
+  border: 0.09em dashed color-mix(in srgb, var(--cw-accent) 70%, transparent);
+  transition: background 0.2s;
+}
+.cw-tampons span.on {
+  background: var(--cw-accent);
+  border: 0;
+  box-shadow: 0 0.1em 0.3em rgba(0, 0, 0, 0.35);
+}
+.cw-tampons span.fin {
+  border-style: solid;
+  background: color-mix(in srgb, var(--cw-accent) 16%, transparent);
+}
+.cw-tampons span.fin.on {
+  background: var(--cw-accent);
+  color: var(--cw-fond);
+}
+.cw-tampons svg {
+  width: 66%;
+  height: 66%;
+}
+.cw-jauge {
+  height: 0.8em;
+  border-radius: 1em;
+  background: color-mix(in srgb, var(--cw-accent) 22%, transparent);
+  overflow: hidden;
+}
+.cw-jauge span {
+  display: block;
+  height: 100%;
+  border-radius: 1em;
+  background: var(--cw-accent);
+}
+.cw-champs {
+  display: flex;
+  justify-content: space-between;
+  gap: 1em;
+  padding: 0.8em 0.95em 0;
+}
+.cw-champs .d {
+  text-align: right;
+}
+.cw-qr {
+  margin: 1.2em auto 1.1em;
+  width: 10.6em;
+  padding: 0.65em 0.65em 0.42em;
+  background: #fff;
+  border-radius: 0.5em;
+  text-align: center;
+}
+.cw-qr span {
+  display: block;
+}
+.cw-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.cw .cw-qr small {
+  margin-top: 0.42em;
+  font-size: 0.72em;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: #000;
+}
+.cw--google {
+  border-radius: 1.5em;
+  box-shadow: 0 0.5em 1.3em rgba(0, 0, 0, 0.3);
+}
+.cw-g-h {
+  display: flex;
+  align-items: center;
+  gap: 0.65em;
+  padding: 1em 1.15em 0;
+}
+.cw-g-n {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.cw-g-t {
+  margin: 0.7em 0 0;
+  padding: 0 1.15em;
+  font-size: 1.68em;
+  letter-spacing: -0.01em;
+}
+.cw-g-a {
+  margin: 0.1em 0 0;
+  padding: 0 1.15em;
+  font-size: 0.86em;
+  opacity: 0.78;
+}
+.cw--google .cw-champs {
+  padding: 1em 1.15em 0;
+}
+.cw--google small {
+  color: inherit;
+  opacity: 0.75;
+  font-size: 0.8em;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.cw--google b {
+  font-size: 1.3em;
+}
+.cw--google .cw-qr {
+  border-radius: 0.95em;
+  width: 10.8em;
+}
+.cw--google .cw-bande {
+  padding: 1em 1.15em;
+}
+
+/* Téléphone */
+.cw-tel {
+  width: 300px;
+  max-width: 100%;
+  aspect-ratio: 390 / 800;
+  margin: 0 auto;
+  padding: 7px;
+  border-radius: 46px;
+  background: #0d0d10;
+  box-shadow: 0 0 0 2px #39465a, 0 26px 60px rgba(0, 0, 0, 0.38);
+}
+.cw-tel-e {
+  width: 100%;
+  height: 100%;
+  border-radius: 39px;
+  overflow: hidden;
+  padding: 0 12px;
+}
+.cw-tel--apple .cw-tel-e {
+  background: #000;
+  color: #fff;
+}
+.cw-tel--google .cw-tel-e {
+  background: #f1f3f4;
+  color: #202124;
+}
+.cw-tel-s {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 46px;
+  padding: 6px 14px 0 18px;
+  font: 600 13px Inter, system-ui, sans-serif;
+}
+.cw-tel-s i {
+  width: 20px;
+  height: 10px;
+  border: 1.3px solid currentColor;
+  border-radius: 3px;
+}
+.cw-tel .cw {
+  font-size: 12.6px;
+}

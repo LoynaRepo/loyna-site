@@ -22,8 +22,8 @@ const crumbs = [
   {name: 'Accueil', url: '/'},
   {name: 'Fonctionnalités', url: '/fonctionnalites/'},
 ];
-// Notifications de campagne par mois, de Starter à Pro (src/data/site.ts)
-const quotaNotifs = PLANS.map((p) => (p.notifications === null ? `illimitées avec ${p.name}` : `${nombre(p.notifications)} avec ${p.name}`)).join(', ');
+// Campagnes par semaine, de Starter à Pro (src/data/site.ts)
+const quotaCampagnes = PLANS.map((p) => (p.campaignsPerWeek === null ? `illimitées avec ${p.name}` : `${nombre(p.campaignsPerWeek)} avec ${p.name}`)).join(', ');
 
 const blocks = [
   {
@@ -42,7 +42,7 @@ const blocks = [
     points: [
       'iPhone : la carte s’affiche sur l’écran de verrouillage. Android : une notification apparaît quand le client s’attarde près de la boutique',
       'Le message suit la carte : récompense qui attend, passages restants, ou votre propre message',
-      'Jamais décomptée de vos notifications, sans coût par message',
+      'Jamais comptée comme une campagne, sans coût par message',
       'LOYNA ne reçoit jamais la position de vos clients : c’est leur téléphone qui détecte la proximité',
       'Fonctionne quand le client a activé la localisation ; avec Pro, jusqu’à 3 boutiques',
     ],
@@ -83,7 +83,7 @@ const blocks = [
     points: [
       'Dans toutes les formules, le client est prévenu à chaque passage et quand sa récompense est débloquée',
       'Campagnes vers tous vos clients : une offre, une nouveauté, un horaire exceptionnel',
-      `Notifications de campagne par mois : ${quotaNotifs}`,
+      `Campagnes par semaine, quel que soit le nombre de clients : ${quotaCampagnes} ; le compteur repart chaque lundi`,
       `Au plus un message commercial toutes les ${MARKETING_INTERVAL_HOURS} h par client, délai réglable`,
     ],
     img: notifications,
@@ -93,7 +93,7 @@ const blocks = [
     id: 'automatisations',
     eyebrow: 'Automatisations',
     title: 'Avec Premium, la fidélité fonctionne toute seule',
-    text: 'Les automatisations envoient le bon message pendant que vous travaillez. Vous choisissez les textes, la surprise et les règles, et ces messages ne sont jamais décomptés de vos notifications.',
+    text: 'Les automatisations envoient le bon message pendant que vous travaillez. Vous choisissez les textes, la surprise et les règles, et ces messages ne comptent jamais dans vos campagnes.',
     points: [
       'Anniversaire : un message le jour J, avec la surprise de votre choix',
       'Relance des clients qui ne reviennent plus, après 60 jours par défaut (réglable)',
@@ -116,7 +116,7 @@ const blocks = [
       'Campagnes clés en main : calendrier des temps forts (fêtes, saisons, soldes, événements), campagnes rédigées et programmées pour vous',
       'Jusqu’à 3 boutiques, chacune avec sa notification de proximité',
       'Parrainage : un lien au dos de chaque carte, et un bonus pour le parrain et pour l’ami à sa première visite',
-      'Kit comptoir imprimé (chevalet QR code et vitrophanie), cartes et notifications illimitées, support prioritaire',
+      'Kit comptoir imprimé (chevalet QR code et vitrophanie), cartes et campagnes illimitées, support prioritaire',
     ],
     pro: true,
   },

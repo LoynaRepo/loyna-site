@@ -3,8 +3,8 @@
 import {useEffect, useState} from 'preact/hooks';
 import {ApiError} from '../backend';
 import {Icon} from '../icons';
-import {api, can, feature, includedIn, merchant, toast, toastError} from '../state';
-import {Badge, Btn, CardPreview, Empty, ErrorBox, Field, Modal, PageHead, Panel, Spinner, useBusy, useLoad} from '../ui';
+import {api, can, canSee, feature, includedIn, merchant, toast, toastError} from '../state';
+import {Badge, Btn, CardPreview, Empty, ErrorBox, Field, Modal, PageHead, Panel, ReadOnlyZone, Spinner, useBusy, useLoad} from '../ui';
 import {euros, num} from '../util';
 
 interface Program {
@@ -80,8 +80,11 @@ export function Programme() {
   return (
     <div class="page">
       <PageHead eyebrow={m.merchant_name} title="Programme et récompenses" />
-      {can('program.manage') && <ProgramForm program={prog.data} rewards={rewards.data ?? []} onSaved={(p) => prog.set(p)} />}
-      {can('rewards.manage') && <Rewards program={prog.data} list={rewards.data} error={rewards.error} reload={rewards.reload} />}
+      {/* consultation opérateur : programme et récompenses affichés, champs et actions désactivés */}
+      <ReadOnlyZone>
+        {canSee('program.manage') && <ProgramForm program={prog.data} rewards={rewards.data ?? []} onSaved={(p) => prog.set(p)} />}
+        {canSee('rewards.manage') && <Rewards program={prog.data} list={rewards.data} error={rewards.error} reload={rewards.reload} />}
+      </ReadOnlyZone>
     </div>
   );
 }

@@ -1959,3 +1959,346 @@ button.cp-kpi:hover {
   align-items: center;
   gap: 10px;
 }
+
+/* --- Préparer une carte ------------------------------------------------------------------------- */
+.pc-grille {
+  display: grid;
+  gap: 18px;
+  align-items: start;
+}
+@media (min-width: 1040px) {
+  .pc-grille {
+    grid-template-columns: minmax(0, 1.2fr) minmax(340px, 400px);
+  }
+  .pc-droite {
+    position: sticky;
+    top: 16px;
+  }
+}
+@media (max-width: 1039px) {
+  .pc-droite {
+    order: -1;
+  }
+}
+.pc-form,
+.pc-droite {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.pc-logo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.pc-logo-v {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+.pc-logo-v img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.pc-pastilles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pc-pastille {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+.pc-pastille.on {
+  outline: 3px solid #121216;
+  outline-offset: 2px;
+}
+.pc-sep {
+  width: 1px;
+  height: 24px;
+  background: rgba(18, 18, 22, 0.15);
+}
+.pc-libre {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  background: conic-gradient(#f44, #fd4, #4d4, #4df, #44f, #f4f, #f44);
+}
+.pc-libre input {
+  position: absolute;
+  inset: -6px;
+  width: 44px;
+  height: 44px;
+  opacity: 0;
+  cursor: pointer;
+}
+.fld .pc-pastilles input.pc-hex {
+  flex: none;
+  width: 96px !important; /* la règle générale des champs de base.css met 100 % */
+  min-height: 36px;
+  padding: 4px 8px;
+  font: 500 0.88rem ui-monospace, Consolas, monospace;
+}
+.pc-periode,
+.pc-sys {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(18, 18, 22, 0.07);
+}
+.pc-periode button,
+.pc-sys button {
+  border: 0;
+  background: transparent;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  color: inherit;
+}
+.pc-periode button.on,
+.pc-sys button.on {
+  background: #121216;
+  color: #f8f4ec;
+}
+.pc-offres {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+@media (min-width: 640px) {
+  .pc-offres {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.pc-offre {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  text-align: left;
+  padding: 14px;
+  border-radius: 16px;
+  border: 2px solid rgba(18, 18, 22, 0.12);
+  background: #fff;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.pc-offre.on {
+  border-color: #c9963f;
+  background: #fdf7ea;
+}
+.pc-offre-p {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.pc-offre small,
+.pc-qr small {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted, #6b6559);
+}
+.pnl .pc-t3 {
+  margin: 22px 0 10px;
+  font-size: 1rem;
+}
+.pc-qr {
+  display: grid;
+  gap: 8px;
+}
+.pc-qr > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(18, 18, 22, 0.04);
+}
+.pc-qr > div.on {
+  background: #fdf7ea;
+}
+.pc-qr > div > span:first-child {
+  display: grid;
+}
+.pc-pas {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.pc-pas button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(18, 18, 22, 0.2);
+  background: #fff;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.pc-pas button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.pc-pas b {
+  min-width: 1.4em;
+  text-align: center;
+}
+.pc-apercu {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 22px;
+  background: #16151a;
+  color: #f8f4ec;
+}
+.pc-apercu .pc-sys {
+  background: rgba(255, 255, 255, 0.1);
+}
+.pc-apercu .pc-sys button.on {
+  background: #f8f4ec;
+  color: #121216;
+}
+.pc-apercu .cw-tel {
+  width: 262px;
+}
+.pc-apercu .cw-tel .cw {
+  font-size: 11px;
+}
+.pc-faits {
+  display: grid;
+  gap: 6px;
+  width: min(300px, 100%);
+  font-size: 0.85rem;
+  text-align: center;
+}
+.pc-faits input {
+  width: 100%;
+  accent-color: #c9963f;
+}
+.pc-recap {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.pc-recap > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+.pc-recap dt small {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted, #6b6559);
+}
+.pc-recap dd {
+  margin: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pc-recap .pc-total {
+  padding-top: 10px;
+  border-top: 1px solid rgba(18, 18, 22, 0.12);
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+.pc-note {
+  margin: 12px 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--muted, #6b6559);
+}
+.pc-note.warn {
+  color: #a8650a;
+  font-weight: 600;
+}
+.pc-lien {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(18, 18, 22, 0.05);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.pc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.pc-qr-lien {
+  width: 170px;
+  margin: 10px auto 0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.pc-qr-lien svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.pc-liste {
+  margin-top: 18px;
+}
+.pc-liste ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.pc-liste li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(18, 18, 22, 0.04);
+}
+.pc-liste li.on {
+  background: #fdf7ea;
+}
+.pc-liste a {
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.pc-liste a small {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted, #6b6559);
+  overflow-wrap: anywhere;
+}
+.pc-mini {
+  flex: none;
+  width: 44px;
+  height: 30px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+}
+.pc-mini i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}

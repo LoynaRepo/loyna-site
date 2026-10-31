@@ -4,6 +4,7 @@ import type {ComponentChildren} from 'preact';
 import {useEffect, useMemo, useState} from 'preact/hooks';
 import {accesMemorise, deriverAcces, ErreurAcces, memoriserAcces, oublierCle, ouvrir, sessionOuverte, telecharger, type Acces} from './crypto';
 import {initialiserNotes, notesEtat, oublierNotes, type Note} from './notes';
+import {initialiserCartes, oublierCartes} from './cartes';
 import {clientsAffiches} from './clients';
 import {dateHeure} from './format';
 import {Icon} from './icons';
@@ -19,6 +20,7 @@ import {Questions} from './views/Questions';
 import {Aide} from './views/Aide';
 import {Clients} from './views/Clients';
 import {ClientFiche} from './views/ClientFiche';
+import {Preparer} from './views/Preparer';
 
 interface NavItem {
   vue: string;
@@ -30,6 +32,7 @@ const NAV: NavItem[] = [
   {vue: 'tableau', label: 'Tableau de bord', court: 'Tableau', icon: 'layout-dashboard'},
   {vue: 'prospects', label: 'Prospects', icon: 'users'},
   {vue: 'appeler', label: 'À appeler', icon: 'phone-call'},
+  {vue: 'preparer', label: 'Préparer une carte', court: 'Carte', icon: 'palette'},
   {vue: 'clients', label: 'Clients', icon: 'handshake'},
   {vue: 'questions', label: 'Questions clients', court: 'Questions', icon: 'message-circle-question'},
   {vue: 'tarifs', label: 'Tarifs', icon: 'euro'},
@@ -43,6 +46,7 @@ function demarrerNotes(d: Suivi, acces: Acces) {
   for (const c of d.clients ?? []) if (c.notes?.length) publiees[c.id] = c.notes;
   for (const o of d.notes_orphelines ?? []) publiees[o.prospect] = o.notes;
   initialiserNotes(d.notes_panel?.cle, acces.jeton, publiees).catch(() => {});
+  initialiserCartes(acces.jeton);
 }
 
 function logoFor(logo: string, where: string): string {
@@ -209,6 +213,7 @@ function Coque({logo, faq}: {logo: string; faq: FaqSite[]}) {
   const verrouiller = () => {
     oublierCle();
     oublierNotes();
+    oublierCartes();
     donnees.value = null;
     filtres.value = {...FILTRES_VIDES};
     filtresClients.value = {...FILTRES_CLIENTS_VIDES};
@@ -217,7 +222,7 @@ function Coque({logo, faq}: {logo: string; faq: FaqSite[]}) {
   };
   const actif = (v: string) => vue === v || (v === 'prospects' && vue === 'prospect') || (v === 'clients' && vue === 'client');
   const bas = NAV.filter((n) => ['tableau', 'prospects', 'questions'].includes(n.vue));
-  const reste = NAV.filter((n) => ['clients', 'tarifs', 'aide'].includes(n.vue));
+  const reste = NAV.filter((n) => ['preparer', 'clients', 'tarifs', 'aide'].includes(n.vue));
   const appels = d.totaux.a_appeler;
 
   return (
@@ -283,7 +288,7 @@ function Coque({logo, faq}: {logo: string; faq: FaqSite[]}) {
             <span>{n.court ?? n.label}</span>
           </a>
         ))}
-        <button type="button" class={plus || actif('clients') || actif('tarifs') || actif('aide') ? 'on' : ''} onClick={() => setPlus(!plus)} aria-expanded={plus}>
+        <button type="button" class={plus || actif('preparer') || actif('clients') || actif('tarifs') || actif('aide') ? 'on' : ''} onClick={() => setPlus(!plus)} aria-expanded={plus}>
           <Icon name="ellipsis" size={22} />
           <span>Plus{clientsATraiter > 0 && <i class="cl-pastille" aria-label={`${clientsATraiter} clients à traiter`} />}</span>
         </button>
@@ -322,6 +327,8 @@ function Vue({vue, id, faq}: {vue: string; id?: string; faq: FaqSite[]}): Compon
       return <Fiche id={id ?? ''} />;
     case 'appeler':
       return <Appeler />;
+    case 'preparer':
+      return <Preparer id={id} />;
     case 'clients':
       return <Clients />;
     case 'client':

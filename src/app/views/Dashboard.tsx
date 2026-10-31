@@ -1,14 +1,17 @@
-// Accueil : indicateurs de la période (avec la période précédente), consommation de l'offre (cartes,
-// notifications du mois) avec alertes à 80 % et 100 %, courbe quotidienne et suivi LOYNA (Pro).
-// Parrainage LOYNA (29/10/2026, Ewan : le montrer aux commerçants déjà clients, plus sur l'accueil du site) :
+// Accueil : indicateurs de la période (avec la période précédente), consommation de l'offre (cartes, campagnes de la
+// semaine) avec alertes à 80 % et 100 % et bouton « Ajouter 500 cartes » (option du 2026-10-30, packs.tsx), courbe
+// quotidienne et suivi LOYNA (Pro).
+// Parrainage LOYNA (29/10/2026, Ewan : le montrer aux commerçants déjà clients) :
 // bandeau « Parrainez un commerçant » pour le propriétaire d'un abonnement mensuel actif (my_referral, CGV 4.8),
 // masquable 30 jours ; le détail (filleuls, mois obtenus) reste dans Abonnement.
 // Définitions des indicateurs : en-tête de supabase/migrations/…_analytics.sql (dépôt LOYNA).
 import {useState} from 'preact/hooks';
+import {CARD_PACK, nombre} from '../../data/site';
 import {Icon} from '../icons';
-import {api, can, feature, includedIn, loadUsage, merchant, planLabel, toast, type PlanUsage} from '../state';
+import {AddPackButton, canManagePacks} from '../packs';
+import {api, can, feature, includedIn, loadUsage, merchant, planLabel, readOnly, toast, type PlanUsage} from '../state';
 import {Btn, ErrorBox, Kpi, LinkBox, Panel, Segmented, Spinner, UsageMeter, useLoad} from '../ui';
-import {copy, date, joinUrl, num, resetDay} from '../util';
+import {copy, date, joinUrl, mondayLabel, num} from '../util';
 
 interface Period {
   visits: number;
@@ -46,8 +49,8 @@ const METRICS = [
   {value: 'rewards_redeemed', label: 'Récompenses utilisées'},
 ] as const;
 
-// --- Parrainage LOYNA (CGV 4.8 : -50 % sur le premier mois du filleul, -50 % sur le mois suivant du parrain,
-// abonnements mensuels) ------------------------------------------------------------------------------------
+// --- Parrainage LOYNA (CGV 4.8 : premier mois offert au filleul ; pour le parrain, son mois suivant offert
+// et 1 QR code sous verre offert par filleul qui paie sa première mensualité ; abonnements mensuels) -------------
 const MASQUE = 'loyna_parrainage_masque_jusqua';
 const masqueJusqua = () => {
   try {
@@ -62,7 +65,7 @@ function ParrainageAccueil() {
   const data = useLoad(() => (masque ? Promise.resolve(null) : api.rpc<{status: string; code?: string; link?: string; eligibility?: string; months_waiting?: number}>('my_referral').catch(() => null)), [masque]);
   const r = data.data;
   if (masque || !r || r.status !== 'OK' || r.eligibility !== 'ACTIVE' || !r.code || !r.link) return null;
-  const message = `Je vous recommande LOYNA, la carte de fidélité dans Apple Wallet et Google Wallet. Avec mon code ${r.code}, vous avez -50 % sur votre premier mois (abonnement mensuel) : ${r.link}`;
+  const message = `Je vous recommande LOYNA, la carte de fidélité dans Apple Wallet et Google Wallet. Avec mon code ${r.code}, votre premier mois est offert (abonnement mensuel) : ${r.link}`;
   const cacher = () => {
     try {
       localStorage.setItem(MASQUE, String(Date.now() + 30 * 86400000));
@@ -77,10 +80,10 @@ function ParrainageAccueil() {
         <Icon name="gift" size={26} />
       </span>
       <div class="rb-t">
-        <strong>Parrainez un commerçant : -50 % chacun</strong>
+        <strong>Parrainez un commerçant : 1 mois offert chacun</strong>
         <small>
-          -50 % sur son premier mois, et -50 % sur votre mois suivant pour chaque commerçant qui s’abonne (abonnements mensuels).
-          {(r.months_waiting ?? 0) > 0 ? ` ${num(r.months_waiting!)} mois à -50 % à venir.` : ''}
+          Son premier mois est offert. Pour vous, votre mois suivant offert et 1 QR code sous verre, dès qu’il a payé sa première mensualité (abonnements mensuels).
+          {(r.months_waiting ?? 0) > 0 ? ` ${num(r.months_waiting!)} mois offert${r.months_waiting! > 1 ? 's' : ''} à venir.` : ''}
         </small>
         <div class="rb-a">
           <span class="ref-code">{r.code}</span>
@@ -115,9 +118,8 @@ export function Dashboard() {
       <header class="ph">
         <div class="ph-t">
           <p class="eyebrow">{m.merchant_name}</p>
-          <h1>
-            {hello} {m.display_name}
-          </h1>
+          {/* consultation opérateur : pas de « Bonjour » au nom de l'opérateur */}
+          <h1>{readOnly() ? 'Tableau de bord' : `${hello} ${m.display_name}`}</h1>
         </div>
         <div class="ph-a">
           <Segmented
@@ -146,7 +148,7 @@ export function Dashboard() {
         </a>
       )}
 
-      {usage.data && <QuotaAlerts u={usage.data} />}
+      {usage.data && <QuotaAlerts u={usage.data} reload={usage.reload} />}
 
       {can('settings.manage') && <ParrainageAccueil />}
 
@@ -208,7 +210,7 @@ export function Dashboard() {
       )}
 
       <div class={`dash-grid dash-grid--top ${feature('support.followup') ? '' : 'dash-grid--one'}`}>
-        {usage.data && <UsagePanel u={usage.data} />}
+        {usage.data && <UsagePanel u={usage.data} reload={usage.reload} />}
         {feature('support.followup') && <FollowUp />}
       </div>
 
@@ -221,69 +223,92 @@ export function Dashboard() {
 
 const ratio = (used: number, limit: number | null) => (limit ? used / limit : 0);
 
-/** Alertes à 80 % et 100 % des cartes et des notifications du mois (inscriptions et campagnes refusées au-delà). */
-function QuotaAlerts({u}: {u: PlanUsage}) {
+/**
+ * Alertes à 80 % et 100 % des cartes (inscriptions refusées au-delà ; bouton « Ajouter 500 cartes » pour le propriétaire
+ * ou un administrateur, en Starter et Premium) et des campagnes de la semaine (refusées au-delà, jusqu'à lundi).
+ */
+function QuotaAlerts({u, reload}: {u: PlanUsage; reload: () => void}) {
   const link = can('settings.manage') ? (
     <a href="#/abonnement" class="alert-a">
       Voir les offres
     </a>
   ) : null;
+  const packs = canManagePacks();
   const out = [];
   const c = ratio(u.cards.used, u.cards.limit);
   if (u.cards.limit && c >= 1)
     out.push(
       <div class="alert alert--full" role="alert">
         <Icon name="triangle-alert" />
-        <p>
-          <strong>
-            Toutes les cartes de votre offre sont utilisées ({num(u.cards.used)} / {num(u.cards.limit)}).
-          </strong>{' '}
-          Les nouvelles inscriptions sont refusées : passez à l’offre supérieure pour accueillir de nouveaux clients. {link}
-        </p>
+        <div class="alert-t">
+          <p>
+            <strong>
+              Toutes vos cartes sont utilisées ({num(u.cards.used)} / {num(u.cards.limit)}).
+            </strong>{' '}
+            Les nouvelles inscriptions sont refusées : {packs ? `ajoutez ${nombre(CARD_PACK.cards)} cartes, ou passez à l’offre supérieure` : 'passez à l’offre supérieure'} pour accueillir de nouveaux clients. {link}
+          </p>
+          {packs && (
+            <div class="alert-b">
+              <AddPackButton usage={u} onDone={reload} />
+            </div>
+          )}
+        </div>
       </div>,
     );
   else if (u.cards.limit && c >= 0.8)
     out.push(
       <div class="alert" role="status">
         <Icon name="triangle-alert" />
-        <p>
-          <strong>
-            {Math.floor(c * 100)} % de vos cartes sont utilisées ({num(u.cards.used)} / {num(u.cards.limit)}).
-          </strong>{' '}
-          Au-delà de {num(u.cards.limit)}, les nouvelles inscriptions seront refusées. {link}
-        </p>
+        <div class="alert-t">
+          <p>
+            <strong>
+              {Math.floor(c * 100)} % de vos cartes sont utilisées ({num(u.cards.used)} / {num(u.cards.limit)}).
+            </strong>{' '}
+            Au-delà de {num(u.cards.limit)}, les nouvelles inscriptions seront refusées.{packs ? ` Besoin de place ? Ajoutez ${nombre(CARD_PACK.cards)} cartes.` : ''} {link}
+          </p>
+          {packs && (
+            <div class="alert-b">
+              <AddPackButton usage={u} onDone={reload} />
+            </div>
+          )}
+        </div>
       </div>,
     );
-  const n = ratio(u.notifications.used, u.notifications.limit);
-  if (u.notifications.limit && n >= 1)
+  const q = u.campaigns;
+  const n = q ? ratio(q.used, q.limit) : 0;
+  if (q && q.limit && n >= 1)
     out.push(
       <div class="alert alert--full" role="alert">
         <Icon name="triangle-alert" />
         <p>
-          <strong>Quota de notifications du mois atteint ({num(u.notifications.limit)}).</strong> Les campagnes sont refusées jusqu’au {resetDay(u.notifications.resets_at)} ; les messages automatiques continuent de partir. {link}
+          <strong>
+            Toutes les campagnes de la semaine sont utilisées ({num(q.used)} / {num(q.limit)}).
+          </strong>{' '}
+          La prochaine campagne pourra partir à partir du {mondayLabel(q.resets_at)} ; les messages automatiques continuent de partir. {link}
         </p>
       </div>,
     );
-  else if (u.notifications.limit && n >= 0.8)
+  else if (q && q.limit && n >= 0.8)
     out.push(
       <div class="alert" role="status">
         <Icon name="triangle-alert" />
         <p>
           <strong>
-            {Math.floor(n * 100)} % de vos notifications du mois sont utilisées ({num(u.notifications.used)} / {num(u.notifications.limit)}).
+            {q.limit - q.used > 1 ? `Plus que ${num(q.limit - q.used)} campagnes cette semaine` : 'Plus qu’une campagne cette semaine'} ({num(q.used)} / {num(q.limit)}).
           </strong>{' '}
-          Une campagne qui dépasse le reste ({num(u.notifications.remaining ?? 0)}) sera refusée. Recharge le {resetDay(u.notifications.resets_at)}. {link}
+          Le compteur repart le {mondayLabel(q.resets_at)}. {link}
         </p>
       </div>,
     );
   return out.length ? <div class="alerts">{out}</div> : null;
 }
 
-function UsagePanel({u}: {u: PlanUsage}) {
+function UsagePanel({u, reload}: {u: PlanUsage; reload: () => void}) {
+  const packs = u.cards.packs ?? 0;
   return (
     <Panel
       title={`Votre offre ${planLabel(u.plan)}`}
-      sub="Une carte = un client inscrit. Une notification = un message de campagne reçu par une carte : les messages automatiques et la proximité ne sont jamais décomptés."
+      sub="Une carte = un client inscrit. Une campagne = un envoi à vos clients, quel que soit leur nombre : les messages automatiques et la proximité ne sont jamais décomptés."
       actions={
         can('settings.manage') ? (
           <Btn kind="ghost" small href="#/abonnement" icon="arrow-right">
@@ -293,13 +318,23 @@ function UsagePanel({u}: {u: PlanUsage}) {
       }
     >
       <div class="meters">
-        <UsageMeter label="Cartes" used={u.cards.used} limit={u.cards.limit} />
-        <UsageMeter
-          label="Notifications ce mois-ci"
-          used={u.notifications.used}
-          limit={u.notifications.limit}
-          extra={u.notifications.limit !== null ? ` · recharge le ${resetDay(u.notifications.resets_at)}` : undefined}
-        />
+        <div class="meter-w">
+          <UsageMeter
+            label="Cartes"
+            used={u.cards.used}
+            limit={u.cards.limit}
+            extra={packs > 0 ? ` · dont +${nombre(packs * (u.cards.pack_size ?? CARD_PACK.cards))} avec vos packs` : undefined}
+          />
+          {canManagePacks() && u.cards.limit !== null && ratio(u.cards.used, u.cards.limit) < 0.8 && <AddPackButton usage={u} onDone={reload} kind="ghost" />}
+        </div>
+        {u.campaigns && (
+          <UsageMeter
+            label="Campagnes cette semaine"
+            used={u.campaigns.used}
+            limit={u.campaigns.limit}
+            extra={u.campaigns.limit !== null ? ` · le compteur repart le ${mondayLabel(u.campaigns.resets_at)}` : undefined}
+          />
+        )}
       </div>
     </Panel>
   );

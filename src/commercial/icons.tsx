@@ -59,6 +59,9 @@ import messageSquareQuote from 'lucide-static/icons/message-square-quote.svg?raw
 import pencil from 'lucide-static/icons/pencil.svg?raw';
 import trash2 from 'lucide-static/icons/trash-2.svg?raw';
 import plus from 'lucide-static/icons/plus.svg?raw';
+import palette from 'lucide-static/icons/palette.svg?raw';
+import upload from 'lucide-static/icons/upload.svg?raw';
+import messageCircle from 'lucide-static/icons/message-circle.svg?raw';
 import notebookPen from 'lucide-static/icons/notebook-pen.svg?raw';
 import notebookText from 'lucide-static/icons/notebook-text.svg?raw';
 import save from 'lucide-static/icons/save.svg?raw';
@@ -76,6 +79,9 @@ import undo2 from 'lucide-static/icons/undo-2.svg?raw';
 
 const RAW: Record<string, string> = {
   'layout-dashboard': layoutDashboard,
+  palette,
+  upload,
+  'message-circle': messageCircle,
   users,
   'phone-call': phoneCall,
   phone,

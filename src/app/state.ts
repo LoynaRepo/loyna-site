@@ -1,6 +1,6 @@
 // État partagé de LOYNA Business : session, commerce choisi, offre, navigation, messages.
-import {signal} from '@preact/signals';
-import {supabaseBackend, type Backend} from './backend';
+import {effect, signal} from '@preact/signals';
+import {ApiError, readOnlyBackend, supabaseBackend, type Backend} from './backend';
 
 export interface Membership {
   staff_id: string;
@@ -16,6 +16,8 @@ export interface Membership {
   display_name: string;
   permissions: string[];
   features: Record<string, {enabled: boolean; limit: number | null}>;
+  /** Espace ouvert par un opérateur LOYNA depuis l'écran Opérateur : consultation en lecture seule. */
+  consultation?: boolean;
 }
 export interface StaffContext {
   user_id: string;
@@ -36,6 +38,17 @@ export const route = signal(parseRoute());
 
 export function can(permission: string): boolean {
   return !!merchant.value?.permissions.includes(permission);
+}
+/** Consultation de l'espace d'un commerce par un opérateur LOYNA : tout est visible, rien n'est modifiable. */
+export function readOnly(): boolean {
+  return merchant.value?.consultation === true;
+}
+/**
+ * Page visible : avec le droit de gestion qui l'ouvre d'habitude, ou en consultation opérateur (lecture seule :
+ * l'opérateur n'a que des droits de lecture, les actions de la page restent masquées).
+ */
+export function canSee(permission: string): boolean {
+  return can(permission) || readOnly();
 }
 /**
  * Opérateur LOYNA (table platform_admins), d'après le serveur (my_staff_context) : affiche l'onglet « Opérateur ».
@@ -107,12 +120,24 @@ export function includedIn(featureName: string): string {
 }
 
 // --- Consommation de l'offre (RPC my_plan_usage, droit analytics.read) -------------------------------
-// Limite null = illimité. Carte = client inscrit (hors supprimés) ; notification = message de campagne
-// reçu par une carte, quota rechargé le 1er du mois (messages automatiques et proximité jamais décomptés).
+// Limite null = illimité. Carte = client inscrit (hors supprimés) ; limite = celle de l'offre + 500 par pack
+// « +500 cartes » utilisable (option du 2026-10-30). Campagne = un envoi de notification aux clients, quel que soit le
+// nombre de destinataires : Starter 2 par semaine, Premium 5, Pro illimitées ; le compteur repart chaque lundi
+// (décision d'Ewan du 2026-10-30, qui remplace le quota mensuel de notifications). Les messages automatiques et la
+// proximité ne sont jamais décomptés.
+export interface CampaignQuota {
+  limit: number | null;
+  used: number;
+  remaining: number | null;
+  week_start: string;
+  /** Lundi 0 h suivant, heure du commerce : remise à zéro du compteur. */
+  resets_at: string;
+}
 export interface PlanUsage {
   plan: PlanCode;
-  cards: {used: number; limit: number | null};
-  notifications: {limit: number | null; used: number; remaining: number | null; resets_at: string};
+  cards: {used: number; limit: number | null; base_limit?: number | null; packs?: number; pack_size?: number | null};
+  /** Absent tant que la migration du 2026-10-30 n'est pas appliquée : l'écran se passe alors du compteur. */
+  campaigns?: CampaignQuota;
   locations: {used: number; limit: number | null};
 }
 export const loadUsage = () => api.rpc<PlanUsage>('my_plan_usage', {p_merchant_id: merchant.value?.merchant_id});
@@ -167,3 +192,39 @@ export function rememberedMerchant(): string | null {
     return null;
   }
 }
+
+// --- Consultation de l'espace d'un commerce par un opérateur LOYNA (lecture seule) --------------------------
+// Écran Opérateur → « Ouvrir son espace » : LOYNA Business du commerce tel que son propriétaire le voit. Le serveur
+// (op_merchant_context, migration 0039 du dépôt LOYNA) vérifie que le compte est opérateur et n'ouvre que la
+// lecture ; ici, l'opérateur ne reçoit que des droits de lecture et l'accès aux données refuse toute écriture.
+export type ConsultedMerchant = Omit<Membership, 'staff_id' | 'role' | 'display_name' | 'permissions' | 'consultation'>;
+/** Droits donnés à l'opérateur pendant une consultation : statistiques et clients, jamais d'action. */
+const CONSULTATION_PERMISSIONS = ['analytics.read', 'customers.read_basic', 'customers.read'];
+let consultation: {base: Backend; before: Membership | null} | null = null;
+
+export async function openConsultation(merchantId: string): Promise<void> {
+  const base = consultation?.base ?? api;
+  const r = await base.rpc<{status: string; merchant?: ConsultedMerchant}>('op_merchant_context', {p_merchant_id: merchantId});
+  if (r?.status !== 'OK' || !r.merchant) throw new ApiError('NOT_FOUND', 'Ce commerce est introuvable : actualisez la liste.');
+  // Démonstration locale (?demo&operateur) : données fictives propres au commerce ouvert
+  const data = base.demo ? (await import('./mock')).consultationBackend(r.merchant) : base;
+  consultation = {base, before: consultation ? consultation.before : merchant.value};
+  api = readOnlyBackend(data);
+  merchant.value = {...r.merchant, staff_id: '', role: 'STAFF', display_name: 'Opérateur LOYNA', permissions: CONSULTATION_PERMISSIONS, consultation: true};
+}
+
+/** « Quitter » : retour à l'écran Opérateur (dans son propre commerce s'il en avait un ouvert). */
+export function closeConsultation() {
+  route.value = {view: 'operateur'}; // tout de suite (l'ancre change ensuite) : pas de passage par le choix du commerce
+  go('operateur');
+  merchant.value = consultation?.before ?? null;
+}
+
+// Dès que l'espace affiché n'est plus une consultation (Quitter, déconnexion, changement de commerce), l'accès
+// normal aux données revient.
+effect(() => {
+  if (!merchant.value?.consultation && consultation) {
+    api = consultation.base;
+    consultation = null;
+  }
+});

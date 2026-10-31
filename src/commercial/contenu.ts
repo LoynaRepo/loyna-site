@@ -6,7 +6,7 @@
 // Formulation validée par Ewan (relecture du site, 23/10/2026) : jamais « HT » (TVA non applicable) ; engagement du
 // mensuel dit en clair ; un seul message sur la mise en service ; « LOYNA, une marque de KOVA Elec », Ewan « fondateur
 // de LOYNA » (jamais « société Loyna »). Proximité : dire « s'affiche », jamais « à chaque passage ».
-import {LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, nombre, offerActive, quotas} from '../data/site';
+import {CARD_PACK, LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, nombre, offerActive, quotas} from '../data/site';
 
 export interface Reponse {
   id: string;
@@ -18,7 +18,7 @@ export interface Reponse {
 }
 
 const S = {
-  offres: 'Offres LOYNA du 25/10/2026 (dépôt LOYNA, docs/OFFRES.md)',
+  offres: 'Offres LOYNA du 25/10/2026, campagnes par semaine et option +500 cartes du 30/10/2026 (dépôt LOYNA, docs/OFFRES.md)',
   brief: 'Brief produit (docs/BRIEF.md)',
   faq: 'FAQ du site (loyna.fr/faq/)',
   faqCoffre: 'FAQ Loyna du coffre (05 Règles)',
@@ -43,8 +43,13 @@ export const LIENS = {
 const prixMin = () => Math.min(...PLANS.map((p) => p.monthly));
 const listePrix = (cle: 'monthly' | 'yearly') => PLANS.map((p) => `${p.name} ${euro(p[cle])}`).join(', ');
 const offre = (id: string) => PLANS.find((p) => p.id === id)!;
-/** « Starter : 500 cartes et 2 000 notifications par mois ; Premium : … ; Pro : cartes et notifications illimitées » */
+/** « Starter : 500 cartes et 2 campagnes par semaine ; Premium : … ; Pro : cartes et campagnes illimitées » */
 const listeQuotas = () => PLANS.map((p) => `${p.name} : ${quotas(p).charAt(0).toLowerCase()}${quotas(p).slice(1)}`).join(' ; ');
+/** Offres où l'option « +500 cartes » existe : « Starter et Premium ». */
+const packPlans = () => PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) => p.name).join(' et ');
+/** L'option « +500 cartes » en une phrase (prix tirés de src/data/site.ts). */
+export const phraseOptionCartes = () =>
+  `Option +${nombre(CARD_PACK.cards)} cartes, en ${packPlans()} : ${euro(CARD_PACK.monthly)} par mois par pack (${euro(CARD_PACK.yearly)} par an avec un abonnement annuel), sans TVA, cumulable, ajoutée depuis l’espace client (Abonnement) sans changer de formule. Elle ajoute des cartes, pas de campagnes.`;
 
 /** Le seul message sur la mise en service : offerte pendant l'offre de lancement, sinon 49 € une fois. */
 export function phraseMiseEnService(): string {
@@ -76,6 +81,7 @@ export function objections(): Reponse[] {
         `${listeQuotas()}. La notification de proximité est incluse dans les trois.`,
         `En paiement annuel, 15 % de réduction : ${listePrix('yearly')} par an, sans TVA.`,
         phraseMiseEnService(),
+        `Besoin de plus de cartes en ${packPlans()} : +${nombre(CARD_PACK.cards)} cartes pour ${euro(CARD_PACK.monthly)} par mois (${euro(CARD_PACK.yearly)} par an en annuel).`,
       ],
       liens: [LIENS.tarifs],
       sources: [S.tarifs, S.offres],
@@ -86,7 +92,7 @@ export function objections(): Reponse[] {
       r: [
         'Quand un client passe près de votre boutique, sa carte s’affiche sur l’écran de verrouillage de son téléphone, avec un court message : « Votre récompense vous attend chez … ! », « Plus que 2 passages avant votre récompense chez … », ou votre propre message.',
         'Exemple : votre client passe devant votre boulangerie, et sa carte s’affiche en notification.',
-        'Sur iPhone, la carte s’affiche sur l’écran de verrouillage ; sur Android, une notification apparaît quand le client s’attarde près de la boutique. C’est inclus dans les trois formules et jamais décompté des notifications.',
+        'Sur iPhone, la carte s’affiche sur l’écran de verrouillage ; sur Android, une notification apparaît quand le client s’attarde près de la boutique. C’est inclus dans les trois formules et jamais compté comme une campagne.',
       ],
       attention: 'Dites « s’affiche », jamais « à chaque passage » : il faut que le client ait activé la localisation et laissé Wallet s’afficher sur l’écran verrouillé, et c’est le téléphone qui décide de l’affichage.',
       sources: [S.offres],
@@ -96,7 +102,7 @@ export function objections(): Reponse[] {
       q: 'Qu’est-ce que Premium apporte de plus ?',
       r: [
         `Les automatisations qui font revenir vos clients, pour ${euro(premium.monthly)} par mois, sans TVA : ${enListe(premium.focus?.items ?? [])}.`,
-        'Ces messages partent tout seuls : vous choisissez le texte et la surprise, et ils ne sont jamais décomptés des notifications.',
+        'Ces messages partent tout seuls : vous choisissez le texte et la surprise, et ils ne comptent jamais dans vos campagnes.',
         'Les niveaux VIP bronze, argent et or : vos clients montent de niveau avec leurs passages et leur carte change de couleur à chaque niveau (vos couleurs, puis argent, puis or), avec l’avantage de votre choix et un message à chaque nouveau niveau.',
         `Et plus de place : ${quotas(premium)}.`,
       ],
@@ -109,7 +115,7 @@ export function objections(): Reponse[] {
       r: [
         `Avec Pro, LOYNA travaille avec vous, pour ${euro(pro.monthly)} par mois, sans TVA : un point mensuel de 30 minutes (chiffres, objectifs, réglages de la récompense) et un plan d’action.`,
         'Des campagnes clés en main : nous préparons le calendrier des temps forts (fêtes, saisons, soldes, événements), nous rédigeons et programmons les campagnes, et vous les validez en un clic. Rien ne part sans votre validation.',
-        `Jusqu’à ${pro.shops} boutiques, parrainage, kit comptoir imprimé (chevalet QR code et vitrophanie), ${quotas(pro).toLowerCase()} et support prioritaire.`,
+        `Jusqu’à ${pro.shops} boutiques, parrainage entre vos clients, kit comptoir imprimé (chevalet QR code et vitrophanie), ${quotas(pro).toLowerCase()} et support prioritaire.`,
       ],
       sources: [S.offres],
     },
@@ -118,7 +124,7 @@ export function objections(): Reponse[] {
       q: 'Les notifications, c’est compris ? Combien ?',
       r: [
         'Oui, sans coût par message. Dans toutes les formules, le client est prévenu automatiquement à chaque passage et quand sa récompense est débloquée.',
-        `Pour vos campagnes (offres, nouveautés), un quota par mois : ${PLANS.map((p) => `${p.notifications === null ? 'illimité' : nombre(p.notifications)} avec ${p.name}`).join(', ')}. Une notification, c’est un message de campagne reçu par une carte : une campagne envoyée à 300 clients compte 300 notifications.`,
+        `Pour vos campagnes (offres, nouveautés), un nombre de campagnes par semaine : ${PLANS.map((p) => `${p.campaignsPerWeek === null ? 'illimitées' : nombre(p.campaignsPerWeek)} avec ${p.name}`).join(', ')}. Une campagne compte pour une, qu’elle parte vers 30 ou 300 clients, et le compteur repart chaque lundi.`,
         `Les messages automatiques et les notifications de proximité ne sont jamais décomptés. Et un client reçoit au plus un message commercial toutes les ${MARKETING_INTERVAL_HOURS} h, pour ne pas le lasser (délai réglable).`,
       ],
       sources: [S.offres, S.tarifs],
@@ -128,10 +134,12 @@ export function objections(): Reponse[] {
       q: 'Et si j’ai plus de clients que prévu ?',
       r: [
         `Une carte, c’est un client inscrit à votre programme. ${listeQuotas()}.`,
-        'Vous êtes prévenu dans votre espace à 80 % et à 100 %. Une fois la limite atteinte, les nouvelles inscriptions sont refusées et le client voit un message d’attente : c’est le moment de passer à la formule supérieure. Les clients supprimés ne comptent plus.',
-        'Le quota de notifications se recharge le 1er de chaque mois.',
+        'Vous êtes prévenu dans votre espace à 80 % et à 100 %. Une fois la limite atteinte, les nouvelles inscriptions sont refusées et le client voit un message d’attente : c’est le moment d’ajouter des cartes ou de passer à la formule supérieure. Les clients supprimés ne comptent plus.',
+        `${phraseOptionCartes()} Les cartes sont disponibles tout de suite ; un pack se retire à la fin du mois payé (en annuel, à l’échéance).`,
+        'Le compteur de campagnes repart chaque lundi.',
       ],
-      sources: [S.offres],
+      attention: 'Le retrait d’un pack est refusé tant que les clients inscrits dépassent la limite sans ce pack. Avec Pro, les cartes sont illimitées : l’option n’existe pas.',
+      sources: [S.offres, S.tarifs],
     },
     {
       id: 'cher',

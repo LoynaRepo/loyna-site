@@ -7,7 +7,7 @@ import CtaBand from '../components/CtaBand.astro';
 import CallbackForm from '../components/CallbackForm.astro';
 import Proximite from '../components/Proximite.astro';
 import PourVotreMetier from '../components/PourVotreMetier.astro';
-import {COMPARISON, LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, nombre, offerActive} from '../data/site';
+import {CARD_PACK, COMPARISON, LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, nombre, offerActive} from '../data/site';
 import {getFaq} from '../lib/builder';
 
 const crumbs = [
@@ -49,6 +49,8 @@ const faqLd = {
 const prixMin = Math.min(...PLANS.map((p) => p.monthly));
 const starter = PLANS[0];
 const premium = PLANS[1];
+// Option « +500 cartes » : offres concernées (« Starter et Premium »)
+const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) => p.name).join(' et ');
 // Groupes du comparatif : une ligne de titre avant la première ligne de chaque groupe
 const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
 ---
@@ -138,7 +140,7 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
         </table>
       </div>
       <p class="table-note">
-        Une notification correspond à un message de campagne reçu par une carte&nbsp;: une campagne envoyée à 300 clients compte 300 notifications. Les messages automatiques et les notifications de proximité ne sont jamais décomptés.
+        Une campagne compte pour une, quel que soit le nombre de clients qui la reçoivent&nbsp;; le compteur repart chaque lundi. Les messages automatiques et les notifications de proximité ne sont jamais décomptés.
       </p>
     </div>
   </section>
@@ -148,7 +150,7 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
       <div class="section-head">
         <p class="eyebrow">Ce que comptent les quotas</p>
         <h2>Des limites claires, pensées pour vos clients</h2>
-        <p>Chaque formule fixe un nombre de cartes et de notifications par mois. Pro n’a aucune limite.</p>
+        <p>Chaque formule fixe un nombre de cartes et un nombre de campagnes par semaine. Pro n’a aucune limite.</p>
       </div>
       <div class="grid grid-3">
         <div class="card">
@@ -160,9 +162,9 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
         </div>
         <div class="card">
           <span class="icon"><Icon name="megaphone" /></span>
-          <h3>Notifications</h3>
+          <h3>Campagnes</h3>
           <p>
-            Une notification, c’est un message de campagne reçu par une carte&nbsp;: {nombre(starter.notifications ?? 0)} par mois avec Starter (une par semaine et par client), {nombre(premium.notifications ?? 0)} avec Premium (douze par client et par mois), sans limite avec Pro. Le quota se recharge le 1er de chaque mois.
+            Une campagne, c’est un message envoyé à vos clients, à tous ou à un groupe&nbsp;: elle compte pour une, qu’elle parte vers 30 ou 300 clients. Vous en avez {nombre(starter.campaignsPerWeek ?? 0)} par semaine avec Starter, {nombre(premium.campaignsPerWeek ?? 0)} avec Premium, sans limite avec Pro. Le compteur repart chaque lundi&nbsp;; une campagne programmée compte dans la semaine où elle part.
           </p>
         </div>
         <div class="card">
@@ -173,6 +175,12 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
           </p>
         </div>
       </div>
+      <p class="pack-note" id="option-cartes">
+        <span class="pack-ic"><Icon name="circle-plus" size={22} /></span>
+        <span>
+          <strong>Besoin de plus de cartes&nbsp;?</strong> +{nombre(CARD_PACK.cards)} cartes pour {euro(CARD_PACK.monthly)} par mois, en {packPlans} ({euro(CARD_PACK.yearly)} par an avec un abonnement annuel). Les packs se cumulent et s’ajoutent depuis votre espace client, sans changer de formule. Ils ajoutent des cartes, pas de campagnes.
+        </span>
+      </p>
     </div>
   </section>
 
@@ -184,7 +192,7 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
         <p class="lead">Quand un client passe près de votre boutique, sa carte s’affiche sur l’écran de verrouillage de son téléphone, avec un court message&nbsp;: sa récompense qui l’attend, les passages qui restent, ou votre propre message.</p>
         <ul class="checks prox-checks">
           <li>iPhone&nbsp;: la carte s’affiche sur l’écran de verrouillage. Android&nbsp;: une notification apparaît quand le client s’attarde près de la boutique.</li>
-          <li>Jamais décomptée de vos notifications, sans coût par message.</li>
+          <li>Jamais comptée comme une campagne, sans coût par message.</li>
           <li>LOYNA ne reçoit jamais la position de vos clients&nbsp;: c’est leur téléphone qui détecte la proximité.</li>
           <li>Avec Pro, jusqu’à 3 boutiques, chacune avec sa notification de proximité.</li>
         </ul>
@@ -349,6 +357,24 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
     font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
+  }
+  .pack-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    max-width: 860px;
+    margin: 30px auto 0;
+    padding: 16px 20px;
+    border-radius: 18px;
+    background: var(--gold-soft);
+    border: 1px solid rgba(201, 150, 63, 0.35);
+    color: var(--ink);
+  }
+  .pack-ic {
+    display: inline-flex;
+    flex: none;
+    margin-top: 1px;
+    color: #6b4a14;
   }
   .table-note {
     margin: 18px auto 0;
