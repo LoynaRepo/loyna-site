@@ -550,7 +550,7 @@ export default function Essai() {
               <div class="pn-row">
                 <div class="field">
                   <label for="es-total">Passages pour la récompense : {carte.total}</label>
-                  <input id="es-total" class="es-curseur" type="range" min={PASSAGES.min} max={PASSAGES.max} value={carte.total} onInput={(e) => changer({total: Number((e.target as HTMLInputElement).value)})} />
+                  <input id="es-total" class="es-curseur" style={`--p:${((carte.total - PASSAGES.min) / (PASSAGES.max - PASSAGES.min)) * 100}%`} type="range" min={PASSAGES.min} max={PASSAGES.max} value={carte.total} onInput={(e) => changer({total: Number((e.target as HTMLInputElement).value)})} />
                 </div>
                 <div class="field">
                   <label for="es-reward">Récompense *</label>
