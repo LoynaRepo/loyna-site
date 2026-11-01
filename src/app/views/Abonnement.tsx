@@ -408,6 +408,8 @@ export function Abonnement() {
   const current = PLANS.findIndex((p) => p.id === m.subscription_plan.toLowerCase());
   const plan = PLANS[current];
   const legacy = current === -1; // Premium : offre historique
+  // Prix réservé (Barber Kong) : son offre et son prix seulement, ni grille, ni changement, ni textes de la grille
+  const horsGrille = legacy || PRIX_RESERVES_PRO[m.merchant_slug ?? ''] !== undefined;
   const ro = readOnly(); // consultation opérateur : ni portail Stripe, ni changement d'offre, ni parrainage du compte
   const manage = !ro && can('settings.manage');
   const owner = !ro && m.role === 'OWNER';
@@ -463,7 +465,7 @@ export function Abonnement() {
                   ))}
               </Panel>
 
-              {engaged && !legacy && (
+              {engaged && !horsGrille && (
                 <Panel title="Mon commerce ferme" sub="Si votre commerce cesse définitivement son activité, l’engagement s’arrête." class="sub-last">
                   <ol class="plain-ol small">
                     <li>
@@ -477,15 +479,15 @@ export function Abonnement() {
 
               <Panel title="Bon à savoir" class="sub-last">
                 <ul class="plain small">
-                  {!legacy && hasSub && (
+                  {!horsGrille && hasSub && (
                     <li>
                       {engaged
                         ? `Votre engagement court jusqu’au ${dayLong(commitment)} : une résiliation prend effet à cette date. Ensuite, même prix, résiliable à la fin de n’importe quel mois, sans nouvelle durée.`
                         : 'Résiliable à la fin de n’importe quel mois, depuis le portail sécurisé Stripe. Le mois entamé reste dû.'}
                     </li>
                   )}
-                  {!legacy && state === 'ACTIVE' && hasSub && <li>Changement d’offre : depuis cette page, sans mise en service à payer. La différence est calculée au prorata.</li>}
-                  {!legacy && <li>{PHRASES.arret}</li>}
+                  {!horsGrille && state === 'ACTIVE' && hasSub && <li>Changement d’offre : depuis cette page, sans mise en service à payer. La différence est calculée au prorata.</li>}
+                  {!horsGrille && <li>{PHRASES.arret}</li>}
                   <li>
                     Une question sur votre facture ? Écrivez à <a href={`mailto:${SITE.email}`}>{SITE.email}</a> en précisant le nom de votre commerce.
                   </li>
@@ -534,8 +536,8 @@ export function Abonnement() {
             </div>
           </div>
 
-          {/* Premium : pas de grille ni de changement. Compte offert ou suspendu à la main : rien à choisir. */}
-          {!legacy && state !== 'EXEMPT' && state !== 'SUSPENDED_MANUAL' && (
+          {/* Premium et prix réservé : pas de grille ni de changement. Compte offert ou suspendu à la main : rien à choisir. */}
+          {!horsGrille && state !== 'EXEMPT' && state !== 'SUSPENDED_MANUAL' && (
             <section class="offers" aria-labelledby="offers-h">
               <div class="offers-h">
                 <h2 id="offers-h">Les offres LOYNA</h2>
