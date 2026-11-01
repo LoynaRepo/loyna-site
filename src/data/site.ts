@@ -257,7 +257,7 @@ export const PHRASES = {
   arret: 'Si l’abonnement s’arrête ou si un paiement reste impayé 15 jours, la carte reste dans le téléphone de vos clients mais elle ne crédite plus, et les inscriptions et les messages s’arrêtent. Tout repart automatiquement dès que le paiement passe ou que l’abonnement est repris, avec vos clients et leurs soldes. Sans reprise, vos données sont supprimées 90 jours après l’arrêt.',
   miseEnService: 'Offerte jusqu’au 31 décembre 2026. Ensuite : offerte avec 12 mois d’engagement, 49 € une seule fois sans engagement.',
   parrainage: 'Parrainez un commerçant : 1 mois offert à chacun.',
-  commission: '60 € en Starter, 80 € en Pro sans engagement, 150 € en Pro avec engagement.',
+  commission: '60 € en Starter, 100 € en Pro, avec ou sans engagement.',
 };
 
 // Repère à remplacer à l'étape 3 de la mise en ligne par les 4 URL de `stripe:catalog -- --apply --live` (dépôt LOYNA), puis
@@ -338,12 +338,12 @@ export const PLANS: Plan[] = [
 ];
 
 // Programme partenaires (apporteurs d'affaires, page /devenir-partenaire/), conditions de la grille du 2026-10-31 :
-// commission unique par commerce, selon son offre (`pro` : Pro sans engagement ; `proEngage` : Pro avec engagement). Avec
-// engagement : acquise au 1er paiement, versée après le 60e jour ; sans engagement : acquise et versée au 3e paiement.
+// commission unique par commerce, selon son offre, avec ou sans engagement : environ 2 mensualités, toujours moins que ce
+// que le client a déjà payé quand elle devient due. Acquise au 3e paiement mensuel réellement encaissé.
 // Virement sous 30 jours après la facture ou la note de commission ; recommandation confirmée sous 2 jours ouvrés et
 // réservée 90 jours ; contrat résiliable avec 1 mois de préavis.
 export const PARTENAIRES = {
-  commission: {starter: 60, pro: 80, proEngage: 150},
+  commission: {starter: 60, pro: 100},
   reserveJours: 90,
   confirmationJoursOuvres: 2,
   virementJours: 30,

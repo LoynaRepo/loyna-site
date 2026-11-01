@@ -19,13 +19,12 @@ const maj = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 const montants = Object.values(P.commission);
 const fourchette = `de ${euro(Math.min(...montants))} à ${euro(Math.max(...montants))}`;
 
-// Quand la commission est acquise et versée : selon l'engagement du commerce, pas selon son offre.
-const QUAND_ENGAGE = 'acquise au 1er paiement du commerce, versée après le 60e jour';
-const QUAND_SANS = 'acquise et versée au 3e paiement du commerce';
+// Quand la commission est acquise : la même règle pour tous, avec ou sans engagement.
+const QUAND = 'acquise au 3e paiement mensuel réellement encaissé du commerce';
 const SANS_PAIEMENT = TRIAL.open
   ? 'Le mois d’essai et le mois offert du parrainage ne comptent pas comme des paiements.'
   : 'Le mois offert du parrainage ne compte pas comme un paiement.';
-const AUCUN_VERSEMENT = 'Aucun versement si l’abonnement a pris fin ou si un paiement a été contesté avant le 60e jour (avec engagement) ou avant le 3e paiement (sans engagement).';
+const AUCUN_VERSEMENT = 'Aucun versement si l’abonnement a pris fin ou si un paiement a été contesté avant le 3e paiement.';
 
 const steps = [
   {
@@ -41,40 +40,22 @@ const steps = [
   {
     icon: 'banknote',
     title: 'Vous touchez votre commission',
-    text: `Au bout de 2 mois d’abonnement payé par le commerce, vous touchez ${fourchette} selon l’offre qu’il prend, une seule fois, par virement.`,
+    text: `Au 3e paiement mensuel du commerce, vous touchez ${fourchette} selon l’offre qu’il prend, une seule fois, par virement.`,
   },
 ];
 
-// Une carte par cas : pour Pro, le montant dépend de l'engagement.
+// Une carte par offre : le montant ne dépend pas de l'engagement.
 const starter = PLANS.find((p) => p.id === 'starter')!;
 const pro = PLANS.find((p) => p.id === 'pro')!;
 const avecEngagement = `avec ${ENGAGEMENT.months} mois d’engagement`;
-const cas = [
-  {
-    titre: 'Client Starter',
-    montant: P.commission.starter,
-    offre: starter.badge,
-    prix: starter.monthly,
-    precision: ` ou ${euro(starter.engaged)} ${avecEngagement}`,
-    quand: `Avec engagement : ${QUAND_ENGAGE}. Sans engagement : ${QUAND_SANS}.`,
-  },
-  {
-    titre: 'Client Pro, sans engagement',
-    montant: P.commission.pro,
-    offre: pro.badge,
-    prix: pro.monthly,
-    precision: '',
-    quand: `${maj(QUAND_SANS)}.`,
-  },
-  {
-    titre: 'Client Pro, avec engagement',
-    montant: P.commission.proEngage,
-    offre: pro.badge,
-    prix: pro.engaged,
-    precision: ` ${avecEngagement}`,
-    quand: `${maj(QUAND_ENGAGE)}.`,
-  },
-];
+const cas = [starter, pro].map((p) => ({
+  titre: `Client ${p.name}`,
+  montant: P.commission[p.id],
+  offre: p.badge,
+  prix: p.monthly,
+  precision: ` ou ${euro(p.engaged)} ${avecEngagement}`,
+  quand: `Avec ou sans engagement : ${QUAND}.`,
+}));
 
 const profils = [
   {icon: 'calculator', title: 'Expert-comptable', text: 'Vous suivez des commerçants indépendants tout au long de l’année.'},
@@ -105,7 +86,7 @@ const faq = [
   },
   {
     q: 'Combien et quand suis-je payé ?',
-    a: `${PHRASES.commission} Une seule commission par commerce. ${maj(avecEngagement)} : elle est ${QUAND_ENGAGE}. Sans engagement : elle est ${QUAND_SANS}. ${SANS_PAIEMENT} ${AUCUN_VERSEMENT} Au début de chaque mois, LOYNA vous envoie un relevé, et le virement part dans les ${P.virementJours} jours qui suivent la réception de votre facture (professionnel) ou de votre note de commission (particulier).`,
+    a: `${PHRASES.commission} Une seule commission par commerce. Elle est ${QUAND}, avec ou sans engagement. ${SANS_PAIEMENT} ${AUCUN_VERSEMENT} Au début de chaque mois, LOYNA vous envoie un relevé, et le virement part dans les ${P.virementJours} jours qui suivent la réception de votre facture (professionnel) ou de votre note de commission (particulier).`,
   },
   {
     q: 'Et si le commerce connaît déjà LOYNA ?',
@@ -212,7 +193,7 @@ const faqLd = {
         <h2>Une commission pour chaque nouveau client</h2>
         <p>Versée une seule fois par commerce, selon l’offre qu’il prend et son engagement.</p>
       </div>
-      <div class="grid grid-3">
+      <div class="grid grid-2">
         {
           cas.map((c) => (
             <article class="card com-card">
@@ -230,8 +211,7 @@ const faqLd = {
       <div class="card com-when">
         <h3>Quand est-elle versée&nbsp;?</h3>
         <ul class="checks">
-          <li>{maj(avecEngagement)}&nbsp;: elle est {QUAND_ENGAGE}.</li>
-          <li>Sans engagement&nbsp;: elle est {QUAND_SANS}.</li>
+          <li>Avec ou sans engagement&nbsp;: elle est {QUAND}.</li>
           <li>{SANS_PAIEMENT}</li>
           <li>{AUCUN_VERSEMENT}</li>
           <li>Au début de chaque mois, LOYNA vous envoie un relevé de vos commissions.</li>
