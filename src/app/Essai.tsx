@@ -11,7 +11,7 @@ import {frenchTypography} from './typo';
 import {LOGO_ACCEPT, logoToFiles} from './logo-png';
 import {CarteWallet, TelephoneWallet} from '../lib/CarteWallet';
 import {lireCartePreparee, RE_ID_CARTE} from '../lib/carte-preparee';
-import {CLE_LOGO, EMAIL_RE, REFERRAL_ERRORS, RULES, TELEPHONE_RE, chercherEtablissements, lireLogoGarde, normalizeReferral, siretValide, store, track, urlLogo, type Etablissement, type LogoGarde} from '../lib/compte-regles';
+import {CLE_LOGO, EMAIL_RE, REFERRAL_ERRORS, RULES, telephoneFrancais, chercherEtablissements, lireLogoGarde, normalizeReferral, siretValide, store, track, urlLogo, type Etablissement, type LogoGarde} from '../lib/compte-regles';
 
 type Etat = 'attente' | 'ouvert' | 'ferme' | 'confirmer' | 'active';
 type Raison = 'CLOSED' | 'FULL' | 'RESEAU';
@@ -301,7 +301,7 @@ export default function Essai() {
     if (!f.first_name.trim()) e.first_name = 'Indiquez votre prénom.';
     if (!f.last_name.trim()) e.last_name = 'Indiquez votre nom.';
     if (!EMAIL_RE.test(f.email.trim())) e.email = 'Indiquez une adresse e-mail valide.';
-    if (!TELEPHONE_RE.test(f.phone.trim())) e.phone = 'Indiquez votre numéro de téléphone.';
+    if (!telephoneFrancais(f.phone)) e.phone = 'Indiquez un numéro de téléphone français, par exemple 06 12 34 56 78.';
     if (!RULES.every((r) => r.test(pw))) e.password = 'Le mot de passe ne respecte pas encore toutes les règles.';
     else if (pw !== pw2) e.password2 = 'Les deux mots de passe sont différents.';
     if (referral.trim() && !normalizeReferral(referral)) e.referral = 'Code de parrainage inconnu ou expiré.';

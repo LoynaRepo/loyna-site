@@ -9,6 +9,8 @@ export const RULES = [
 ];
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 export const TELEPHONE_RE = /^[0-9+ ().-]{8,30}$/;
+/** Essai : numéro français, métropole ou outre-mer avec l'indicatif (contrôlé aussi par la fonction trial, FRENCH_PHONE). */
+export const telephoneFrancais = (v: string) => /^(?:0[1-9]\d{8}|(?:\+|00)33(?:0?[1-9])\d{8}|(?:\+|00)(?:262|590|594|596)\d{9})$/.test(v.replace(/[\s.()-]/g, ''));
 
 // Parrainage LOYNA : « LOYNA- » + 6 caractères sans 0, O, 1 ni I (comme le serveur, _shared/referral.ts)
 const REFERRAL_RE = /^LOYNA-[A-HJ-NP-Z2-9]{6}$/;
