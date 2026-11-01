@@ -704,7 +704,7 @@ function PrepareCampaign({m}: {m: OpMerchant}) {
         )}
         <div class="row2">
           <Field label="Nom de la campagne" hint="Il n’est pas montré aux clients.">
-            <input type="text" maxLength={120} value={f.name} onInput={(e) => set('name', (e.target as HTMLInputElement).value)} />
+            <input type="text" maxLength={60} value={f.name} onInput={(e) => set('name', (e.target as HTMLInputElement).value)} />
           </Field>
           <Field label="Titre (facultatif)" hint={`${f.title.length} / 60`}>
             <input type="text" maxLength={60} value={f.title} onInput={(e) => set('title', (e.target as HTMLInputElement).value)} />
@@ -1019,7 +1019,7 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
             <div class="form">
               <div class="row2">
                 <Field label="Nom du commerce">
-                  <input type="text" maxLength={120} required value={f.name} onInput={(e) => setName((e.target as HTMLInputElement).value)} />
+                  <input type="text" maxLength={60} required value={f.name} onInput={(e) => setName((e.target as HTMLInputElement).value)} />
                 </Field>
                 <Field label="Activité" hint="Affichée sous le nom : Barbier, Boulangerie…">
                   <input type="text" maxLength={60} list="op-activites" value={f.business_type} onInput={(e) => setActivity((e.target as HTMLInputElement).value)} />
