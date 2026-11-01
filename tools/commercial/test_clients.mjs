@@ -94,7 +94,7 @@ for (const evenements of JEUX_CONTACT) {
 }
 SCENARIOS.push({debut: '2026-11-02', fin: '2026-12-02', evenements: [], jour: '2026-11-22', arret: 'abonne'}, {debut: '2026-11-02', fin: '2026-12-02', evenements: [], jour: '2026-11-22', arret: 'stop'});
 const py = JSON.parse(
-  execFileSync(PYTHON, ['-B', '-c', script], {input: JSON.stringify({notes, grille: FICHES_GRILLE, scenarios: SCENARIOS}), encoding: 'utf8', env: {...process.env, PYTHONIOENCODING: 'utf-8'}}),
+  execFileSync(PYTHON, ['-B', '-c', script], {input: JSON.stringify({notes, grille: FICHES_GRILLE, scenarios: SCENARIOS}), encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, env: {...process.env, PYTHONIOENCODING: 'utf-8'}}),
 );
 const auj = new Date(2026, 9, 23);
 const resume = (c) => JSON.stringify({action: c.action, etape: c.etape.code, a_livrer: c.qr.a_livrer, jours: c.qr.jours_restants, actif: c.parcours.at(-1).fait, services: (c.services_pro ?? []).map((s) => [s.code, s.a_faire])});
