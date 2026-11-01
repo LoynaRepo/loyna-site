@@ -150,20 +150,33 @@ export default function Join() {
       return;
     }
     try {
-      const r = await publicEdge<Done>('customer-enroll', {
-        body: {
-          merchant_slug: m.slug,
-          first_name: f.first_name.trim(),
-          last_name: form.collect_last_name ? f.last_name.trim() || null : null,
-          phone: form.collect_phone ? f.phone.trim() || null : null,
-          email: form.collect_email ? f.email.trim() || null : null,
-          birthday: form.collect_birthday ? f.birthday || null : null,
-          consents: {loyalty_terms: true, marketing_wallet: f.wallet},
-          consent_version: legal?.consent_version ?? null,
-          ...(referralCode && page.referral ? {referral_code: referralCode} : {}),
-          website: f.website,
-        },
-      });
+      const inscrire = () =>
+        publicEdge<Done>('customer-enroll', {
+          body: {
+            merchant_slug: m.slug,
+            first_name: f.first_name.trim(),
+            last_name: form.collect_last_name ? f.last_name.trim() || null : null,
+            phone: form.collect_phone ? f.phone.trim() || null : null,
+            email: form.collect_email ? f.email.trim() || null : null,
+            birthday: form.collect_birthday ? f.birthday || null : null,
+            consents: {loyalty_terms: true, marketing_wallet: f.wallet},
+            consent_version: legal?.consent_version ?? null,
+            ...(referralCode && page.referral ? {referral_code: referralCode} : {}),
+            website: f.website,
+          },
+        });
+      // Carte du commerce encore en préparation : rien n'est créé côté serveur, on patiente et on réessaie (environ 2 minutes).
+      let r: Done | null = null;
+      for (let essai = 0; !r; essai++) {
+        try {
+          r = await inscrire();
+        } catch (err: any) {
+          if (err?.code !== 'CARD_PREPARING' || essai >= 24) throw err;
+          setError('Votre carte se prépare, encore quelques secondes…');
+          await new Promise((res) => setTimeout(res, 5000));
+        }
+      }
+      setError('');
       setDone(r);
       window.scrollTo({top: 0, behavior: 'smooth'});
     } catch (err: any) {

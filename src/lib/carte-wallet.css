@@ -42,6 +42,33 @@
   object-fit: contain;
   display: block;
 }
+@font-face {
+  font-family: 'Alfa Slab One';
+  src: url('/fonts/alfa-slab-one.ttf') format('truetype');
+  font-display: swap;
+}
+/* Le nom dessiné de la vraie carte (nameLockup, dépôt LOYNA) : capitales, plusieurs lignes, jamais coupé. */
+.cw-dessine {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  overflow: hidden;
+  color: var(--cw-accent);
+}
+.cw-dessine img {
+  flex: none;
+  object-fit: contain;
+  display: block;
+}
+.cw-dessine > span {
+  min-width: 0;
+  font-family: 'Alfa Slab One', Rockwell, Georgia, serif;
+  font-weight: 400;
+  line-height: 1.05;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
 .cw--apple {
   border-radius: 0.95em;
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 0.7em 1.8em rgba(0, 0, 0, 0.35);
@@ -51,6 +78,9 @@
   align-items: center;
   gap: 0.55em;
   padding: 0.65em 0.95em;
+}
+.cw-a-h .cw-a-c {
+  margin-left: auto;
 }
 .cw-a-n {
   flex: 1;

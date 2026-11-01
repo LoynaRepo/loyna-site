@@ -17,6 +17,23 @@ const estSalon = (activite?: string) => /(^|[^a-z])(barbiers?|barbers?|barbersho
 /** Lettre du logo généré par le serveur quand il n'y a pas de logo (initialOf, _shared/png.ts). */
 const initiale = (nom: string) => /[A-Z0-9]/.exec(simple(nom).toUpperCase())?.[0] ?? '?';
 
+/** Largeur approchée d'un texte (em), comme textWidthEm (dépôt LOYNA, _shared/apple-wallet.ts). */
+function largeurEm(texte: string) {
+  let w = 0;
+  for (const c of texte) w += c === ' ' ? 0.28 : /[0-9]/.test(c) ? 0.6 : /[A-ZÀ-ÖØ-Þ€%]/.test(c) ? 0.68 : /[a-zß-öø-ÿ]/.test(c) ? 0.53 : 0.36;
+  return w;
+}
+/** Même règle que nameFitsLogoText (dépôt LOYNA) : le nom tient-il dans le texte de l'en-tête iPhone ? */
+const tientSurIphone = (nom: string, logo: boolean) => largeurEm(nom) * 18 + (logo ? 50 : 0) + 8 + 64 <= 311;
+const GOOGLE_NOM_MAX = 20; // au-delà, Google peut le couper : le nom passe dans le logo large
+/** Corps du nom dessiné (nameLockup) dans sa boîte, en em de la carte : la meilleure répartition sur 1 à 4 lignes. */
+function corpsDessine(nom: string, largeur: number, hauteur: number) {
+  const n = Math.max(1, nom.length);
+  let mieux = 0;
+  for (const lignes of [1, 2, 3, 4]) mieux = Math.max(mieux, Math.min((hauteur * 0.8) / (lignes * 1.05), largeur / (Math.ceil(n / lignes) * 0.74)));
+  return mieux;
+}
+
 function Cadeau() {
   return (
     <svg viewBox="-12 -12 24 24" aria-hidden="true">
@@ -64,6 +81,19 @@ export function CarteWallet({nom, activite, recompense, fond, tampons, passages,
       </small>
     </div>
   );
+  const leNom = nom || 'Votre commerce';
+  // Nom trop long pour le texte de l'en-tête : le nom dessiné de la vraie carte, en capitales et jamais coupé.
+  const dessineApple = !tientSurIphone(leNom, Boolean(logo));
+  const dessineGoogle = leNom.length > GOOGLE_NOM_MAX;
+  const nomDessine = (largeur: number, hauteur: number) => {
+    const avecLogo = logo ? hauteur * 0.8 : 0;
+    return (
+      <span class="cw-dessine" style={{width: `${largeur}em`, height: `${hauteur}em`}}>
+        {logo && <img src={logo} alt="" style={{width: `${hauteur * 0.64}em`, height: `${hauteur * 0.64}em`}} />}
+        <span style={{fontSize: `${Math.min(corpsDessine(leNom, largeur - avecLogo, hauteur), 1.6).toFixed(3)}em`}}>{leNom}</span>
+      </span>
+    );
+  };
   // Sans logo : le nom seul sur iPhone (rien à gauche), une lettre sur Android, comme la carte.
   const marque = logo ? (
     <span class="cw-logo">
@@ -89,8 +119,14 @@ export function CarteWallet({nom, activite, recompense, fond, tampons, passages,
     return (
       <div class="cw cw--google" style={style} role="img" aria-label={`Carte Google Wallet de ${nom}, ${faits} passages sur ${total}, récompense : ${recompense}`}>
         <div class="cw-g-h">
-          {marque}
-          <span class="cw-g-n">{nom || 'Votre commerce'}</span>
+          {dessineGoogle ? (
+            nomDessine(16, 5)
+          ) : (
+            <>
+              {marque}
+              <span class="cw-g-n">{leNom}</span>
+            </>
+          )}
         </div>
         <p class="cw-g-t">Carte de fidélité</p>
         {activite && <p class="cw-g-a">{activite}</p>}
@@ -114,8 +150,14 @@ export function CarteWallet({nom, activite, recompense, fond, tampons, passages,
   return (
     <div class="cw cw--apple" style={style} role="img" aria-label={`Carte Apple Wallet de ${nom}, ${faits} passages sur ${total}, récompense : ${recompense}`}>
       <div class="cw-a-h">
-        {marque}
-        <span class="cw-a-n">{nom || 'Votre commerce'}</span>
+        {dessineApple ? (
+          nomDessine(10.2, 3.2)
+        ) : (
+          <>
+            {marque}
+            <span class="cw-a-n">{leNom}</span>
+          </>
+        )}
         <span class="cw-a-c">
           <small>PASSAGES</small>
           <b>

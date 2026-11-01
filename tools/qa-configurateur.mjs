@@ -214,7 +214,7 @@ const BROUILLON = {name: 'Mon Salon', activity: 'Coiffure', bg: '#14532d', accen
       });
     return Promise.all([dim(l.logo_png), dim(l.icon_png)]).then(([a, b]) => ({logo: a, icone: b, logoKo: atob(l.logo_png).length <= 200000, iconeKo: atob(l.icon_png).length <= 60000, surLaCarte: !!document.querySelector('#card-slot .wc-logo img')}));
   });
-  verifier('logo : 660 px et 320 px au plus, légers, sur la carte', garde, {logo: [660, 330], icone: [320, 160], logoKo: true, iconeKo: true, surLaCarte: true});
+  verifier('logo : 660 px et 320 px au plus, légers, sur la carte', garde, {logo: [660, 660], icone: [320, 160], logoKo: true, iconeKo: true, surLaCarte: true});
   await page.reload({waitUntil: 'networkidle0'});
   verifier('logo : retrouvé en revenant sur la page', await page.evaluate(() => !!document.querySelector('#card-slot .wc-logo img')), true);
   const essai = await page.evaluate(() => document.querySelector('#go-essai')?.getAttribute('href') ?? null);

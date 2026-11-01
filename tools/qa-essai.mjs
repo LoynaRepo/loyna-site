@@ -547,6 +547,29 @@ for (const [code, attendu] of [
   await page.keyboard.type("L'Été & Cie");
   await pause(100);
   verifier('barbier : cachets aux initiales de la carte', await page.$eval('.es-apercu .cw-sceau', (e) => e.textContent), 'EC');
+  // Noms longs : plus d'avertissement, le nom entier dans sa boîte, sur iPhone et sur Android, cadeau sur le dernier tampon
+  verifier('dernier tampon : le cadeau', !!(await page.$('.es-apercu .cw-tampons span.fin svg')), true);
+  for (const nom of ['Boulangerie Saint Antoine.', 'Coiffure et barbier du vieux port de Sète', 'Salon de coiffure et barbier du Grand Boulevard Saint Anto', 'A'.repeat(60)]) {
+    await page.$eval('#es-name', (e) => e.select());
+    await page.keyboard.type(nom);
+    await pause(120);
+    const mesure = () =>
+      page.evaluate(() => {
+        const carte = document.querySelector('.es-apercu .cw');
+        const n = carte.querySelector('.cw-dessine > span') ?? carte.querySelector('.cw-a-n, .cw-g-n');
+        const boite = carte.querySelector('.cw-dessine') ?? n;
+        const ok = boite.scrollHeight <= boite.clientHeight + 1 && boite.scrollWidth <= boite.clientWidth + 1;
+        return {entier: n.textContent, ok, avertissement: /Nom long/.test(document.body.textContent), debord: carte.scrollWidth - carte.clientWidth};
+      });
+    verifier(`nom de ${nom.length} caractères, iPhone : entier et dans sa boîte`, await mesure(), {entier: nom, ok: true, avertissement: false, debord: 0});
+    if (DOSSIER) await (await page.$('.es-apercu .cw')).screenshot({path: `${DOSSIER}/apercu-apple-${nom.length}.png`});
+    await page.evaluate(() => [...document.querySelectorAll('button')].find((x) => /Android/.test(x.textContent))?.click());
+    await pause(120);
+    verifier(`nom de ${nom.length} caractères, Android : entier et dans sa boîte`, await mesure(), {entier: nom, ok: true, avertissement: false, debord: 0});
+    if (DOSSIER) await (await page.$('.es-apercu .cw')).screenshot({path: `${DOSSIER}/apercu-google-${nom.length}.png`});
+    await page.evaluate(() => [...document.querySelectorAll('button')].find((x) => /iPhone/.test(x.textContent))?.click());
+    await pause(80);
+  }
   await ctx.close();
 }
 

@@ -27,7 +27,6 @@ const PASSAGES = {min: 4, max: 15};
 const PARRAIN_KEY = 'loyna-essai-parrain'; // lu par le panier à la souscription (src/app/Panier.tsx, même nom)
 const RE_COULEUR = /^#[0-9a-f]{6}$/i;
 const RE_NOM_LISIBLE = /[\p{Script=Latin}\p{N}]/u; // même règle que le serveur : sans cela, un « ? » sur la carte
-const NOM_LONG = 26; // au-delà, l'en-tête de la carte iPhone peut le couper
 const NOMS_PAR_DEFAUT = ['Maison Lumière', 'Votre commerce']; // valeurs de départ du configurateur : pas le nom d'un vrai commerce
 const dateFr = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', {day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris'});
 const simplifier = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
@@ -509,7 +508,6 @@ export default function Essai() {
                     aria-describedby={errors.name ? 'es-name-err' : undefined}
                   />
                   {err('name')}
-                  {carte.name.trim().length > NOM_LONG && <p class="pn-muted pn-small">Nom long : sur iPhone, la carte peut le couper ou l’écrire petit. Le nom complet reste au dos.</p>}
                 </div>
                 <div class="field">
                   <label for="es-activity">Activité *</label>
