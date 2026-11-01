@@ -8,7 +8,7 @@ import {useEffect, useRef, useState} from 'preact/hooks';
 import {ACTIVITES_EN_PLUS, CARD_ACCENTS, CARD_ACTIVITES, CARD_BGS, CGV_VERSION, PHRASES, TRIAL} from '../data/site';
 import {ApiError, publicEdge} from './http';
 import {frenchTypography} from './typo';
-import {couleurVisible, LOGO_ACCEPT, LOGO_MIN_SIDE, logoToFiles} from './logo-png';
+import {couleurVisible, LOGO_ACCEPT, LOGO_MIN_SIDE, logoToFiles, partLogoConfondue} from './logo-png';
 import {contrast} from './util';
 import {CarteWallet, TelephoneWallet} from '../lib/CarteWallet';
 import {lireCartePreparee, RE_ID_CARTE} from '../lib/carte-preparee';
@@ -134,6 +134,8 @@ export default function Essai() {
   const [logo, setLogo] = useState<LogoGarde | null>(lireLogoGarde);
   const [logoMsg, setLogoMsg] = useState('');
   const [logoPeuVisible, setLogoPeuVisible] = useState(false);
+  // Fichier choisi ici et son fond retiré ou non : permet de revenir au fond d'origine
+  const [logoFichier, setLogoFichier] = useState<{fichier: File; fondRetire: boolean; fondGarde: boolean} | null>(null);
   const [systeme, setSysteme] = useState<'apple' | 'google'>('apple');
   const [preparee, setPreparee] = useState(false);
   const [siret, setSiret] = useState('');
@@ -161,13 +163,13 @@ export default function Essai() {
     racine.current?.focus({preventScroll: true});
   }, [etat]);
 
-  // Logo transparent de la même teinte que la carte : il ne se verrait pas, autant le dire
+  // Logo, ou une bonne partie de ses tracés (texte foncé d'un logo dont le fond a été retiré), de la même teinte que la carte : autant le dire
   useEffect(() => {
     const src = urlLogo(logo);
     if (!src) return setLogoPeuVisible(false);
     let actif = true;
-    couleurVisible(src).then(
-      (c) => actif && setLogoPeuVisible(!c || contrast(c, carte.bg) < 1.35),
+    Promise.all([couleurVisible(src), partLogoConfondue(src, carte.bg)]).then(
+      ([c, part]) => actif && setLogoPeuVisible(!c || contrast(c, carte.bg) < 1.35 || part > 0.15),
       () => actif && setLogoPeuVisible(false),
     );
     return () => {
@@ -272,21 +274,25 @@ export default function Essai() {
     if (m && !touche.current.accent) patch.accent = m.tampons;
     changer(patch, 'activity');
   };
-  const choisirLogo = async (e: Event) => {
-    const fichier = (e.target as HTMLInputElement).files?.[0];
-    if (!fichier) return;
+  const preparerLogo = async (fichier: File, garderFond: boolean) => {
     setLogoMsg('Préparation du logo…');
     try {
-      const fichiers = await logoToFiles(fichier);
+      const fichiers = await logoToFiles(fichier, {garderFond});
       garderLogo(fichiers, fichier.name);
+      setLogoFichier({fichier, fondRetire: fichiers.fond_retire, fondGarde: garderFond});
       if (Math.max(fichiers.width, fichiers.height) < LOGO_MIN_SIDE / 2) setLogoMsg('Logo accepté, mais petit : il peut paraître flou sur la carte. Une image plus grande sera plus nette.');
     } catch (err) {
       setLogoMsg(err instanceof Error ? err.message : 'Cette image est illisible.');
     }
   };
+  const choisirLogo = (e: Event) => {
+    const fichier = (e.target as HTMLInputElement).files?.[0];
+    if (fichier) preparerLogo(fichier, false);
+  };
   const retirerLogo = () => {
     store('session', CLE_LOGO, null);
     setLogo(null);
+    setLogoFichier(null);
     setLogoMsg('');
   };
   const setField = (k: keyof typeof f, v: string) => {
@@ -615,6 +621,14 @@ export default function Essai() {
                   )}
                 </div>
                 {logo && logoMsg && <p class="pn-muted pn-small">{logoMsg}</p>}
+                {logo && logoFichier && (logoFichier.fondRetire || logoFichier.fondGarde) && (
+                  <p class="pn-muted pn-small es-logo-fond">
+                    {logoFichier.fondGarde ? 'Fond d’origine gardé. ' : 'Le fond de votre logo a été retiré : vérifiez le résultat sur l’aperçu. '}
+                    <button type="button" class="pn-link" onClick={() => preparerLogo(logoFichier.fichier, !logoFichier.fondGarde)}>
+                      {logoFichier.fondGarde ? 'Retirer le fond' : 'Garder le fond d’origine'}
+                    </button>
+                  </p>
+                )}
                 {logo && logoPeuVisible && (
                   <p class="pn-small es-logo-alerte" role="status">
                     Votre logo se voit peu sur cette couleur de carte : choisissez une autre couleur ou une version plus contrastée du logo.

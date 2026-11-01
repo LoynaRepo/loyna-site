@@ -4,6 +4,8 @@
 // logoToFiles : les deux fichiers légers d'un nouveau commerce (bande passante du plan Free : cahier des charges de la grille,
 // chantier A, point 8). Un SVG est d'abord dessiné en 1024 px, puis transformé en PNG : il reste net.
 
+import {partConfondue, retirerFondUni} from './logo-fond';
+
 export const LOGO_ACCEPT = '.png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml';
 const MAX_BYTES = 1_000_000;
 const MAX_INPUT = 10 * 1024 * 1024;
@@ -72,7 +74,7 @@ function load(src: string): Promise<HTMLImageElement> {
   });
 }
 
-function render(img: HTMLImageElement, w: number, h: number, max: number, carre = false): Promise<{blob: Blob; width: number; height: number}> {
+function render(img: HTMLImageElement, w: number, h: number, max: number, carre = false, garderFond = false): Promise<{blob: Blob; width: number; height: number; fondRetire: boolean}> {
   const s = Math.min(1, max / Math.max(w, h));
   const dw = Math.max(1, Math.round(w * s));
   const dh = Math.max(1, Math.round(h * s));
@@ -81,11 +83,20 @@ function render(img: HTMLImageElement, w: number, h: number, max: number, carre 
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', {willReadFrequently: true});
   if (!ctx) return Promise.reject(new Error('Conversion du logo impossible dans ce navigateur.'));
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(img, (width - dw) / 2, (height - dh) / 2, dw, dh);
-  return new Promise((ok, ko) => canvas.toBlob((b) => (b ? ok({blob: b, width, height}) : ko(new Error('Conversion du logo impossible.'))), 'image/png'));
+  const x = Math.round((width - dw) / 2);
+  const y = Math.round((height - dh) / 2);
+  ctx.drawImage(img, x, y, dw, dh);
+  // Sur le logo seul : les marges transparentes du format carré ne sont pas son bord
+  let fondRetire = false;
+  if (!garderFond) {
+    const pixels = ctx.getImageData(x, y, dw, dh);
+    fondRetire = retirerFondUni(pixels.data, dw, dh);
+    if (fondRetire) ctx.putImageData(pixels, x, y);
+  }
+  return new Promise((ok, ko) => canvas.toBlob((b) => (b ? ok({blob: b, width, height, fondRetire}) : ko(new Error('Conversion du logo impossible.'))), 'image/png'));
 }
 
 /** Fichier choisi, ouvert et prêt à être dessiné (erreurs : message en français). */
@@ -135,6 +146,8 @@ export interface LogoFiles {
   /** Dimensions de `logo_png` (carré). */
   width: number;
   height: number;
+  /** Un fond uni a été retiré (voir logo-fond.ts). */
+  fond_retire: boolean;
 }
 
 // Tailles essayées de la plus grande à la plus petite. La dernière tient toujours dans la limite : 200 x 200 x 4 octets, ou
@@ -143,9 +156,9 @@ export interface LogoFiles {
 const LOGO_FILE = {sizes: [660, 512, 400, 320, 256, 200], maxBytes: 200_000, carre: true};
 const ICON_FILE = {sizes: [320, 256, 200, 160, 128, 96], maxBytes: 60_000};
 
-async function fit(img: HTMLImageElement, w: number, h: number, {sizes, maxBytes, carre}: {sizes: number[]; maxBytes: number; carre?: boolean}) {
+async function fit(img: HTMLImageElement, w: number, h: number, {sizes, maxBytes, carre}: {sizes: number[]; maxBytes: number; carre?: boolean}, garderFond: boolean) {
   for (const max of sizes) {
-    const out = await render(img, w, h, max, carre);
+    const out = await render(img, w, h, max, carre, garderFond);
     if (out.blob.size <= maxBytes) return out;
   }
   throw new Error('Logo trop détaillé : essayez une version plus simple.');
@@ -178,11 +191,23 @@ export async function couleurVisible(src: string): Promise<string | null> {
   return poids ? `#${somme.map((v) => Math.round(v / poids).toString(16).padStart(2, '0')).join('')}` : null;
 }
 
-/** Convertit le fichier choisi en `{logo_png, icon_png}` (voir LogoFiles). Erreurs : message en français. */
-export async function logoToFiles(file: File): Promise<LogoFiles> {
+/** Part des pixels visibles du logo qui se confondent avec la couleur de la carte (#rrggbb). */
+export async function partLogoConfondue(src: string, carte: string): Promise<number> {
+  const img = await load(src);
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d', {willReadFrequently: true});
+  if (!ctx) return 0;
+  ctx.drawImage(img, 0, 0, 128, 128);
+  const fond = [1, 3, 5].map((i) => parseInt(carte.slice(i, i + 2), 16)) as [number, number, number];
+  return partConfondue(ctx.getImageData(0, 0, 128, 128).data, fond);
+}
+
+/** Convertit le fichier choisi en `{logo_png, icon_png}` (voir LogoFiles), fond uni retiré sauf `garderFond`. Erreurs : message en français. */
+export async function logoToFiles(file: File, {garderFond = false}: {garderFond?: boolean} = {}): Promise<LogoFiles> {
   return opened(file, async (img, w, h) => {
-    const logo = await fit(img, w, h, LOGO_FILE);
-    const icon = await fit(img, w, h, ICON_FILE);
-    return {logo_png: await base64(logo.blob), icon_png: await base64(icon.blob), logo_blob: logo.blob, icon_blob: icon.blob, width: logo.width, height: logo.height};
+    const logo = await fit(img, w, h, LOGO_FILE, garderFond);
+    const icon = await fit(img, w, h, ICON_FILE, garderFond);
+    return {logo_png: await base64(logo.blob), icon_png: await base64(icon.blob), logo_blob: logo.blob, icon_blob: icon.blob, width: logo.width, height: logo.height, fond_retire: logo.fondRetire};
   });
 }

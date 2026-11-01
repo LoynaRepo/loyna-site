@@ -512,6 +512,29 @@ for (const [code, attendu] of [
     await pause(500);
     return nbsp(await page.$eval('.es-logo', (e) => e.textContent));
   };
+  // Fond uni retiré à l'envoi, et retour au fond d'origine
+  const coinDuLogo = () =>
+    page.evaluate(async () => {
+      const garde = JSON.parse(sessionStorage.getItem(Object.keys(sessionStorage).find((k) => /logo/i.test(k))));
+      const i = new Image();
+      i.src = `data:image/png;base64,${garde.logo_png}`;
+      await i.decode();
+      const c = document.createElement('canvas');
+      c.width = i.width;
+      c.height = i.height;
+      const x = c.getContext('2d');
+      x.drawImage(i, 0, 0);
+      return x.getImageData(5, 5, 1, 1).data[3];
+    });
+  await choisir(svg('fond', 'width="600" height="600"><rect width="600" height="600" fill="#fdfdfb"/><circle cx="300" cy="300" r="120" fill="#b8935a"/>'));
+  verifier('logo sur fond uni : fond retiré', await coinDuLogo(), 0);
+  verifier('logo sur fond uni : le commerçant est prévenu', /a été retiré/.test(await page.$eval('.es-logo-fond', (e) => e.textContent)), true);
+  await page.click('.es-logo-fond button');
+  await pause(500);
+  verifier('garder le fond d’origine : fond revenu', await coinDuLogo(), 255);
+  verifier('garder le fond d’origine : indiqué', /gardé/.test(await page.$eval('.es-logo-fond', (e) => e.textContent)), true);
+  await page.click('.es-logo .pn-link');
+  await pause(100);
   verifier('SVG avec HTML : message en français', /ne peut pas être convertie/.test(await choisir(svg('html', 'viewBox="0 0 9 9"><foreignObject width="9" height="9"><div xmlns="http://www.w3.org/1999/xhtml">x</div></foreignObject>'))), true);
   await choisir(svg('script', 'viewBox="0 0 400 40" onload="window.__pwn=1"><script>window.__pwn=1</script><rect width="400" height="40" fill="#fff"/>'));
   verifier('SVG avec script : script non exécuté', await page.evaluate(() => window.__pwn ?? null), null);
