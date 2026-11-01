@@ -3,7 +3,7 @@
 // action recalculés dans le navigateur avec la date du jour. Même règle que _systeme/clients.py du coffre
 // (prochaine_action) : toute modification se fait des deux côtés. Les données publiées avant la grille du 2026-10-31 (sans essai,
 // ni suspension, ni services de Pro) restent lisibles : ces champs sont facultatifs.
-import type {ActionClient, Client, CodeEtape, EtapeClient, ServicePro, TotauxClients, Urgence} from './types';
+import type {ActionClient, Client, CodeEtape, ContactEssai, EtapeClient, EvenementContact, ResultatContact, ServicePro, TotauxClients, Urgence} from './types';
 import type {Note} from './notes-crypto';
 
 export type CodeAction = 'commerce_cree' | 'documents' | 'qr_livres' | ServicePro['code'];
@@ -52,7 +52,7 @@ export const ACTIONS: Record<CodeAction, {etape?: CodeEtape; bouton: string; fai
 export const MARQUE = '[CLIENT:';
 const RE_ACTION = /^\s*\[CLIENT:([A-Za-z_]+)\][ \t]*(\d{4}-\d{2}-\d{2})?[ \t]*(?:[·:—–-][ \t]*)?([\s\S]*)$/;
 const DELAI_URGENT = 3; // jours : en rouge à moins de 3 jours de la date limite des QR codes
-const ORDRE: Record<string, number> = {paiement: 1, qr_urgent: 2, commerce: 3, documents: 4, qr: 5, service_pro: 6, aucune: 9};
+const ORDRE: Record<string, number> = {paiement: 1, qr_urgent: 2, contact_essai: 3, commerce: 3, documents: 4, qr: 5, service_pro: 6, aucune: 9};
 export const LIBELLES_ETAPE: Record<CodeEtape, string> = {
   commande: 'Nouvelle commande',
   commerce: 'Commerce à créer',
@@ -190,6 +190,118 @@ export function prochaineAction(
   return action('aucune', 'Rien à faire', 'client actif');
 }
 
+// --- Parcours de contact d'un essai : même table et même calcul que ETAPES_CONTACT et parcours_contact() de _systeme/clients.py -----------
+export const ETAPES_CONTACT: {code: string; repere: 'debut' | 'fin'; jours: number; libelle: string; consigne: string}[] = [
+  {code: 'j1', repere: 'debut', jours: 1, libelle: 'Appel de bienvenue', consigne: 'Vérifier que la carte est bonne et que le QR code est au comptoir.'},
+  {code: 'j7', repere: 'debut', jours: 7, libelle: 'Recueillir un retour', consigne: 'Combien de clients inscrits ? Qu’est-ce qui bloque ?'},
+  {code: 'jm10', repere: 'fin', jours: -10, libelle: 'Présenter l’offre', consigne: 'Starter ou Pro, avec le lien du panier.'},
+  {code: 'jm3', repere: 'fin', jours: -3, libelle: 'Dernier appel avant l’arrêt', consigne: 'Sans abonnement, la carte se met en pause à la fin de l’essai.'},
+  {code: 'fin2', repere: 'fin', jours: 2, libelle: 'Relance après l’arrêt', consigne: 'La carte est en pause, elle repart dès l’abonnement.'},
+  {code: 'fin30', repere: 'fin', jours: 30, libelle: 'Dernière relance', consigne: 'Après celle-ci, plus aucun contact.'},
+];
+export const RESULTATS_CONTACT: Record<ResultatContact, string> = {joint: 'Joint', sans_reponse: 'Pas de réponse', rappeler: 'À rappeler', pas_interesse: 'Pas intéressé'};
+const REPORTS_MAX = 3; // « Pas de réponse » : l'étape revient le lendemain, 3 fois au plus ; un 4e « Pas de réponse » la fait passer
+const DELAI_DERNIERE = 7; // dernière étape jamais notée : elle quitte la liste 7 jours après sa date
+const RE_CONTACT = /^(j1|j7|jm10|jm3|fin2|fin30)\s+(joint|sans_reponse|rappeler|pas_interesse)(?:\s+(\d{4}-\d{2}-\d{2}))?\s*(?:·\s*([\s\S]*))?$/;
+
+const plusJours = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+
+/** « [CLIENT:essai_contact] 2026-11-08 · j7 rappeler 2026-11-12 · il rappelle mardi » */
+export function texteContact(etape: string, resultat: ResultatContact, date: string, rappel: string, retour: string): string {
+  const r = retour.replace(/\s+/g, ' ').trim();
+  return `${MARQUE}essai_contact] ${date} · ${etape} ${resultat}${rappel ? ` ${rappel}` : ''}${r ? ` · ${r}` : ''}`;
+}
+
+export function contactDeNote(n: Note): EvenementContact | null {
+  const a = RE_ACTION.exec(n.texte);
+  if (!a || a[1].toLowerCase() !== 'essai_contact') return null;
+  const m = RE_CONTACT.exec(a[3].replace(/\s+/g, ' ').trim());
+  if (!m) return null;
+  return {etape: m[1], resultat: m[2] as ResultatContact, date: a[2] ?? (n.cree_le || '').slice(0, 10), rappel: m[3] ?? '', id: n.id, texte: (m[4] ?? '').trim(), note: n};
+}
+
+/** Où en est le parcours : voir parcours_contact() de clients.py. */
+export function parcoursContact(debutIso: string, finIso: string, evenements: EvenementContact[], auj: Date, arretPublie = ''): Omit<ContactEssai, 'liens_panier'> {
+  const j = new Date(auj.getFullYear(), auj.getMonth(), auj.getDate());
+  const debut = jour(debutIso);
+  const fin = jour(finIso);
+  const tries = [...evenements].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  const arret = arretPublie || (tries.some((e) => e.resultat === 'pas_interesse') ? 'pas_interesse' : '');
+  const prevus = ETAPES_CONTACT.flatMap((e) => {
+    const base = e.repere === 'debut' ? debut : fin;
+    return base ? [{...e, prevu: plusJours(base, e.jours)}] : [];
+  });
+  let courante = '';
+  const etapes = prevus.map((e, k) => {
+    const evs = tries.filter((x) => x.etape === e.code);
+    let echeance = e.prevu;
+    for (const x of evs) {
+      const d = jour(x.date);
+      if (x.resultat === 'rappeler') echeance = jour(x.rappel) ?? (d ? plusJours(d, 1) : echeance);
+      else if (x.resultat === 'sans_reponse' && d) echeance = plusJours(d, 1);
+    }
+    const absences = evs.filter((x) => x.resultat === 'sans_reponse').length;
+    const suivant = prevus[k + 1]?.prevu;
+    let etat: 'fait' | 'passe' | 'courante' | 'a_venir';
+    if (evs.some((x) => x.resultat === 'joint')) etat = 'fait';
+    else if (absences > REPORTS_MAX) etat = 'passe';
+    else if (courante) etat = 'a_venir';
+    else if (
+      (suivant && suivant <= j && (echeance < suivant || echeance < j)) ||
+      ((e.code === 'jm10' || e.code === 'jm3') && fin! < j && echeance < j) ||
+      (!suivant && ecart(j, echeance) > DELAI_DERNIERE)
+    )
+      etat = 'passe';
+    else {
+      etat = 'courante';
+      courante = e.code;
+    }
+    return {code: e.code, libelle: e.libelle, consigne: e.consigne, prevu: isoJour(e.prevu), echeance: isoJour(echeance), etat, absences};
+  });
+  const enCours = arret ? undefined : etapes.find((e) => e.etat === 'courante');
+  const echeance = enCours ? jour(enCours.echeance) : null;
+  return {
+    debut: debutIso,
+    fin: finIso,
+    arret,
+    etapes,
+    evenements: tries,
+    courante: enCours?.code ?? '',
+    echeance: enCours?.echeance ?? '',
+    a_contacter: !!echeance && echeance <= j,
+    retard: echeance ? Math.max(ecart(j, echeance), 0) : 0,
+    termine: !arret && !enCours,
+  };
+}
+
+/** Prochaine action d'un essai : voir action_contact() de clients.py. */
+export function actionContact(contact: Omit<ContactEssai, 'liens_panier'> | null | undefined, action: ActionClient): ActionClient {
+  if (!contact || action.code !== 'aucune' || contact.arret === 'abonne') return action;
+  const etape = contact.etapes.find((e) => e.code === contact.courante);
+  if (contact.arret === 'pas_interesse') return {...action, detail: 'pas intéressé : plus aucun contact'};
+  if (contact.arret === 'stop') return {...action, detail: 'liste STOP : plus aucun contact'};
+  if (!etape) return contact.termine ? {...action, detail: 'parcours de contact terminé'} : action;
+  if (!contact.a_contacter) return {...action, detail: `${action.detail} ; prochain contact le ${jjmm(jour(etape.echeance)!)} : ${etape.libelle}`};
+  const detail = `${contact.retard ? `en retard de ${contact.retard} j. ` : 'aujourd’hui. '}${etape.consigne}`;
+  return {code: 'contact_essai', ordre: ORDRE.contact_essai, libelle: etape.libelle, detail, urgence: contact.retard ? 'retard' : ''};
+}
+
+/** Parcours à la date du jour : événements recopiés dans la fiche + notes du panel. Le texte des retours vient des notes. */
+function contactAJour(c: ContactEssai, notes: Note[], auj: Date): ContactEssai {
+  const parNote = new Map<string, EvenementContact>();
+  for (const n of [...notes].sort((a, b) => (a.cree_le || '').localeCompare(b.cree_le || ''))) {
+    const e = contactDeNote(n);
+    if (e) parNote.set(e.id, e);
+  }
+  const connus = new Set(c.evenements.map((e) => e.id));
+  const evenements: EvenementContact[] = [
+    ...c.evenements.map((e) => ({...e, texte: parNote.get(e.id)?.texte ?? e.texte ?? '', note: undefined})),
+    ...[...parNote.values()].filter((e) => !connus.has(e.id)),
+  ];
+  const arretPublie = c.arret === 'pas_interesse' ? '' : c.arret;
+  return {...parcoursContact(c.debut, c.fin, evenements, auj, arretPublie), liens_panier: c.liens_panier};
+}
+
 export interface ClientAffiche extends Client {
   enAttente: Partial<Record<CodeAction, ActionNotee>>; // notées dans le panel, pas encore dans le coffre
 }
@@ -232,11 +344,13 @@ export function clientAJour(c: Client, notes: Note[], auj = new Date()): ClientA
   const aLivrer = c.qr.commandes && !qrFait && c.abonnement_en_cours ? c.qr.commandes : 0;
   const limite = jour(c.qr.limite);
   const finEssai = jour(c.essai?.fin ?? '');
+  const contact = c.contact_essai ? contactAJour(c.contact_essai, notes, auj) : c.contact_essai;
   return {
     ...c,
     parcours,
     etape: {code: enCours, libelle: LIBELLES_ETAPE[enCours]},
-    action: prochaineAction(c.etat, {commerce: fait('commerce'), documents: fait('documents'), qr: qrFait}, c.qr.commandes, c.qr.limite, c.commerce_existant, auj, services),
+    contact_essai: contact,
+    action: actionContact(contact, prochaineAction(c.etat, {commerce: fait('commerce'), documents: fait('documents'), qr: qrFait}, c.qr.commandes, c.qr.limite, c.commerce_existant, auj, services)),
     qr: {...c.qr, a_livrer: aLivrer, jours_restants: aLivrer && limite ? ecart(limite, auj) : null},
     services_pro: services,
     ...(c.essai ? {essai: {...c.essai, jours_restants: c.essai.en_cours && finEssai ? ecart(finEssai, auj) : null}} : {}),
@@ -258,6 +372,9 @@ export function totauxClients(cs: Client[]): Omit<TotauxClients, 'par_etape' | '
     a_traiter: cs.filter((c) => c.action.code !== 'aucune').length,
     resiliations: cs.filter((c) => c.etat?.code === 'resiliation').length,
     essais: cs.filter((c) => c.etat?.code === 'essai').length,
+    essais_a_contacter: cs.filter((c) => c.contact_essai?.a_contacter).length,
+    essais_en_retard: cs.filter((c) => c.contact_essai?.retard).length,
+    essais_abonnes: cs.filter((c) => c.contact_essai?.arret === 'abonne').length,
     cartes_suspendues: cs.filter((c) => c.etat?.code === 'carte_suspendue').length,
   };
 }

@@ -6,7 +6,7 @@ import type {ComponentChildren} from 'preact';
 import {useMemo, useState} from 'preact/hooks';
 import {clientsAffiches, libelleOffre, noteLibre, offreHistorique, type ClientAffiche} from '../clients';
 import {totauxClients} from '../clients-regles';
-import {cle, dateCourte, euros, fr, nombre, pluriel} from '../format';
+import {cle, dateCourte, euros, fr, lienMail, nombre, pluriel} from '../format';
 import {Icon} from '../icons';
 import {notesEtat} from '../notes';
 import {donnees, filtresClients, FILTRES_CLIENTS_VIDES, type FiltresClients} from '../store';
@@ -29,6 +29,7 @@ const ETAPES: {v: string; l: string}[] = [
 const SUIVI: {v: string; l: string}[] = [
   {v: 'a_traiter', l: 'À traiter'},
   {v: 'urgent', l: 'En retard ou urgent'},
+  {v: 'essais_du_jour', l: 'Essais à contacter aujourd’hui'},
 ];
 
 /** Où en est le client : son état particulier, sinon l'étape du parcours. */
@@ -86,6 +87,7 @@ function correspond(c: ClientAffiche, f: FiltresClients, mots: string[], textes:
   if (f.etape && codeEtape(c) !== f.etape) return false;
   if (f.suivi === 'a_traiter' && c.action.code === 'aucune') return false;
   if (f.suivi === 'urgent' && !c.action.urgence) return false;
+  if (f.suivi === 'essais_du_jour' && !c.contact_essai?.a_contacter) return false;
   if (mots.length) {
     const t = textes.get(c.id) ?? '';
     if (!mots.every((m) => t.includes(m))) return false;
@@ -124,7 +126,10 @@ export function Clients() {
   }, [tous, blocs]);
   const maj = (p: Partial<FiltresClients>) => (filtresClients.value = {...filtresClients.value, ...p});
   const mots = cle(f.q).replace(/(\d)\s+(?=\d)/g, '$1').split(/\s+/).filter(Boolean);
-  const liste = tous.filter((c) => correspond(c, f, mots, textes));
+  const filtres = tous.filter((c) => correspond(c, f, mots, textes));
+  const duJour = f.suivi === 'essais_du_jour';
+  // Essais à contacter : le plus ancien rendez-vous d'abord
+  const liste = duJour ? [...filtres].sort((a, b) => (a.contact_essai?.echeance ?? '').localeCompare(b.contact_essai?.echeance ?? '')) : filtres;
   const actifs = (['offre', 'etape', 'suivi'] as const).filter((k) => f[k]).length;
   const offres = [...new Set(tous.map((c) => c.offre.formule).filter(Boolean))].sort();
 
@@ -169,6 +174,18 @@ export function Clients() {
       <PageHead eyebrow="Espace commercial" title="Clients">
         <span class="ph-count">{liste.length === tous.length ? pluriel(tous.length, 'client', 'clients') : `${nombre(liste.length)} sur ${nombre(tous.length)}`}</span>
       </PageHead>
+
+      {tous.some((c) => c.contact_essai) && (
+        <div class="cl-essais">
+          <button type="button" class={`chip ${duJour ? 'on' : ''}`} aria-pressed={duJour} onClick={() => (filtresClients.value = {...FILTRES_CLIENTS_VIDES, suivi: duJour ? '' : 'essais_du_jour'})}>
+            <Icon name="phone" size={16} />
+            Essais à contacter aujourd’hui ({nombre(t.essais_a_contacter ?? 0)})
+          </button>
+          <span class="muted small">
+            {pluriel(t.essais ?? 0, 'essai en cours', 'essais en cours')} · {nombre(t.essais_a_contacter ?? 0)} à contacter{t.essais_en_retard ? `, dont ${nombre(t.essais_en_retard)} en retard` : ''} · {pluriel(t.essais_abonnes ?? 0, 'abonné', 'abonnés')} après un essai
+          </span>
+        </div>
+      )}
 
       <div class="kpis cp-kpis cl-kpis">
         {tuiles.map((x) =>
@@ -259,6 +276,7 @@ export function Clients() {
                         <td>
                           <span class="cl-contact">{c.contact.complet || <span class="muted">—</span>}</span>
                           <Tel p={c} />
+                          <MailEssai c={c} />
                         </td>
                         <td>
                           <strong class="cl-offre">{libelleOffre(c.offre) || '—'}</strong>
@@ -300,6 +318,7 @@ export function Clients() {
                   <div class="cp-carte-a">
                     <ActionClient c={c} />
                     <Tel p={c} />
+                    <MailEssai c={c} />
                   </div>
                 </li>
               ))}
@@ -314,6 +333,16 @@ export function Clients() {
       )}
     </div>
   );
+}
+
+/** E-mail en un clic, pour un commerce en parcours de contact. */
+function MailEssai({c}: {c: ClientAffiche}): ComponentChildren {
+  const href = c.contact_essai && !c.contact_essai.arret ? lienMail(c.email) : null;
+  return href ? (
+    <a class="cl-mail" href={href} onClick={(e) => e.stopPropagation()}>
+      <Icon name="mail" size={14} /> {c.email}
+    </a>
+  ) : null;
 }
 
 function QrCourt({c}: {c: ClientAffiche}): ComponentChildren {
@@ -347,7 +376,7 @@ export function AlerteClients() {
       </span>
       <span>
         <strong>{t.urgents > 1 ? `${nombre(t.urgents)} actions clients urgentes` : '1 action client urgente'}</strong>
-        <small>{fr(`${t.en_retard ? `${nombre(t.en_retard)} en retard · ` : ''}QR codes à livrer, services Pro, paiement à relancer : onglet Clients.`)}</small>
+        <small>{fr(`${t.en_retard ? `${nombre(t.en_retard)} en retard · ` : ''}Appels d’essai, QR codes à livrer, services Pro, paiement à relancer : onglet Clients.`)}</small>
       </span>
       <Icon name="chevron-right" />
     </a>

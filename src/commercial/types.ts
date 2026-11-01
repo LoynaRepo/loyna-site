@@ -95,7 +95,7 @@ export interface EtapeClient {
 }
 
 export interface ActionClient {
-  code: 'paiement' | 'commerce' | 'documents' | 'qr' | 'service_pro' | 'aucune';
+  code: 'paiement' | 'contact_essai' | 'commerce' | 'documents' | 'qr' | 'service_pro' | 'aucune';
   ordre: number;
   libelle: string;
   detail: string;
@@ -121,11 +121,38 @@ export interface ServicePro {
   attente?: boolean; // noté dans le panel, pas encore recopié dans le coffre (calculé dans le navigateur)
 }
 
+export type ResultatContact = 'joint' | 'sans_reponse' | 'rappeler' | 'pas_interesse';
+export interface EvenementContact {
+  etape: string;
+  resultat: ResultatContact;
+  date: string;
+  rappel: string;
+  id: string;
+  texte?: string; // lu dans les notes du panel
+  note?: import('./notes-crypto').Note; // pas encore recopié dans le coffre : peut être annulé
+}
+/** Parcours de contact d'un essai (clients.py, parcours_contact). */
+export interface ContactEssai {
+  debut: string;
+  fin: string;
+  arret: string; // abonne, pas_interesse, stop, donnees_supprimees
+  etapes: {code: string; libelle: string; consigne: string; prevu: string; echeance: string; etat: 'fait' | 'passe' | 'courante' | 'a_venir'; absences: number}[];
+  evenements: EvenementContact[];
+  courante: string;
+  echeance: string;
+  a_contacter: boolean;
+  retard: number;
+  termine: boolean;
+  liens_panier?: {starter: string; pro: string} | null;
+}
+
 export interface Client {
   id: string; // 12 caractères (notes chiffrées du panel)
   fiche: string;
   commerce: string;
   activite: string;
+  ville?: string;
+  contact_essai?: ContactEssai | null; // null : jamais en essai, ou prix réservé (Barber Kong)
   contact: {prenom: string; nom: string; complet: string};
   email: string;
   telephone: string;
@@ -185,6 +212,9 @@ export interface TotauxClients {
   a_traiter: number;
   resiliations?: number;
   essais?: number;
+  essais_a_contacter?: number;
+  essais_en_retard?: number;
+  essais_abonnes?: number;
   cartes_suspendues?: number;
   par_etape: {code: string; libelle: string; nombre: number}[];
   par_offre: {formule: string; nombre: number}[];

@@ -13,6 +13,7 @@ import {ErreurNotes, notesEtat} from '../notes';
 import {donnees, toast} from '../store';
 import {Badge, Btn, Copier, Empty, Lien, Modal, PageHead, Panel, TexteLie} from '../ui';
 import {ActionClient, BadgeEtape} from './Clients';
+import {ParcoursContact} from './ContactEssai';
 import {MarqueNotes, NotesProspect} from './Notes';
 
 const ACTION_DE_ETAPE: Partial<Record<string, CodeAction>> = {commerce: 'commerce_cree', documents: 'documents', qr: 'qr_livres'};
@@ -88,6 +89,8 @@ export function ClientFiche({id}: {id: string}) {
               )}
             </div>
           </Panel>
+
+          <ParcoursContact c={c} />
 
           <Panel title="Parcours" sub="Les boutons enregistrent l’étape tout de suite ; elle est recopiée dans la fiche du coffre (date et historique) au prochain passage d’un agent.">
             <ol class="cl-parcours">
@@ -286,6 +289,7 @@ export function ClientFiche({id}: {id: string}) {
                 )}
               </Ligne>
               <Ligne t="E-mail">{mail ? <a href={mail}>{c.email}</a> : <span class="muted">{c.email || 'aucun'}</span>}</Ligne>
+              {c.ville && <Ligne t="Ville">{c.ville}</Ligne>}
               {c.adresse_facturation && <Ligne t="Adresse de facturation">{c.adresse_facturation}</Ligne>}
               {c.siren && (
                 <Ligne t="SIREN">

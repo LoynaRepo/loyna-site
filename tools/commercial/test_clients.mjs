@@ -7,7 +7,7 @@
 // Le coffre change à l'étape 8 de la mise en ligne : avant, COFFRE_SYSTEME=<offre2>\coffre_pret\_systeme pour comparer à la
 // copie préparée. Données fictives seulement ; rien n'est écrit dans le projet ni dans le coffre (dossier temporaire).
 import {execFileSync} from 'node:child_process';
-import {ACTIONS, actionsNotees, clientAJour, estNoteAction, libelleOffre, lireAction, offreHistorique, texteAction, totauxClients, trierClients} from '../../src/commercial/clients-regles.ts';
+import {ACTIONS, actionContact, actionsNotees, clientAJour, contactDeNote, estNoteAction, libelleOffre, lireAction, offreHistorique, parcoursContact, texteAction, texteContact, totauxClients, trierClients} from '../../src/commercial/clients-regles.ts';
 
 const PYTHON = process.env.PYTHON ?? 'C:/Users/vaiko/AppData/Local/Programs/Python/Python313/python.exe';
 const SYSTEME = process.env.COFFRE_SYSTEME ?? 'C:/Users/vaiko/Documents/Loyna Prospection/_systeme';
@@ -66,10 +66,34 @@ with tempfile.TemporaryDirectory() as d:
         if f.is_file():
             clients.appliquer_actions_panel(f, ns, aujourdhui=j)
     apres, tp = clients.calculer_clients(r, j)
-print(json.dumps({"a_la_grille": a_la_grille, "actions_panel": sorted(clients.ACTIONS_PANEL), "avant": avant, "totaux_avant": ta, "apres": apres, "totaux_apres": tp}, ensure_ascii=False))
+scenarios = []
+if hasattr(clients, "parcours_contact"):
+    for s in entree["scenarios"]:
+        c = clients.parcours_contact(date.fromisoformat(s["debut"]), date.fromisoformat(s["fin"]), s["evenements"], date.fromisoformat(s["jour"]), s.get("arret", ""))
+        action = clients.action_contact(c, {"code": "aucune", "ordre": 9, "libelle": "Rien à faire", "detail": "essai", "urgence": ""})
+        scenarios.append({"parcours": c, "action": action})
+print(json.dumps({"a_la_grille": a_la_grille, "actions_panel": sorted(clients.ACTIONS_PANEL), "avant": avant, "totaux_avant": ta, "apres": apres, "totaux_apres": tp, "scenarios": scenarios}, ensure_ascii=False))
 `;
+// Parcours de contact : mêmes résultats ici et dans clients.py, chaque jour du 1er au 75e, avec des boutons notés
+const ev = (etape, resultat, date, rappel = '', id = 'x') => ({etape, resultat, date, rappel, id});
+const JEUX_CONTACT = [
+  [],
+  [ev('j1', 'joint', '2026-11-03')],
+  [ev('j1', 'sans_reponse', '2026-11-03'), ev('j1', 'sans_reponse', '2026-11-04'), ev('j1', 'sans_reponse', '2026-11-05'), ev('j1', 'sans_reponse', '2026-11-06')],
+  [ev('j1', 'rappeler', '2026-11-03', '2026-11-12'), ev('j7', 'joint', '2026-11-13')],
+  [ev('j1', 'joint', '2026-11-03'), ev('j7', 'joint', '2026-11-09'), ev('jm10', 'rappeler', '2026-11-22', '2026-12-10')],
+  [ev('j7', 'pas_interesse', '2026-11-09')],
+  [ev('fin2', 'sans_reponse', '2026-12-04')],
+];
+const SCENARIOS = [];
+for (const evenements of JEUX_CONTACT) {
+  for (let n = 0; n < 75; n++) {
+    SCENARIOS.push({debut: '2026-11-02', fin: '2026-12-02', evenements, jour: new Date(Date.UTC(2026, 10, 2 + n)).toISOString().slice(0, 10)});
+  }
+}
+SCENARIOS.push({debut: '2026-11-02', fin: '2026-12-02', evenements: [], jour: '2026-11-22', arret: 'abonne'}, {debut: '2026-11-02', fin: '2026-12-02', evenements: [], jour: '2026-11-22', arret: 'stop'});
 const py = JSON.parse(
-  execFileSync(PYTHON, ['-B', '-c', script], {input: JSON.stringify({notes, grille: FICHES_GRILLE}), encoding: 'utf8', env: {...process.env, PYTHONIOENCODING: 'utf-8'}}),
+  execFileSync(PYTHON, ['-B', '-c', script], {input: JSON.stringify({notes, grille: FICHES_GRILLE, scenarios: SCENARIOS}), encoding: 'utf8', env: {...process.env, PYTHONIOENCODING: 'utf-8'}}),
 );
 const auj = new Date(2026, 9, 23);
 const resume = (c) => JSON.stringify({action: c.action, etape: c.etape.code, a_livrer: c.qr.a_livrer, jours: c.qr.jours_restants, actif: c.parcours.at(-1).fait, services: (c.services_pro ?? []).map((s) => [s.code, s.a_faire])});
@@ -128,14 +152,14 @@ if (!py.a_la_grille) {
   const de = (fiche, depart = py.avant) => depart.find((c) => c.fiche === fiche);
   const essai = de('Essai Ambre');
   const ici = clientAJour(essai, [], auj);
-  verifier(essai.etat?.code === 'essai' && ici.action.code === 'aucune' && ici.action.detail === 'essai jusqu’au 10/11/2026', `essai : rien à créer ni à envoyer (${ici.action.detail})`);
+  verifier(essai.etat?.code === 'essai' && ici.action.code === 'contact_essai' && ici.action.libelle === 'Recueillir un retour' && ici.action.urgence === 'retard', `essai : ni commerce ni documents, l’appel en retard (${ici.action.detail})`);
   verifier(essai.mrr === 0 && essai.offre.mensuel === 0 && !essai.abonnement_en_cours && essai.offre.libelle === 'Starter · essai', 'essai : revenu 0, pas un abonnement en cours');
   verifier(ici.essai.jours_restants === 18 && essai.essai.jours_restants === 18, 'essai : jours restants recalculés à la date du jour');
   verifier(!ici.parcours.at(-1).fait && ici.parcours.find((e) => e.code === 'documents').sans_objet, 'essai : pas encore client actif, documents sans objet');
   const paiement = clientAJour(de('Suspendue Paiement'), [], auj);
   verifier(paiement.etat.code === 'carte_suspendue' && paiement.action.code === 'paiement' && paiement.action.urgence === 'retard' && !paiement.abonnement_en_cours && paiement.mrr === 0, `carte suspendue, impayé : ${paiement.action.libelle} (${paiement.action.detail})`);
   const finEssai = clientAJour(de('Suspendue Essai'), [], auj);
-  verifier(finEssai.action.code === 'aucune' && finEssai.action.detail === 'carte en pause depuis le 10/10 : essai terminé', `carte suspendue après l’essai : ${finEssai.action.detail}`);
+  verifier(finEssai.action.code === 'contact_essai' && finEssai.action.libelle === 'Relance après l’arrêt', `carte suspendue après l’essai : ${finEssai.action.libelle} (${finEssai.action.detail})`);
   verifier(clientAJour(de('Suspendue Fin'), [], auj).action.code === 'aucune', 'carte suspendue, abonnement terminé : rien à faire, la reprise passe par le panier');
   const pro = clientAJour(de('Pro Engage'), [], auj);
   verifier(pro.action.code === 'service_pro' && pro.action.libelle === 'Carte finie à la main' && pro.action.urgence === 'retard', `Pro avec engagement : ${pro.action.libelle} (${pro.action.detail})`);
@@ -148,6 +172,40 @@ if (!py.a_la_grille) {
   verifier(barber.services_pro.length === 0 && barber.action.code === 'aucune' && barber.mrr === 39.99 && libelleOffre(barber.offre) === 'Premium · offre historique' && barber.engagement.fin === '2027-10-27', 'Premium : aucun service dû, 39,99 € par mois, offre historique');
   const tg = totauxClients(py.avant.map((c) => clientAJour(c, [], auj)));
   verifier(tg.essais === py.totaux_avant.essais && tg.cartes_suspendues === py.totaux_avant.cartes_suspendues && tg.essais === 1 && tg.cartes_suspendues === 3, `compteurs : ${tg.essais} essai, ${tg.cartes_suspendues} cartes suspendues, comme le coffre`);
+}
+
+// --- Parcours de contact d'un essai ----------------------------------------------------------------------------------------
+if (py.scenarios.length) {
+  const propre = (c) => JSON.stringify({a: c.arret, c: c.courante, e: c.echeance, ac: c.a_contacter, r: c.retard, t: c.termine, et: c.etapes.map((x) => [x.code, x.prevu, x.echeance, x.etat, x.absences])});
+  let ecarts = 0;
+  SCENARIOS.forEach((s, i) => {
+    const [a, m, d] = s.jour.split('-').map(Number);
+    const j = new Date(a, m - 1, d);
+    const ici = parcoursContact(s.debut, s.fin, s.evenements, j, s.arret ?? '');
+    const action = actionContact(ici, {code: 'aucune', ordre: 9, libelle: 'Rien à faire', detail: 'essai', urgence: ''});
+    if (propre(ici) !== propre(py.scenarios[i].parcours) || JSON.stringify(action) !== JSON.stringify(py.scenarios[i].action)) {
+      ecarts++;
+      if (ecarts < 4) console.log('  écart', s.jour, JSON.stringify(s.evenements), propre(ici), propre(py.scenarios[i].parcours), JSON.stringify(action), JSON.stringify(py.scenarios[i].action));
+    }
+  });
+  verifier(ecarts === 0, `parcours de contact : ${SCENARIOS.length} situations, même calcul que clients.py`);
+  const t = texteContact('j7', 'rappeler', '2026-11-08', '2026-11-12', '  il  rappelle mardi ');
+  verifier(t === '[CLIENT:essai_contact] 2026-11-08 · j7 rappeler 2026-11-12 · il rappelle mardi', 'texte d’un bouton (format lu par clients.py)');
+  const n = contactDeNote(note(20, t));
+  verifier(n.etape === 'j7' && n.resultat === 'rappeler' && n.rappel === '2026-11-12' && n.texte === 'il rappelle mardi' && estNoteAction(note(20, t)) && !lireAction(note(20, t)), 'bouton relu ; une note d’action, pas une note libre');
+  verifier(contactDeNote(note(21, '[CLIENT:essai_contact] n’importe quoi')) === null && contactDeNote(note(22, 'Joint hier')) === null, 'autre texte : ignoré');
+  // Client affiché : la note du panel fait avancer le parcours tout de suite, le retour se lit, l'annulation reste possible
+  const parc = parcoursContact('2026-11-02', '2026-12-02', [], new Date(2026, 10, 3));
+  const client = {...py.avant.find((c) => c.fiche === 'Essai Ambre'), contact_essai: {...parc, evenements: [], liens_panier: null}};
+  const noteJ1 = note(23, texteContact('j1', 'joint', '2026-11-03', '', 'carte bonne'));
+  const apresJoint = clientAJour(client, [noteJ1], new Date(2026, 10, 3));
+  verifier(apresJoint.contact_essai.courante === 'j7' && apresJoint.contact_essai.evenements[0].texte === 'carte bonne' && apresJoint.contact_essai.evenements[0].note && apresJoint.action.code === 'aucune', 'Joint noté dans le panel : l’étape suivante tout de suite');
+  const publie = {...client, contact_essai: {...client.contact_essai, evenements: [ev('j1', 'joint', '2026-11-03', '', noteJ1.id)]}};
+  const recopie = clientAJour(publie, [noteJ1], new Date(2026, 10, 3));
+  verifier(recopie.contact_essai.evenements.length === 1 && !recopie.contact_essai.evenements[0].note && recopie.contact_essai.evenements[0].texte === 'carte bonne', 'note recopiée dans le coffre : comptée une fois, plus d’annulation');
+  const tous = totauxClients([clientAJour(client, [], new Date(2026, 10, 3)), clientAJour(client, [], new Date(2026, 10, 5)), clientAJour({...client, contact_essai: {...client.contact_essai, arret: 'abonne'}}, [], new Date(2026, 10, 3))]);
+  verifier(tous.essais_a_contacter === 2 && tous.essais_en_retard === 1 && tous.essais_abonnes === 1, 'compteurs : à contacter, en retard, abonnés');
+  verifier(clientAJour(py.avant.find((c) => c.fiche === 'Premium Histo'), [], auj).contact_essai === null && clientAJour(ancienClient, [], auj).contact_essai === undefined, 'Premium, données anciennes : hors parcours');
 }
 
 console.log(ok ? 'TOUT EST BON' : 'DES TESTS ÉCHOUENT');

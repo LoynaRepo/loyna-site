@@ -77,6 +77,7 @@ const POINTS_CLIENTS = [
   'Carte suspendue : arrêt automatique à la fin d’un essai sans abonnement, à la fin d’un abonnement, ou 15 jours après le premier échec de paiement. La carte reste dans les téléphones mais ne crédite plus. Tout repart seul dès que le paiement passe ou que l’abonnement est repris ; sans reprise, données supprimées 90 jours après l’arrêt. Seul un impayé demande une relance de votre part.',
   'Services de Pro : carte finie à la main, vidéo et visuels à partir du 1er paiement ; kit comptoir après le 1er paiement avec engagement, après le 3e sans ; chacun sous 15 jours. Les boutons sont dans la fiche du client. Rien de tout cela pendant un essai.',
   'Premium : offre historique, plus vendue. Un client qui l’a garde son prix et sa durée, avec les droits de Pro.',
+  'Essais, parcours de contact : J+1 appel de bienvenue, J+7 retour, J-10 l’offre, J-3 dernier appel, 2 jours après la fin relance, 30 jours après dernière relance. Filtre « Essais à contacter aujourd’hui » en tête de l’onglet, boutons et retour dans la fiche. Tout se fait à la main : rien ne part tout seul. Le parcours s’arrête à l’abonnement, sur « Pas intéressé » ou sur la liste STOP.',
   'Revenu mensuel : abonnements en cours, au prix de leur offre, sans TVA ; 0 pendant un essai ou un arrêt.',
   'Une erreur dans un client (nom, offre, dates) se corrige dans sa fiche de 08 Clients, dans Obsidian ; le panel suit à la publication suivante.',
 ];

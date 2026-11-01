@@ -6,10 +6,11 @@
 // l'action peut être annulée (la note est supprimée).
 import {enregistrer, notesEtat, type BlocNotes, type Note} from './notes';
 import {nouvelId} from './notes-crypto';
-import {actionsNotees, clientAJour, estNoteAction, texteAction, trierClients, type ClientAffiche, type CodeAction} from './clients-regles';
-import type {Client} from './types';
+import {actionsNotees, clientAJour, estNoteAction, texteAction, texteContact, trierClients, type ClientAffiche, type CodeAction} from './clients-regles';
+import type {Client, ResultatContact} from './types';
 
-export {ACTIONS, estNoteAction, libelleOffre, offreHistorique, type ClientAffiche, type CodeAction} from './clients-regles';
+export {ACTIONS, estNoteAction, libelleOffre, offreHistorique, RESULTATS_CONTACT, type ClientAffiche, type CodeAction} from './clients-regles';
+export type {EvenementContact, ResultatContact} from './types';
 
 /** Clients affichés (actions en attente comprises), urgences d'abord. À utiliser dans un useMemo. */
 export function clientsAffiches(clients: Client[] | undefined, blocs: Record<string, BlocNotes>, auj = new Date()): ClientAffiche[] {
@@ -24,6 +25,12 @@ export async function noterAction(client: string, code: CodeAction, date: string
   if (deja) return;
   const maintenant = new Date().toISOString();
   await enregistrer(client, {type: 'ajout', note: {id: nouvelId(), cree_le: maintenant, modifie_le: maintenant, texte: texteAction(code, date, precision)}});
+}
+
+/** Bouton du parcours de contact d'un essai : une note par appel, jamais de mail envoyé. */
+export async function noterContact(client: string, etape: string, resultat: ResultatContact, date: string, rappel: string, retour: string): Promise<void> {
+  const maintenant = new Date().toISOString();
+  await enregistrer(client, {type: 'ajout', note: {id: nouvelId(), cree_le: maintenant, modifie_le: maintenant, texte: texteContact(etape, resultat, date, rappel, retour)}});
 }
 
 /** Annule une action pas encore recopiée dans le coffre. */

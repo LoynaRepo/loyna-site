@@ -2360,3 +2360,41 @@ button.cp-kpi:hover {
   height: 12px;
   border-radius: 50%;
 }
+
+/* Parcours de contact d'un essai */
+.cl-essais {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-bottom: 14px;
+}
+.cl-mail {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+.cl-contact-ev {
+  display: block;
+}
+.cl-contact-ev .linkish {
+  margin-left: 8px;
+}
+.cl-contact-liens {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 6px;
+}
+.cl-contact-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  max-width: 560px;
+}
+.cl-contact-form textarea {
+  width: 100%;
+}
