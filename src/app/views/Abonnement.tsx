@@ -3,7 +3,7 @@
 // entre commerçants (my_referral, décision d'Ewan du 2026-10-27) et comparaison des offres Starter et Pro (prix et contenu :
 // PLANS de src/data/site.ts). Le changement d'offre passe par la fonction subscription-change, qui applique le tableau de la
 // section 2.4 du cahier des charges : il est fermé dans le portail Stripe, qui garde factures, carte bancaire et résiliation.
-// Premium (Barber Kong) : offre historique, sans grille ni changement (section 2.7).
+// Premium : offre historique, sans grille ni changement (section 2.7), plus aucun commerce depuis le 2026-11-01.
 import {useEffect, useState} from 'preact/hooks';
 import {ENGAGEMENT, LEGACY_PLANS, PHRASES, PLANS, SITE, TRIAL, euro, quotas, type Plan} from '../../data/site';
 import {Icon} from '../icons';
@@ -341,8 +341,13 @@ function StateBlock({s, sub, plan, manage, owner, portalLink}: {s: ServiceState;
   }
 }
 
+// Prix réservé hors grille, en Pro seulement : Barber Kong, 39,99 € (prix Stripe archivé, docs/OFFRES.md § 13 du dépôt LOYNA).
+// my_subscription ne donne aucun montant : le cas est écrit ici, pour éviter une migration et un commerce unique.
+const PRIX_RESERVES_PRO: Record<string, number> = {'barber-kong': 39.99};
+
 /** Résumé d'un abonnement en cours : statut, prix, échéance, engagement, fin prévue. Sans `plan` (Premium) : statut et échéances, le reste est dans sa phrase. */
 function SubSummary({sub, s, plan}: {sub: any; s: ServiceState | null; plan: Plan | undefined}) {
+  const reserve = plan?.id === 'pro' ? PRIX_RESERVES_PRO[merchant.value?.merchant_slug ?? ''] : undefined;
   if (sub?.status === 'NONE')
     return (
       <p class="plan-note">
@@ -361,7 +366,7 @@ function SubSummary({sub, s, plan}: {sub: any; s: ServiceState | null; plan: Pla
         {plan && (
           <div>
             <dt>Prix</dt>
-            <dd>{euro(commitment ? plan.engaged : plan.monthly)} par mois, sans TVA</dd>
+            <dd>{euro(reserve ?? (commitment ? plan.engaged : plan.monthly))} par mois, sans TVA</dd>
           </div>
         )}
         {sub.current_period_end && !sub.cancel_at_period_end && (
@@ -402,7 +407,7 @@ export function Abonnement() {
   const portalLink = portalUrl(email);
   const current = PLANS.findIndex((p) => p.id === m.subscription_plan.toLowerCase());
   const plan = PLANS[current];
-  const legacy = current === -1; // Premium : Barber Kong, offre historique
+  const legacy = current === -1; // Premium : offre historique
   const ro = readOnly(); // consultation opérateur : ni portail Stripe, ni changement d'offre, ni parrainage du compte
   const manage = !ro && can('settings.manage');
   const owner = !ro && m.role === 'OWNER';

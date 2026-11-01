@@ -93,7 +93,8 @@ const MODES = [
   {nom: 'starter', q: '&offre=starter', abonnement: [PRIX.starter, PRIX.pro, 'Passer à Pro · 49 €', 'Passer à Pro avec engagement · 41,65 €', "Prendre 12 mois d'engagement · 24,65 €", 'Votre offre', 'Pour 20 € de plus par mois, 17 € avec engagement'], accueil: ['Campagnes cette semaine']},
   {nom: 'pro', q: '&offre=pro', abonnement: [PRIX.pro, 'Passer à Starter · 29 €', "Prendre 12 mois d'engagement · 41,65 €", 'Votre offre'], absent: {abonnement: ['Pour 20 € de plus']}, accueil: ['Votre suivi LOYNA']},
   {nom: 'starter engagé', q: '&offre=starter&engage=1', abonnement: ['Passer à Pro avec engagement · 41,65 €', 'Mon commerce ferme', 'justificatif de radiation', 'Engagement jusqu', 'Pendant votre engagement'], absent: {abonnement: ['Passer à Pro · 49 €', 'Passer à Starter']}},
-  {nom: 'pro engagé', q: '&offre=pro&engage=1', abonnement: ['Mon commerce ferme', 'le retour à Starter ou la sortie'], absent: {abonnement: ['Passer à ', 'Prendre 12 mois']}},
+  {nom: 'pro engagé', q: '&offre=pro&engage=1', abonnement: ['41,65 € par mois, sans TVA', 'Mon commerce ferme', 'le retour à Starter ou la sortie'], absent: {abonnement: ['39,99', 'Passer à ', 'Prendre 12 mois']}},
+  {nom: 'barber kong', q: '&offre=pro&engage=1&slug=barber-kong', abonnement: ['39,99 € par mois, sans TVA', 'Engagement jusqu', 'Mon commerce ferme'], absent: {abonnement: ['41,65 € par mois, sans TVA', 'Passer à ', 'Prendre 12 mois']}},
   {nom: 'engagement terminé', q: '&offre=starter&engage=fini', abonnement: ['Passer à Pro · 49 €'], absent: {abonnement: ["Prendre 12 mois d'engagement", 'Mon commerce ferme']}},
   {nom: 'premium', q: '&offre=premium', abonnement: ["Votre offre : Premium (offre historique), 39,99 € par mois, engagement jusqu'au 27/10/2027. Vous avez tout le contenu de Pro."], absent: {abonnement: ['Les offres LOYNA', 'Passer à', 'Prendre 12 mois', 'Mon commerce ferme', 'Starter']}, premium: true},
   {nom: 'essai', q: '&essai=1', compteur: 'Essai : encore 23 jours', accueil: ['5 gestes pour démarrer', 'Imprimez', 'Ajoutez', 'Créez votre première carte', 'guide de démarrage'], abonnement: ['Essai gratuit', 'Choisir mon offre', 'Choisir Starter · 29 €', 'Choisir Pro · 49 €', 'Offerte jusqu'], absent: {abonnement: ['Factures, carte bancaire', 'Passer à']}},
@@ -109,7 +110,9 @@ const INTERDITS = /premium|annuel|\+ ?500|4,99|intégration|en un clic|\bHT\b|\b
 const SLUG = (s) => s.replace(/[^a-z0-9]+/gi, '_');
 
 // QA_RAPIDE=1 : sans le tour de tous les écrans, seulement les parcours ci-dessous
-for (const mode of process.env.QA_RAPIDE ? [] : MODES) {
+// QA_SEUL=regexp : seulement les offres et états dont le nom correspond
+const MODES_A_VOIR = MODES.filter((m) => !process.env.QA_SEUL || new RegExp(process.env.QA_SEUL).test(m.nom));
+for (const mode of process.env.QA_RAPIDE ? [] : MODES_A_VOIR) {
   for (const v of ALL) {
     await open(`${APP}${SEED}${mode.q}#/${v}`);
     const t = await lire();

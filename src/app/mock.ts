@@ -204,7 +204,8 @@ export function demoMerchant(seed: number, plan: Plan = 'PRO'): DemoMerchant {
     tpl,
     owner,
     merchant: {
-      id: 'demo-merchant', name, slug: `demo-${seed}`, business_type: tpl.type, logo_url: null, primary_color: bg, secondary_color: fg,
+      // ?slug= : essais locaux seulement (prix réservé de l'écran Abonnement, tools/qa-app.mjs)
+      id: 'demo-merchant', name, slug: (import.meta.env.DEV && new URLSearchParams(location.search).get('slug')) || `demo-${seed}`, business_type: tpl.type, logo_url: null, primary_color: bg, secondary_color: fg,
       address: `${street} rue de l’Exemple`, postal_code: '34000', city: 'Montpellier', phone, website: null,
       latitude: round6(CENTER.lat + (r() - 0.5) * 0.012), longitude: round6(CENTER.lon + (r() - 0.5) * 0.016), timezone: 'Europe/Paris',
     },
