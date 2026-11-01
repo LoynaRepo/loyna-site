@@ -8,10 +8,11 @@ import {useEffect, useRef, useState} from 'preact/hooks';
 import {ACTIVITES_EN_PLUS, CARD_ACCENTS, CARD_ACTIVITES, CARD_BGS, CGV_VERSION, PHRASES, TRIAL} from '../data/site';
 import {ApiError, publicEdge} from './http';
 import {frenchTypography} from './typo';
-import {LOGO_ACCEPT, logoToFiles} from './logo-png';
+import {couleurVisible, LOGO_ACCEPT, LOGO_MIN_SIDE, logoToFiles} from './logo-png';
+import {contrast} from './util';
 import {CarteWallet, TelephoneWallet} from '../lib/CarteWallet';
 import {lireCartePreparee, RE_ID_CARTE} from '../lib/carte-preparee';
-import {CLE_LOGO, EMAIL_RE, REFERRAL_ERRORS, RULES, telephoneFrancais, chercherEtablissements, lireLogoGarde, normalizeReferral, siretValide, store, track, urlLogo, type Etablissement, type LogoGarde} from '../lib/compte-regles';
+import {CLE_LOGO, EMAIL_RE, REFERRAL_ERRORS, RULES, TELEPHONE_RE, chercherEtablissements, lireLogoGarde, normalizeReferral, siretValide, store, track, urlLogo, type Etablissement, type LogoGarde} from '../lib/compte-regles';
 
 type Etat = 'attente' | 'ouvert' | 'ferme' | 'confirmer' | 'active';
 type Raison = 'CLOSED' | 'FULL' | 'RESEAU';
@@ -25,6 +26,8 @@ const AUTRE = 'Autre';
 const PASSAGES = {min: 4, max: 15};
 const PARRAIN_KEY = 'loyna-essai-parrain'; // lu par le panier à la souscription (src/app/Panier.tsx, même nom)
 const RE_COULEUR = /^#[0-9a-f]{6}$/i;
+const RE_NOM_LISIBLE = /[\p{Script=Latin}\p{N}]/u; // même règle que le serveur : sans cela, un « ? » sur la carte
+const NOM_LONG = 26; // au-delà, l'en-tête de la carte iPhone peut le couper
 const NOMS_PAR_DEFAUT = ['Maison Lumière', 'Votre commerce']; // valeurs de départ du configurateur : pas le nom d'un vrai commerce
 const dateFr = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', {day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris'});
 const simplifier = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
@@ -33,6 +36,7 @@ const borner = (n: number) => Math.min(PASSAGES.max, Math.max(PASSAGES.min, Math
 
 // Réponses du serveur : texte d'ici pour les cas prévus, le champ concerné quand il y en a un.
 const MESSAGES: Record<string, string> = {
+  INVALID_PHONE: 'Indiquez un numéro de téléphone valide.',
   TRIAL_ALREADY_USED: 'Un essai a déjà eu lieu ou attend sa confirmation pour ce commerce, cette adresse e-mail ou ce numéro de téléphone : c’est 1 essai par commerce. Vous pouvez choisir votre offre. Ce n’est pas vous ? Écrivez à contact@loyna.fr.',
   SIRET_INVALID: 'Ce numéro de SIRET n’existe pas. Vérifiez-le, ou retrouvez-le avec la recherche ci-dessous.',
   SIRET_CLOSED: 'Cet établissement est indiqué comme fermé au répertoire des entreprises. Vérifiez le numéro, ou écrivez à contact@loyna.fr.',
@@ -130,6 +134,7 @@ export default function Essai() {
   const touche = useRef<Touche>(depart.current.touche);
   const [logo, setLogo] = useState<LogoGarde | null>(lireLogoGarde);
   const [logoMsg, setLogoMsg] = useState('');
+  const [logoPeuVisible, setLogoPeuVisible] = useState(false);
   const [systeme, setSysteme] = useState<'apple' | 'google'>('apple');
   const [preparee, setPreparee] = useState(false);
   const [siret, setSiret] = useState('');
@@ -156,6 +161,20 @@ export default function Essai() {
     racine.current?.scrollIntoView({block: 'center'});
     racine.current?.focus({preventScroll: true});
   }, [etat]);
+
+  // Logo transparent de la même teinte que la carte : il ne se verrait pas, autant le dire
+  useEffect(() => {
+    const src = urlLogo(logo);
+    if (!src) return setLogoPeuVisible(false);
+    let actif = true;
+    couleurVisible(src).then(
+      (c) => actif && setLogoPeuVisible(!c || contrast(c, carte.bg) < 1.35),
+      () => actif && setLogoPeuVisible(false),
+    );
+    return () => {
+      actif = false;
+    };
+  }, [logo, carte.bg]);
 
   // L'essai est-il ouvert ? (interrupteur et plafond, côté serveur)
   useEffect(() => {
@@ -204,6 +223,9 @@ export default function Essai() {
         if (c.logo) {
           const fichier = fichierDepuisDataUrl(c.logo);
           garderLogo(await logoToFiles(fichier), 'Logo préparé avec vous');
+        } else {
+          // Carte sans logo : pas celui d'une carte ouverte avant dans le même onglet (le commercial en prépare plusieurs à la suite).
+          retirerLogo();
         }
       })
       .catch(() => {
@@ -256,7 +278,9 @@ export default function Essai() {
     if (!fichier) return;
     setLogoMsg('Préparation du logo…');
     try {
-      garderLogo(await logoToFiles(fichier), fichier.name);
+      const fichiers = await logoToFiles(fichier);
+      garderLogo(fichiers, fichier.name);
+      if (Math.max(fichiers.width, fichiers.height) < LOGO_MIN_SIDE / 2) setLogoMsg('Logo accepté, mais petit : il peut paraître flou sur la carte. Une image plus grande sera plus nette.');
     } catch (err) {
       setLogoMsg(err instanceof Error ? err.message : 'Cette image est illisible.');
     }
@@ -295,13 +319,14 @@ export default function Essai() {
   const validate = (): Record<string, string> => {
     const e: Record<string, string> = {};
     if (!carte.name.trim()) e.name = 'Indiquez le nom de votre commerce.';
+    else if (!RE_NOM_LISIBLE.test(carte.name)) e.name = 'Indiquez un nom avec au moins une lettre de notre alphabet ou un chiffre : il s’affiche sur la carte.';
     if (!activiteCarte(carte)) e.activity = 'Indiquez votre activité.';
     if (!carte.reward.trim()) e.reward = 'Indiquez la récompense de vos clients.';
     if (!siretValide(siret)) e.siret = 'Indiquez les 14 chiffres de votre SIRET : la recherche ci-dessous peut vous aider.';
     if (!f.first_name.trim()) e.first_name = 'Indiquez votre prénom.';
     if (!f.last_name.trim()) e.last_name = 'Indiquez votre nom.';
     if (!EMAIL_RE.test(f.email.trim())) e.email = 'Indiquez une adresse e-mail valide.';
-    if (!telephoneFrancais(f.phone)) e.phone = 'Indiquez un numéro de téléphone français, par exemple 06 12 34 56 78.';
+    if (!TELEPHONE_RE.test(f.phone.trim())) e.phone = 'Indiquez un numéro de téléphone valide.';
     if (!RULES.every((r) => r.test(pw))) e.password = 'Le mot de passe ne respecte pas encore toutes les règles.';
     else if (pw !== pw2) e.password2 = 'Les deux mots de passe sont différents.';
     if (referral.trim() && !normalizeReferral(referral)) e.referral = 'Code de parrainage inconnu ou expiré.';
@@ -484,6 +509,7 @@ export default function Essai() {
                     aria-describedby={errors.name ? 'es-name-err' : undefined}
                   />
                   {err('name')}
+                  {carte.name.trim().length > NOM_LONG && <p class="pn-muted pn-small">Nom long : sur iPhone, la carte peut le couper ou l’écrire petit. Le nom complet reste au dos.</p>}
                 </div>
                 <div class="field">
                   <label for="es-activity">Activité *</label>
@@ -572,7 +598,7 @@ export default function Essai() {
               </div>
               <div class="field">
                 <span class="es-label">
-                  Votre logo <span class="pn-opt">(facultatif ; sans logo, vos initiales)</span>
+                  Votre logo <span class="pn-opt">(facultatif ; sans logo, votre nom sur iPhone et son initiale sur Android)</span>
                 </span>
                 <div class="es-logo">
                   <label class="btn btn--ghost es-logo-b">
@@ -591,6 +617,11 @@ export default function Essai() {
                   )}
                 </div>
                 {logo && logoMsg && <p class="pn-muted pn-small">{logoMsg}</p>}
+                {logo && logoPeuVisible && (
+                  <p class="pn-small es-logo-alerte" role="status">
+                    Votre logo se voit peu sur cette couleur de carte : choisissez une autre couleur ou une version plus contrastée du logo.
+                  </p>
+                )}
               </div>
             </div>
           </fieldset>

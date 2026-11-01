@@ -48,10 +48,15 @@ export function ago(iso: string | null | undefined): string {
 export const plural = (n: number, one: string, many: string) => `${num(n)} ${Math.abs(n) > 1 ? many : one}`;
 
 export function initials(name: string): string {
-  const words = (name || '?')
-    .split(/\s+/)
-    .filter((w) => /^[A-Za-zÀ-ÿ0-9]/.test(w) && !/^(de|du|des|la|le|les|et|chez|au|aux)$/i.test(w));
-  return (words.slice(0, 2).map((w) => w[0].toUpperCase()).join('') || '?').slice(0, 2);
+  // Même règle que le cachet de la carte (initialsOf, dépôt LOYNA, _shared/wallet-design.ts) : « L'Été & Cie » → EC.
+  const words = (name || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .split(/[^A-Z0-9]+/)
+    .filter(Boolean);
+  const sens = words.filter((w) => !/^(DE|DU|DES|LA|LE|LES|L|D|ET|A|AU|AUX|CHEZ|THE|AND|BY|OF)$/.test(w));
+  return (sens.length ? sens : words).slice(0, 2).map((w) => w[0]).join('') || '?';
 }
 
 export function uuid(): string {

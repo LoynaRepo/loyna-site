@@ -232,7 +232,7 @@ function Branding({initial}: {initial: Merchant}) {
             </div>
           </div>
           <div class="fld">
-            <span class="fld-l">Couleur du texte</span>
+            <span class="fld-l">Couleur des tampons et du texte</span>
             <div class="swatch-row">
               {TEXT_COLORS.map((c) => (
                 <button type="button" class={`sw ${f.secondary_color.toLowerCase() === c ? 'on' : ''}`} style={{'--c': c} as any} aria-label={c} aria-pressed={f.secondary_color.toLowerCase() === c} onClick={() => set('secondary_color', c)} />

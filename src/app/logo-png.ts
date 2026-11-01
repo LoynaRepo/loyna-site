@@ -72,17 +72,19 @@ function load(src: string): Promise<HTMLImageElement> {
   });
 }
 
-function render(img: HTMLImageElement, w: number, h: number, max: number): Promise<{blob: Blob; width: number; height: number}> {
+function render(img: HTMLImageElement, w: number, h: number, max: number, carre = false): Promise<{blob: Blob; width: number; height: number}> {
   const s = Math.min(1, max / Math.max(w, h));
-  const width = Math.max(1, Math.round(w * s));
-  const height = Math.max(1, Math.round(h * s));
+  const dw = Math.max(1, Math.round(w * s));
+  const dh = Math.max(1, Math.round(h * s));
+  const width = carre ? Math.max(dw, dh) : dw;
+  const height = carre ? Math.max(dw, dh) : dh;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (!ctx) return Promise.reject(new Error('Conversion du logo impossible dans ce navigateur.'));
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(img, 0, 0, width, height);
+  ctx.drawImage(img, (width - dw) / 2, (height - dh) / 2, dw, dh);
   return new Promise((ok, ko) => canvas.toBlob((b) => (b ? ok({blob: b, width, height}) : ko(new Error('Conversion du logo impossible.'))), 'image/png'));
 }
 
@@ -101,6 +103,10 @@ async function opened<T>(file: File, use: (img: HTMLImageElement, w: number, h: 
     if (kind !== 'svg') [w, h] = [img.naturalWidth, img.naturalHeight];
     if (!w || !h) throw new Error('Cette image est vide.');
     return await use(img, w, h);
+  } catch (err) {
+    // SVG qui embarque du HTML (foreignObject) : le navigateur interdit d'en lire les pixels, et son message est en anglais.
+    if (err instanceof DOMException) throw new Error('Cette image ne peut pas être convertie : enregistrez-la en PNG ou en JPG.');
+    throw err;
   } finally {
     URL.revokeObjectURL(src);
   }
@@ -126,19 +132,20 @@ export interface LogoFiles {
   /** Les mêmes fichiers, pour un dépôt direct dans le bucket merchant-assets (écran Opérateur). */
   logo_blob: Blob;
   icon_blob: Blob;
-  /** Dimensions de `logo_png`. */
+  /** Dimensions de `logo_png` (carré). */
   width: number;
   height: number;
 }
 
 // Tailles essayées de la plus grande à la plus petite. La dernière tient toujours dans la limite : 200 x 200 x 4 octets, ou
 // 96 x 96 x 4 octets, avant même la compression du PNG.
-const LOGO_FILE = {sizes: [660, 512, 400, 320, 256, 200], maxBytes: 200_000};
+// Google affiche le logo dans un rond : le fichier est carré, le logo entier centré sur du transparent, sinon un logo large serait coupé.
+const LOGO_FILE = {sizes: [660, 512, 400, 320, 256, 200], maxBytes: 200_000, carre: true};
 const ICON_FILE = {sizes: [320, 256, 200, 160, 128, 96], maxBytes: 60_000};
 
-async function fit(img: HTMLImageElement, w: number, h: number, {sizes, maxBytes}: {sizes: number[]; maxBytes: number}) {
+async function fit(img: HTMLImageElement, w: number, h: number, {sizes, maxBytes, carre}: {sizes: number[]; maxBytes: number; carre?: boolean}) {
   for (const max of sizes) {
-    const out = await render(img, w, h, max);
+    const out = await render(img, w, h, max, carre);
     if (out.blob.size <= maxBytes) return out;
   }
   throw new Error('Logo trop détaillé : essayez une version plus simple.');
@@ -151,6 +158,24 @@ function base64(blob: Blob): Promise<string> {
     r.onerror = () => ko(new Error('Lecture du logo impossible.'));
     r.readAsDataURL(blob);
   });
+}
+
+/** Couleur moyenne des parties visibles d'un logo (#rrggbb), null s'il est entièrement transparent : un logo blanc sur une carte blanche ne se voit pas. */
+export async function couleurVisible(src: string): Promise<string | null> {
+  const img = await load(src);
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 32;
+  const ctx = canvas.getContext('2d', {willReadFrequently: true});
+  if (!ctx) return null;
+  ctx.drawImage(img, 0, 0, 32, 32);
+  const px = ctx.getImageData(0, 0, 32, 32).data;
+  const somme = [0, 0, 0];
+  let poids = 0;
+  for (let i = 0; i < px.length; i += 4) {
+    for (let c = 0; c < 3; c++) somme[c] += px[i + c] * px[i + 3];
+    poids += px[i + 3];
+  }
+  return poids ? `#${somme.map((v) => Math.round(v / poids).toString(16).padStart(2, '0')).join('')}` : null;
 }
 
 /** Convertit le fichier choisi en `{logo_png, icon_png}` (voir LogoFiles). Erreurs : message en français. */

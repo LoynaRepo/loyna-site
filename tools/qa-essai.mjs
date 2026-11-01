@@ -8,6 +8,7 @@
 //     PUBLIC_LOYNA_SUPABASE_KEY dans .env.local), valeurs générées, adresses @example.com. Refuse de tourner sur le projet de production.
 import {createHash, randomBytes, randomUUID} from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import puppeteer from 'puppeteer-core';
 
 const CH = 'C:/Users/vaiko/Documents/LOYNA-Motion/node_modules/.remotion/chrome-headless-shell/win64/chrome-headless-shell-win64/chrome-headless-shell.exe';
@@ -445,7 +446,7 @@ for (const [code, attendu] of [
   ['SIRET_CLOSED', {zone: 'siret', texte: 'fermé'}],
   ['REFERRAL_INVALID', {zone: 'referral', texte: 'Code inconnu'}],
   ['WEAK_PASSWORD', {zone: 'password', texte: 'trop faible'}],
-  ['INVALID_PHONE', {zone: 'phone', texte: 'Numéro refusé'}],
+  ['INVALID_PHONE', {zone: 'phone', texte: 'numéro de téléphone valide'}],
   ['INVALID_EMAIL', {zone: 'email', texte: 'Adresse refusée'}],
   ['TRIAL_CLOSED', {zone: 'fin', texte: 'n’est pas ouvert'}],
   ['TRIAL_FULL', {zone: 'fin', texte: 'Tous les essais sont pris'}],
@@ -477,6 +478,75 @@ for (const [code, attendu] of [
   await pause(300);
   const v = await page.evaluate(() => ({nom: document.querySelector('#es-name').value, act: document.querySelector('#es-activity').value, rec: document.querySelector('#es-reward').value, passages: document.querySelector('#es-total').value, note: /préparée/.test(document.querySelector('.pn-step').textContent)}));
   verifier('carte préparée : réglages repris, 4 à 15 passages', v, {nom: 'La Fusion', act: 'Restaurant', rec: 'Dessert offert', passages: '15', note: true});
+  await ctx.close();
+}
+
+// 9 bis. Deux cartes préparées à la suite dans le même onglet : la seconde, sans logo, ne garde pas celui de la première
+{
+  const pixel = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+  const carte = {nom: 'Avec Logo', activite: 'Fleuriste', recompense: 'Bouquet offert', fond: '#14532d', tampons: '#d9b27a', passages: 8, logo: `data:image/png;base64,${pixel}`, offre: 'starter', qr: {unit: 0, pack5: 0, pack10: 0}};
+  const {page, ctx} = await ouvrir({chemin: '/essai/?carte=19k93n5985n294gn', carte, avant: () => sessionStorage.setItem('loyna-config-logo', JSON.stringify({logo_png: 'AAAA', icon_png: 'AAAA', nom: 'ancien.png'}))});
+  await attendreForm(page);
+  await pause(400);
+  verifier('carte préparée avec logo : le sien', await page.evaluate(() => JSON.parse(sessionStorage.getItem('loyna-config-logo')).nom), 'Logo préparé avec vous');
+  await ctx.close();
+  const {page: p2, ctx: c2} = await ouvrir({chemin: '/essai/?carte=19k93n5985n294gn', carte: {...carte, logo: null}, avant: () => sessionStorage.setItem('loyna-config-logo', JSON.stringify({logo_png: 'AAAA', icon_png: 'AAAA', nom: 'ancien.png'}))});
+  await attendreForm(p2);
+  await pause(400);
+  verifier('carte préparée sans logo : l’ancien est retiré', await p2.evaluate(() => sessionStorage.getItem('loyna-config-logo')), null);
+  await c2.close();
+}
+
+// 9 ter. Logo : refus en français, carré pour Google, peu visible signalé ; nom sans lettre refusé ; aperçu aux couleurs de la vraie carte
+{
+  const dir = fs.mkdtempSync(`${os.tmpdir()}/qa-essai-`);
+  const svg = (nom, corps) => {
+    const f = `${dir}/${nom}.svg`;
+    fs.writeFileSync(f, `<svg xmlns="http://www.w3.org/2000/svg" ${corps}</svg>`);
+    return f;
+  };
+  const {page, ctx, appels} = await ouvrir();
+  await attendreForm(page);
+  const choisir = async (f) => {
+    await (await page.$('input[type=file]')).uploadFile(f);
+    await pause(500);
+    return nbsp(await page.$eval('.es-logo', (e) => e.textContent));
+  };
+  verifier('SVG avec HTML : message en français', /ne peut pas être convertie/.test(await choisir(svg('html', 'viewBox="0 0 9 9"><foreignObject width="9" height="9"><div xmlns="http://www.w3.org/1999/xhtml">x</div></foreignObject>'))), true);
+  await choisir(svg('script', 'viewBox="0 0 400 40" onload="window.__pwn=1"><script>window.__pwn=1</script><rect width="400" height="40" fill="#fff"/>'));
+  verifier('SVG avec script : script non exécuté', await page.evaluate(() => window.__pwn ?? null), null);
+  const taille = await page.evaluate(async () => {
+    const g = JSON.parse(sessionStorage.getItem('loyna-config-logo'));
+    const lire = (b) => new Promise((ok) => {
+      const i = new Image();
+      i.onload = () => ok([i.naturalWidth, i.naturalHeight]);
+      i.src = `data:image/png;base64,${b}`;
+    });
+    return {logo: await lire(g.logo_png), icone: await lire(g.icon_png)};
+  });
+  verifier('logo large : carré pour Google, proportions gardées pour Apple', taille, {logo: [660, 660], icone: [320, 32]});
+  await pause(300);
+  await page.select('#es-activity', 'Café');
+  await page.evaluate(() => {
+    const i = document.querySelector('input[type=color][aria-label="Couleur de carte personnalisée"]');
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, '#ffffff');
+    i.dispatchEvent(new Event('input', {bubbles: true}));
+  });
+  await pause(400);
+  verifier('logo blanc sur carte blanche : signalé', !!(await page.$('.es-logo-alerte')), true);
+  const couleurs = () => page.evaluate(() => getComputedStyle(document.querySelector('.es-apercu .cw')).getPropertyValue('--cw-texte'));
+  verifier('fond blanc, tampons lisibles : texte dans leur couleur, comme la carte', await couleurs(), '#7a3d1c');
+  await page.select('#es-activity', 'Barbier');
+  await pause(80);
+  await page.$eval('#es-name', (e) => e.focus());
+  await page.keyboard.type('🍕🍕');
+  await envoyer(page);
+  await pause(150);
+  verifier('nom sans lettre : refusé, rien ne part', [/lettre de notre alphabet/.test(await page.$eval('#es-name-err', (e) => e.textContent)), appels.posts.length], [true, 0]);
+  await page.$eval('#es-name', (e) => e.select());
+  await page.keyboard.type("L'Été & Cie");
+  await pause(100);
+  verifier('barbier : cachets aux initiales de la carte', await page.$eval('.es-apercu .cw-sceau', (e) => e.textContent), 'EC');
   await ctx.close();
 }
 

@@ -101,6 +101,12 @@
   background: var(--cw-accent);
   color: var(--cw-fond);
 }
+.cw-sceau {
+  color: var(--cw-fond);
+  font-size: 0.72em;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
 .cw-tampons svg {
   width: 66%;
   height: 66%;

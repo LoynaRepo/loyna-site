@@ -9,6 +9,13 @@ import './carte-wallet.css';
 const TEXTE_CLAIR = '#fbf7ee';
 const TEXTE_SOMBRE = '#16130e';
 const QR_EXEMPLE = qrSvg('https://loyna.fr/', '#000', 0);
+const BLANC = '#ffffff';
+const NOIR = '#111111';
+const simple = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+/** Barbiers et coiffure : cachets aux initiales sur la vraie carte (isSalonActivity, dépôt LOYNA, _shared/wallet-design.ts). */
+const estSalon = (activite?: string) => /(^|[^a-z])(barbiers?|barbers?|barbershops?|coiff\w*|hair\w*)([^a-z]|$)/.test(simple(activite ?? ''));
+/** Lettre du logo généré par le serveur quand il n'y a pas de logo (initialOf, _shared/png.ts). */
+const initiale = (nom: string) => /[A-Z0-9]/.exec(simple(nom).toUpperCase())?.[0] ?? '?';
 
 function Cadeau() {
   return (
@@ -38,11 +45,15 @@ export interface PropsCarte {
 export function CarteWallet({nom, activite, recompense, fond, tampons, passages, obtenus, logo, systeme = 'apple', prenom = 'Camille'}: PropsCarte) {
   const total = Math.max(1, passages || 1);
   const faits = Math.min(Math.max(0, obtenus), total);
-  const texte = contrast(fond, TEXTE_CLAIR) >= contrast(fond, TEXTE_SOMBRE) ? TEXTE_CLAIR : TEXTE_SOMBRE;
-  // Tampons peu visibles sur ce fond : la carte les dessine dans la couleur du texte (comme merchant-bootstrap)
-  const accent = contrast(fond, tampons) < 1.6 ? texte : tampons;
+  // Couleurs de la vraie carte (buildPassContent et stripStyle, dépôt LOYNA) : texte Apple dans la couleur des tampons si elle se lit (contraste de 3),
+  // sinon blanc ou noir ; tampons peu visibles (moins de 1,6) dans cette même couleur. Sur Android, Google choisit seul le texte, clair ou sombre.
+  const avant = contrast(fond, tampons) >= 3 ? tampons : contrast(fond, BLANC) >= contrast(fond, NOIR) ? BLANC : NOIR;
+  const texte = systeme === 'apple' ? avant : contrast(fond, TEXTE_CLAIR) >= contrast(fond, TEXTE_SOMBRE) ? TEXTE_CLAIR : TEXTE_SOMBRE;
+  const accent = contrast(fond, tampons) < 1.6 ? avant : tampons;
+  const salon = estSalon(activite);
   const style = {'--cw-fond': fond, '--cw-accent': accent, '--cw-texte': texte} as JSX.CSSProperties;
-  const colonnes = total <= 6 ? total : total <= 12 ? Math.ceil(total / 2) : Math.ceil(total / 3);
+  // Même grille que l'image de la carte : stampGrid pour les salons, stampStripPng pour les autres.
+  const colonnes = salon ? (total <= 6 ? total : Math.ceil(total / 2)) : Math.min(total, 10);
   const restants = total - faits;
   const reste = faits >= total ? 'À retirer !' : `${restants} passage${restants > 1 ? 's' : ''}`;
   const qr = (
@@ -53,7 +64,14 @@ export function CarteWallet({nom, activite, recompense, fond, tampons, passages,
       </small>
     </div>
   );
-  const marque = <span class="cw-logo">{logo ? <img src={logo} alt="" /> : initials(nom)}</span>;
+  // Sans logo : le nom seul sur iPhone (rien à gauche), une lettre sur Android, comme la carte.
+  const marque = logo ? (
+    <span class="cw-logo">
+      <img src={logo} alt="" />
+    </span>
+  ) : systeme === 'google' ? (
+    <span class="cw-logo">{initiale(nom)}</span>
+  ) : null;
   const lesTampons =
     total > 20 ? (
       <div class="cw-jauge" aria-hidden="true">
@@ -62,7 +80,7 @@ export function CarteWallet({nom, activite, recompense, fond, tampons, passages,
     ) : (
       <div class="cw-tampons" style={{gridTemplateColumns: `repeat(${colonnes}, 1fr)`}} aria-hidden="true">
         {Array.from({length: total}, (_, k) => (
-          <span class={`${k < faits ? 'on' : ''} ${k === total - 1 ? 'fin' : ''}`}>{k === total - 1 && <Cadeau />}</span>
+          <span class={`${k < faits ? 'on' : ''} ${k === total - 1 ? 'fin' : ''}`}>{k === total - 1 ? <Cadeau /> : salon && k < faits ? <b class="cw-sceau">{initials(nom)}</b> : null}</span>
         ))}
       </div>
     );
