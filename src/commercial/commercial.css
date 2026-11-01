@@ -2395,6 +2395,12 @@ button.cp-kpi:hover {
   margin-top: 10px;
   max-width: 560px;
 }
+.cl-contact-form .cp-filtre {
+  white-space: nowrap;
+}
+.cl-parcours li:has(.cl-contact-form) {
+  align-items: flex-start;
+}
 .cl-contact-form textarea {
   width: 100%;
 }

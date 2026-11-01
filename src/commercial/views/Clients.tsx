@@ -29,7 +29,7 @@ const ETAPES: {v: string; l: string}[] = [
 const SUIVI: {v: string; l: string}[] = [
   {v: 'a_traiter', l: 'À traiter'},
   {v: 'urgent', l: 'En retard ou urgent'},
-  {v: 'essais_du_jour', l: 'Essais à contacter aujourd’hui'},
+  {v: 'essais_du_jour', l: 'Essais du jour'},
 ];
 
 /** Où en est le client : son état particulier, sinon l'étape du parcours. */

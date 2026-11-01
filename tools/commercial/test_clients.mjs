@@ -84,6 +84,7 @@ const JEUX_CONTACT = [
   [ev('j1', 'joint', '2026-11-03'), ev('j7', 'joint', '2026-11-09'), ev('jm10', 'rappeler', '2026-11-22', '2026-12-10')],
   [ev('j7', 'pas_interesse', '2026-11-09')],
   [ev('fin2', 'sans_reponse', '2026-12-04')],
+  [ev('j1', 'joint', '2026-11-03'), ev('j7', 'sans_reponse', '2026-11-03')],
 ];
 const SCENARIOS = [];
 for (const evenements of JEUX_CONTACT) {

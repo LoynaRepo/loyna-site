@@ -238,7 +238,7 @@ export function parcoursContact(debutIso: string, finIso: string, evenements: Ev
     for (const x of evs) {
       const d = jour(x.date);
       if (x.resultat === 'rappeler') echeance = jour(x.rappel) ?? (d ? plusJours(d, 1) : echeance);
-      else if (x.resultat === 'sans_reponse' && d) echeance = plusJours(d, 1);
+      else if (x.resultat === 'sans_reponse' && d) echeance = plusJours(d, 1) > e.prevu ? plusJours(d, 1) : e.prevu; // appel fait en avance : l'étape garde sa date
     }
     const absences = evs.filter((x) => x.resultat === 'sans_reponse').length;
     const suivant = prevus[k + 1]?.prevu;
