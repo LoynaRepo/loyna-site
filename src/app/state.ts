@@ -66,13 +66,15 @@ export function featureLimit(name: string): number | null {
 }
 
 // --- Offres incluant chaque fonction (table plan_entitlements, lisible par tout membre) ---------------
-// Offres du 2026-10-25 (dépôt LOYNA, docs/OFFRES.md), toujours présentées dans cet ordre.
+// Grille du 2026-10-31 (dépôt LOYNA, docs/OFFRES.md) : Starter et Pro, toujours présentées dans cet ordre. PREMIUM reste en
+// base pour Barber Kong, à ses conditions, avec les droits de Pro : son libellé existe, mais il n'est dans aucune liste
+// d'offres et aucune pastille ne le cite (loadPlans l'écarte : jamais « Inclus dans Premium »).
 export type PlanCode = 'STARTER' | 'PREMIUM' | 'PRO';
-export const PLAN_ORDER: PlanCode[] = ['STARTER', 'PREMIUM', 'PRO'];
+export const PLAN_ORDER: PlanCode[] = ['STARTER', 'PRO'];
 export const PLAN_LABEL: Record<PlanCode, string> = {STARTER: 'Starter', PREMIUM: 'Premium', PRO: 'Pro'};
 export const planLabel = (code: string | null | undefined) => PLAN_LABEL[code as PlanCode] ?? code ?? '';
 export const planMap = signal<Record<string, string[]>>({});
-// Limites par offre (cartes, notifications, boutiques) : null = illimité
+// Limites par offre (campagnes par semaine, boutiques) : null = illimité
 const planLimits = signal<Record<string, Record<string, number | null>>>({});
 export async function loadPlans() {
   try {
@@ -80,10 +82,11 @@ export async function loadPlans() {
     const map: Record<string, string[]> = {};
     const limits: Record<string, Record<string, number | null>> = {};
     for (const r of rows) {
+      if (!PLAN_ORDER.includes(r.plan as PlanCode)) continue;
       (map[r.feature] ??= []).push(r.plan);
       (limits[r.feature] ??= {})[r.plan] = r.limit_value ?? null;
     }
-    const rank = (p: string) => (PLAN_ORDER.indexOf(p as PlanCode) + 4) % 4; // offre inconnue : en dernier
+    const rank = (p: string) => PLAN_ORDER.indexOf(p as PlanCode);
     for (const k of Object.keys(map)) map[k].sort((a, b) => rank(a) - rank(b));
     planMap.value = map;
     planLimits.value = limits;
@@ -91,7 +94,7 @@ export async function loadPlans() {
     /* mention facultative */
   }
 }
-/** Offre la plus simple qui inclut une fonction (« Premium », « Pro »), vide si inconnue. */
+/** Offre la plus simple qui inclut une fonction (« Starter », « Pro »), vide si inconnue. */
 export function lowestPlan(featureName: string): string {
   const first = (planMap.value[featureName] ?? [])[0];
   return first ? planLabel(first) : '';
@@ -102,28 +105,27 @@ export function lowestPlanAbove(featureName: string, min: number): string {
   const p = (planMap.value[featureName] ?? []).find((x) => lim[x] === null || (lim[x] ?? 0) > min);
   return p ? planLabel(p) : '';
 }
-/** Plus grande limite chiffrée d'une fonction, toutes offres confondues (null si inconnue). */
+/** Plus grande limite chiffrée d'une fonction, parmi les offres vendues (null si inconnue). */
 export function maxAnyPlan(featureName: string): number | null {
   const v = Object.values(planLimits.value[featureName] ?? {}).filter((x): x is number => typeof x === 'number');
   return v.length ? Math.max(...v) : null;
 }
-/** Pastille d'une fonction verrouillée : « Inclus dans Premium », « Inclus dans Pro ». */
+/** Pastille d'une fonction verrouillée : « Inclus dans Pro ». */
 export function lockLabel(featureName: string): string {
   const p = lowestPlan(featureName);
   return p ? `Inclus dans ${p}` : 'Non inclus dans votre offre';
 }
-/** « Inclus dans l’offre Pro. » / « Inclus dans les offres Premium et Pro. » */
+/** « Inclus dans l’offre Pro. » / « Inclus dans toutes les offres. » */
 export function includedIn(featureName: string): string {
   const plans = (planMap.value[featureName] ?? []).map(planLabel);
   if (!plans.length) return 'Non inclus dans votre offre.';
-  return plans.length === 1 ? `Inclus dans l’offre ${plans[0]}.` : `Inclus dans les offres ${plans.slice(0, -1).join(', ')} et ${plans[plans.length - 1]}.`;
+  return plans.length >= PLAN_ORDER.length ? 'Inclus dans toutes les offres.' : `Inclus dans l’offre ${plans[0]}.`;
 }
 
 // --- Consommation de l'offre (RPC my_plan_usage, droit analytics.read) -------------------------------
-// Limite null = illimité. Carte = client inscrit (hors supprimés) ; limite = celle de l'offre + 500 par pack
-// « +500 cartes » utilisable (option du 2026-10-30). Campagne = un envoi de notification aux clients, quel que soit le
-// nombre de destinataires : Starter 2 par semaine, Premium 5, Pro illimitées ; le compteur repart chaque lundi
-// (décision d'Ewan du 2026-10-30, qui remplace le quota mensuel de notifications). Les messages automatiques et la
+// Limite null = illimité. Carte = client inscrit (hors supprimés) : illimitées dans toutes les offres. Campagne = un envoi de
+// notification aux clients, quel que soit le nombre de destinataires : Starter 5 par semaine, Pro illimitées ; le compteur
+// repart chaque lundi (décision d'Ewan du 2026-10-30, chiffres de la grille du 2026-10-31). Les messages automatiques et la
 // proximité ne sont jamais décomptés.
 export interface CampaignQuota {
   limit: number | null;
@@ -135,12 +137,85 @@ export interface CampaignQuota {
 }
 export interface PlanUsage {
   plan: PlanCode;
-  cards: {used: number; limit: number | null; base_limit?: number | null; packs?: number; pack_size?: number | null};
+  cards: {used: number; limit: number | null};
   /** Absent tant que la migration du 2026-10-30 n'est pas appliquée : l'écran se passe alors du compteur. */
   campaigns?: CampaignQuota;
   locations: {used: number; limit: number | null};
 }
 export const loadUsage = () => api.rpc<PlanUsage>('my_plan_usage', {p_merchant_id: merchant.value?.merchant_id});
+
+// --- État du service (RPC my_service_state, dépôt LOYNA) ----------------------------------------------
+// Une seule décision, côté serveur (private.merchant_service_decision) : essai, abonnement, sursis de 15 jours après un
+// paiement échoué, arrêt automatique avec reprise automatique, suspension à la main, compte offert. Ici, seulement l'affichage
+// (bandeau, Abonnement, scanner, panneau de démarrage).
+export type ServiceCode = 'TRIAL' | 'ACTIVE' | 'GRACE' | 'STOPPED' | 'SUSPENDED_MANUAL' | 'EXEMPT';
+export type StopReason = 'TRIAL_ENDED' | 'PAYMENT_FAILED' | 'SUBSCRIPTION_ENDED' | 'OPERATOR';
+export interface ServiceState {
+  state: ServiceCode;
+  plan: PlanCode;
+  trial_ends_at: string | null;
+  trial_days_left: number | null;
+  stop_reason: StopReason | null;
+  stopped_at: string | null;
+  /** Sursis : date à laquelle la carte sera mise en pause si la facture n'est pas réglée. */
+  stop_at: string | null;
+  /** Page de paiement de la facture impayée (Stripe), sinon le portail. */
+  pay_url: string | null;
+  data_delete_after: string | null;
+  engaged: boolean;
+  commitment_end: string | null;
+  /** Abonnement que l'espace client peut changer (fonction subscription-change). */
+  can_change: boolean;
+}
+export const service = signal<ServiceState | null | undefined>(undefined); // undefined : pas encore lu ; null : illisible
+let serviceReadAt = 0;
+export async function loadService(): Promise<ServiceState | null> {
+  const id = merchant.value?.merchant_id;
+  if (!id) return null;
+  serviceReadAt = Date.now();
+  let s: ServiceState | null = null;
+  try {
+    const r = await api.rpc<ServiceState>('my_service_state', {p_merchant_id: id});
+    s = r?.state ? r : null;
+  } catch {
+    /* état illisible : le bandeau retombe sur le statut du commerce (servicePaused) */
+  }
+  if (merchant.value?.merchant_id !== id) return s;
+  service.value = s;
+  // L'offre a changé pendant que l'espace restait ouvert (souscription dans un autre onglet) : droits et menu à relire
+  if (s?.plan && s.plan !== merchant.value.subscription_plan && !readOnly()) refreshMerchant().catch(() => {});
+  return s;
+}
+/** Retour sur l'onglet (facture réglée à côté, téléphone de caisse rallumé) : état relu, une fois par minute au plus. */
+export function reloadServiceIfStale() {
+  if (Date.now() - serviceReadAt > 60000) loadService();
+}
+/** Carte en pause : plus de scan, d'inscription, de campagne ni de message. Espace, réglages et export restent ouverts. */
+export function servicePaused(): boolean {
+  const s = service.value;
+  return s ? s.state === 'STOPPED' || s.state === 'SUSPENDED_MANUAL' : merchant.value?.merchant_status === 'SUSPENDED';
+}
+/** Engagement en cours ; une fois la date passée, « comme sans engagement » (cahier des charges, section 2.4). */
+export function engagedNow(s: Pick<ServiceState, 'engaged' | 'commitment_end'> | null | undefined): boolean {
+  return !!s?.engaged && (!s.commitment_end || new Date(s.commitment_end).getTime() > Date.now());
+}
+export const PORTAL = 'https://billing.stripe.com/p/login/28E28u2vEcIt4tvbiw5Ne00';
+/** Portail Stripe, adresse préremplie : le compte y reçoit un lien de connexion par e-mail. */
+export const portalUrl = (email?: string | null) => (email ? `${PORTAL}?prefilled_email=${encodeURIComponent(email)}` : PORTAL);
+/** Panier d'un commerce déjà créé : session reconnue, pas d'étape compte, l'abonnement est rattaché à ce commerce. */
+export const choisirUrl = (merchantId: string, plan = 'starter', engage = false) => `/panier/?offre=${plan}&engagement=${engage ? 1 : 0}&commerce=${merchantId}`;
+
+/** Commerce ouvert relu sur le serveur (offre, droits, statut) ; `expected` : attend que Stripe ait appliqué cette offre. */
+export async function refreshMerchant(expected?: PlanCode) {
+  for (let i = 0; i < 6; i++) {
+    const c = await api.rpc<StaffContext>('my_staff_context');
+    staffCtx.value = c;
+    const m = c.memberships.find((x) => x.merchant_id === merchant.value?.merchant_id);
+    if (m) merchant.value = m;
+    if (!expected || m?.subscription_plan === expected) return;
+    await new Promise((res) => setTimeout(res, 1500));
+  }
+}
 
 // --- Navigation par ancre (#/clients/…) : fonctionne sur un hébergement statique ---------------
 export function parseRoute(): {view: string; id?: string} {

@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Jonction from '../../components/Jonction.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import WalletCard from '../../components/WalletCard.astro';
 import Icon from '../../components/Icon.astro';
@@ -26,6 +27,7 @@ const crumbs = [
       <p class="lead">Rythme de visites, récompenses, messages : chaque commerce fidélise à sa façon. Découvrez comment LOYNA s’adapte au vôtre.</p>
     </div>
   </section>
+  <Jonction de="sable" vers="creme" forme={3} />
   <section class="section pt0">
     <div class="container list">
       {
@@ -64,17 +66,23 @@ const crumbs = [
   }
   .list {
     display: grid;
-    gap: 22px;
+    gap: clamp(14px, 2vw, 22px);
+  }
+  @media (min-width: 1040px) {
+    .list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
   .item {
     display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: clamp(20px, 4vw, 48px);
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: clamp(18px, 2.6vw, 30px);
     align-items: center;
-    padding: clamp(22px, 3vw, 34px);
+    padding: clamp(18px, 2.4vw, 26px);
     border-radius: var(--radius-lg);
     background: var(--card);
-    border: 1px solid var(--line);
+    border: 1px solid var(--filet);
+    box-shadow: var(--shadow);
     text-decoration: none;
     color: var(--text);
     transition:
@@ -86,7 +94,12 @@ const crumbs = [
     box-shadow: var(--shadow-lg);
   }
   .item h2 {
-    font-size: 1.6rem;
+    font-size: clamp(1.3rem, 2vw, 1.55rem);
+    letter-spacing: -0.03em;
+  }
+  .item p {
+    font-size: 0.97rem;
+    line-height: 1.5;
   }
   .item p {
     color: var(--muted);
@@ -100,7 +113,7 @@ const crumbs = [
   }
   @media (max-width: 700px) {
     .item {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
       justify-items: center;
       text-align: center;
     }

@@ -1,11 +1,12 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Jonction from '../../components/Jonction.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Icon from '../../components/Icon.astro';
 import CtaBand from '../../components/CtaBand.astro';
 import {getArticles, type Article} from '../../lib/builder';
 import {articlesProches} from '../../lib/maillage';
-import {FONDATEUR, PLANS, SITE, euro} from '../../data/site';
+import {APPEL, FONDATEUR, PLANS, SITE, TRIAL, euro} from '../../data/site';
 import {ogImage} from '../../lib/og';
 
 export async function getStaticPaths() {
@@ -73,6 +74,7 @@ if (a.faq?.length) {
         </p>
       </div>
     </header>
+    <Jonction de="sable" vers="creme" forme={3} />
     <div class="narrow prose" set:html={a.body} />
     {
       a.faq && a.faq.length > 0 && (
@@ -94,10 +96,10 @@ if (a.faq?.length) {
     <aside class="narrow box">
       <p class="eyebrow">LOYNA</p>
       <p class="box-title">Votre carte de fidélité dans Apple Wallet et Google Wallet</p>
-      <p>Sans application, prête sous 24&nbsp;h, avec récompenses automatiques et notification de proximité. Dès {euro(Math.min(...PLANS.map((p) => p.monthly)))} par mois, sans TVA.</p>
+      <p>Sans application, avec récompenses automatiques et notification de proximité. Dès {euro(Math.min(...PLANS.map((p) => p.monthly)))} par mois, sans TVA.{TRIAL.open && <> {TRIAL.label.charAt(0).toUpperCase() + TRIAL.label.slice(1)}.</>}</p>
       <div class="btn-row">
-        <a class="btn btn--primary" href="/creer-ma-carte/">Créer ma carte</a>
-        <a class="btn btn--ghost" href="/tarifs/">Voir les tarifs</a>
+        <a class="btn btn--primary" href={APPEL.href}>{APPEL.label}</a>
+        <a class="btn btn--ghost" href={TRIAL.open ? '/tarifs/' : '/creer-ma-carte/'}>{TRIAL.open ? 'Voir les tarifs' : 'Créer ma carte'}</a>
       </div>
     </aside>
   </article>
@@ -131,6 +133,9 @@ if (a.faq?.length) {
   .article-head h1 {
     font-size: clamp(2rem, 4.2vw, 3.2rem);
   }
+  .prose {
+    padding-top: clamp(14px, 2.4vw, 30px);
+  }
   .meta {
     font-weight: 600;
     color: var(--muted);
@@ -153,7 +158,7 @@ if (a.faq?.length) {
     padding: clamp(26px, 4vw, 40px);
     border-radius: var(--radius-lg);
     background: var(--bg-alt);
-    border: 1px solid var(--line);
+    border: 1px solid var(--filet);
   }
   .box-title {
     font-size: 1.4rem;

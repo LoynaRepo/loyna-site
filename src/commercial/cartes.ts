@@ -1,8 +1,15 @@
 // Section « Préparer une carte » : enregistrement et liste auprès de cartes.php (même jeton que les notes).
 import {signal} from '@preact/signals';
 import {ADRESSE_CARTES, type CartePreparee} from '../lib/carte-preparee';
-import {PLANS, QR_VERRE, SETUP_FEE, offerActive} from '../data/site';
+import {normalizeOffer, offerActive, PLANS, QR_VERRE, SETUP_FEE, type Engagement, type PlanId} from '../data/site';
 
+/** Réglages tels que le panel les écrit : offre vendue et engagement, seules valeurs que cartes.php accepte. */
+export interface Reglages extends Omit<CartePreparee, 'offre' | 'engagement' | 'periode'> {
+  offre: PlanId;
+  engagement: Engagement;
+}
+
+/** Carte de la liste, telle que le serveur la garde : une ancienne fiche se lit par normalizeOffer() (offre « premium », « periode »). */
 export interface CarteListee extends Omit<CartePreparee, 'logo'> {
   id: string;
   cree_le: string;
@@ -54,7 +61,7 @@ export async function chargerCartes(): Promise<void> {
   cartesPreparees.value = d.cartes;
 }
 
-export async function enregistrerCarte(id: string | null, carte: CartePreparee): Promise<string> {
+export async function enregistrerCarte(id: string | null, carte: Reglages): Promise<string> {
   const d = await appel<{id: string}>({method: 'POST', body: JSON.stringify({...(id ? {id} : {}), carte})});
   await chargerCartes().catch(() => {});
   return d.id;
@@ -65,14 +72,16 @@ export async function supprimerCarte(id: string): Promise<void> {
   cartesPreparees.value = (cartesPreparees.value ?? []).filter((c) => c.id !== id);
 }
 
-/** Montants de la commande, comme le panier (src/app/Panier.tsx) et checkout-create. */
-export function montants(c: Pick<CartePreparee, 'offre' | 'periode' | 'qr'>) {
-  const plan = PLANS.find((p) => p.id === c.offre)!;
-  const mensuel = c.periode === 'mensuel';
-  const abonnement = mensuel ? plan.monthly : plan.yearly;
-  const service = mensuel && !offerActive() ? SETUP_FEE : 0;
+/** Montants de la commande, comme le panier (src/app/Panier.tsx) et checkout-create : mise en service offerte avec
+ *  engagement et pendant l'offre de lancement. Une ancienne fiche passe par normalizeOffer() : jamais d'offre introuvable. */
+export function montants(c: Pick<CartePreparee, 'offre' | 'periode' | 'engagement' | 'qr'>) {
+  const o = normalizeOffer(c.offre, c.periode, c.engagement);
+  const plan = PLANS.find((p) => p.id === o.plan)!;
+  const engage = o.engagement === 'engage';
+  const abonnement = engage ? plan.engaged : plan.monthly;
+  const service = !engage && !offerActive() ? SETUP_FEE : 0;
   const qr = c.qr.unit * QR_VERRE.unit + c.qr.pack5 * QR_VERRE.pack5 + c.qr.pack10 * QR_VERRE.pack10;
-  return {plan, mensuel, abonnement, service, qr, total: Math.round((abonnement + service + qr) * 100) / 100, nbQr: c.qr.unit + c.qr.pack5 * 5 + c.qr.pack10 * 10};
+  return {plan, engage, abonnement, service, qr, total: Math.round((abonnement + service + qr) * 100) / 100, nbQr: c.qr.unit + c.qr.pack5 * 5 + c.qr.pack10 * 10};
 }
 
 /** Couleurs dominantes d'un logo (PNG en data:), pour les proposer d'un clic : blanc, noir et gris écartés. */

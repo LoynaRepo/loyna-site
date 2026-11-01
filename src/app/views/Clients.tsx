@@ -1,10 +1,12 @@
 // Clients : recherche (anti-rebond 300 ms) et filtres. Les coordonnées ne sont renvoyées par le
 // serveur qu'aux comptes autorisés (contact_visible) ; un employé voit l'initiale du nom.
+// Export en CSV (RPC export_merchant_customers, propriétaire et administrateur, journal d'audit côté serveur) : à tout moment,
+// y compris pendant un arrêt ; jamais en consultation opérateur.
 import {useEffect, useState} from 'preact/hooks';
 import {Icon} from '../icons';
-import {api, merchant} from '../state';
-import {Badge, Btn, Empty, ErrorBox, PageHead, Spinner} from '../ui';
-import {ago, initials, num} from '../util';
+import {api, merchant, readOnly, toast, toastError} from '../state';
+import {Badge, Btn, Empty, ErrorBox, PageHead, Spinner, useBusy} from '../ui';
+import {ago, dayNum, download, initials, num, phoneFr, toCsv} from '../util';
 
 interface Row {
   id: string;
@@ -24,6 +26,10 @@ interface Page {
   contact_visible: boolean;
   items: Row[];
 }
+/**
+ * Ligne de l'export : colonnes de la RPC export_merchant_customers du dépôt LOYNA. Une valeur absente part vide.
+ */
+const champ = (c: Record<string, any>, ...noms: string[]) => noms.map((n) => c[n]).find((v) => v !== undefined && v !== null) ?? null;
 const FILTERS = [
   {value: 'ALL', label: 'Tous'},
   {value: 'ACTIVE', label: 'Venus ce mois-ci'},
@@ -32,6 +38,46 @@ const FILTERS = [
   {value: 'INACTIVE', label: 'Absents depuis 60 j'},
 ];
 const PAGE = 50;
+
+/** « 1984-03-07 » → « 07/03/1984 » : une date de naissance n'a pas de fuseau horaire. */
+const dayOfBirth = (d: string | null) => (d ? d.slice(0, 10).split('-').reverse().join('/') : '');
+
+/** Tous les clients du commerce, dans un fichier lisible par Excel. */
+function ExportCsv() {
+  const m = merchant.value!;
+  const [busy, run] = useBusy();
+  const exporter = () =>
+    run(async () => {
+      try {
+        const rows = await api.rpcRows<Record<string, any>>('export_merchant_customers', {p_merchant_id: m.merchant_id});
+        const lignes = rows.map((c) => {
+          const tel = champ(c, 'phone');
+          const inscrit = champ(c, 'created_at');
+          return [
+            champ(c, 'first_name'),
+            champ(c, 'last_name'),
+            tel ? phoneFr(String(tel)) : '',
+            champ(c, 'email'),
+            dayOfBirth(champ(c, 'birthday')),
+            champ(c, 'balance'),
+            champ(c, 'visits_count'),
+            inscrit ? dayNum(inscrit) : '',
+            champ(c, 'marketing_wallet') ? 'oui' : 'non',
+          ];
+        });
+        const fichier = toCsv([['Prénom', 'Nom', 'Téléphone', 'E-mail', 'Anniversaire', 'Solde', 'Passages', 'Inscrit le', 'Accord offres'], ...lignes]);
+        download(`clients-${m.merchant_slug}-${new Date().toISOString().slice(0, 10)}.csv`, fichier, 'text/csv;charset=utf-8');
+        toast(rows.length > 1 ? `${num(rows.length)} clients exportés.` : `${num(rows.length)} client exporté.`);
+      } catch (e) {
+        toastError(e);
+      }
+    });
+  return (
+    <Btn kind="ghost" small icon="download" busy={busy} onClick={exporter}>
+      Exporter en CSV
+    </Btn>
+  );
+}
 
 export function Clients() {
   const m = merchant.value!;
@@ -71,6 +117,7 @@ export function Clients() {
     <div class="page">
       <PageHead eyebrow={m.merchant_name} title="Clients">
         {meta && <span class="ph-count">{meta.total > 1 ? `${num(meta.total)} clients` : `${num(meta.total)} client`}</span>}
+        {(m.role === 'OWNER' || m.role === 'ADMIN') && !readOnly() && <ExportCsv />}
       </PageHead>
 
       <div class="toolbar">

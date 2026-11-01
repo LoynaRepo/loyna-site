@@ -35,6 +35,8 @@ export interface Backend {
   signOut(): Promise<void>;
   updatePassword(password: string): Promise<void>;
   rpc<T = any>(fn: string, args?: Record<string, unknown>): Promise<T>;
+  /** RPC qui renvoie des lignes, toutes (PostgREST en donne 1 000 par réponse : export des clients). */
+  rpcRows<T = any>(fn: string, args?: Record<string, unknown>): Promise<T[]>;
   edge<T = any>(fn: string, body: Record<string, unknown>): Promise<T>;
   select<T = any>(table: string, opts?: SelectOptions): Promise<T[]>;
   insert<T = any>(table: string, row: Record<string, unknown>): Promise<T>;
@@ -58,6 +60,7 @@ const SQL_MESSAGES: Record<string, string> = {
   LAST_OWNER: 'Le commerce doit garder au moins un propriétaire actif.',
   REWARD_THRESHOLD_ABOVE_CYCLE: 'En mode carte à tampons, le seuil d’une récompense ne peut pas dépasser la longueur de la carte.',
   INVALID_PERMISSIONS: 'Permission inconnue : rechargez la page.',
+  MERCHANT_PAUSED: 'Votre carte est en pause : cette action reprendra avec votre abonnement. Voir Abonnement.',
   FEATURE_NOT_AVAILABLE: 'Cette fonction n’est pas incluse dans votre offre.',
   LOCATIONS_LIMIT: 'Votre offre ne permet pas d’ajouter une autre boutique.',
   TIER_PERKS_INVALID: 'Avantages des niveaux VIP non valides (80 caractères au plus).',
@@ -150,6 +153,22 @@ export const supabaseBackend: Backend = {
     if (error) throw pgError(error);
     return data;
   },
+  async rpcRows(fn, args = {}) {
+    const PAGE = 1000;
+    const rows: any[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const {data, error}: {data: any; error: any} = await sb().rpc(fn, args).range(from, from + PAGE - 1);
+      if (error) {
+        if (error.code === 'PGRST103') return rows; // plus rien après la dernière page
+        throw pgError(error);
+      }
+      // Fonction qui renvoie tout d'un coup (jsonb) : pas de page suivante
+      const list: any[] = Array.isArray(data) ? data : (data?.rows ?? data?.customers ?? data?.items ?? []);
+      if (from && list.length && JSON.stringify(list[0]) === JSON.stringify(rows[0])) return rows;
+      rows.push(...list);
+      if (list.length !== PAGE) return rows;
+    }
+  },
   async edge(fn, body) {
     const {data} = await sb().auth.getSession();
     if (!data.session) throw new ApiError('UNAUTHORIZED', 'Votre session a expiré : reconnectez-vous.', 401);
@@ -197,6 +216,7 @@ const READ_RPCS = new Set([
   'analytics_timeseries',
   'monthly_report',
   'my_plan_usage',
+  'my_service_state',
   'search_customers',
   'get_customer_detail',
   'my_subscription',
@@ -223,6 +243,7 @@ export function readOnlyBackend(inner: Backend): Backend {
     signOut: () => inner.signOut(),
     updatePassword: () => refuse(),
     rpc: (fn, args) => (READ_RPCS.has(fn) ? inner.rpc(fn, args) : refuse()),
+    rpcRows: () => refuse(),
     edge: () => refuse(),
     select: (table, opts) => inner.select(table, opts),
     insert: () => refuse(),

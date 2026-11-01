@@ -1,6 +1,7 @@
 ---
 import {Picture} from 'astro:assets';
 import Base from '../layouts/Base.astro';
+import Jonction from '../components/Jonction.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import VideoFacade from '../components/VideoFacade.astro';
 import CtaBand from '../components/CtaBand.astro';
@@ -26,11 +27,11 @@ const gallery = [
 ];
 const videoLd = {
   '@type': 'VideoObject',
-  name: 'LOYNA : la carte de fidélité digitale en 80 secondes',
-  description: 'Démonstration de LOYNA : inscription par QR code, carte Apple Wallet et Google Wallet, validation en un scan, récompenses, notifications Wallet, tableau de bord et tarifs.',
+  name: 'LOYNA : la carte de fidélité digitale en 1 minute',
+  description: 'Démonstration de LOYNA : inscription par QR code, carte Apple Wallet et Google Wallet, validation en un scan, récompenses, notifications Wallet et tableau de bord.',
   thumbnailUrl: `${SITE.url}/og/demo.png`,
-  uploadDate: '2026-10-04',
-  duration: 'PT1M19S',
+  uploadDate: '2026-11-01', // scène des prix retirée pour la grille Starter + Pro (première version : 2026-10-04)
+  duration: 'PT1M4S',
   contentUrl: `${SITE.url}/video/loyna-presentation-720p.mp4`,
   inLanguage: 'fr',
   publisher: {'@id': `${SITE.url}/#organisation`},
@@ -38,7 +39,7 @@ const videoLd = {
 ---
 
 <Base
-  title="Démo vidéo : LOYNA en 80 secondes"
+  title="Démo vidéo : LOYNA en 1 minute"
   description="Regardez comment fonctionne LOYNA : QR code d'inscription, carte Apple Wallet et Google Wallet, scan au comptoir, récompense automatique et notifications."
   ogImage="/og/demo.png"
   breadcrumbs={crumbs}
@@ -48,16 +49,18 @@ const videoLd = {
     <div class="container">
       <Breadcrumbs items={crumbs} />
       <p class="eyebrow">Démo vidéo</p>
-      <h1>LOYNA en 80 secondes</h1>
+      <h1>LOYNA en 1 minute</h1>
       <p class="lead">Tout le parcours, côté client et côté commerçant : de l’inscription à la récompense, en passant par les notifications et le tableau de bord.</p>
     </div>
   </section>
+  <Jonction de="sable" vers="creme" forme={5} />
   <section class="section pt0">
     <div class="container">
       <VideoFacade />
     </div>
   </section>
-  <section class="section section--alt">
+  <Jonction de="creme" vers="sable" forme={1} retourne />
+  <section class="section section--alt tete-serree">
     <div class="container">
       <div class="section-head">
         <h2>Le parcours en images</h2>
@@ -76,6 +79,7 @@ const videoLd = {
       </div>
     </div>
   </section>
+  <Jonction de="sable" vers="creme" forme={3} />
   <CtaBand />
 </Base>
 

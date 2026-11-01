@@ -1,17 +1,20 @@
-// Panier de loyna.fr (/panier/, décision d'Ewan du 2026-10-27) : offre et période, QR codes sous verre en quantité
+// Panier de loyna.fr (/panier/, décision d'Ewan du 2026-10-27) : offre et engagement, QR codes sous verre en quantité
 // libre, compte LOYNA créé AVANT le paiement (il reçoit la commande et l'espace client), puis paiement Stripe.
-// Parrainage LOYNA (même jour) : code facultatif, pré-rempli par ?parrain=, premier mois offert en mensuel (décision d'Ewan du 2026-10-31).
+// Parrainage LOYNA (même jour) : code facultatif, pré-rempli par ?parrain=, premier mois offert (décision d'Ewan du 2026-10-31).
 // Mise en service : offerte d'office jusqu'à la fin de l'offre de lancement (aucun code à saisir).
 // Le serveur (Edge Function checkout-create, dépôt LOYNA) crée ou vérifie le compte et la session de paiement ;
 // s'il ne peut pas créer la session, il répond CHECKOUT_FALLBACK et on passe par le lien de paiement de l'offre.
 // Session de l'espace client : même client Supabase que LOYNA Business (src/app/backend.ts), chargé seulement si
 // une session est enregistrée dans ce navigateur. Aucun script externe.
+// Depuis l'espace client (essai ou abonnement à reprendre) : ?commerce=<id>, pas de compte à créer, le premier paiement a lieu
+// le jour de la souscription (pas d'essai Stripe, les jours d'essai restants ne sont pas reportés).
 import {useEffect, useRef, useState} from 'preact/hooks';
-import {LAUNCH_OFFER, PLANS, QR_VERRE, SETUP_FEE, euro, offerActive, quotas, type Periode, type PlanId} from '../data/site';
+import {LAUNCH_OFFER, PHRASES, PLANS, QR_VERRE, SETUP_FEE, euro, normalizeOffer, offerActive, quotas, type Engagement} from '../data/site';
 import {ApiError, publicEdge} from './http';
 import {frenchTypography} from './typo';
 import {TelephoneWallet} from '../lib/CarteWallet';
 import {lireCartePreparee, RE_ID_CARTE, type CartePreparee} from '../lib/carte-preparee';
+import {EMAIL_RE, REFERRAL_ERRORS, RULES, TELEPHONE_RE, normalizeReferral, store, track} from '../lib/compte-regles';
 
 type QrKey = 'unit' | 'pack5' | 'pack10';
 type Qr = Record<QrKey, number>;
@@ -35,60 +38,44 @@ const QR_ROWS: {key: QrKey; id: string; label: string; name: string; detail: str
   {key: 'pack5', id: 'pn-qr-5', label: 'Pack de 5', name: 'un pack de 5 QR codes', detail: `${euro(QR_VERRE.pack5)} le pack (−15 %)`, price: QR_VERRE.pack5, max: QR_VERRE.maxPack, size: 5},
   {key: 'pack10', id: 'pn-qr-10', label: 'Pack de 10', name: 'un pack de 10 QR codes', detail: `${euro(QR_VERRE.pack10)} le pack (−25 %)`, price: QR_VERRE.pack10, max: QR_VERRE.maxPack, size: 10},
 ];
-// Règles de mot de passe de l'espace client (Supabase Auth, comme la page « Choisir mon mot de passe »)
-const RULES = [
-  {test: (p: string) => p.length >= 10, label: '10 caractères minimum'},
-  {test: (p: string) => /[A-Z]/.test(p), label: 'une majuscule'},
-  {test: (p: string) => /[a-z]/.test(p), label: 'une minuscule'},
-  {test: (p: string) => /\d/.test(p), label: 'un chiffre'},
-];
 const AUTH_KEY = 'loyna-business-auth'; // session de l'espace client (src/app/backend.ts)
 const FORM_KEY = 'loyna-panier'; // champs du compte, sans le mot de passe (retour depuis Stripe)
 const COMPTE_KEY = 'loyna-panier-compte'; // compte créé avant un paiement par lien : lu par /merci/ (même nom)
 const CARTE_KEY = 'loyna-panier-carte'; // carte préparée : gardée pour le retour depuis Stripe, dont l'adresse ne la porte pas
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-// Parrainage LOYNA : « LOYNA- » + 6 caractères sans 0, O, 1 ni I (comme le serveur, _shared/referral.ts)
-const REFERRAL_RE = /^LOYNA-[A-HJ-NP-Z2-9]{6}$/;
-function normalizeReferral(value: string): string | null {
-  const raw = value.toUpperCase().replace(/[\s_.-]+/g, '');
-  const code = `LOYNA-${raw.startsWith('LOYNA') ? raw.slice(5) : raw}`;
-  return REFERRAL_RE.test(code) ? code : null;
+const COMMERCE_KEY = 'loyna-panier-commerce'; // commerce d'une reprise : gardé pour le retour depuis Stripe ; lu aussi par /merci/ (même nom)
+const PARRAIN_ESSAI_KEY = 'loyna-essai-parrain'; // code de parrainage saisi sur /essai/ (src/app/Essai.tsx, même nom)
+const RE_COMMERCE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** RPC my_service_state (dépôt LOYNA) : ce que le panier en affiche. */
+interface EtatService {
+  state: string;
+  trial_ends_at?: string | null;
+  trial_days_left?: number | null;
+  stop_reason?: string | null;
+  pay_url?: string | null;
 }
-const REFERRAL_ERRORS = new Set(['REFERRAL_INVALID', 'REFERRAL_SELF', 'REFERRAL_NOT_NEW', 'REFERRAL_ALREADY', 'REFERRAL_MONTHLY_ONLY']);
+const dateFr = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', {day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris'});
 
 const cents = (n: number) => Math.round(n * 100);
 const eur = (c: number) => euro(c / 100);
 const clamp = (v: number, max: number) => (Number.isFinite(v) ? Math.min(max, Math.max(0, Math.trunc(v))) : 0);
 const backend = () => import('./backend');
-const track = (name: string, params: object) => (window as unknown as {loynaTrack?: (n: string, p?: object) => void}).loynaTrack?.(name, params);
 
-function store(kind: 'local' | 'session', key: string, value?: string | null): string | null {
-  try {
-    const s = kind === 'local' ? localStorage : sessionStorage;
-    if (value === undefined) return s.getItem(key);
-    if (value === null) s.removeItem(key);
-    else s.setItem(key, value);
-  } catch {
-    /* stockage indisponible (navigation privée) */
-  }
-  return null;
-}
-
+// Anciens liens lus par normalizeOffer : ?offre=premium → Starter, avec un avis ; ?periode=annuel → avec engagement.
 function initialChoice() {
   const q = new URLSearchParams(location.search);
-  const plan = (PLANS.find((p) => p.id === q.get('offre'))?.id ?? PLANS.find((p) => p.highlight)?.id ?? PLANS[0].id) as PlanId;
-  const periode: Periode = q.get('periode') === 'annuel' ? 'annuel' : 'mensuel';
+  const {plan, engagement, legacy} = normalizeOffer(q.get('offre'), q.get('periode'), q.get('engagement'));
   const qr: Qr = {
     unit: clamp(Number(q.get('qr') ?? 0), QR_VERRE.maxUnit),
     pack5: clamp(Number(q.get('pack5') ?? 0), QR_VERRE.maxPack),
     pack10: clamp(Number(q.get('pack10') ?? 0), QR_VERRE.maxPack),
   };
-  return {plan, periode, qr};
+  return {plan, engagement, legacy, qr};
 }
 
 /**
  * Carte préparée pour un prospect, passée dans le lien du panier (Ewan, 29/10/2026) :
- * /panier/?offre=starter&periode=mensuel&nom=…&activite=…&recompense=…&fond=0d0d10&tampons=7d75ff&passages=5
+ * /panier/?offre=starter&engagement=0&nom=…&activite=…&recompense=…&fond=0d0d10&tampons=7d75ff&passages=5
  * Les réglages vont dans le brouillon du configurateur (« loyna-config ») : la page /merci/ en remplit le formulaire
  * de la carte après le paiement (même navigateur), et le nom du commerce pré-remplit le compte. Rien n'est envoyé ici.
  */
@@ -139,9 +126,16 @@ function idCarteInitial(): string | null {
   return id && RE_ID_CARTE.test(id) ? id : null;
 }
 
-/** Code de parrainage du lien partagé (?parrain=…), gardé si l'on change d'offre ou de période. */
+/** Commerce d'une reprise depuis l'espace client (?commerce=<id>), gardé pour le retour depuis Stripe. */
+function commerceInitial(): string | null {
+  const id = new URLSearchParams(location.search).get('commerce') || store('session', COMMERCE_KEY);
+  return id && RE_COMMERCE.test(id) ? id : null;
+}
+
+/** Code de parrainage du lien partagé (?parrain=…), gardé si l'on change d'offre ou d'engagement ; sur une reprise, celui saisi à l'essai. */
 function initialReferral(): string {
-  return (new URLSearchParams(location.search).get('parrain') ?? '').trim().slice(0, 20);
+  const lien = new URLSearchParams(location.search).get('parrain');
+  return (lien ?? (commerceInitial() ? store('local', PARRAIN_ESSAI_KEY) : '') ?? '').trim().slice(0, 20);
 }
 
 function initialFields() {
@@ -164,6 +158,8 @@ export default function Panier() {
   const [prepId] = useState(idCarteInitial);
   const [prep, setPrep] = useState<CartePreparee | null>(null);
   const [prepEtat, setPrepEtat] = useState<'attente' | 'ok' | 'non'>(prepId ? 'attente' : 'non');
+  const [commerce] = useState(commerceInitial);
+  const [service, setService] = useState<EtatService | null>(null);
   const [changerOffre, setChangerOffre] = useState(false);
   const [systeme, setSysteme] = useState<'apple' | 'google'>('apple');
   const avaitOffre = useRef(new URLSearchParams(location.search).has('offre')); // choix déjà fait (rechargement, retour de Stripe)
@@ -175,7 +171,7 @@ export default function Panier() {
   const [website, setWebsite] = useState(''); // champ piège
   const [referral, setReferral] = useState(initialReferral);
   const [session, setSession] = useState<{email: string} | null | undefined>(undefined);
-  const [mode, setMode] = useState<'create' | 'login'>('create');
+  const [mode, setMode] = useState<'create' | 'login'>(commerce ? 'login' : 'create');
   const [login, setLogin] = useState({email: '', password: ''});
   const [loginBusy, setLoginBusy] = useState(false);
   const [loginErr, setLoginErr] = useState('');
@@ -199,7 +195,8 @@ export default function Panier() {
         }
         store('session', CARTE_KEY, prepId);
         setPrep(c);
-        if (!avaitOffre.current) setChoice((x) => ({...x, plan: c.offre, periode: c.periode, qr: {...c.qr}}));
+        // Anciennes fiches (offre premium, période annuelle) : jamais de page blanche, Starter avec l'avis
+        if (!avaitOffre.current) setChoice((x) => ({...x, ...normalizeOffer(c.offre, c.periode, c.engagement), qr: {...c.qr}}));
         setF((x) => (x.business_name && x.business_name !== 'Votre commerce' ? x : {...x, business_name: c.nom.slice(0, 120)}));
         // Lu par /merci/ : le formulaire des éléments n'a plus à être rempli (le logo reste sur le serveur)
         store('local', 'loyna-config', JSON.stringify({name: c.nom, activity: c.activite, reward: c.recompense, bg: c.fond, accent: c.tampons, total: c.passages, filled: 0, variant: 'apple', preparee: prepId}));
@@ -221,28 +218,54 @@ export default function Panier() {
       .then((b) => b.supabaseBackend.getSession())
       .then((s) => setSession(s && s.email ? s : null), () => setSession(null));
   }, []);
+  // Reprise depuis l'espace client : état du service, une fois la session connue (essai en cours, jours restants, ancien abonnement)
+  useEffect(() => {
+    if (!commerce || !session) return;
+    store('session', COMMERCE_KEY, commerce);
+    let actif = true;
+    backend()
+      .then((b) => b.supabaseBackend.rpc<EtatService>('my_service_state', {p_merchant_id: commerce}))
+      .then((s) => actif && setService(s), () => actif && setService(null));
+    // Code saisi à l'essai, gardé avec le commerce : le total affiché suit ce que le serveur appliquera, quel que soit le navigateur.
+    backend()
+      .then((b) => b.supabaseBackend.rpc<{code?: string | null}>('my_pending_referral', {p_merchant_id: commerce}))
+      .then((r) => actif && r?.code && setReferral((v) => v.trim() ? v : String(r.code)), () => undefined);
+    return () => {
+      actif = false;
+    };
+  }, [commerce, session]);
   // Le choix reste dans l'adresse (rechargement, partage, retour depuis Stripe)
   useEffect(() => {
-    const q = new URLSearchParams({offre: choice.plan, periode: choice.periode});
+    const q = new URLSearchParams({offre: choice.plan, engagement: choice.engagement === 'engage' ? '1' : '0'});
     (Object.keys(choice.qr) as QrKey[]).forEach((k) => choice.qr[k] > 0 && q.set(k === 'unit' ? 'qr' : k, String(choice.qr[k])));
     if (referral.trim()) q.set('parrain', normalizeReferral(referral) ?? referral.trim());
     // carte préparée (carteDuLien) : ses réglages restent dans l'adresse, pour un rechargement ou un partage
     const avant = new URLSearchParams(location.search);
     ['nom', 'activite', 'recompense', 'fond', 'tampons', 'passages'].forEach((k) => avant.get(k) && q.set(k, avant.get(k)!));
     if (prepId && prepEtat !== 'non') q.set('carte', prepId);
+    if (commerce) q.set('commerce', commerce);
     history.replaceState(null, '', `${location.pathname}?${q}`);
   }, [choice, referral, prepEtat]);
 
-  const plan = PLANS.find((p) => p.id === choice.plan)!;
-  const monthly = choice.periode === 'mensuel';
-  const subCents = cents(monthly ? plan.monthly : plan.yearly);
-  const setupDue = monthly && !offer ? cents(SETUP_FEE) : 0;
+  const plan = PLANS.find((p) => p.id === choice.plan) ?? PLANS[0];
+  const engaged = choice.engagement === 'engage';
+  const prixMois = engaged ? plan.engaged : plan.monthly;
+  const subCents = cents(prixMois);
+  // Mise en service (même règle que le serveur, _shared/checkout.ts) : offerte pendant l'offre de lancement et avec engagement,
+  // jamais refacturée à qui reprend un abonnement
+  const reprise = ['SUBSCRIPTION_ENDED', 'PAYMENT_FAILED'].includes(service?.stop_reason ?? '');
+  const setupDue = !engaged && !offer && !reprise ? cents(SETUP_FEE) : 0;
+  const essaiEnCours = service?.state === 'TRIAL' && !!service.trial_ends_at;
+  // Jamais un 2e abonnement : commerce déjà abonné, facture à régler, suspension à la main (seul LOYNA la lève)
+  const dejaAbonne = !!service && (['ACTIVE', 'GRACE', 'EXEMPT'].includes(service.state) || service.stop_reason === 'PAYMENT_FAILED');
+  const suspendu = service?.state === 'SUSPENDED_MANUAL';
+  const joursEssai = Math.max(0, service?.trial_days_left ?? 0);
   const qrLines = QR_ROWS.filter((r) => choice.qr[r.key] > 0);
   const qrCents = qrLines.reduce((s, r) => s + choice.qr[r.key] * cents(r.price), 0);
   const qrCount = QR_ROWS.reduce((s, r) => s + choice.qr[r.key] * r.size, 0);
-  // Parrainage LOYNA : le prix de l'offre du premier mois est offert (ni mise en service, ni QR codes), mensuel seulement
+  // Parrainage LOYNA : le prix de l'offre du premier mois est offert (ni mise en service, ni QR codes)
   const referralCode = referral.trim() ? normalizeReferral(referral) : null;
-  const referralOn = monthly && !!referralCode;
+  const referralOn = !!referralCode;
   const referralCents = referralOn ? subCents : 0;
   const todayCents = subCents + setupDue + qrCents - referralCents;
 
@@ -259,12 +282,12 @@ export default function Panier() {
       if (!f.last_name.trim()) e.last_name = 'Indiquez votre nom.';
       if (!f.business_name.trim()) e.business_name = 'Indiquez le nom de votre commerce.';
       if (!EMAIL_RE.test(f.email.trim())) e.email = 'Indiquez une adresse e-mail valide.';
-      if (f.phone.trim() && !/^[0-9+ ().-]{8,30}$/.test(f.phone.trim())) e.phone = 'Ce numéro semble incomplet.';
+      if (f.phone.trim() && !TELEPHONE_RE.test(f.phone.trim())) e.phone = 'Ce numéro semble incomplet.';
       if (!RULES.every((r) => r.test(pw))) e.password = 'Le mot de passe ne respecte pas encore toutes les règles.';
       else if (pw !== pw2) e.password2 = 'Les deux mots de passe sont différents.';
     }
     if (!cgv) e.cgv = 'Acceptez les conditions générales de vente pour continuer.';
-    if (monthly && referral.trim() && !referralCode) e.referral = 'Code de parrainage inconnu ou expiré.';
+    if (referral.trim() && !referralCode) e.referral = 'Code de parrainage inconnu ou expiré.';
     return e;
   };
 
@@ -299,7 +322,7 @@ export default function Panier() {
       /* session déjà fermée */
     }
     setSession(null);
-    setMode('create');
+    setMode(commerce ? 'login' : 'create');
   };
 
   const submit = async (ev: Event) => {
@@ -315,10 +338,11 @@ export default function Panier() {
     setBusy(true);
     const body = {
       plan: plan.id.toUpperCase(),
-      period: monthly ? 'monthly' : 'yearly',
+      engagement: engaged,
       qr: choice.qr,
       website,
       ...(referralOn ? {referral_code: referralCode} : {}),
+      ...(commerce && session ? {merchant_id: commerce} : {}),
       ...(session
         ? {}
         : {
@@ -337,17 +361,17 @@ export default function Panier() {
         ? await (await backend()).supabaseBackend.edge<CheckoutReply>('checkout-create', body)
         : await publicEdge<CheckoutReply>('checkout-create', {body});
       store('session', FORM_KEY, JSON.stringify(f));
-      track('begin_checkout', {currency: 'EUR', value: todayCents / 100, items: [{item_id: `${plan.id}-${choice.periode}`}]});
+      track('begin_checkout', {currency: 'EUR', value: todayCents / 100, items: [{item_id: `${plan.id}-${engaged ? 'engage' : 'mensuel'}`}]});
       if (reply.status === 'OK' && reply.url) {
         location.assign(reply.url);
         return; // le bouton reste occupé pendant la redirection
       }
       // Paiement par le lien de l'offre : e-mail du compte prérempli, commande reliée au compte
-      const link = new URL(monthly ? plan.links.monthly : plan.links.yearly);
+      const link = new URL(plan.links[choice.engagement]);
       link.searchParams.set('locale', 'fr');
       link.searchParams.set('prefilled_email', reply.account.email);
       link.searchParams.set('client_reference_id', reply.account.id);
-      if (monthly && offerActive()) link.searchParams.set('prefilled_promo_code', LAUNCH_OFFER.code);
+      if (!engaged && offerActive()) link.searchParams.set('prefilled_promo_code', LAUNCH_OFFER.code);
       store('session', COMPTE_KEY, '1');
       setFallback({
         url: link.toString(),
@@ -410,22 +434,27 @@ export default function Panier() {
 
   return (
     <form class="pn" ref={root} onSubmit={submit} noValidate>
-      {carte && (
-        <div class="pn-carte" style="display:flex;align-items:center;gap:14px;padding:14px 18px;margin-bottom:18px;border-radius:16px;border:1px solid rgba(0,0,0,.1);background:#fff">
-          <span aria-hidden="true" style={`flex:none;width:46px;height:30px;border-radius:7px;background:${carte.bg || '#121216'};box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center`}>
-            <span style={`width:12px;height:12px;border-radius:50%;background:${carte.accent || '#d9b27a'}`} />
-          </span>
-          <span style="line-height:1.35">
-            <strong>Votre carte : {carte.name}</strong>
-            <br />
-            <span class="pn-muted pn-small">
-              {[carte.total ? `${carte.total} passages` : '', carte.reward].filter(Boolean).join(' · ') || 'réglages repris après la commande'}
-              {' '}: vous les retrouverez après votre commande, prêts à valider.
-            </span>
-          </span>
-        </div>
-      )}
       <div class="pn-steps">
+        {choice.legacy && (
+          <p class="pn-avis" role="status">
+            L’offre Premium n’est plus proposée. Voici l’offre Starter, qui reprend ses automatisations.
+          </p>
+        )}
+        {carte && (
+          <div class="pn-carte" style="display:flex;align-items:center;gap:14px;padding:14px 18px;margin-bottom:18px;border-radius:16px;border:1px solid rgba(0,0,0,.1);background:#fff">
+            <span aria-hidden="true" style={`flex:none;width:46px;height:30px;border-radius:7px;background:${carte.bg || '#121216'};box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center`}>
+              <span style={`width:12px;height:12px;border-radius:50%;background:${carte.accent || '#d9b27a'}`} />
+            </span>
+            <span style="line-height:1.35">
+              <strong>Votre carte : {carte.name}</strong>
+              <br />
+              <span class="pn-muted pn-small">
+                {[carte.total ? `${carte.total} passages` : '', carte.reward].filter(Boolean).join(' · ') || 'réglages repris après la commande'}
+                {' '}: vous les retrouverez après votre commande, prêts à valider.
+              </span>
+            </span>
+          </div>
+        )}
         {prep && (
           <section class="pn-prep" aria-labelledby="pn-prep-t">
             <TelephoneWallet nom={prep.nom} activite={prep.activite} recompense={prep.recompense} fond={prep.fond} tampons={prep.tampons} passages={prep.passages} obtenus={Math.min(3, prep.passages)} logo={prep.logo} systeme={systeme} />
@@ -471,25 +500,24 @@ export default function Panier() {
           <legend>
             <span class="pn-num">1</span> Votre offre
           </legend>
-          <div class="pn-period" role="radiogroup" aria-label="Période de facturation">
-            {(['mensuel', 'annuel'] as Periode[]).map((p) => (
-              <label class={choice.periode === p ? 'on' : ''}>
-                <input type="radio" name="periode" value={p} checked={choice.periode === p} onChange={() => setChoice((c) => ({...c, periode: p}))} />
-                {p === 'mensuel' ? 'Mensuel' : 'Annuel'}
-                {p === 'annuel' && <span class="pn-save">−15 %</span>}
+          <div class="pn-period" role="radiogroup" aria-label="Durée de l’abonnement">
+            {(['sans', 'engage'] as Engagement[]).map((e) => (
+              <label class={choice.engagement === e ? 'on' : ''}>
+                <input type="radio" name="engagement" value={e} checked={choice.engagement === e} onChange={() => setChoice((c) => ({...c, engagement: e}))} />
+                {e === 'sans' ? 'Sans engagement' : <>Avec 12 mois d’engagement, <span class="pn-save">−15 %</span></>}
               </label>
             ))}
           </div>
           <div class="pn-plans">
             {PLANS.map((p) => (
               <label class={`pn-plan ${choice.plan === p.id ? 'on' : ''}`}>
-                <input type="radio" name="offre" value={p.id} checked={choice.plan === p.id} onChange={() => setChoice((c) => ({...c, plan: p.id}))} />
+                <input type="radio" name="offre" value={p.id} checked={choice.plan === p.id} onChange={() => setChoice((c) => ({...c, plan: p.id, legacy: false}))} />
                 <span class="pn-plan-head">
                   <strong>{p.name}</strong>
                   {p.badge && <span class="pn-badge">{p.badge}</span>}
                 </span>
                 <span class="pn-plan-price">
-                  {monthly ? euro(p.monthly) : euro(p.yearly)} <small>{monthly ? '/ mois' : '/ an'}, sans TVA</small>
+                  {euro(engaged ? p.engaged : p.monthly)} <small>/ mois, sans TVA</small>
                 </span>
                 <span class="pn-plan-pitch">{p.pitch}</span>
                 <span class="pn-plan-quota">{quotas(p)}</span>
@@ -497,23 +525,16 @@ export default function Panier() {
             ))}
           </div>
           <p class="pn-note">
-            {monthly ? (
-              offer ? (
-                <>
-                  Mise en service <s>{euro(SETUP_FEE)}</s> offerte jusqu’au {LAUNCH_OFFER.untilLabel}, en mensuel comme en annuel. <strong>Engagement de 12 mois</strong>, {referralOn ? 'dont le premier offert' : 'réglés chaque mois'}, puis
-                  résiliable à la fin de n’importe quel mois, sans frais.
-                </>
-              ) : (
-                <>
-                  + {euro(SETUP_FEE)} de mise en service, une seule fois. <strong>Engagement de 12 mois</strong>, {referralOn ? 'dont le premier offert' : 'réglés chaque mois'}, puis résiliable à la fin de n’importe quel mois, sans frais.
-                </>
-              )
-            ) : (
+            {offer ? (
               <>
-                Soit {euro(Math.round((plan.yearly / 12) * 100) / 100)} / mois · <strong>mise en service offerte</strong>. 12 mois payés en une fois, renouvelables.
+                Mise en service <s>{euro(SETUP_FEE)}</s> offerte jusqu’au {LAUNCH_OFFER.untilLabel}.
               </>
+            ) : setupDue ? (
+              <>+ {euro(SETUP_FEE)} de mise en service, une seule fois, offerte avec 12 mois d’engagement.</>
+            ) : (
+              <strong>Mise en service offerte.</strong>
             )}{' '}
-            <a href="/tarifs/">Comparer les offres</a>
+            {engaged ? PHRASES.engagement : PHRASES.prix(plan)} <a href="/tarifs/">Comparer les offres</a>
           </p>
           <div class="pn-ref">
             <label for="pn-referral">
@@ -536,11 +557,7 @@ export default function Panier() {
               aria-describedby={`pn-referral-help${errors.referral ? ' pn-referral-err' : ''}`}
             />
             <p class="pn-muted pn-small" id="pn-referral-help">
-              {monthly
-                ? 'Parrainé par un commerçant client de LOYNA ? Votre premier mois est offert, en paiement mensuel.'
-                : referral.trim()
-                  ? 'Le parrainage s’applique au paiement mensuel : choisissez « Mensuel » pour en profiter.'
-                  : 'Le parrainage LOYNA s’applique au paiement mensuel.'}
+              Parrainé par un commerçant client de LOYNA ? Votre premier mois est offert{engaged ? ' : il compte dans les 12 mois d’engagement.' : '.'}
             </p>
             {err('referral')}
           </div>
@@ -604,7 +621,7 @@ export default function Panier() {
           <legend>
             <span class="pn-num">{replie ? 1 : 3}</span> Votre compte LOYNA
           </legend>
-          <p class="pn-intro">Ce compte reçoit votre commande et vous donne accès à votre espace client.</p>
+          <p class="pn-intro">{commerce ? (session ? 'Cet abonnement sera rattaché à votre commerce.' : 'Connectez-vous : cet abonnement sera rattaché à votre commerce.') : 'Ce compte reçoit votre commande et vous donne accès à votre espace client.'}</p>
           {session === undefined && <p class="pn-muted">Vérification de votre connexion…</p>}
           {session && (
             <div class="pn-session">
@@ -742,20 +759,24 @@ export default function Panier() {
                 <button type="button" class={`btn btn--primary ${loginBusy ? 'is-loading' : ''}`} onClick={doLogin} disabled={loginBusy} aria-busy={loginBusy || undefined}>
                   Se connecter
                 </button>
-                <button
-                  type="button"
-                  class="pn-link"
-                  onClick={() => {
-                    setMode('create');
-                    setLoginErr('');
-                  }}
-                >
-                  Créer un compte
-                </button>
+                {!commerce && (
+                  <button
+                    type="button"
+                    class="pn-link"
+                    onClick={() => {
+                      setMode('create');
+                      setLoginErr('');
+                    }}
+                  >
+                    Créer un compte
+                  </button>
+                )}
               </div>
               <p class="pn-muted">
-                Mot de passe oublié ? Écrivez à <a href="mailto:contact@loyna.fr?subject=Nouveau%20lien%20de%20connexion%20LOYNA">contact@loyna.fr</a> depuis l’adresse de votre compte : nous vous
-                envoyons un lien pour en choisir un nouveau.
+                Mot de passe oublié ?{' '}
+                <a href="/espace-client/?oubli=1" target="_blank" rel="noopener">
+                  Recevoir un lien pour en choisir un nouveau
+                </a>
               </p>
             </div>
           )}
@@ -804,21 +825,19 @@ export default function Panier() {
           <div>
             <dt>
               LOYNA {plan.name}
-              <small>{monthly ? 'paiement mensuel, engagement de 12 mois' : 'paiement annuel (−15 %)'}</small>
+              <small>{engaged ? 'avec 12 mois d’engagement, réglés chaque mois (−15 %)' : 'sans engagement'}</small>
             </dt>
             <dd>{eur(subCents)}</dd>
           </div>
           <div>
             <dt>Mise en service</dt>
             <dd>
-              {monthly ? (
-                offer ? (
-                  <>
-                    <s>{euro(SETUP_FEE)}</s> offerte
-                  </>
-                ) : (
-                  euro(SETUP_FEE)
-                )
+              {setupDue ? (
+                euro(SETUP_FEE)
+              ) : offer && !engaged ? (
+                <>
+                  <s>{euro(SETUP_FEE)}</s> offerte
+                </>
               ) : (
                 'offerte'
               )}
@@ -846,15 +865,21 @@ export default function Panier() {
           <span>Total à payer aujourd’hui</span>
           <strong>{eur(todayCents)}</strong>
         </p>
+        {essaiEnCours && (
+          <p class="pn-then pn-essai">
+            Votre essai court jusqu’au {dateFr(service!.trial_ends_at!)}.{' '}
+            {referralOn ? 'Votre mois offert commence aujourd’hui' : 'Le premier paiement a lieu aujourd’hui'}
+            {joursEssai > 1 ? ` : il vous reste ${joursEssai} jours gratuits, ils ne sont pas reportés.` : joursEssai === 1 ? ' : il vous reste 1 jour gratuit, il n’est pas reporté.' : '.'}
+          </p>
+        )}
         <p class="pn-then">
           {referralOn
-            ? `Votre carte bancaire est demandée pour les mois suivants : le prélèvement de l’abonnement commence le mois prochain, à ${euro(plan.monthly)} par mois. Le mois offert compte dans l’engagement de 12 mois ; ensuite, l’abonnement est résiliable à la fin de n’importe quel mois. Un changement d’offre pendant le mois offert est facturé au prorata du temps restant.`
-            : monthly
-              ? `Puis ${euro(plan.monthly)} par mois pendant la durée de l’engagement de 12 mois, résiliable ensuite à la fin de n’importe quel mois.`
-              : `Puis ${euro(plan.yearly)} par an, à chaque échéance, sauf résiliation avant cette date.`}
+            ? `Votre carte bancaire est demandée pour les mois suivants : le prélèvement de l’abonnement commence le mois prochain, à ${euro(prixMois)} par mois.${engaged ? ' Le mois offert compte dans les 12 mois d’engagement ; ensuite, même prix, résiliable à la fin de n’importe quel mois, sans nouvelle durée.' : ' Sans engagement : vous arrêtez à la fin de n’importe quel mois.'} Un changement d’offre pendant le mois offert est facturé au prorata du temps restant.`
+            : engaged
+              ? `Puis ${euro(prixMois)} par mois pendant les 12 mois d’engagement, réglés chaque mois. Après les 12 mois : même prix, résiliable à la fin de n’importe quel mois, sans nouvelle durée.`
+              : `Puis ${euro(prixMois)} par mois, sans engagement : vous arrêtez à la fin de n’importe quel mois.`}
         </p>
         <p class="pn-vat">Prix sans TVA (art. 293 B du CGI) : le prix affiché est le prix payé.</p>
-        {!monthly && referral.trim() && <p class="pn-then">Le parrainage s’applique au paiement mensuel : il n’est pas appliqué en paiement annuel.</p>}
         {formErr && (
           <div class="pn-alert" role="alert">
             <p>{formErr}</p>
@@ -863,17 +888,30 @@ export default function Panier() {
                 <button type="button" class="pn-link" onClick={() => setMode('login')}>
                   Me connecter avec ce compte
                 </button>{' '}
-                ou écrivez à <a href="mailto:contact@loyna.fr?subject=Nouveau%20lien%20de%20connexion%20LOYNA">contact@loyna.fr</a> pour recevoir un nouveau mot de passe.
+                (mot de passe oublié : le lien est sous le formulaire de connexion).
               </p>
             )}
           </div>
         )}
-        {fallback ? (
+        {suspendu ? (
+          <div class="pn-alert" role="status">
+            <p>
+              Votre compte est suspendu par LOYNA. Écrivez à <a href="mailto:contact@loyna.fr">contact@loyna.fr</a>.
+            </p>
+          </div>
+        ) : dejaAbonne ? (
+          <div class="pn-fallback" role="status">
+            {service?.stop_reason === 'PAYMENT_FAILED' ? <p>Votre abonnement existe déjà : tout repart dès que la facture en attente est réglée.</p> : <p>Votre commerce a déjà son abonnement : il se gère depuis votre espace client.</p>}
+            <a class="btn btn--gold btn--block" href={service?.stop_reason === 'PAYMENT_FAILED' && service.pay_url ? service.pay_url : '/espace-client/#/abonnement'} rel="nofollow">
+              {service?.stop_reason === 'PAYMENT_FAILED' ? 'Régler ma facture' : 'Mon abonnement'}
+            </a>
+          </div>
+        ) : fallback ? (
           <div class="pn-fallback" id="pn-fallback" tabIndex={-1} role="status">
             <p>
               <strong>Votre compte LOYNA ({fallback.email}) est prêt.</strong> Le paiement se fait sur la page sécurisée Stripe de l’offre {plan.name} :{' '}
               {qrCount > 0 ? <strong>vous choisirez vos QR codes sous verre sur la page de paiement.</strong> : 'vous pourrez y ajouter des QR codes sous verre.'}
-              {monthly && offer ? ` Le code ${LAUNCH_OFFER.code} y est déjà saisi : la mise en service est offerte.` : ''}
+              {!engaged && offer ? ` Le code ${LAUNCH_OFFER.code} y est déjà saisi : la mise en service est offerte.` : ''}
             </p>
             {fallback.referralLost && (
               <p>

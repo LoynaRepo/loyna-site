@@ -4,6 +4,7 @@
 //     contrôles, visuel, envoi par loyna_mail.py) ;
 //   - l'aperçu du mail, rempli comme le vrai : même modèle (« 03 Modèles/Mail perso après appel.md », reçu dans les
 //     données du panel) et mêmes champs que mail_perso.contexte(). Toute modification se fait des deux côtés.
+// Offres vendues seulement (PLANS) : une note « [MAIL] » restée sur une offre retirée n'en cite aucune, comme dans le coffre.
 import {PLANS, visuelActivite, type PlanId} from '../data/site';
 import type {Note} from './notes-crypto';
 import type {Prospect} from './types';
@@ -113,12 +114,25 @@ const hexa = (v: string) => {
 const coder = (s: string) => encodeURIComponent(s).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
 const requete = (params: [string, string][]) => params.map(([k, v]) => `${k}=${coder(v)}`).join('&');
 
-/** Prix mensuel affiché comme documents_client.euros(x, False) : « 29 € », « 39,99 € ». */
+/** Montant affiché comme documents_client.euros(x, False) : « 29 € », « 24,65 € ». */
+const prix = (n: number) => `${Number.isInteger(n) ? String(n) : n.toFixed(2).replace('.', ',')} €`;
+
+/** Prix mensuel sans engagement : « 29 € ». */
 export function prixMensuel(offre: Offre): string {
   const p = PLANS.find((x) => x.id === offre);
-  if (!p) return '';
-  const n = Number.isInteger(p.monthly) ? String(p.monthly) : p.monthly.toFixed(2).replace('.', ',');
-  return `${n} €`;
+  return p ? prix(p.monthly) : '';
+}
+
+/** Prix mensuel avec 12 mois d'engagement : « 24,65 € ». */
+export function prixEngage(offre: Offre): string {
+  const p = PLANS.find((x) => x.id === offre);
+  return p ? prix(p.engaged) : '';
+}
+
+/** L'offre avec ses 2 prix : « Starter, 29 € par mois sans TVA, ou 24,65 € avec 12 mois d'engagement ». */
+export function texteOffre(offre: Offre): string {
+  const p = PLANS.find((x) => x.id === offre);
+  return p ? `${p.name}, ${prixMensuel(p.id)} par mois sans TVA, ou ${prixEngage(p.id)} avec 12 mois d’engagement` : '';
 }
 
 export function lienConfigurateur(nom: string, d: DemandeMail): string {
@@ -160,6 +174,7 @@ export function contexteMail(nom: string, d: DemandeMail, demandeLe?: Date, auj 
       .map((texte) => ({texte})),
     offre: offre ? `LOYNA ${offre.name}` : '',
     prix: offre ? prixMensuel(offre.id) : '',
+    prix_engage: offre ? prixEngage(offre.id) : '',
     etape: etape && !/[.!?…]$/.test(etape) ? `${etape}.` : etape,
     lien_configurateur: lienConfigurateur(nom, d),
     alt_visuel: `Aperçu de la carte de fidélité de ${nom}`,

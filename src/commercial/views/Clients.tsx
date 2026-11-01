@@ -1,10 +1,10 @@
-// Clients : commerces qui ont souscrit (fiches « 08 Clients » du coffre, calculées par _systeme/clients.py).
+// Clients : commerces en essai ou qui ont souscrit (fiches « 08 Clients » du coffre, calculées par _systeme/clients.py).
 // Compteurs (abonnements en cours, revenu mensuel, QR codes à livrer, actions en retard), liste filtrable avec la
 // prochaine action ; tableau sur ordinateur, cartes sur téléphone. Les actions notées dans le panel (boutons de la
 // fiche) comptent tout de suite, avant même leur recopie dans le coffre.
 import type {ComponentChildren} from 'preact';
 import {useMemo, useState} from 'preact/hooks';
-import {clientsAffiches, noteLibre, type ClientAffiche} from '../clients';
+import {clientsAffiches, libelleOffre, noteLibre, offreHistorique, type ClientAffiche} from '../clients';
 import {totauxClients} from '../clients-regles';
 import {cle, dateCourte, euros, fr, nombre, pluriel} from '../format';
 import {Icon} from '../icons';
@@ -20,6 +20,8 @@ const ETAPES: {v: string; l: string}[] = [
   {v: 'documents', l: 'Documents à envoyer'},
   {v: 'qr', l: 'QR codes à livrer'},
   {v: 'actif', l: 'Client actif'},
+  {v: 'essai', l: 'Essai'},
+  {v: 'carte_suspendue', l: 'Carte suspendue'},
   {v: 'paiement_echoue', l: 'Paiement échoué'},
   {v: 'resiliation', l: 'Résiliation demandée'},
   {v: 'termine', l: 'Terminé'},
@@ -39,6 +41,8 @@ const TON_ETAPE: Record<string, Tone> = {
   documents: 'blue',
   qr: 'blue',
   actif: 'green',
+  essai: 'blue',
+  carte_suspendue: 'red',
   paiement_echoue: 'red',
   resiliation: 'amber',
   termine: 'dark',
@@ -110,7 +114,7 @@ export function Clients() {
     for (const c of tous)
       m.set(
         c.id,
-        cle([c.commerce, c.activite, c.contact.complet, c.email, c.compte, c.offre.libelle, c.adresse_facturation, c.action.libelle, c.statut].join(' ')) +
+        cle([c.commerce, c.activite, c.contact.complet, c.email, c.compte, libelleOffre(c.offre), c.adresse_facturation, c.action.libelle, c.statut].join(' ')) +
           ' ' +
           c.telephones.map((x) => x.affiche.replace(/\s/g, '')).join(' ') +
           ' ' +
@@ -128,10 +132,17 @@ export function Clients() {
     {
       l: 'Clients actifs',
       v: nombre(t.actifs),
-      s: `${pluriel(t.clients, 'client', 'clients')} au total${t.resiliations ? ` · ${pluriel(t.resiliations, 'résiliation demandée', 'résiliations demandées')}` : ''}`,
+      s: [
+        `${pluriel(t.clients, 'client', 'clients')} au total`,
+        t.essais ? pluriel(t.essais, 'en essai', 'en essai') : '',
+        t.cartes_suspendues ? pluriel(t.cartes_suspendues, 'carte suspendue', 'cartes suspendues') : '',
+        t.resiliations ? pluriel(t.resiliations, 'résiliation demandée', 'résiliations demandées') : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
       f: {},
     },
-    {l: 'Revenu mensuel', v: euros(t.mrr), s: 'abonnements mensuels + annuels ÷ 12, sans TVA'},
+    {l: 'Revenu mensuel', v: euros(t.mrr), s: 'abonnements en cours, sans TVA ; 0 pendant un essai'},
     {l: 'QR codes à livrer', v: nombre(t.qr_a_livrer), s: t.qr_clients ? `pour ${pluriel(t.qr_clients, 'client', 'clients')}, sous 15 jours` : 'aucune livraison en attente', f: {etape: 'qr'}, fort: t.qr_a_livrer > 0},
     {
       l: 'Actions en retard',
@@ -182,7 +193,7 @@ export function Clients() {
           {d.clients ? (
             <p>
               {fr(
-                'Chaque commande payée sur loyna.fr crée sa fiche dans 08 Clients (agent Trieur, clients.py creer-depuis-mail) : le client apparaîtra ici à la publication suivante, avec son parcours et la prochaine action.',
+                'Chaque essai démarré et chaque commande payée sur loyna.fr créent sa fiche dans 08 Clients (agent Trieur, clients.py creer-depuis-mail) : le client apparaîtra ici à la publication suivante, avec son parcours et la prochaine action.',
               )}
             </p>
           ) : (
@@ -204,7 +215,7 @@ export function Clients() {
               </button>
             </div>
             <div class={`cp-filtres ${ouvert ? 'is-open' : ''}`}>
-              {select('offre', 'Offre', offres.map((o) => ({v: o, l: o})), 'Toutes')}
+              {select('offre', 'Offre', offres.map((o) => ({v: o, l: offreHistorique(o) ? `${o} (offre historique)` : o})), 'Toutes')}
               {select('etape', 'Étape', ETAPES, 'Toutes')}
               {select('suivi', 'À traiter', SUIVI)}
               {(actifs > 0 || f.q) && (
@@ -250,8 +261,8 @@ export function Clients() {
                           <Tel p={c} />
                         </td>
                         <td>
-                          <strong class="cl-offre">{c.offre.libelle || '—'}</strong>
-                          {c.date_souscription && <small class="cl-sous">depuis le {dateCourte(c.date_souscription)}</small>}
+                          <strong class="cl-offre">{libelleOffre(c.offre) || '—'}</strong>
+                          {c.date_souscription ? <small class="cl-sous">depuis le {dateCourte(c.date_souscription)}</small> : c.essai?.fin && <small class="cl-sous">{c.essai.en_cours ? 'jusqu’au' : 'terminé le'} {dateCourte(c.essai.fin)}</small>}
                         </td>
                         <td>
                           <MiniParcours c={c} />
@@ -281,7 +292,7 @@ export function Clients() {
                       <BadgeEtape c={c} />
                     </span>
                   </div>
-                  <p class="cp-carte-s">{[c.offre.libelle, c.contact.complet, c.date_souscription && `depuis le ${dateCourte(c.date_souscription)}`].filter(Boolean).join(' · ')}</p>
+                  <p class="cp-carte-s">{[libelleOffre(c.offre), c.contact.complet, c.date_souscription ? `depuis le ${dateCourte(c.date_souscription)}` : c.essai?.fin && `${c.essai.en_cours ? 'jusqu’au' : 'terminé le'} ${dateCourte(c.essai.fin)}`].filter(Boolean).join(' · ')}</p>
                   <div class="cl-carte-p">
                     <MiniParcours c={c} />
                     <QrCourt c={c} />
@@ -298,7 +309,7 @@ export function Clients() {
       )}
       {tous.length > 0 && (
         <p class="muted small cp-m0">
-          {fr('Revenu mensuel : abonnements en cours (mensuels, plus annuels divisés par 12), aux prix des offres, sans TVA. Les clients se créent et se corrigent dans les fiches de 08 Clients (Obsidian).')}
+          {fr('Revenu mensuel : abonnements en cours, au prix de leur offre, sans TVA ; 0 pendant un essai ou un arrêt. Les clients se créent et se corrigent dans les fiches de 08 Clients (Obsidian).')}
         </p>
       )}
     </div>
@@ -336,7 +347,7 @@ export function AlerteClients() {
       </span>
       <span>
         <strong>{t.urgents > 1 ? `${nombre(t.urgents)} actions clients urgentes` : '1 action client urgente'}</strong>
-        <small>{fr(`${t.en_retard ? `${nombre(t.en_retard)} en retard · ` : ''}QR codes à livrer, paiement à relancer : onglet Clients.`)}</small>
+        <small>{fr(`${t.en_retard ? `${nombre(t.en_retard)} en retard · ` : ''}QR codes à livrer, services Pro, paiement à relancer : onglet Clients.`)}</small>
       </span>
       <Icon name="chevron-right" />
     </a>

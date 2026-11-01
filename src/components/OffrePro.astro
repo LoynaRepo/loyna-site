@@ -1,5 +1,5 @@
 ---
-// Offre Pro : ce que LOYNA fait avec le commerçant (docs/OFFRES.md du dépôt LOYNA, § 3), en tuiles. Illustration
+// Offre Pro : ce qu'elle ajoute à Starter (docs/OFFRES.md du dépôt LOYNA), en tuiles. Illustration
 // sans capture d'écran : rien n'y imite l'application.
 import Icon from './Icon.astro';
 
@@ -8,18 +8,17 @@ interface Props {
 }
 const {class: cls = ''} = Astro.props;
 const items = [
-  {icon: 'calendar-check', t: 'Point mensuel de 30 min'},
-  {icon: 'megaphone', t: 'Campagnes clés en main'},
-  {icon: 'store', t: 'Jusqu’à 3 boutiques'},
   {icon: 'users', t: 'Parrainage entre vos clients'},
-  {icon: 'printer', t: 'Kit comptoir imprimé'},
+  {icon: 'megaphone', t: 'Messages écrits par LOYNA'},
+  {icon: 'crown', t: 'Niveaux VIP en couleur'},
+  {icon: 'store', t: 'Jusqu’à 3 adresses'},
+  {icon: 'calendar-check', t: 'Point mensuel de 30 min'},
   {icon: 'headset', t: 'Support prioritaire'},
 ];
-// Les niveaux VIP sont inclus dès Premium depuis le 2026-10-28 (décision d'Ewan) : ils ne figurent plus ici.
 ---
 
 <div class={`pro-tiles ${cls}`} role="img" aria-label={`Offre Pro : ${items.slice(0, -1).map((i) => i.t).join(', ')} et ${items[items.length - 1].t.toLowerCase()}`}>
-  <p class="pt-head"><span class="pt-badge">Pro</span> LOYNA travaille avec vous</p>
+  <p class="pt-head"><span class="pt-badge">Pro</span> LOYNA s’en occupe</p>
   <ul>
     {
       items.map((i) => (
@@ -32,7 +31,7 @@ const items = [
       ))
     }
   </ul>
-  <p class="pt-foot"><Icon name="badge-check" size={18} /> Vos campagnes ne partent qu’avec votre accord, validé en un clic</p>
+  <p class="pt-foot"><Icon name="badge-check" size={18} /> Vous validez, rien ne part sans vous</p>
 </div>
 
 <style>

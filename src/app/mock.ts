@@ -3,7 +3,11 @@
 // boutiques et équipe générés à partir d'une « graine ». Tout reste en mémoire dans le navigateur :
 // aucune requête réseau (même la recherche d'adresse est simulée), rien n'est enregistré. Les numéros de
 // téléphone utilisent la tranche 06 39 98 réservée par l'ARCEP à la fiction, les e-mails le domaine
-// réservé example.com. L'offre affichée est Pro (tout est visible) ; ?offre=starter|premium|pro la change.
+// réservé example.com. L'offre affichée est Pro (tout est visible) ; ?offre=starter|pro la change, ?offre=premium montre
+// l'écran de Barber Kong en développement seulement. États du service, pour les captures et les contrôles : ?essai=1,
+// ?arret=essai|paiement|fin|manuel, ?sursis=1 (bandeaux de la section 2.2 du cahier des charges de la grille) ; en plus,
+// ?engage=1 (engagement en cours), ?engage=fini (engagement terminé), ?exempte=1 (compte offert).
+import {PLANS as VENTE} from '../data/site';
 import {ApiError} from './http';
 import type {Backend, GeoResult, Match, SelectOptions} from './backend';
 import {campaignName, sendAt, tempsForts} from './temps-forts';
@@ -46,12 +50,31 @@ export function regenerateDemo() {
   location.assign(u.toString());
 }
 
-// --- Offre affichée : Pro par défaut (toutes les fonctions visibles), ?offre=… pour montrer les autres -----
+// --- Offre affichée : Pro par défaut (toutes les fonctions visibles), ?offre=… pour montrer l'autre ---------
 export type Plan = 'STARTER' | 'PREMIUM' | 'PRO';
 const PLANS: Plan[] = ['STARTER', 'PREMIUM', 'PRO'];
 export function demoPlan(): Plan {
-  const p = (new URLSearchParams(location.search).get('offre') ?? '').toUpperCase();
+  const q = new URLSearchParams(location.search);
+  const p = (q.get('offre') ?? '').toUpperCase();
+  if (q.get('essai') === '1' || q.get('arret') === 'essai') return 'STARTER'; // l'essai donne Starter, quelle que soit l'offre demandée
+  // Premium n'est plus vendue : un ancien lien public montre Starter, sans la citer
+  if (p === 'PREMIUM') return import.meta.env.DEV ? 'PREMIUM' : 'STARTER';
   return PLANS.find((x) => x === p) ?? 'PRO';
+}
+
+// --- État du service montré : mêmes valeurs que la RPC my_service_state --------------------------------------
+export type DemoMode = 'ACTIVE' | 'TRIAL' | 'GRACE' | 'STOP_TRIAL' | 'STOP_PAY' | 'STOP_END' | 'MANUAL' | 'EXEMPT';
+export function demoMode(): DemoMode {
+  const q = new URLSearchParams(location.search);
+  const arret = q.get('arret');
+  if (arret === 'essai') return 'STOP_TRIAL';
+  if (arret === 'paiement') return 'STOP_PAY';
+  if (arret === 'fin') return 'STOP_END';
+  if (arret === 'manuel') return 'MANUAL';
+  if (q.get('essai') === '1') return 'TRIAL';
+  if (q.get('sursis') === '1') return 'GRACE';
+  if (q.get('exempte') === '1') return 'EXEMPT';
+  return 'ACTIVE';
 }
 /** Même commerce, autre offre : rechargement avec ?offre=… (la graine est gardée ; en Pro s'ajoutent deux amis parrainés pas encore venus). */
 export function setDemoPlan(plan: Plan, seed: number) {
@@ -72,20 +95,20 @@ function mulberry32(a: number) {
   };
 }
 
-// --- Référentiels : même matrice que le serveur (migrations 20261025111847 et 20261030120000, plan_entitlements) ---
+// --- Référentiels : même matrice que le serveur (plan_entitlements, section 1.4 du cahier des charges de la grille) ---
+// PREMIUM : droits de Pro, sauf la carte sans mention LOYNA (Barber Kong, sa carte validée ne change pas).
+const STARTER_FEATURES = ['wallet.apple', 'wallet.google', 'wallet.notifications', 'wallet.proximity', 'enrollment.qr', 'loyalty.visits', 'loyalty.points', 'loyalty.spend', 'rewards', 'scanner', 'dashboard', 'campaigns.wallet', 'segmentation', 'campaigns.scheduled', 'automation.birthday', 'automation.inactive', 'automation.near_reward', 'automation.review', 'analytics.advanced', 'reports.monthly', 'cards.max', 'campaigns.weekly_quota', 'locations.max'];
+const PRO_FEATURES = ['loyalty.tiers', 'referral', 'campaigns.prepared', 'support.followup', 'support.priority'];
 const PLAN_FEATURES: Record<Plan, string[]> = {
-  STARTER: ['wallet.apple', 'wallet.google', 'wallet.notifications', 'wallet.proximity', 'enrollment.qr', 'loyalty.visits', 'loyalty.points', 'loyalty.spend', 'rewards', 'scanner', 'dashboard', 'campaigns.wallet', 'cards.max', 'campaigns.weekly_quota', 'cards.pack', 'locations.max'],
-  PREMIUM: [],
-  PRO: [],
+  STARTER: STARTER_FEATURES,
+  PREMIUM: [...STARTER_FEATURES, ...PRO_FEATURES],
+  PRO: [...STARTER_FEATURES, ...PRO_FEATURES, 'card.no_loyna_mention'],
 };
-PLAN_FEATURES.PREMIUM = [...PLAN_FEATURES.STARTER, 'segmentation', 'automation.birthday', 'automation.inactive', 'automation.near_reward', 'automation.review', 'campaigns.scheduled', 'analytics.advanced', 'reports.monthly', 'loyalty.tiers'];
-PLAN_FEATURES.PRO = [...PLAN_FEATURES.PREMIUM.filter((f) => f !== 'cards.pack'), 'referral', 'campaigns.prepared', 'support.followup', 'support.priority', 'integrations', 'validation.automatic', 'automation.advanced', 'api.webhooks'];
-// Limites (null = illimité) : cartes, campagnes par semaine (2026-10-30), cartes par pack « +500 cartes », boutiques
+// Limites (null = illimité) : cartes, campagnes par semaine, boutiques
 const LIMITS: Record<string, Record<Plan, number | null>> = {
-  'cards.max': {STARTER: 500, PREMIUM: 2000, PRO: null},
-  'campaigns.weekly_quota': {STARTER: 2, PREMIUM: 5, PRO: null},
-  'cards.pack': {STARTER: 500, PREMIUM: 500, PRO: null},
-  'locations.max': {STARTER: 1, PREMIUM: 1, PRO: 3},
+  'cards.max': {STARTER: null, PREMIUM: null, PRO: null},
+  'campaigns.weekly_quota': {STARTER: 5, PREMIUM: null, PRO: null},
+  'locations.max': {STARTER: 1, PREMIUM: 3, PRO: 3},
 };
 
 const FEATURES_CATALOG: [string, string][] = [
@@ -93,11 +116,11 @@ const FEATURES_CATALOG: [string, string][] = [
   ['enrollment.qr', 'Inscription par QR code'], ['loyalty.visits', 'Programme au passage'], ['loyalty.points', 'Programme à points'], ['loyalty.spend', 'Programme au montant dépensé'], ['rewards', 'Récompenses'],
   ['scanner', 'Scanner LOYNA Business'], ['dashboard', 'Tableau de bord'], ['campaigns.wallet', 'Campagnes par notification Wallet'], ['cards.max', 'Cartes clients incluses (clients inscrits, hors supprimés)'],
   ['campaigns.weekly_quota', 'Campagnes de notifications par semaine, quel que soit le nombre de destinataires (le compteur repart chaque lundi)'],
-  ['cards.pack', 'Option « +500 cartes » : cartes ajoutées par pack souscrit'], ['locations.max', 'Boutiques (adresses de la notification de proximité)'], ['segmentation', 'Segmentation des campagnes'],
+  ['locations.max', 'Boutiques (adresses de la notification de proximité)'], ['segmentation', 'Segmentation des campagnes'],
   ['automation.birthday', 'Automatisation anniversaires'], ['automation.inactive', 'Relance des clients inactifs'], ['automation.near_reward', 'Rappel « Plus qu’un passage ! »'], ['automation.review', 'Demande d’avis Google après la Ne visite'],
   ['campaigns.scheduled', 'Campagnes programmées'], ['analytics.advanced', 'Statistiques avancées'], ['reports.monthly', 'Rapport mensuel de statistiques avec conseils'],
   ['loyalty.tiers', 'Niveaux VIP (bronze, argent, or)'], ['referral', 'Parrainage entre clients'], ['campaigns.prepared', 'Campagnes clés en main préparées par LOYNA'], ['support.followup', 'Suivi personnalisé mensuel'],
-  ['integrations', 'Intégrations (caisse, réservation, paiement)'], ['validation.automatic', 'Validation automatique des passages'], ['automation.advanced', 'Automatisations avancées'], ['api.webhooks', 'API et webhooks'], ['support.priority', 'Support prioritaire'],
+  ['support.priority', 'Support prioritaire'], ['card.no_loyna_mention', 'Carte sans la mention LOYNA'],
 ];
 const PERMS: [string, string][] = [
   ['scan.validate', 'Scanner une carte et valider un passage'], ['scan.override_cooldown', 'Forcer un passage malgré le délai anti-double scan'],
@@ -107,8 +130,7 @@ const PERMS: [string, string][] = [
   ['customers.read', 'Voir la fiche client complète (coordonnées)'], ['customers.manage', 'Modifier, exporter ou supprimer un client'],
   ['program.manage', 'Modifier le programme de fidélité'], ['rewards.manage', 'Gérer les récompenses'], ['campaigns.manage', 'Préparer des campagnes'],
   ['campaigns.send', 'Envoyer ou programmer des campagnes'], ['team.manage', 'Gérer l’équipe'], ['settings.manage', 'Modifier la configuration et le branding'],
-  ['analytics.read', 'Consulter les statistiques'], ['audit.read', 'Consulter le journal d’audit'], ['integrations.manage', 'Gérer les intégrations'],
-  ['wallet.reissue', 'Renvoyer le lien d’ajout de la carte Wallet'],
+  ['analytics.read', 'Consulter les statistiques'], ['audit.read', 'Consulter le journal d’audit'], ['wallet.reissue', 'Renvoyer le lien d’ajout de la carte Wallet'],
 ];
 const STAFF_PERMS = ['scan.validate', 'transactions.reverse_own', 'rewards.redeem', 'customers.read_basic', 'wallet.reissue'];
 
@@ -243,7 +265,7 @@ interface Identity {
   secondary_color: string;
 }
 
-export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Identity): Backend {
+export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Identity, mode: DemoMode = demoMode()): Backend {
   const d = demoMerchant(seed, plan);
   if (as) {
     Object.assign(d.merchant, as);
@@ -257,13 +279,48 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
   const now = Date.now();
   let uid = 0;
   const id = () => `d${seed}-${++uid}`;
-  const features = PLAN_FEATURES[d.plan];
-  const has = (f: string) => features.includes(f);
+  const features = () => PLAN_FEATURES[d.plan]; // l'offre change avec « Changer d'offre » (subscription-change)
+  const has = (f: string) => features().includes(f);
   const limit = (f: string) => LIMITS[f]?.[d.plan] ?? null;
-  // Essais locaux des jauges (développement seulement) : ?usage=85 affiche 85 % des quotas consommés
+  const params = new URLSearchParams(as ? '' : location.search);
+  // Engagement : Barber Kong (?offre=premium) a le sien jusqu'au 27/10/2027 ; sinon ?engage=1, ou ?engage=fini s'il est terminé
+  let commitmentEnd: string | null = d.plan === 'PREMIUM' ? '2027-10-27T12:00:00.000Z' : params.get('engage') === '1' ? iso(now + 214 * DAY) : params.get('engage') === 'fini' ? iso(now - 20 * DAY) : null;
+  const engaged = () => !!commitmentEnd && new Date(commitmentEnd).getTime() > Date.now();
+  const paused = () => mode === 'STOP_TRIAL' || mode === 'STOP_PAY' || mode === 'STOP_END' || mode === 'MANUAL';
+  const hasSubscription = () => mode !== 'TRIAL' && mode !== 'STOP_TRIAL' && mode !== 'EXEMPT';
+  const stoppedAt = now - 4 * DAY;
+  const PAUSED_DISPLAY = {tone: 'error', title: 'Programme en pause', subtitle: 'Ce passage n’est pas crédité : voir Abonnement.', lines: [], vibrate: [200], actions: []};
+  const FAKE_INVOICE = 'https://loyna.fr/espace-client/demo/#facture-fictive';
+  /** Mêmes champs que la RPC my_service_state. */
+  function serviceState() {
+    const base = {
+      plan: d.plan, trial_ends_at: null as string | null, trial_days_left: null as number | null, stop_reason: null as string | null, stopped_at: null as string | null, stop_at: null as string | null,
+      pay_url: null as string | null, data_delete_after: null as string | null, engaged: engaged(), commitment_end: engaged() ? commitmentEnd : null, can_change: false,
+    };
+    const stop = (stop_reason: string, pay_url: string | null = null) => ({...base, state: 'STOPPED', stop_reason, stopped_at: iso(stoppedAt), data_delete_after: iso(stoppedAt + 90 * DAY), pay_url});
+    switch (mode) {
+      case 'TRIAL':
+        return {...base, state: 'TRIAL', trial_ends_at: iso(now + 23 * DAY), trial_days_left: 23};
+      case 'GRACE':
+        return {...base, state: 'GRACE', stop_at: iso(now + 9 * DAY), pay_url: FAKE_INVOICE};
+      case 'STOP_TRIAL':
+        return stop('TRIAL_ENDED');
+      case 'STOP_PAY':
+        return stop('PAYMENT_FAILED', FAKE_INVOICE);
+      case 'STOP_END':
+        return stop('SUBSCRIPTION_ENDED');
+      case 'MANUAL':
+        return {...base, state: 'SUSPENDED_MANUAL', stop_reason: 'OPERATOR', stopped_at: iso(stoppedAt)};
+      case 'EXEMPT':
+        return {...base, state: 'EXEMPT'};
+      default:
+        return {...base, state: 'ACTIVE', can_change: d.plan !== 'PREMIUM' && !(engaged() && d.plan === 'PRO')};
+    }
+  }
+  // Essais locaux des jauges (développement seulement) : ?usage=85 affiche 85 % des campagnes de la semaine consommées
   const usagePct = import.meta.env.DEV ? Number(new URLSearchParams(location.search).get('usage')) || 0 : 0;
   // Essais locaux de l'écran « Votre commande » d'un compte sans commerce (développement seulement) :
-  // ?demo&commande (une commande Premium avec QR codes), ?demo&commande=0 (aucune commande)
+  // ?demo&commande (une commande Pro avec QR codes), ?demo&commande=0 (aucune commande)
   const orderDemo = import.meta.env.DEV ? new URLSearchParams(location.search).get('commande') : null;
   // Essais locaux de l'écran Opérateur (développement seulement, module mock-operateur.ts) : ?demo&operateur (opérateur
   // membre du commerce fictif), ?demo&operateur=seul (opérateur sans commerce). Jamais dans la démonstration publique.
@@ -421,6 +478,8 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
       );
     }
   }
+  // Arrêt : les campagnes programmées repassent en brouillon, sans date ; le commerçant les relance après la reprise
+  if (paused()) for (const c of campaigns) if (c.status === 'SCHEDULED') Object.assign(c, {status: 'DRAFT', scheduled_at: null});
 
   // Boutiques (notification de proximité) : une adresse, deux en Pro
   const locations: any[] = [
@@ -456,7 +515,7 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
     campaigns,
     merchant_staff: staff,
     permissions_catalog: PERMS.map(([permission, description]) => ({permission, description})),
-    role_permissions: [...PERMS.map(([p]) => ({role: 'OWNER', permission: p})), ...PERMS.filter(([p]) => p !== 'integrations.manage').map(([p]) => ({role: 'ADMIN', permission: p})), ...STAFF_PERMS.map((p) => ({role: 'STAFF', permission: p}))],
+    role_permissions: [...PERMS.map(([p]) => ({role: 'OWNER', permission: p})), ...PERMS.map(([p]) => ({role: 'ADMIN', permission: p})), ...STAFF_PERMS.map((p) => ({role: 'STAFF', permission: p}))],
     features_catalog: FEATURES_CATALOG.map(([feature, description]) => ({feature, description})),
     plan_entitlements: PLANS.flatMap((p) => PLAN_FEATURES[p].map((feature) => ({plan: p, feature, enabled: true, limit_value: LIMITS[feature]?.[p] ?? null}))),
   };
@@ -465,9 +524,9 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
   function membership(): any {
     const m = db.merchants[0];
     return {
-      staff_id: 'st-owner', merchant_id: m.id, merchant_name: m.name, merchant_slug: m.slug, merchant_status: 'ACTIVE', logo_url: m.logo_url, primary_color: m.primary_color,
+      staff_id: 'st-owner', merchant_id: m.id, merchant_name: m.name, merchant_slug: m.slug, merchant_status: paused() ? 'SUSPENDED' : 'ACTIVE', logo_url: m.logo_url, primary_color: m.primary_color,
       secondary_color: m.secondary_color, subscription_plan: d.plan, role: 'OWNER', display_name: d.owner, permissions: PERMS.map(([p]) => p),
-      features: Object.fromEntries(features.map((f) => [f, {enabled: true, limit: limit(f)}])),
+      features: Object.fromEntries(features().map((f) => [f, {enabled: true, limit: limit(f)}])),
     };
   }
 
@@ -484,7 +543,7 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
     };
   }
 
-  // Niveau VIP (Premium et Pro) : passages cumulés comparés aux seuils réglés
+  // Niveau VIP (Pro) : passages cumulés comparés aux seuils réglés
   function tier(c: Cust) {
     const s = settings();
     if (!has('loyalty.tiers') || !s.tiers_enabled) return null;
@@ -557,16 +616,7 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
     return {status: 'QUOTA_EXCEEDED', reason: 'CAMPAIGNS_PER_WEEK', message, ...q};
   }
 
-  // Option « +500 cartes » (packs.tsx) : packs facturés, et packs encore utilisables après un retrait (jusqu'à la fin
-  // de la période payée). Un commerce sur trois en a déjà un en Starter et Premium.
   const periodEnd = now + ((seed % 27) + 2) * DAY;
-  const packs = {billed: has('cards.pack') && seed % 3 === 0 ? 1 : 0, kept: 0, keptUntil: null as string | null};
-  const packsUsable = () => Math.max(packs.billed, packs.keptUntil && new Date(packs.keptUntil).getTime() > Date.now() ? packs.kept : 0);
-  const packSize = () => limit('cards.pack') ?? 0;
-  const cardsLimit = () => {
-    const base = limit('cards.max');
-    return base === null ? null : base + packSize() * packsUsable();
-  };
 
   // Destinataires d'une campagne : groupe choisi, puis accord pour les offres Wallet
   function audience(c: any): {total: number; eligible: number} {
@@ -735,10 +785,10 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
                 ? []
                 : [
                     {
-                      plan: 'PREMIUM', billing_period: 'monthly', subscription_status: 'active', ordered_at: iso(now - 3600000), current_period_end: iso(now + 30 * DAY),
+                      plan: 'PRO', billing_period: 'monthly', subscription_status: 'active', ordered_at: iso(now - 3600000), current_period_end: iso(now + 30 * DAY),
                       commitment_end: iso(now + 365 * DAY), cancel_at: null, business_name: d.merchant.name, merchant_linked: false,
                       items: [
-                        {lookup_key: 'loyna_premium_monthly', label: 'LOYNA Premium', quantity: 1, amount: 3999},
+                        {lookup_key: 'loyna_pro_commit12', label: 'LOYNA Pro', quantity: 1, amount: 4165},
                         {lookup_key: 'loyna_qr_verre', label: 'QR code personnalisé sous verre', quantity: 3, amount: 2997},
                         {lookup_key: 'loyna_qr_verre_5', label: 'Pack de 5 QR codes personnalisés sous verre', quantity: 1, amount: 4249},
                       ],
@@ -797,14 +847,17 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
             totals: {customers: alive().length, rewards_available: avail, wallet_passes: alive().length, apple_wallet_installed: alive().filter((c) => c.apple).length, google_wallet_objects: alive().filter((c) => !c.apple).length},
           };
         }
-        case 'my_plan_usage': {
-          const cl = cardsLimit();
-          return {
-            merchant_id: d.merchant.id, plan: d.plan,
-            cards: {used: usagePct && cl ? Math.round((cl * usagePct) / 100) : alive().length, limit: cl, base_limit: limit('cards.max'), packs: packsUsable(), pack_size: has('cards.pack') ? packSize() : null},
-            campaigns: weekQuota(), locations: {used: db.merchant_locations.length, limit: limit('locations.max')},
-          };
-        }
+        case 'my_plan_usage':
+          return {merchant_id: d.merchant.id, plan: d.plan, cards: {used: alive().length, limit: null}, campaigns: weekQuota(), locations: {used: db.merchant_locations.length, limit: limit('locations.max')}};
+        case 'my_service_state':
+          return serviceState();
+        case 'my_pending_referral':
+          return {status: 'OK', code: null};
+        case 'export_merchant_customers':
+          // Mêmes colonnes que la RPC du dépôt LOYNA
+          return alive().map((c) => ({
+            first_name: c.first_name, last_name: c.last_name, phone: c.phone ? c.phone.replace(/\s/g, '').replace(/^0/, '+33') : null, email: c.email, birthday: c.birthday, balance: c.balance, visits_count: c.visits, created_at: c.created_at, marketing_wallet: c.consents.marketing_wallet,
+          }));
         case 'monthly_report':
           if (!has('reports.monthly')) return {status: 'FEATURE_NOT_AVAILABLE', feature: 'reports.monthly'};
           return report(a.p_month);
@@ -834,6 +887,7 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
           return {status: 'OK', program: {...p}};
         }
         case 'adjust_points': {
+          if (paused()) return {status: 'MERCHANT_PAUSED'};
           const c = customers.find((x) => `acc-${x.id}` === a.p_loyalty_account_id)!;
           if (c.balance + a.p_points_delta < 0) return {status: 'INSUFFICIENT_BALANCE'};
           c.balance += a.p_points_delta;
@@ -845,11 +899,11 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
           // sa première mensualité, environ un mois après sa souscription (premier mois offert)
           const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
           const code = 'LOYNA-' + Array.from({length: 6}, (_, k) => alphabet[(seed * (k + 7) + k * 13) % 32]).join('');
-          const yearly = seed % 4 === 0;
+          const live = hasSubscription() && !paused();
           return {
-            status: 'OK', code, link: `https://loyna.fr/panier/?parrain=${code}`, eligibility: yearly ? 'YEARLY' : 'ACTIVE',
-            months_applied: yearly ? 0 : 1, months_waiting: yearly ? 0 : 1,
-            referrals: yearly ? [] : [
+            status: 'OK', code, link: `https://loyna.fr/panier/?parrain=${code}`, eligibility: live ? 'ACTIVE' : 'NO_SUBSCRIPTION',
+            months_applied: live ? 1 : 0, months_waiting: live ? 1 : 0,
+            referrals: !live ? [] : [
               {name: 'Fleurs de la Place (démo)', status: 'gagne', created_at: iso(now - 38 * DAY), won_at: iso(now - 8 * DAY), applied_at: null},
               {name: 'Le Fournil du Coin (démo)', status: 'applique', created_at: iso(now - 80 * DAY), won_at: iso(now - 49 * DAY), applied_at: iso(now - 49 * DAY)},
               {name: 'Atelier Barbe & Co (démo)', status: 'en_attente_paiement', created_at: iso(now - DAY), won_at: null, applied_at: null},
@@ -858,7 +912,15 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
         }
         case 'op_orders':
         case 'op_merchants':
-          if (import.meta.env.DEV && operatorDemo !== null) return (await import('./mock-operateur')).operatorRpc(fn, operatorSelf());
+        case 'op_set_merchant_suspension':
+        case 'op_set_billing_exempt':
+        case 'op_extend_trial':
+        case 'op_extend_retention':
+        case 'op_prepare_campaign':
+        case 'op_unlinked_subscriptions':
+        case 'op_attach_subscription':
+        case 'op_release_trial_siret':
+          if (import.meta.env.DEV && operatorDemo !== null) return (await import('./mock-operateur')).operatorRpc(fn, operatorSelf(), a);
           break;
         case 'op_merchant_context':
           // « Ouvrir son espace » (écran Opérateur) : commerce de la liste fictive, avec les fonctions de son offre
@@ -871,26 +933,43 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
               status: 'OK',
               merchant: {
                 merchant_id: x.id, merchant_name: x.name, merchant_slug: x.slug, merchant_status: x.status, logo_url: x.logo_url, primary_color: x.primary_color,
-                secondary_color: x.secondary_color, subscription_plan: p, features: Object.fromEntries(PLAN_FEATURES[p].map((f) => [f, {enabled: true, limit: LIMITS[f]?.[p] ?? null}])),
+                secondary_color: x.secondary_color, subscription_plan: p, features: Object.fromEntries(PLAN_FEATURES[p].map((f) => [f, {enabled: true, limit: LIMITS[f]?.[p] ?? null}])), demo_mode: x.demo_mode,
               },
             };
           }
           break;
-        case 'my_subscription': {
-          const yearly = seed % 4 === 0;
+        case 'my_subscription':
+          if (!hasSubscription()) return {status: 'NONE'};
           return {
-            status: 'OK', plan: d.plan, billing_period: yearly ? 'yearly' : 'monthly', subscription_status: 'active', cancel_at_period_end: false, cancel_at: null, canceled_at: null,
-            current_period_end: iso(periodEnd), commitment_end: iso(now + ((seed % 300) + 30) * DAY), customer_email: staff[0].email,
-            card_packs: packs.billed, card_packs_usable: packsUsable(), card_packs_kept_until: packsUsable() > packs.billed ? packs.keptUntil : null,
+            status: 'OK', plan: d.plan, billing_period: 'monthly', subscription_status: mode === 'GRACE' ? 'past_due' : mode === 'STOP_PAY' ? 'unpaid' : mode === 'STOP_END' ? 'canceled' : 'active', cancel_at_period_end: false, cancel_at: null,
+            canceled_at: mode === 'STOP_END' ? iso(stoppedAt) : null, current_period_end: iso(mode === 'STOP_END' ? stoppedAt : periodEnd), commitment_end: commitmentEnd, customer_email: staff[0].email,
           };
-        }
       }
       throw new ApiError('UNKNOWN', 'Fonction non disponible en démonstration.');
+    },
+    async rpcRows(fn: string, a: any = {}): Promise<any[]> {
+      return backend.rpc(fn, a);
     },
     async edge(fn: string, b: any): Promise<any> {
       await wait(320);
       switch (fn) {
+        case 'trial':
+          return {status: 'NONE'}; // compte sans commerce de la démonstration (?demo&commande)
+        case 'subscription-change': {
+          // Tableau de la section 2.4 du cahier des charges (fonction subscription-change du dépôt LOYNA)
+          if (d.plan === 'PREMIUM') throw new ApiError('LEGACY_PLAN', 'Votre offre historique ne se change pas ici : écrivez à contact@loyna.fr.', 409);
+          if (!hasSubscription() || mode !== 'ACTIVE') throw new ApiError('NO_SUBSCRIPTION', 'Aucun abonnement à changer pour ce commerce.', 409);
+          const want = VENTE.find((p) => p.id === String(b.plan).toLowerCase());
+          if (!want) throw new ApiError('INVALID_REQUEST', 'Offre inconnue.', 400);
+          if (engaged() && (!b.engagement || (d.plan === 'PRO' && want.id === 'starter'))) {
+            throw new ApiError('COMMITMENT_ACTIVE', `Votre engagement court jusqu’au ${new Date(commitmentEnd!).toLocaleDateString('fr-FR')} : ce changement sera possible à cette date.`, 409);
+          }
+          if (!engaged()) commitmentEnd = b.engagement ? iso(Date.now() + 365 * DAY) : null;
+          d.plan = want.id.toUpperCase() as Plan;
+          return {status: 'OK', price_cents: Math.round((b.engagement ? want.engaged : want.monthly) * 100), commitment_end: commitmentEnd};
+        }
         case 'validate-visit': {
+          if (paused()) return {status: 'MERCHANT_INACTIVE', display: PAUSED_DISPLAY};
           if (b.action === 'undo') {
             if (!lastTx) return {status: 'NOT_FOUND', display: {tone: 'error', title: 'Annulation impossible', lines: [], actions: []}};
             const {cust, txId, pts} = lastTx;
@@ -942,6 +1021,7 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
           };
         }
         case 'redeem-reward': {
+          if (paused()) return {status: 'MERCHANT_PAUSED', display: PAUSED_DISPLAY};
           for (const c of customers) {
             const x = c.rewards.find((y) => y.id === b.customer_reward_id);
             if (x) {
@@ -953,25 +1033,6 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
             }
           }
           return {status: 'NOT_AVAILABLE', display: {tone: 'error', title: 'Récompense indisponible', lines: [], actions: []}};
-        }
-        case 'card-packs': {
-          // Mêmes règles que srv_card_pack_state et la fonction card-packs (dépôt LOYNA)
-          if (!has('cards.pack')) throw new ApiError('FEATURE_NOT_AVAILABLE', 'L’option +500 cartes est proposée avec Starter et Premium : votre offre a déjà des cartes illimitées.', 403);
-          const base = limit('cards.max') ?? 0;
-          if (b.action === 'add') {
-            if (packs.billed >= 20) throw new ApiError('MAX_PACKS', 'Vous avez déjà 20 packs : écrivez à contact@loyna.fr, l’offre supérieure est sans doute plus avantageuse.', 409);
-            const restore = packsUsable() > packs.billed;
-            packs.billed += 1;
-            if (packs.billed >= packsUsable()) Object.assign(packs, {kept: 0, keptUntil: null});
-            return {status: 'OK', change: restore ? 'restore' : 'add', card_packs: packs.billed, card_packs_usable: packsUsable(), card_packs_kept_until: null, invoice: restore ? 'none' : 'next'};
-          }
-          if (packs.billed <= 0) throw new ApiError('NO_PACK', 'Vous n’avez aucun pack +500 cartes à retirer.', 409);
-          const after = base + packSize() * (packs.billed - 1);
-          if (alive().length > after)
-            throw new ApiError('PACK_IN_USE', `Vous avez ${alive().length} clients inscrits : sans ce pack, votre offre en compte ${after}. Vous pourrez le retirer quand vos cartes tiendront dans cette limite.`, 409);
-          if (!(packs.keptUntil && new Date(packs.keptUntil).getTime() > Date.now())) Object.assign(packs, {kept: packsUsable(), keptUntil: iso(periodEnd)});
-          packs.billed -= 1;
-          return {status: 'OK', change: 'remove', card_packs: packs.billed, card_packs_usable: packsUsable(), card_packs_kept_until: packs.keptUntil, invoice: 'none'};
         }
         case 'campaign-send': {
           const c = db.campaigns.find((x) => x.id === b.campaign_id);
@@ -986,6 +1047,7 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
             };
           }
           if (b.action === 'launch') {
+            if (paused()) return {status: 'MERCHANT_PAUSED', campaign_id: c.id};
             if (c.status !== 'DRAFT') return {status: 'INVALID_STATUS', campaign_status: c.status};
             const when = b.scheduled_at ?? c.scheduled_at;
             const scheduled = !!when && new Date(when).getTime() > Date.now() + 60000;
@@ -1090,11 +1152,11 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
  * Espace d'un commerce de l'écran Opérateur, ouvert en consultation dans la démonstration locale (?demo&operateur) :
  * clients, passages et campagnes fictifs tirés d'une graine propre à ce commerce, sous son nom et ses couleurs.
  */
-export function consultationBackend(m: {merchant_id: string; merchant_name: string; merchant_slug: string; logo_url: string | null; primary_color: string; secondary_color: string; subscription_plan: string}): Backend {
+export function consultationBackend(m: {merchant_id: string; merchant_name: string; merchant_slug: string; logo_url: string | null; primary_color: string; secondary_color: string; subscription_plan: string; demo_mode?: DemoMode}): Backend {
   let h = 7;
   for (const ch of m.merchant_id) h = (h * 31 + ch.charCodeAt(0)) % 899999;
   const plan: Plan = PLANS.find((p) => p === m.subscription_plan) ?? 'STARTER';
-  return createMockBackend(100000 + h, plan, {id: m.merchant_id, name: m.merchant_name, slug: m.merchant_slug, logo_url: m.logo_url, primary_color: m.primary_color, secondary_color: m.secondary_color});
+  return createMockBackend(100000 + h, plan, {id: m.merchant_id, name: m.merchant_name, slug: m.merchant_slug, logo_url: m.logo_url, primary_color: m.primary_color, secondary_color: m.secondary_color}, m.demo_mode ?? 'ACTIVE');
 }
 
 /** Mêmes contrôles que le serveur (private.validate_merchant_settings et contraintes de la table). */
@@ -1106,12 +1168,12 @@ function checkSettings(s: any) {
   if (t.length !== 3 || !(t[0] >= 1 && t[0] < t[1] && t[1] < t[2] && t[2] <= 100000)) throw new ApiError('23514', 'Une valeur saisie n’est pas acceptée : vérifiez le formulaire.');
 }
 
-/** Page d'inscription de démonstration (loyna.fr/join/demo-<graine>), cohérente avec le commerce fictif. */
-export function demoJoinPage(seed: number, opts: {plan?: Plan; full?: boolean} = {}) {
+/** Page d'inscription de démonstration (loyna.fr/join/demo-<graine>), cohérente avec le commerce fictif ; `paused` : programme en pause. */
+export function demoJoinPage(seed: number, opts: {plan?: Plan; full?: boolean; paused?: boolean} = {}) {
   const d = demoMerchant(seed, opts.plan ?? 'PRO');
   const referral = PLAN_FEATURES[d.plan].includes('referral');
   return {
-    status: 'OK' as const,
+    status: opts.paused ? ('PAUSED' as const) : ('OK' as const),
     demo: true,
     merchant: {name: d.merchant.name, slug: d.merchant.slug, business_type: d.merchant.business_type, logo_url: null, primary_color: d.merchant.primary_color, secondary_color: d.merchant.secondary_color, city: d.merchant.city, website: null},
     program: {name: d.program.name, type: 'VISITS', points_per_event: 1, spend_points_per_unit: null, reward_threshold: d.program.reward_threshold, unit_singular: 'passage', unit_plural: 'passages'},

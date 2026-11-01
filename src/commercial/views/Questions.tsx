@@ -1,5 +1,5 @@
 // Questions clients : réponses courtes aux questions et objections probables (contenu.ts), FAQ du site
-// et FAQ du coffre (réponses que le Trieur a le droit de donner). Rien d'inventé : chaque réponse cite sa source.
+// et FAQ du coffre (réponses que le Trieur reprend dans ses brouillons). Rien d'inventé : chaque réponse cite sa source.
 import {useMemo, useState} from 'preact/hooks';
 import {objections} from '../contenu';
 import {cle, fr, nombre} from '../format';
@@ -28,7 +28,7 @@ export function Questions({faq}: {faq: FaqSite[]}) {
       <label class="search">
         <Icon name="search" size={18} />
         <span class="sr-only">Chercher une question</span>
-        <input type="search" placeholder="Prix, engagement, Android, papier, données…" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
+        <input type="search" placeholder="Prix, essai, engagement, arrêt, Android, papier…" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
       </label>
 
       {!total && (
@@ -75,7 +75,7 @@ export function Questions({faq}: {faq: FaqSite[]}) {
       )}
 
       {coffre.length > 0 && (
-        <Panel title="FAQ du coffre" sub="05 Règles/FAQ Loyna.md : les seules réponses que l’agent Trieur donne seul par mail. « — » = à vous de répondre.">
+        <Panel title="FAQ du coffre" sub="05 Règles/FAQ Loyna.md : les réponses que l’agent Trieur reprend dans ses brouillons (il n’envoie rien). « — » = à vous de répondre.">
           <div class="cp-qr">
             {coffre.map((f) => (
               <details class="cp-q" open={!!mots.length}>

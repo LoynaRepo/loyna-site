@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Jonction from '../../components/Jonction.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Icon from '../../components/Icon.astro';
 import CtaBand from '../../components/CtaBand.astro';
@@ -36,6 +37,7 @@ const blogLd = {
       <p class="lead">Des conseils concrets pour faire revenir vos clients plus souvent, que vous soyez coiffeur, boulanger, restaurateur ou commerçant.</p>
     </div>
   </section>
+  <Jonction de="sable" vers="creme" forme={4} retourne />
   <section class="section pt0">
     <div class="container posts">
       {
@@ -73,7 +75,8 @@ const blogLd = {
     padding: clamp(24px, 3vw, 36px);
     border-radius: var(--radius-lg);
     background: var(--card);
-    border: 1px solid var(--line);
+    border: 1px solid var(--filet);
+    box-shadow: var(--shadow);
     text-decoration: none;
     color: var(--text);
     transition:
@@ -94,14 +97,16 @@ const blogLd = {
     color: #faf7f0;
     font-size: clamp(1.7rem, 3vw, 2.4rem);
   }
-  .post--first p {
-    color: #b9b3a7;
-  }
   .post h2 {
-    font-size: 1.4rem;
+    font-size: clamp(1.25rem, 1.8vw, 1.45rem);
+    letter-spacing: -0.03em;
   }
   .post p {
     color: var(--muted);
+  }
+  .post--first p,
+  .post--first .meta {
+    color: #c9c2b4;
   }
   .meta {
     font-size: 0.88rem;

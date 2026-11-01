@@ -1,8 +1,9 @@
-// Fiche client : solde, récompenses, niveau VIP (Premium et Pro) et parrainage (Pro), historique, carte Wallet,
-// consentements et RGPD. Les boutons suivent les droits renvoyés par le serveur (permissions de la fiche).
+// Fiche client : solde, récompenses, niveau VIP et parrainage (Pro), historique, carte Wallet, consentements et RGPD. Les
+// boutons suivent les droits renvoyés par le serveur (permissions de la fiche). Carte en pause : solde et récompense ne bougent
+// plus (MERCHANT_PAUSED), la fiche et le RGPD restent ouverts.
 import {useState} from 'preact/hooks';
 import {Icon} from '../icons';
-import {api, feature, go, merchant, readOnly, toast, toastError} from '../state';
+import {api, feature, go, merchant, readOnly, servicePaused, toast, toastError} from '../state';
 import {Badge, Btn, ErrorBox, Field, LinkBox, Modal, PageHead, Panel, Spinner, Toggle, useBusy, useLoad} from '../ui';
 import {ago, copy, date, dateTime, download, euros, initials, joinUrl, num, plural, shortDateTime, uuid} from '../util';
 
@@ -33,6 +34,7 @@ const NO_ACTIONS: Detail['permissions'] = {can_adjust: false, can_reverse_any: f
 
 const TX: Record<string, string> = {EARN: 'Passage', REDEEM: 'Récompense utilisée', REVERSAL: 'Annulation', ADJUSTMENT: 'Ajustement manuel'};
 const txLabel = (t: {type: string; source: string}) => (t.source === 'REFERRAL' ? 'Bonus de parrainage' : (TX[t.type] ?? t.type));
+const PAUSED_TEXT = 'Votre carte est en pause : cette action reprendra avec votre abonnement. Voir Abonnement.';
 const REWARD_STATUS: Record<string, [string, 'gold' | 'green' | 'neutral' | 'red']> = {
   AVAILABLE: ['À utiliser', 'gold'],
   REDEEMED: ['Utilisée', 'green'],
@@ -56,7 +58,8 @@ export function ClientDetail({id}: {id: string}) {
     );
 
   const {customer: c, account: a} = d.data;
-  const p = readOnly() ? NO_ACTIONS : d.data.permissions;
+  // Carte en pause : ni solde ni récompense ne bougent (le serveur refuse aussi : MERCHANT_PAUSED), le reste de la fiche reste ouvert
+  const p = readOnly() ? NO_ACTIONS : servicePaused() ? {...d.data.permissions, can_adjust: false, can_redeem: false} : d.data.permissions;
   const unit = (n: number) => (Math.abs(n) > 1 ? a?.program.unit_plural : a?.program.unit_singular) ?? 'points';
   const pct = a?.progress.target ? Math.min(100, Math.round((a.progress.current / a.progress.target) * 100)) : null;
 
@@ -64,6 +67,7 @@ export function ClientDetail({id}: {id: string}) {
     run(async () => {
       try {
         const r = await api.edge('redeem-reward', {customer_reward_id: rid});
+        if (r.status === 'MERCHANT_PAUSED') return toast(PAUSED_TEXT, 'error');
         toast(r.display?.title?.replace(/^✓\s*/, '') ?? 'Récompense utilisée', r.status === 'REDEEMED' ? 'ok' : 'info');
         d.reload();
       } catch (e) {
@@ -393,6 +397,7 @@ function AdjustModal({open, onClose, accountId, unit, onDone}: {open: boolean; o
           onClose();
           onDone();
         } else if (r.status === 'INSUFFICIENT_BALANCE') setError('Le solde du client est insuffisant pour ce retrait.');
+        else if (r.status === 'MERCHANT_PAUSED') setError(PAUSED_TEXT);
         else if (r.status === 'FORBIDDEN') setError('Vous n’avez pas l’autorisation d’ajuster un solde.');
         else setError('Ajustement impossible.');
       } catch (err) {

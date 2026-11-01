@@ -1,7 +1,8 @@
 // Appels HTTP vers Supabase sans le client complet : utilisé tel quel par les pages publiques
 // (inscription d'un client, préférences) pour rester très léger sur téléphone.
-export const SUPABASE_URL = 'https://alfxnoaxcmnbrqhlmmqq.supabase.co';
-export const SUPABASE_KEY = 'sb_publishable_PpdFN5uFX83LlxbM7uNhmA_NA_EGPmB';
+// PUBLIC_LOYNA_SUPABASE_URL et _KEY : pile d'essai seulement (R/.env.local, jamais recopié dans S) ; sans elles, la production.
+export const SUPABASE_URL: string = import.meta.env.PUBLIC_LOYNA_SUPABASE_URL || 'https://alfxnoaxcmnbrqhlmmqq.supabase.co';
+export const SUPABASE_KEY: string = import.meta.env.PUBLIC_LOYNA_SUPABASE_KEY || 'sb_publishable_PpdFN5uFX83LlxbM7uNhmA_NA_EGPmB';
 export const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
 
 /** Erreur lisible par l'utilisateur (message en français), avec le code renvoyé par l'API. */

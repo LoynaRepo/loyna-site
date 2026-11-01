@@ -4,7 +4,7 @@ import * as chromeLauncher from 'chrome-launcher';
 const CH = 'C:/Users/vaiko/Documents/LOYNA-Motion/node_modules/.remotion/chrome-headless-shell/win64/chrome-headless-shell-win64/chrome-headless-shell.exe';
 const chrome = await chromeLauncher.launch({chromePath: CH, chromeFlags: ['--headless', '--disable-gpu']});
 for (const p of process.argv.slice(2)) {
-  const r = await lighthouse('http://127.0.0.1:4321' + p, {port: chrome.port, output: 'json', logLevel: 'error', onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo']});
+  const r = await lighthouse((process.env.QA_BASE ?? 'http://127.0.0.1:4321') + p, {port: chrome.port, output: 'json', logLevel: 'error', onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo']});
   const c = r.lhr.categories;
   const a = r.lhr.audits;
   const s = (k) => Math.round(c[k].score * 100);

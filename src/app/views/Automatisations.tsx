@@ -1,8 +1,7 @@
 // Automatisations : les messages et avantages qui partent tout seuls (table merchant_settings, droit
-// settings.manage). Toutes les offres : notification après chaque passage, délai entre deux messages
-// commerciaux. Premium : anniversaire, relance des inactifs, « Plus qu'un passage ! », avis Google, niveaux VIP
-// (dès Premium depuis le 2026-10-28, décision d'Ewan). Pro : parrainage entre clients. Sans la fonction (carte
-// features), la carte est verrouillée.
+// settings.manage). Toutes les offres (grille du 2026-10-31) : notification après chaque passage, proximité, délai entre
+// deux messages commerciaux, anniversaire, relance des inactifs, « Plus qu'un passage ! », avis Google. Pro : niveaux VIP et
+// parrainage entre clients. Sans la fonction (carte features), la carte est verrouillée.
 // Le double tampon aux heures creuses est retiré des offres depuis le 2026-10-27 (décision d'Ewan).
 // Chaque carte s'enregistre seule ; les aperçus reprennent les textes du serveur (scheduled-customer-engagement).
 import type {ComponentChildren} from 'preact';
@@ -89,13 +88,12 @@ export function Automatisations() {
     );
 
   const ctx: Ctx = {s, program: data.data.program, reward: data.data.reward, onSaved: setS};
-  const premium = feature('automation.birthday') || feature('automation.near_reward');
   const pro = feature('referral');
   return (
     <div class="page">
       <PageHead eyebrow={m.merchant_name} title="Automatisations" />
       <p class="lead-sm">
-        Les bons messages partent tout seuls, au bon moment, sur l’écran de vos clients. Vous choisissez le texte et l’avantage ; ces messages automatiques ne sont jamais décomptés de vos notifications.
+        Les bons messages partent tout seuls, au bon moment, sur l’écran de vos clients. Vous choisissez le texte et l’avantage ; ces messages automatiques ne comptent jamais dans vos campagnes de la semaine.
       </p>
 
       {/* consultation opérateur : réglages affichés, interrupteurs et champs désactivés */}
@@ -109,22 +107,20 @@ export function Automatisations() {
         <section class="auto-sec">
           <header class="auto-sec-h">
             <div>
-              <p class="eyebrow">Premium</p>
+              <p class="eyebrow">Incluses dans votre offre</p>
               <h2>Les automatisations qui font revenir vos clients</h2>
             </div>
-            {premium ? <Badge tone="green">Inclus dans votre offre</Badge> : <LockBadge feature="automation.birthday" />}
           </header>
           <div class="auto-grid">
             <Birthday ctx={ctx} />
             <Inactive ctx={ctx} />
             <NearReward ctx={ctx} />
             <Review ctx={ctx} />
-            <Tiers ctx={ctx} />
           </div>
           <p class="auto-more">
             <Icon name="sparkles" size={16} />
             <span>
-              Aussi avec Premium : <a href="#/campagnes">campagnes programmées et groupes de clients</a>, <a href="#/rapport">rapport mensuel avec 3 conseils</a> et statistiques avancées.
+              Aussi dans votre offre : <a href="#/campagnes">campagnes programmées et groupes de clients</a>, <a href="#/rapport">rapport du mois avec jusqu’à 3 conseils</a> et courbes jour par jour.
             </span>
           </p>
         </section>
@@ -132,18 +128,20 @@ export function Automatisations() {
         <section class="auto-sec">
           <header class="auto-sec-h">
             <div>
-              <p class="eyebrow">Pro</p>
-              <h2>LOYNA travaille avec vous</h2>
+              <p class="eyebrow">Avec Pro</p>
+              <h2>Vos clients invitent, LOYNA écrit</h2>
             </div>
             {pro ? <Badge tone="green">Inclus dans votre offre</Badge> : <LockBadge feature="referral" />}
           </header>
           <div class="auto-grid">
+            <Tiers ctx={ctx} />
             <Referral ctx={ctx} />
           </div>
           <p class="auto-more">
             <Icon name="sparkles" size={16} />
             <span>
-              Aussi avec Pro : <a href="#/campagnes">campagnes clés en main préparées par LOYNA</a>, un point mensuel de 30 minutes avec LOYNA, <a href="#/reglages">jusqu’à 3 boutiques</a> et le kit comptoir imprimé.
+              {pro ? 'Aussi dans votre offre' : 'Aussi avec Pro'} : <a href="#/campagnes">LOYNA écrit et programme vos messages, vous validez</a>, un point de 30 minutes par mois avec LOYNA, à votre demande, <a href="#/reglages/boutique">jusqu’à 3 adresses</a>
+              {pro ? '' : ', le kit comptoir'} et le support prioritaire.
             </span>
           </p>
           {!pro && (
@@ -348,7 +346,7 @@ function Pace({ctx}: {ctx: Ctx}) {
   );
 }
 
-// --- Premium ------------------------------------------------------------------------------------------------
+// --- Toutes les offres : ce qui fait revenir les clients -------------------------------------------------------
 function Birthday({ctx}: {ctx: Ctx}) {
   return (
     <Auto
@@ -541,7 +539,7 @@ function Review({ctx}: {ctx: Ctx}) {
   );
 }
 
-// --- Premium et Pro : niveaux VIP ----------------------------------------------------------------------------
+// --- Pro : niveaux VIP ---------------------------------------------------------------------------------------
 function Tiers({ctx}: {ctx: Ctx}) {
   const m = merchant.value!;
   return (
@@ -629,7 +627,7 @@ function Referral({ctx}: {ctx: Ctx}) {
       toggle="referral_enabled"
       icon="share-2"
       title="Parrainage entre vos clients"
-      text={(s) => `Chaque client a son lien de parrainage au dos de sa carte. À la première visite de l’ami parrainé, chacun reçoit ${s.referral_bonus} ${unit(s.referral_bonus)} de bonus, et le parrain est prévenu.`}
+      text={(s) => `Chaque client a son lien de parrainage au dos de sa carte et reçoit une invitation à parrainer après sa 2e visite. À la première visite de l’ami parrainé, chacun reçoit ${s.referral_bonus} ${unit(s.referral_bonus)} de bonus, et le parrain est prévenu.`}
       body={(s, set) => (
         <div class="row2">
           <Field label={`Bonus pour chacun (${p?.unit_label_plural ?? 'passages'})`} hint="De 1 à 1 000.">
@@ -646,6 +644,7 @@ function Referral({ctx}: {ctx: Ctx}) {
               Partagez ce lien : à sa première visite, vous gagnez chacun {s.referral_bonus} {unit(s.referral_bonus)}. {link}
             </span>
           </div>
+          <NotifPreview body={sample(`{prenom}, invitez un ami chez {commerce} : vous gagnez chacun ${s.referral_bonus} ${unit(s.referral_bonus)}. Votre lien est au dos de votre carte.`)} when="après la 2e visite" />
           <NotifPreview title="Merci pour votre parrainage" body={sample(`Merci {prenom} ! Grâce à votre parrainage, vous gagnez ${s.referral_bonus} ${unit(s.referral_bonus)} chez {commerce}.`)} when="1re visite de l’ami" />
           <Example />
         </>

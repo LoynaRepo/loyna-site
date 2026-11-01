@@ -116,7 +116,7 @@ if ($partenaire === 'candidature') {
         erreur('accord');
     }
     $fiche = "Recommandation d'un commerce par un partenaire LOYNA (apporteur d'affaires).\n"
-        . "À confirmer au partenaire sous 2 jours ouvrés : retenue ou non (commerce déjà client, ou échange avec LOYNA dans les 90 jours avant la recommandation).\n\n"
+        . "À confirmer au partenaire sous 2 jours ouvrés : retenue ou non (commerce déjà client, essai déjà démarré, ou échange avec LOYNA dans les 90 jours avant la recommandation).\n\n"
         . "Commerce recommandé : $commerce\n"
         . "Ville du commerce : $ville\n"
         . 'Commerçant : ' . ($commercant !== '' ? $commercant : 'nom non renseigné') . "\n"

@@ -1,10 +1,11 @@
 ---
 import Base from '../layouts/Base.astro';
+import Jonction from '../components/Jonction.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import Phone from '../components/Phone.astro';
 import WalletCard from '../components/WalletCard.astro';
 import Icon from '../components/Icon.astro';
-import {CARD_ACCENTS, CARD_ACTIVITES, CARD_BGS, SITE} from '../data/site';
+import {APPEL, CARD_ACCENTS, CARD_ACTIVITES, CARD_BGS, PHRASES, SITE, TRIAL, essaiUrl} from '../data/site';
 
 const crumbs = [
   {name: 'Accueil', url: '/'},
@@ -39,8 +40,8 @@ const PAGE_METIER: Record<string, string> = {
 const modeles = CARD_ACTIVITES.filter((a) => PAGE_METIER[a.nom]).map((a) => ({...a, page: PAGE_METIER[a.nom]}));
 // Questions fréquentes de la page (affichées et décrites en données structurées FAQPage)
 const cfgFaq = [
-  {q: 'Créer l’aperçu de ma carte de fidélité est-il gratuit ?', a: 'Oui. Le configurateur est gratuit et sans inscription : vous voyez votre carte à votre nom, à vos couleurs et avec votre récompense. Vous ne payez que si vous décidez de lancer votre carte.'},
-  {q: 'Combien de temps faut-il pour que ma carte soit prête ?', a: 'Après votre commande, LOYNA crée votre carte et votre QR code d’inscription sous 24 h, hors personnalisation exceptionnelle.'},
+  {q: 'Créer l’aperçu de ma carte de fidélité est-il gratuit ?', a: `Oui. Le configurateur est gratuit et sans inscription : vous voyez votre carte à votre nom, à vos couleurs et avec votre récompense. ${TRIAL.open ? PHRASES.essai : 'Vous ne payez que si vous décidez de lancer votre carte.'}`},
+  {q: 'Combien de temps faut-il pour que ma carte soit prête ?', a: `${TRIAL.open ? 'Avec l’essai, votre carte et votre QR code d’inscription sont créés dès que vous confirmez votre adresse e-mail. ' : ''}Après une commande, LOYNA crée votre carte et votre QR code d’inscription sous 24 h, hors personnalisation exceptionnelle.`},
   {q: 'Mes clients doivent-ils télécharger une application ?', a: 'Non. La carte s’ajoute à Apple Wallet sur iPhone et à Google Wallet sur Android, déjà présents sur leur téléphone.'},
   {q: 'Pourrai-je modifier ma carte plus tard ?', a: 'Oui. Couleurs, logo, nom du programme, récompense et seuil se modifient depuis votre espace client, et les cartes déjà installées chez vos clients se mettent à jour toutes seules.'},
 ];
@@ -54,7 +55,8 @@ const appLd = {
 };
 ---
 
-<Base stickyCta={{primary: {href: '/tarifs/', label: 'Je veux cette carte'}, secondary: {href: '/demo/', label: 'Démo'}}}
+<Base stickyCta={{primary: TRIAL.open ? APPEL : {href: '/tarifs/?carte=1', label: 'Je veux cette carte'}, secondary: {href: '/demo/', label: 'Démo'}}}
+  finPage="sable"
   title="Créer une carte de fidélité en ligne : modèle gratuit"
   description="Créez gratuitement le modèle de votre carte de fidélité Apple et Google Wallet : nom, couleurs, logo, récompense. Aperçu en direct et exemples par métier."
   ogImage="/og/creer-ma-carte.png"
@@ -66,9 +68,11 @@ const appLd = {
       <Breadcrumbs items={crumbs} />
       <p class="eyebrow">Configurateur</p>
       <h1>Créez l’aperçu de votre carte de fidélité</h1>
-      <p class="lead">Un modèle gratuit, sans inscription : choisissez votre nom, vos couleurs, votre logo et votre récompense, et votre carte se met à jour en direct, telle que vos clients la verront dans leur Wallet.</p>
+      <p class="lead">Un modèle gratuit, sans inscription<span class="lead-suite"> : choisissez votre nom, vos couleurs, votre logo et votre récompense, et votre carte se met à jour en direct, telle que vos clients la verront dans leur Wallet</span>.</p>
     </div>
   </section>
+
+  <Jonction de="sable" vers="creme" forme={1} />
 
   <section class="section pt0">
     <div class="container configurator">
@@ -117,7 +121,7 @@ const appLd = {
           ))
         }
         <div class="field">
-          <span class="label">Votre logo <span class="hint">(facultatif, reste sur votre appareil)</span></span>
+          <span class="label">Votre logo <span class="hint">{TRIAL.open ? '(facultatif, reste sur votre appareil jusqu’à ce que vous lanciez l’essai)' : '(facultatif, reste sur votre appareil)'}</span></span>
           <label class="file" for="c-logo">
             <input id="c-logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
             <span class="file-btn">Choisir une image</span>
@@ -163,9 +167,10 @@ const appLd = {
           <WalletCard name="Maison Lumière" activity="Coiffure" filled={7} total={10} reward="Brushing offert" width={290} qr={false} />
         </div>
         <div class="after">
-          <p class="caption">Aperçu indicatif : la carte définitive est créée par LOYNA à vos couleurs, avec votre logo en haute définition.</p>
+          <p class="caption">{TRIAL.open ? 'Aperçu indicatif : avec l’essai, votre carte est créée tout de suite à partir de ces réglages et du modèle de votre métier.' : 'Aperçu indicatif : la carte définitive est créée par LOYNA à vos couleurs, avec votre logo en haute définition.'}</p>
           <div class="btn-row center">
-            <a class="btn btn--gold" href="/tarifs/?carte=1" id="go-plans">Je veux cette carte <Icon name="arrow-right" size={18} /></a>
+            {TRIAL.open && <a class="btn btn--gold" href={essaiUrl} id="go-essai">Essayer 1 mois gratuitement <Icon name="arrow-right" size={18} /></a>}
+            <a class:list={['btn', TRIAL.open ? 'btn--ghost' : 'btn--gold']} href="/tarifs/?carte=1" id="go-plans">Je veux cette carte {!TRIAL.open && <Icon name="arrow-right" size={18} />}</a>
           </div>
           <form class="send-preview" method="post" action="/contact.php" id="send-preview">
             <p class="sp-title"><Icon name="mail" size={18} /> Pas encore décidé ? Recevez cet aperçu et nos conseils</p>
@@ -192,7 +197,9 @@ const appLd = {
     </div>
   </section>
 
-  <section class="section section--alt">
+  <Jonction de="creme" vers="sable" forme={4} />
+
+  <section class="section section--alt tete-serree">
     <div class="container grid grid-3">
       <div class="card">
         <span class="icon"><Icon name="palette" /></span>
@@ -201,8 +208,8 @@ const appLd = {
       </div>
       <div class="card">
         <span class="icon"><Icon name="zap" /></span>
-        <h2 class="h3">Prête sous 24&nbsp;h</h2>
-        <p>Après votre commande, nous créons votre carte et votre QR code d’inscription sous 24&nbsp;h, hors personnalisation exceptionnelle.</p>
+        <h2 class="h3">{TRIAL.open ? 'Prête tout de suite avec l’essai' : <>Prête sous 24&nbsp;h</>}</h2>
+        <p>{TRIAL.open && 'Avec l’essai, votre carte et votre QR code d’inscription sont créés dès que vous confirmez votre adresse e-mail. '}Après une commande, nous les créons sous 24&nbsp;h, hors personnalisation exceptionnelle.</p>
       </div>
       <div class="card">
         <span class="icon"><Icon name="smartphone" /></span>
@@ -212,7 +219,9 @@ const appLd = {
     </div>
   </section>
 
-  <section class="section">
+  <Jonction de="sable" vers="creme" forme={6} retourne />
+
+  <section class="section tete-serree">
     <div class="container">
       <div class="section-head">
         <p class="eyebrow">Exemples</p>
@@ -242,7 +251,9 @@ const appLd = {
     </div>
   </section>
 
-  <section class="section section--alt">
+  <Jonction de="creme" vers="sable" forme={2} retourne />
+
+  <section class="section section--alt tete-serree">
     <div class="container narrow">
       <div class="section-head">
         <p class="eyebrow">Mode d’emploi</p>
@@ -259,7 +270,11 @@ const appLd = {
           <strong>Fixez la récompense et le nombre de passages</strong> : une récompense qui donne envie, un seuil que vos bons clients atteignent en quelques semaines.
         </li>
         <li>
-          <strong>Validez votre carte</strong> : choisissez votre formule, et votre carte et votre QR code d’inscription sont prêts sous 24&nbsp;h.
+          {TRIAL.open ? (
+            <><strong>Lancez l’essai</strong> : 1 mois gratuit, sans carte bancaire. Votre carte et votre QR code d’inscription sont créés dès que vous confirmez votre adresse e-mail.</>
+          ) : (
+            <><strong>Validez votre carte</strong> : choisissez votre offre, et votre carte et votre QR code d’inscription sont prêts sous 24&nbsp;h.</>
+          )}
         </li>
       </ol>
       <p class="how-more">
@@ -284,6 +299,8 @@ const appLd = {
 <script>
   import {marquerCouleurs} from '../lib/carte-live';
   import {CARD_ACTIVITES} from '../data/site';
+  import {logoToFiles} from '../app/logo-png';
+  import {CLE_LOGO, lireLogoGarde, store, urlLogo} from '../lib/compte-regles';
 
   type Touche = {reward: boolean; bg: boolean; accent: boolean};
   type Cfg = {name: string; activity: string; bg: string; accent: string; total: number; filled: number; reward: string; variant: 'apple' | 'google'; touche?: Touche};
@@ -554,13 +571,33 @@ const appLd = {
     render();
   });
 
-  $<HTMLInputElement>('#c-logo').addEventListener('change', (e) => {
+  // Logo : converti ici, gardé dans cet onglet pour l'essai (sessionStorage) et montré sur la carte. Rien ne part avant l'essai.
+  $<HTMLInputElement>('#c-logo').addEventListener('change', async (e) => {
     const f = (e.target as HTMLInputElement).files?.[0];
-    if (logoUrl) URL.revokeObjectURL(logoUrl);
-    logoUrl = f ? URL.createObjectURL(f) : '';
-    $('#file-name').textContent = f ? f.name : 'Aucun fichier choisi';
+    logoUrl = '';
+    store('session', CLE_LOGO, null);
+    if (!f) {
+      $('#file-name').textContent = 'Aucun fichier choisi';
+      render();
+      return;
+    }
+    $('#file-name').textContent = 'Préparation du logo…';
+    try {
+      const {logo_png, icon_png} = await logoToFiles(f);
+      store('session', CLE_LOGO, JSON.stringify({logo_png, icon_png, nom: f.name}));
+      logoUrl = urlLogo({logo_png}) ?? '';
+      $('#file-name').textContent = f.name;
+    } catch (err) {
+      $('#file-name').textContent = err instanceof Error ? err.message : 'Cette image est illisible.';
+    }
     render();
   });
+  // Logo déjà choisi dans cet onglet : retrouvé en revenant sur la page
+  const logoGarde = lireLogoGarde();
+  if (logoGarde) {
+    logoUrl = urlLogo(logoGarde) ?? '';
+    $('#file-name').textContent = logoGarde.nom || 'Logo choisi';
+  }
   document.querySelectorAll('#cfg input:not([type=file]):not([type=color]):not([data-pk])').forEach((el) => el.addEventListener('input', render));
 
   ($<HTMLFormElement>('#send-preview').elements.namedItem('t') as HTMLInputElement).value = String(Date.now());
@@ -632,10 +669,30 @@ const appLd = {
 
 <style>
   .compact {
-    padding-bottom: clamp(30px, 4vw, 50px);
+    padding-top: clamp(18px, 2.6vw, 34px);
+    padding-bottom: clamp(8px, 1vw, 14px);
+  }
+  .compact h1 {
+    font-size: clamp(1.95rem, 3.8vw, 3.2rem);
+  }
+  .compact .lead {
+    font-size: clamp(1rem, 1.3vw, 1.12rem);
+  }
+  .compact :global(.breadcrumbs) {
+    margin-bottom: 10px;
   }
   .pt0 {
     padding-top: 0;
+  }
+  /* Téléphone : la carte du visiteur le plus haut possible, il arrive souvent d'un e-mail */
+  @media (max-width: 600px) {
+    .compact :global(.breadcrumbs),
+    .lead-suite {
+      display: none;
+    }
+    .compact .eyebrow {
+      margin-bottom: 10px;
+    }
   }
   .configurator {
     display: grid;
@@ -890,6 +947,22 @@ const appLd = {
     justify-items: center;
     gap: 18px;
   }
+  /* halo doré derrière le téléphone */
+  .stage {
+    position: relative;
+    isolation: isolate;
+  }
+  @media (min-width: 901px) {
+    .stage::before {
+      content: '';
+      position: absolute;
+      z-index: -1;
+      inset: 2% -22%;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(230, 194, 122, 0.5), rgba(230, 194, 122, 0.12) 64%, transparent);
+      pointer-events: none;
+    }
+  }
   @media (max-height: 1100px) {
     .preview {
       position: static;
@@ -1005,7 +1078,7 @@ const appLd = {
   }
   @media (max-width: 900px) {
     .configurator {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
     }
     /* téléphone : la carte, puis les réglages, puis la commande et « Recevoir cet aperçu » */
     .preview {
@@ -1027,9 +1100,9 @@ const appLd = {
       right: 0;
       top: 64px;
       padding: 10px 16px 12px;
-      background: rgba(18, 18, 22, 0.96);
-      border-bottom: 1px solid rgba(230, 194, 122, 0.16);
-      box-shadow: 0 10px 24px rgba(18, 18, 22, 0.22);
+      background: rgba(247, 241, 230, 0.97);
+      border-bottom: 1px solid var(--filet);
+      box-shadow: 0 10px 24px rgba(18, 18, 22, 0.16);
       transform: translateY(-110%);
       opacity: 0;
       visibility: hidden;

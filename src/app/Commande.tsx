@@ -16,7 +16,6 @@ interface OrderItem {
 }
 interface Order {
   plan: string;
-  billing_period: 'monthly' | 'yearly';
   subscription_status: string;
   ordered_at: string;
   current_period_end: string | null;
@@ -118,7 +117,6 @@ export function Commande({email, portal, onSignOut}: {email: string; portal: str
       )}
       {orders.map((o) => {
         const [label, tone] = STATUS[o.subscription_status] ?? [o.subscription_status, 'neutral'];
-        const monthly = o.billing_period !== 'yearly';
         const qr = (o.items ?? []).filter((i) => /^loyna_qr_verre/.test(i.lookup_key ?? ''));
         const live = ['active', 'trialing', 'past_due'].includes(o.subscription_status);
         return (
@@ -130,7 +128,7 @@ export function Commande({email, portal, onSignOut}: {email: string; portal: str
             <dl class="ord-dl">
               <div>
                 <dt>Paiement</dt>
-                <dd>{monthly ? 'mensuel, engagement de 12 mois' : 'annuel, 12 mois payés d’avance'}</dd>
+                <dd>{o.commitment_end ? 'mensuel, avec 12 mois d’engagement' : 'mensuel, sans engagement'}</dd>
               </div>
               <div>
                 <dt>Commande du</dt>
@@ -156,7 +154,7 @@ export function Commande({email, portal, onSignOut}: {email: string; portal: str
                   <dd>{date(o.current_period_end)}</dd>
                 </div>
               )}
-              {monthly && o.commitment_end && (
+              {o.commitment_end && (
                 <div>
                   <dt>Fin d’engagement</dt>
                   <dd>{date(o.commitment_end)}</dd>

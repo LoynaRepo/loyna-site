@@ -1,0 +1,169 @@
+---
+// Accueil, juste après « L'essentiel ».
+// - « Ils nous font confiance » : le vrai nombre de commerces clients (CLIENTS de src/data/site.ts), sans témoignage, masqué sous
+//   le seuil. Aucun chiffre inventé sur le site (docs/BRIEF.md) : pour le changer, on change ce vrai nombre, rien d'autre.
+// - Les faits : uniquement ce que le site dit et prouve déjà ailleurs (sources en regard), sans redire ce qui figure juste
+//   au-dessus (application, Wallet, essai ou 24 h, matériel, données, Stripe). Aucune promesse nouvelle.
+import Icon from './Icon.astro';
+import {CLIENTS, TRIAL, clientsAffiches, nombre} from '../data/site';
+
+const faits: {icon: string; titre: string; texte: string; href?: string}[] = [
+  // accueil (« Aperçu gratuit, à vos couleurs, avant tout paiement ») et /creer-ma-carte/
+  {icon: 'eye', titre: 'Aperçu gratuit', texte: 'Votre carte à votre nom et à vos couleurs, avant tout paiement.', href: '/creer-ma-carte/'},
+  // /tarifs/ et /essai/ (PHRASES.essai) ; essai fermé : /merci/ (« LOYNA prépare votre carte et vous écrit dès qu’elle est prête ») et /a-propos/
+  TRIAL.open
+    ? {icon: 'wand-sparkles', titre: 'Votre métier déjà pensé', texte: 'Votre carte part du modèle de votre métier : récompense et couleurs proposées, à changer comme vous voulez.'}
+    : {icon: 'wand-sparkles', titre: 'Carte préparée pour vous', texte: 'LOYNA prépare votre carte et vous écrit dès qu’elle est prête.'},
+  // /merci/ et /fonctionnalites/ (« l’affiche du comptoir est fournie »)
+  {icon: 'qr-code', titre: 'QR code et affiche fournis', texte: 'Votre QR code d’inscription et l’affiche du comptoir, à imprimer ou à partager.'},
+  // /a-propos/ (« installée à Fabrègues, dans l’Hérault, près de Montpellier », adresse et SIRET)
+  {icon: 'building-2', titre: 'Une entreprise près de Montpellier', texte: 'Installée à Fabrègues, dans l’Hérault. Adresse et SIRET sur notre page À propos.', href: '/a-propos/'},
+];
+---
+
+<div class="confiance apparait">
+  {
+    clientsAffiches() && (
+      <div class="conf-clients">
+        <p class="eyebrow">Ils nous font confiance</p>
+        <p class="conf-nombre">
+          <b class="gold-text">{nombre(CLIENTS.commerces)}</b> {CLIENTS.commerces > 1 ? 'commerces ont' : 'commerce a'} choisi LOYNA
+        </p>
+      </div>
+    )
+  }
+  <ul class="faits" aria-label="Ce que vous pouvez vérifier">
+    {
+      faits.map((f) => {
+        const Tag = f.href ? 'a' : 'div';
+        return (
+          <li>
+            <Tag class="fait" href={f.href}>
+              <span class="fait-ic">
+                <Icon name={f.icon} size={17} />
+              </span>
+              <strong>
+                {f.titre}
+                {f.href && <Icon name="arrow-right" size={15} />}
+              </strong>
+              <span class="fait-texte">{f.texte}</span>
+            </Tag>
+          </li>
+        );
+      })
+    }
+  </ul>
+</div>
+
+<style>
+  .confiance {
+    margin-bottom: clamp(44px, 6vw, 88px);
+  }
+  .conf-clients {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 24px;
+    margin-bottom: clamp(16px, 2.4vw, 26px);
+  }
+  .conf-clients .eyebrow {
+    margin-bottom: 0;
+  }
+  .conf-nombre {
+    margin: 0;
+    color: var(--ink);
+    font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+    font-weight: 750;
+    letter-spacing: -0.02em;
+  }
+  .conf-nombre b {
+    margin-right: 4px;
+    font-size: clamp(2.6rem, 5vw, 4rem);
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    line-height: 1;
+  }
+  /* mêmes filets que la grille des fonctionnalités */
+  .faits {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    overflow: hidden;
+    border: 1px solid var(--filet);
+    border-radius: 24px;
+    background: var(--filet);
+    box-shadow: var(--shadow);
+  }
+  .faits li {
+    display: grid;
+  }
+  .fait {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+    padding: 16px;
+    background: var(--card);
+    color: var(--ink);
+    text-decoration: none;
+  }
+  a.fait {
+    transition: background 0.16s ease;
+  }
+  a.fait:hover {
+    background: #fbf6ec;
+    color: var(--ink);
+  }
+  /* à l'intérieur de la case : la grille coupe ce qui dépasse */
+  a.fait:focus-visible {
+    outline-offset: -3px;
+    border-radius: 24px;
+  }
+  .fait-ic {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #e6c27a;
+  }
+  .fait strong {
+    font-size: 0.93rem;
+    font-weight: 750;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+  }
+  .fait strong :global(svg) {
+    display: inline-block;
+    margin-left: 4px;
+    color: var(--gold-strong);
+    vertical-align: -2px;
+  }
+  /* téléphone : le mot-clé seul, le détail est sur la page liée */
+  .fait-texte {
+    display: none;
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+  @media (min-width: 720px) {
+    .fait {
+      padding: clamp(18px, 2.2vw, 26px);
+    }
+    .fait strong {
+      font-size: 1.02rem;
+    }
+    .fait-texte {
+      display: block;
+    }
+  }
+  @media (min-width: 980px) {
+    .faits {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+</style>

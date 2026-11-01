@@ -1,9 +1,9 @@
 ---
 // Simulateur de rentabilité : uniquement de l'arithmétique sur les chiffres saisis par le commerçant
-// (aucune statistique inventée). Le gain net, le graphique et le multiple dépendent de la formule choisie.
+// (aucune statistique inventée). Le gain net, le graphique et le multiple dépendent de l'offre choisie.
 // Résultat calculé côté serveur pour les valeurs par défaut, puis en direct.
-import {PLANS, euro, type PlanId} from '../data/site';
-const defaults: {clients: number; panier: number; pct: number; plan: PlanId} = {clients: 200, panier: 25, pct: 10, plan: 'premium'};
+import {APPEL, PLANS, TRIAL, euro, type PlanId} from '../data/site';
+const defaults: {clients: number; panier: number; pct: number; plan: PlanId} = {clients: 200, panier: 25, pct: 10, plan: 'starter'};
 const prix = Object.fromEntries(PLANS.map((p) => [p.id, p.monthly]));
 const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
 const calc = (clients: number, panier: number, pct: number, p: number) => {
@@ -31,7 +31,7 @@ const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - mi
       <input id="roi-pct" name="pct" type="range" min="2" max="30" step="1" value={defaults.pct} style={`--p:${pctOf(defaults.pct, 2, 30)}`} />
     </div>
     <fieldset class="roi-plans">
-      <legend>Formule</legend>
+      <legend>Offre, sans engagement</legend>
       {
         PLANS.map((p) => (
           <label>
@@ -69,8 +69,8 @@ const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - mi
     </ul>
     <p class="roi-note">Simulation indicative calculée à partir de vos propres chiffres, en chiffre d’affaires (votre marge en dépend), avec le prix de l’abonnement sans TVA. Elle ne constitue pas une promesse de résultat.</p>
     <div class="roi-cta">
-      <a class="btn btn--gold" href="/creer-ma-carte/">Créer l’aperçu de ma carte</a>
-      <a class="btn btn--ghost" href="/tarifs/">Voir les tarifs</a>
+      <a class="btn btn--gold" href={APPEL.href}>{APPEL.label}</a>
+      <a class="btn btn--ghost" href={TRIAL.open ? '/tarifs/' : '/creer-ma-carte/'}>{TRIAL.open ? 'Voir les tarifs' : 'Créer l’aperçu de ma carte'}</a>
     </div>
   </div>
 </div>
@@ -81,7 +81,7 @@ const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - mi
     const prix = JSON.parse(root.dataset.prix || '{}') as Record<string, number>;
     const noms = JSON.parse(root.dataset.noms || '{}') as Record<string, string>;
     const defaut = root.dataset.defaut || '';
-    // Même format que euro() de src/data/site.ts : « 39,99 € », « 1 250 € » (espaces insécables)
+    // Même format que euro() de src/data/site.ts : « 24,65 € », « 1 250 € » (espaces insécables)
     const fmt = (n: number) =>
       n
         .toLocaleString('fr-FR', {minimumFractionDigits: Number.isInteger(Math.round(n * 100) / 100) ? 0 : 2, maximumFractionDigits: 2})
@@ -145,22 +145,23 @@ const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - mi
     padding: clamp(24px, 3vw, 40px);
   }
   .roi-inputs {
-    background: var(--ink-2);
-    border: 1px solid rgba(250, 247, 240, 0.08);
+    background: var(--card);
+    border: 1px solid #dccfb8;
+    box-shadow: var(--shadow);
     display: grid;
     gap: 26px;
-    align-content: start;
+    align-content: space-between;
   }
   .roi-field label {
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    font-weight: 600;
-    color: #e9e5dc;
+    font-weight: 650;
+    color: var(--ink);
     margin-bottom: 12px;
   }
   .roi-field output {
-    color: #e6c27a;
+    color: var(--gold-strong);
     font-weight: 800;
     white-space: nowrap;
   }
@@ -184,7 +185,7 @@ const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - mi
   .roi-field input[type='range']::-webkit-slider-runnable-track {
     height: 8px;
     border-radius: 999px;
-    background: linear-gradient(90deg, #a87530, #e6c27a var(--p, 50%), rgba(250, 247, 240, 0.14) var(--p, 50%));
+    background: linear-gradient(90deg, #a87530, #e6c27a var(--p, 50%), rgba(18, 18, 22, 0.12) var(--p, 50%));
   }
   .roi-field input[type='range']::-webkit-slider-thumb {
     -webkit-appearance: none;
@@ -192,14 +193,14 @@ const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - mi
     height: 24px;
     margin-top: -8px;
     border-radius: 50%;
-    background: #faf7f0;
+    background: #fff;
     border: 4px solid #c9963f;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 4px 12px rgba(18, 18, 22, 0.28);
   }
   .roi-field input[type='range']::-moz-range-track {
     height: 8px;
     border-radius: 999px;
-    background: rgba(250, 247, 240, 0.14);
+    background: rgba(18, 18, 22, 0.12);
   }
   .roi-field input[type='range']::-moz-range-progress {
     height: 8px;
@@ -210,9 +211,9 @@ const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - mi
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #faf7f0;
+    background: #fff;
     border: 4px solid #c9963f;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 4px 12px rgba(18, 18, 22, 0.28);
   }
 
   .roi-plans {
@@ -224,8 +225,8 @@ const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - mi
     gap: 10px;
   }
   .roi-plans legend {
-    font-weight: 600;
-    color: #e9e5dc;
+    font-weight: 650;
+    color: var(--ink);
     margin-bottom: 10px;
   }
   .roi-plans label {
@@ -239,31 +240,36 @@ const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - mi
     display: inline-block;
     padding: 10px 16px;
     border-radius: 999px;
-    border: 1px solid rgba(250, 247, 240, 0.2);
-    color: #e9e5dc;
-    font-weight: 600;
+    border: 1px solid var(--filet);
+    background: var(--bg);
+    color: var(--ink);
+    font-weight: 650;
     cursor: pointer;
     transition:
       background 0.2s,
       color 0.2s;
   }
   .roi-plans input:checked + span {
-    background: var(--grad-gold);
-    border-color: transparent;
-    color: var(--ink);
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #faf7f0;
   }
   .roi-plans input:focus-visible + span {
-    outline: 3px solid #e6c27a;
+    outline: 3px solid var(--gold);
     outline-offset: 2px;
   }
 
   .roi-result {
     background:
       radial-gradient(80% 60% at 100% 0%, rgba(230, 194, 122, 0.25), transparent 70%),
-      linear-gradient(160deg, #2a2419, #17151a);
+      var(--ink);
     border: 1px solid rgba(230, 194, 122, 0.25);
+    box-shadow: var(--shadow-lg);
     display: flex;
     flex-direction: column;
+  }
+  .roi-result p {
+    color: #c9c2b4;
   }
   .roi-kicker {
     margin: 0 0 6px;
@@ -372,6 +378,7 @@ const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - mi
     gap: 12px;
   }
   .roi-cta .btn--ghost {
+    background: transparent;
     color: #faf7f0;
     border-color: rgba(250, 247, 240, 0.25);
   }
@@ -383,7 +390,7 @@ const pctOf = (v: number, min: number, max: number) => `${((v - min) / (max - mi
   }
   @media (max-width: 900px) {
     .roi {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
     }
   }
   @media (prefers-reduced-motion: reduce) {

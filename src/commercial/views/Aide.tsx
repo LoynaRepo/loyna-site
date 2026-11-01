@@ -1,5 +1,6 @@
 // Aide à la prospection : déroulé d'un appel, processus (premier mail → relance J+7 → 7 jours ouvrés → appel ou sortie du fichier), modèles de
 // mails du coffre, bonnes pratiques (horaires d'appel, règles du démarchage B2B, droit d'opposition).
+import {TRIAL} from '../../data/site';
 import {BONNES_PRATIQUES, derouleAppel, HORAIRES, LIENS, REGLES_B2B, SOURCES_CNIL} from '../contenu';
 import {fr} from '../format';
 import {Icon} from '../icons';
@@ -46,6 +47,14 @@ const ANCRES = [
 
 // Parcours d'un client (08 Clients du coffre, _systeme/clients.py)
 const ETAPES_CLIENT: [string, string][] = [
+  ...(TRIAL.open
+    ? ([
+        [
+          'Essai · s’il commence par là',
+          'Mail « [Site LOYNA] Essai démarré » : l’agent Trieur crée la fiche 08 Clients, offre Starter, statut « essai », et passe la fiche prospect au statut « client » : plus aucune prospection, même après un essai sans suite. Le commerce et la carte existent déjà, créés par le produit : rien à créer, aucun document, aucun service de Pro. Les mails de l’essai partent du produit.',
+        ],
+      ] as [string, string][])
+    : []),
   [
     '1 · Commande reçue',
     'Mail « [Site LOYNA] Nouvelle commande » : l’agent Trieur crée la fiche 08 Clients (offre, contact, QR codes, liens Stripe, compte LOYNA) et passe la fiche prospect du commerce au statut « client » : plus aucune prospection.',
@@ -59,13 +68,16 @@ const ETAPES_CLIENT: [string, string][] = [
     'Compléter la fiche (programme, récompense, couleurs, logo, lien d’inscription), puis documents_client.py envoyer : les 4 PDF partent et l’étape se coche seule.',
   ],
   ['4 · QR codes livrés', 'S’il en a commandé : à livrer sous 15 jours au plus à l’adresse de facturation, puis bouton « QR codes livrés ».'],
-  ['5 · Client actif', 'Plus rien à faire dans le parcours : restent les notes et, en Premium et Pro, la mise en route des automatisations (point mensuel en Pro).'],
+  ['5 · Client actif', 'Plus rien à faire dans le parcours : restent les notes et, en Pro, les services : messages écrits par LOYNA, point mensuel, carte finie à la main, vidéo et visuels, kit comptoir.'],
 ];
 const POINTS_CLIENTS = [
-  'Prochaine action : « Créer le commerce », « Envoyer les documents », « Livrer N QR codes avant le JJ/MM » (en rouge en retard ou à moins de 3 jours), « Relancer le paiement » ou « Rien à faire ». Le compteur « Actions en retard » et le bandeau du tableau de bord les reprennent.',
+  'Prochaine action : « Créer le commerce », « Envoyer les documents », « Livrer N QR codes avant le JJ/MM » (en rouge en retard ou à moins de 3 jours), un service de Pro à livrer, « Relancer le paiement » ou « Rien à faire ». Le compteur « Actions en retard » et le bandeau du tableau de bord les reprennent.',
   'Les boutons enregistrent une note chiffrée : l’étape change tout de suite ici, puis panel.py la recopie dans la fiche du coffre (date et ligne d’historique) au prochain passage d’un agent. Tant que ce n’est pas fait, « Annuler » la retire.',
-  'Résiliation demandée, abonnement terminé, paiement échoué, changement d’offre : les mails du site mettent la fiche à jour d’eux-mêmes (le Trieur lance clients.py), et la demande arrive aussi dans « À traiter par Ewan ».',
-  'Revenu mensuel : abonnements en cours, mensuels plus annuels divisés par 12, aux prix des offres, sans TVA.',
+  'Résiliation demandée, abonnement terminé, paiement échoué, changement d’offre, essai, carte suspendue ou réactivée : les mails du site mettent la fiche à jour d’eux-mêmes (le Trieur lance clients.py), et la demande arrive aussi dans « À traiter par Ewan ».',
+  'Carte suspendue : arrêt automatique à la fin d’un essai sans abonnement, à la fin d’un abonnement, ou 15 jours après le premier échec de paiement. La carte reste dans les téléphones mais ne crédite plus. Tout repart seul dès que le paiement passe ou que l’abonnement est repris ; sans reprise, données supprimées 90 jours après l’arrêt. Seul un impayé demande une relance de votre part.',
+  'Services de Pro : carte finie à la main, vidéo et visuels à partir du 1er paiement ; kit comptoir après le 1er paiement avec engagement, après le 3e sans ; chacun sous 15 jours. Les boutons sont dans la fiche du client. Rien de tout cela pendant un essai.',
+  'Premium : offre historique, plus vendue. Un client qui l’a garde son prix et sa durée, avec les droits de Pro.',
+  'Revenu mensuel : abonnements en cours, au prix de leur offre, sans TVA ; 0 pendant un essai ou un arrêt.',
   'Une erreur dans un client (nom, offre, dates) se corrige dans sa fiche de 08 Clients, dans Obsidian ; le panel suit à la publication suivante.',
 ];
 
@@ -113,7 +125,7 @@ export function Aide() {
           </p>
         )}
         <p class="cp-liens">
-          {[LIENS.apercu, LIENS.demo, LIENS.video, LIENS.tarifs].map((l) => (
+          {[...(TRIAL.open ? [LIENS.essai] : []), LIENS.apercu, LIENS.demo, LIENS.video, LIENS.tarifs].map((l) => (
             <Lien href={l.href}>
               <Icon name="external-link" size={14} />
               <span>{l.label}</span>
@@ -138,7 +150,7 @@ export function Aide() {
           </li>
         </ol>
         <ul class="cp-points">
-          <li>{fr('Réponses : relevées par l’agent Trieur ; il répond seul avec la FAQ du coffre, fixe les RDV, gère rebonds et oppositions. Le reste arrive dans « À traiter par Ewan » et en tête de « À appeler ».')}</li>
+          <li>{fr('Réponses : relevées par l’agent Trieur ; il n’en envoie aucune : il gère rebonds et oppositions et transmet un brouillon, avec la FAQ du coffre, dans « À traiter par Ewan » et en tête de « À appeler ».')}</li>
           <li>
             {fr(
               `Mail non reçu (rebond, adresse refusée ou écartée) : l’agent Prospecteur cherche une autre adresse ; si un numéro existe, vous pouvez aussi appeler.`,
@@ -206,7 +218,7 @@ export function Aide() {
         </p>
       </Panel>
 
-      <Panel title="Les clients" id="aide-clients" sub="Après un paiement sur loyna.fr : de la commande au client actif (onglet « Clients »).">
+      <Panel title="Les clients" id="aide-clients" sub="Après un essai ou un paiement sur loyna.fr : de la commande au client actif (onglet « Clients »).">
         <ol class="cp-frise cl-frise">
           {ETAPES_CLIENT.map(([titre, texte]) => (
             <li>

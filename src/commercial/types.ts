@@ -95,7 +95,7 @@ export interface EtapeClient {
 }
 
 export interface ActionClient {
-  code: 'paiement' | 'commerce' | 'documents' | 'qr' | 'aucune';
+  code: 'paiement' | 'commerce' | 'documents' | 'qr' | 'service_pro' | 'aucune';
   ordre: number;
   libelle: string;
   detail: string;
@@ -103,10 +103,22 @@ export interface ActionClient {
 }
 
 export interface EtatClient {
-  code: 'paiement_echoue' | 'resiliation' | 'termine';
+  code: 'essai' | 'carte_suspendue' | 'paiement_echoue' | 'resiliation' | 'termine';
   libelle: string;
-  date: string; // paiement échoué le / fin de l'abonnement
+  date: string; // fin de l'essai / carte suspendue le / paiement échoué le / fin de l'abonnement
   demande_le?: string;
+  motif?: string; // carte suspendue : essai terminé, paiement échoué ou abonnement terminé
+}
+
+/** Service de Pro à livrer une fois (clients.py, SERVICES_PRO) : dû à partir de `du_le`, sous 15 jours. */
+export interface ServicePro {
+  code: 'carte_finie' | 'video' | 'kit';
+  libelle: string;
+  du_le: string;
+  limite: string;
+  fait_le: string;
+  a_faire: boolean;
+  attente?: boolean; // noté dans le panel, pas encore recopié dans le coffre (calculé dans le navigateur)
 }
 
 export interface Client {
@@ -121,14 +133,20 @@ export interface Client {
   tel_principal: Telephone | null;
   adresse_facturation: string;
   siren: string;
+  siret?: string; // client venu d'un essai
   instagram?: string;
-  offre: {formule: string; periodicite: 'mensuel' | 'annuel'; libelle: string; prix: number | null; mensuel: number | null};
+  // mensuel : revenu du mois, 0 pendant un essai ; historique : offre plus vendue (Premium, Barber Kong). Données publiées avant la
+  // grille du 2026-10-31 : ni engagement ni historique, voir libelleOffre() dans clients-regles.ts
+  offre: {formule: string; periodicite: string; engagement?: boolean; historique?: boolean; libelle: string; prix: number | null; mensuel: number | null};
+  essai?: {en_cours: boolean; demarre_le: string; fin: string; jours_restants: number | null};
+  suspension?: {le: string; motif: string; reactivee_le: string};
+  services_pro?: ServicePro[];
   date_souscription: string;
   montant_paye: string;
   code_promo: string;
   parrainage_filleul?: string; // code du parrain si ce client est un filleul (Parrainage LOYNA : premier mois offert)
   paiement: {statut: string; echoue_le: string; document: string};
-  engagement: {fin: string; libelle: string};
+  engagement: {actif?: boolean; fin: string; libelle: string}; // sans engagement : aucune date de fin
   compte: string; // e-mail du compte de l'espace client
   lien_espace_client: string;
   commerce_existant: boolean | null;
@@ -166,6 +184,8 @@ export interface TotauxClients {
   urgents: number;
   a_traiter: number;
   resiliations?: number;
+  essais?: number;
+  cartes_suspendues?: number;
   par_etape: {code: string; libelle: string; nombre: number}[];
   par_offre: {formule: string; nombre: number}[];
 }

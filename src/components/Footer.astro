@@ -1,11 +1,15 @@
 ---
 import Logo from './Logo.astro';
+import Jonction from './Jonction.astro';
+import type {Teinte} from './Jonction.astro';
 import {SITE} from '../data/site';
 import {getSectors} from '../lib/builder';
 interface Props {
   consent?: boolean;
+  /** Fond de la dernière section de la page (par défaut : crème). */
+  de?: Teinte;
 }
-const {consent = false} = Astro.props;
+const {consent = false, de = 'creme'} = Astro.props;
 const year = new Date().getFullYear();
 // Réseaux sociaux de la marque (SITE.sameAs) : nom et pictogramme d'après l'adresse
 const reseaux = SITE.sameAs
@@ -53,6 +57,7 @@ const cols: {title: string; wide?: boolean; links: [string, string][]}[] = [
 ];
 ---
 
+<Jonction de={de} vers="nuit" forme={5} retourne />
 <footer class="site-footer">
   <div class="container">
     <div class="top">
@@ -137,24 +142,31 @@ const cols: {title: string; wide?: boolean; links: [string, string][]}[] = [
     cursor: pointer;
   }
   .site-footer {
+    position: relative;
     background: var(--ink);
     color: #b9b3a7;
-    padding: clamp(56px, 8vw, 96px) 0 32px;
+    padding: clamp(28px, 4vw, 56px) 0 32px;
     font-size: 0.97rem;
   }
   .top {
+    position: relative;
+    z-index: 2;
     display: grid;
-    grid-template-columns: 1.6fr 0.85fr 2.15fr 1.1fr 1.1fr;
-    gap: 36px;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px 24px;
+  }
+  .about,
+  .wide {
+    grid-column: 1 / -1;
   }
   /* Secteurs : tous les métiers, sur deux colonnes */
   .wide ul {
     grid-template-columns: 1fr 1fr;
-    column-gap: 24px;
+    column-gap: 18px;
   }
   .about p {
     margin: 20px 0 14px;
-    max-width: 320px;
+    max-width: 340px;
   }
   .mail {
     color: #e6c27a;
@@ -171,7 +183,7 @@ const cols: {title: string; wide?: boolean; links: [string, string][]}[] = [
     align-items: center;
     gap: 8px;
     min-height: 44px;
-    padding: 0 14px;
+    padding: 0 16px;
     border: 1px solid rgba(250, 247, 240, 0.18);
     border-radius: 999px;
     color: #faf7f0;
@@ -181,18 +193,28 @@ const cols: {title: string; wide?: boolean; links: [string, string][]}[] = [
   .reseaux a:hover {
     border-color: #e6c27a;
     color: #e6c27a;
+    text-decoration: none;
   }
   .col-title {
-    color: #faf7f0;
-    font-weight: 700;
-    margin-bottom: 14px;
+    color: #e6c27a;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
   }
   ul {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
-    gap: 9px;
+    gap: 0;
+  }
+  ul a,
+  .mail {
+    display: inline-block;
+    padding-block: 11px;
+    line-height: 1.35;
   }
   a {
     color: #b9b3a7;
@@ -203,8 +225,10 @@ const cols: {title: string; wide?: boolean; links: [string, string][]}[] = [
     text-decoration: underline;
   }
   .bottom {
-    margin-top: 56px;
-    padding-top: 24px;
+    position: relative;
+    z-index: 2;
+    margin-top: 44px;
+    padding-top: 22px;
     border-top: 1px solid rgba(250, 247, 240, 0.1);
     font-size: 0.85rem;
     color: #8f897e;
@@ -212,25 +236,24 @@ const cols: {title: string; wide?: boolean; links: [string, string][]}[] = [
   .bottom p {
     margin: 0 0 6px;
   }
-  @media (max-width: 960px) {
+  @media (min-width: 961px) {
     .top {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1.55fr 0.85fr 2.15fr 1.1fr 1.1fr;
+      gap: 36px;
     }
     .about,
     .wide {
-      grid-column: 1 / -1;
+      grid-column: auto;
     }
-    /* liens plus hauts : faciles à toucher */
-    ul {
-      gap: 0;
+    .col-title {
+      margin-bottom: 10px;
     }
     ul a,
     .mail {
-      display: inline-block;
-      padding-block: 10px;
+      padding-block: 5px;
     }
-    .col-title {
-      margin-bottom: 4px;
+    .wide ul {
+      column-gap: 24px;
     }
   }
 </style>

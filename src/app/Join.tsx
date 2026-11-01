@@ -9,12 +9,13 @@ import {Icon} from './icons';
 import {frenchTypography, initials} from './util';
 
 interface Page {
-  status: 'OK' | 'NOT_FOUND' | 'PROGRAM_UNAVAILABLE';
+  /** PAUSED : carte en pause (essai terminé, impayé, abonnement terminé, suspension). Le serveur ne donne alors que nom, logo et couleurs. */
+  status: 'OK' | 'NOT_FOUND' | 'PROGRAM_UNAVAILABLE' | 'PAUSED';
   merchant?: {name: string; slug: string; business_type: string | null; logo_url: string | null; primary_color: string; secondary_color: string; city: string | null; website: string | null};
   program?: {name: string; type: string; reward_threshold: number; unit_singular: string; unit_plural: string; points_per_event: number; spend_points_per_unit: number | null};
   rewards?: {name: string; description: string | null; threshold: number}[];
   form?: {collect_last_name: boolean; collect_phone: boolean; require_phone: boolean; collect_email: boolean; collect_birthday: boolean};
-  /** false : toutes les cartes de l'offre du commerce sont utilisées (inscriptions refusées). */
+  /** false : inscriptions refusées par le serveur (plus de limite de cartes depuis la grille du 2026-10-31 : ne devrait plus arriver). */
   enrollment_open?: boolean;
   /** Parrainage ouvert chez ce commerce : bonus pour le filleul et le parrain à la première visite. */
   referral?: {bonus: number; unit: string} | null;
@@ -57,7 +58,7 @@ export default function Join() {
     if (demo) {
       const q = new URLSearchParams(location.search);
       const plan = (q.get('offre') ?? '').toUpperCase();
-      import('./mock').then((m) => setPage(m.demoJoinPage(Number(slug.slice(5)), {plan: plan === 'STARTER' || plan === 'PREMIUM' || plan === 'PRO' ? plan : undefined, full: q.has('complet')})));
+      import('./mock').then((m) => setPage(m.demoJoinPage(Number(slug.slice(5)), {plan: plan === 'STARTER' || plan === 'PRO' ? plan : undefined, full: q.has('complet'), paused: q.has('arret')})));
       return;
     }
     setLoadErr('');
@@ -66,7 +67,7 @@ export default function Join() {
         setPage(p);
         if (p.merchant) document.title = `Carte de fidélité ${p.merchant.name}`;
       },
-      (e) => (e?.status === 404 ? setPage({status: 'NOT_FOUND'}) : setLoadErr(e?.message ?? 'Chargement impossible.')),
+      (e) => (e?.data?.status === 'PAUSED' ? setPage(e.data) : e?.status === 404 ? setPage({status: 'NOT_FOUND'}) : setLoadErr(e?.message ?? 'Chargement impossible.')),
     );
   };
   useEffect(load, []);
@@ -94,11 +95,32 @@ export default function Join() {
         </div>
       </Shell>
     );
+  // Programme en pause : la carte reste chez le client, avec son solde (cahier des charges de la grille, section 2.2)
+  if (page.status === 'PAUSED' && page.merchant) {
+    const pm = page.merchant;
+    return (
+      <Shell>
+        <header class="j-head" style={{'--m-bg': pm.primary_color, '--m-fg': pm.secondary_color} as JSX.CSSProperties}>
+          <span class="j-logo">{pm.logo_url ? <img src={pm.logo_url} alt="" /> : initials(pm.name)}</span>
+          <div>
+            <strong>{pm.name}</strong>
+            <small>Carte de fidélité</small>
+          </div>
+        </header>
+        <div class="j-box">
+          <div class="j-full" role="status">
+            <Icon name="clock" size={22} />
+            <div>Le programme de fidélité de {pm.name} est en pause. Si vous avez déjà la carte, votre solde est conservé.</div>
+          </div>
+        </div>
+      </Shell>
+    );
+  }
   if (page.status !== 'OK' || !page.merchant || !page.program || !page.form)
     return (
       <Shell>
         <div class="j-box">
-          <h1>{page.status === 'PROGRAM_UNAVAILABLE' ? 'Programme momentanément indisponible' : 'Commerce introuvable'}</h1>
+          <h1>{page.status === 'PROGRAM_UNAVAILABLE' ? 'Programme momentanément indisponible' : 'Lien d’inscription introuvable'}</h1>
           <p>
             {page.status === 'PROGRAM_UNAVAILABLE'
               ? `Le programme de fidélité ${page.merchant?.name ? `de ${page.merchant.name} ` : ''}n’accepte pas d’inscription pour le moment. Revenez un peu plus tard ou demandez en caisse.`
@@ -145,6 +167,11 @@ export default function Join() {
       setDone(r);
       window.scrollTo({top: 0, behavior: 'smooth'});
     } catch (err: any) {
+      if (err?.code === 'MERCHANT_PAUSED') {
+        setPage({status: 'PAUSED', merchant: m}); // passé en pause depuis l'ouverture de la page
+        window.scrollTo({top: 0, behavior: 'smooth'});
+        return;
+      }
       if (err?.code === 'CARDS_LIMIT_REACHED') {
         setFull(true);
         window.scrollTo({top: 0, behavior: 'smooth'});

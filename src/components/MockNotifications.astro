@@ -1,0 +1,129 @@
+---
+// Écran de verrouillage avec les messages automatiques, dans toutes les offres (HTML/CSS, aucune image). Exemples de textes :
+// le commerçant écrit les siens. Commerce fictif, celui du configurateur.
+import Phone from './Phone.astro';
+import Icon from './Icon.astro';
+
+interface Props {
+  width?: number;
+  name?: string;
+}
+const {width = 300, name = 'Maison Lumière'} = Astro.props;
+const notifs = [
+  {icon: 'cake-slice', titre: 'Joyeux anniversaire Léa !', texte: 'Un cadeau vous attend au salon.'},
+  {icon: 'gift', titre: 'Plus qu’un passage !', texte: 'Votre brushing offert est tout proche.'},
+  {icon: 'clock', titre: 'Cela fait un moment…', texte: 'On vous garde un créneau cette semaine ?'},
+  {icon: 'star', titre: 'Merci de votre visite !', texte: 'Un avis Google nous aiderait beaucoup.'},
+];
+const label = `Exemple d’écran de verrouillage d’un iPhone : quatre notifications Wallet de ${name}, commerce fictif, pour un anniversaire, un dernier passage avant la récompense, une relance et une demande d’avis`;
+---
+
+<div class="mn" style={`--pw:${width}px`} role="img" aria-label={label}>
+  <Phone width={width} screen="#120d08">
+    <div class="ls">
+      <p class="ls-day">Samedi</p>
+      <p class="ls-time">14:32</p>
+      <ul>
+        {
+          notifs.map((n) => (
+            <li>
+              <span class="ls-icon">
+                <Icon name={n.icon} size={Math.round(width * 0.055)} />
+              </span>
+              <span class="ls-body">
+                <span class="ls-app">Wallet <small>maintenant</small></span>
+                <b>{name}</b>
+                <span>
+                  {n.titre} {n.texte}
+                </span>
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </Phone>
+</div>
+
+<style>
+  .mn {
+    display: grid;
+    place-items: center;
+    max-width: 100%;
+  }
+  .ls {
+    position: absolute;
+    inset: 0;
+    padding: calc(var(--pw) * 0.17) calc(var(--pw) * 0.045) 0;
+    color: #fff;
+    text-align: center;
+    background:
+      radial-gradient(120% 60% at 50% 0%, rgba(214, 160, 84, 0.55), transparent 70%),
+      linear-gradient(180deg, #4a3319 0%, #24180c 55%, #120d08 100%);
+  }
+  .ls p {
+    margin: 0;
+    color: #fff;
+  }
+  .ls-day {
+    font-size: calc(var(--pw) * 0.055);
+    font-weight: 600;
+    opacity: 0.9;
+  }
+  .ls-time {
+    font-size: calc(var(--pw) * 0.21);
+    font-weight: 750;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  ul {
+    list-style: none;
+    margin: calc(var(--pw) * 0.07) 0 0;
+    padding: 0;
+    display: grid;
+    gap: calc(var(--pw) * 0.026);
+    text-align: left;
+  }
+  li {
+    display: flex;
+    gap: calc(var(--pw) * 0.03);
+    align-items: flex-start;
+    padding: calc(var(--pw) * 0.03) calc(var(--pw) * 0.036);
+    border-radius: calc(var(--pw) * 0.055);
+    background: rgba(248, 244, 236, 0.94);
+    color: #16161a;
+    font-size: calc(var(--pw) * 0.041);
+    line-height: 1.28;
+    box-shadow: 0 calc(var(--pw) * 0.02) calc(var(--pw) * 0.06) rgba(0, 0, 0, 0.28);
+  }
+  .ls-icon {
+    width: calc(var(--pw) * 0.098);
+    height: calc(var(--pw) * 0.098);
+    border-radius: calc(var(--pw) * 0.024);
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    background: #1f1c17;
+    color: #d9b27a;
+  }
+  .ls-body {
+    display: grid;
+    min-width: 0;
+  }
+  .ls-app {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: calc(var(--pw) * 0.031);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6b665c;
+  }
+  .ls-app small {
+    font-size: 1em;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+</style>

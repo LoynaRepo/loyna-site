@@ -1,6 +1,7 @@
 ---
 import {Picture} from 'astro:assets';
 import Base from '../layouts/Base.astro';
+import Jonction from '../components/Jonction.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import Icon from '../components/Icon.astro';
 import CtaBand from '../components/CtaBand.astro';
@@ -22,7 +23,7 @@ const crumbs = [
   {name: 'Accueil', url: '/'},
   {name: 'Fonctionnalités', url: '/fonctionnalites/'},
 ];
-// Campagnes par semaine, de Starter à Pro (src/data/site.ts)
+// Campagnes par semaine, Starter puis Pro (src/data/site.ts)
 const quotaCampagnes = PLANS.map((p) => (p.campaignsPerWeek === null ? `illimitées avec ${p.name}` : `${nombre(p.campaignsPerWeek)} avec ${p.name}`)).join(', ');
 
 const blocks = [
@@ -38,13 +39,13 @@ const blocks = [
     id: 'proximite',
     eyebrow: 'Proximité',
     title: 'Votre client passe près de la boutique : sa carte s’affiche',
-    text: 'Quand un client passe près de votre boutique, sa carte s’affiche sur l’écran de verrouillage de son téléphone, avec un court message. Exemple : il passe devant votre boulangerie et lit « Votre récompense vous attend chez Le Fournil d’Albane ! ». La notification de proximité est incluse dans toutes les formules.',
+    text: 'Quand un client passe près de votre boutique, sa carte s’affiche sur l’écran de verrouillage de son téléphone, avec un court message. Exemple : il passe devant votre boulangerie et lit « Votre récompense vous attend chez Le Fournil d’Albane ! ». La notification de proximité est incluse dans toutes les offres.',
     points: [
       'iPhone : la carte s’affiche sur l’écran de verrouillage. Android : une notification apparaît quand le client s’attarde près de la boutique',
       'Le message suit la carte : récompense qui attend, passages restants, ou votre propre message',
       'Jamais comptée comme une campagne, sans coût par message',
       'LOYNA ne reçoit jamais la position de vos clients : c’est leur téléphone qui détecte la proximité',
-      'Fonctionne quand le client a activé la localisation ; avec Pro, jusqu’à 3 boutiques',
+      'Fonctionne quand le client a activé la localisation ; 1 adresse avec Starter, jusqu’à 3 avec Pro (une seule carte, un seul tableau de bord)',
     ],
     proximite: true,
   },
@@ -81,7 +82,7 @@ const blocks = [
     title: 'Le bon message, au bon moment, sur l’écran de verrouillage',
     text: 'Les notifications Wallet sont le canal de LOYNA : elles s’affichent sur le téléphone du client, sans coût par message. Elles servent à faire revenir, pas à harceler.',
     points: [
-      'Dans toutes les formules, le client est prévenu à chaque passage et quand sa récompense est débloquée',
+      'Dans toutes les offres, le client est prévenu à chaque passage et quand sa récompense est débloquée',
       'Campagnes vers tous vos clients : une offre, une nouveauté, un horaire exceptionnel',
       `Campagnes par semaine, quel que soit le nombre de clients : ${quotaCampagnes} ; le compteur repart chaque lundi`,
       `Au plus un message commercial toutes les ${MARKETING_INTERVAL_HOURS} h par client, délai réglable`,
@@ -92,16 +93,15 @@ const blocks = [
   {
     id: 'automatisations',
     eyebrow: 'Automatisations',
-    title: 'Avec Premium, la fidélité fonctionne toute seule',
+    title: 'Dans toutes les offres, la fidélité fonctionne toute seule',
     text: 'Les automatisations envoient le bon message pendant que vous travaillez. Vous choisissez les textes, la surprise et les règles, et ces messages ne comptent jamais dans vos campagnes.',
     points: [
       'Anniversaire : un message le jour J, avec la surprise de votre choix',
       'Relance des clients qui ne reviennent plus, après 60 jours par défaut (réglable)',
       '« Plus qu’un passage ! » : un rappel aux clients tout proches de leur récompense, une fois par récompense',
-      'Demande d’avis Google après la 3e visite, envoyée quelques heures après le passage',
+      'Demande d’avis Google après la 3e visite, réglable, envoyée quelques heures après le passage',
       'Campagnes programmées à l’avance et groupes de clients : fidèles, inactifs depuis 30, 60 ou 90 jours, anniversaires du mois, récompense disponible',
-      'Niveaux VIP bronze, argent et or : la carte de votre client change de couleur à chaque niveau (vos couleurs, puis argent, puis or), avec l’avantage de votre choix et un message à chaque nouveau niveau',
-      'Rapport mensuel le 1er du mois, avec 3 conseils concrets, dans votre espace et par e-mail',
+      'Rapport du mois par e-mail, avec jusqu’à 3 conseils, et aussi dans votre espace',
     ],
     img: automatisations,
     alt: 'Schéma des automatisations : anniversaire, absence, dixième passage',
@@ -109,14 +109,15 @@ const blocks = [
   {
     id: 'pro',
     eyebrow: 'Offre Pro',
-    title: 'Avec Pro, LOYNA travaille avec vous',
-    text: 'Chaque mois, nous faisons le point avec vous et nous préparons vos campagnes. Rien ne part sans votre accord : vous les validez en un clic dans votre espace.',
+    title: 'Avec Pro, vos clients invitent et LOYNA écrit',
+    text: 'Vos clients invitent leurs amis, LOYNA écrit vos messages. Rien ne part sans vous : vous validez chaque message dans votre espace.',
     points: [
-      'Suivi personnalisé : un point mensuel de 30 min (chiffres, objectifs, réglages de la récompense) et un plan d’action',
-      'Campagnes clés en main : calendrier des temps forts (fêtes, saisons, soldes, événements), campagnes rédigées et programmées pour vous',
-      'Jusqu’à 3 boutiques, chacune avec sa notification de proximité',
-      'Parrainage : un lien au dos de chaque carte, et un bonus pour le parrain et pour l’ami à sa première visite',
-      'Kit comptoir imprimé (chevalet QR code et vitrophanie), cartes et campagnes illimitées, support prioritaire',
+      'Parrainage entre vos clients : chacun invite ses amis avec son lien, bonus aux deux à la première visite',
+      'LOYNA écrit et programme vos messages, au moins un par mois : vous validez, rien ne part sans vous',
+      'Niveaux VIP bronze, argent et or : la carte de vos meilleurs clients change de couleur',
+      'Votre carte finie à la main (logo retouché et, sur une carte à tampons, cachets à vos initiales), sans la mention LOYNA',
+      'Une vidéo et des visuels de votre carte, prêts à poster ; 1 QR code sous verre par adresse, offert une fois',
+      'Campagnes illimitées, jusqu’à 3 adresses (une seule carte, un seul tableau de bord), un point de 30 minutes par mois à votre demande, support prioritaire',
     ],
     pro: true,
   },
@@ -125,7 +126,7 @@ const blocks = [
     eyebrow: 'Tableau de bord',
     title: 'Des chiffres clairs pour piloter votre fidélité',
     text: 'Clients actifs, nouveaux clients, passages, récompenses débloquées et utilisées, clients inactifs, évolution de l’activité : tout est calculé à partir de vos vrais passages.',
-    points: ['Période réglable', 'Statistiques avancées et rapport mensuel avec Premium et Pro', 'Fiche détaillée par client', 'Export des données d’un client à la demande'],
+    points: ['Période réglable', 'Courbes jour par jour et rapport du mois, dans toutes les offres', 'Fiche détaillée par client', 'Export de tous vos clients en CSV, à tout moment'],
     img: tableau,
     alt: 'Tableau de bord LOYNA Business : clients actifs, passages, récompenses',
   },
@@ -228,11 +229,13 @@ const more = [
 
   {
     blocks.map((b, i) => (
-      <section id={b.id} class={`section ${i % 2 ? 'section--alt' : ''}`}>
+      <>
+        <Jonction de={i % 2 ? 'sable' : 'creme'} vers={i % 2 ? 'creme' : 'sable'} forme={[3, 1, 6, 2, 5, 4][i % 6] as 1 | 2 | 3 | 4 | 5 | 6} retourne={i % 3 === 1} />
+        <section id={b.id} class={`section tete-serree ${i % 2 ? '' : 'section--alt'}`}>
         <div class={`container feat ${i % 2 ? 'flip' : ''}`}>
           <div>
             <p class="eyebrow">{b.eyebrow}</p>
-            <h2>{b.title}</h2>
+            <h2 class="titre-bloc">{b.title}</h2>
             <p class="lead">{b.text}</p>
             <ul class="checks">
               {b.points.map((p) => (
@@ -257,11 +260,14 @@ const more = [
             )}
           </div>
         </div>
-      </section>
+        </section>
+      </>
     ))
   }
 
-  <section class="section section--dark">
+  <Jonction de={blocks.length % 2 ? 'sable' : 'creme'} vers="nuit" forme={2} retourne />
+
+  <section class="section section--dark tete-serree">
     <div class="container">
       <div class="section-head">
         <p class="eyebrow">Et aussi</p>
@@ -282,6 +288,8 @@ const more = [
       </div>
     </div>
   </section>
+
+  <Jonction de="nuit" vers="creme" forme={1} />
 
   <PourVotreMetier />
 
@@ -375,12 +383,16 @@ const more = [
 <style>
   /* Haut de page : explorateur visuel des fonctionnalités */
   .f-hero {
-    padding: clamp(36px, 5vw, 72px) 0 clamp(44px, 6vw, 84px);
-    color: #e9e5dc;
-    background:
-      radial-gradient(50% 70% at 80% 35%, rgba(230, 194, 122, 0.22), transparent 70%),
-      radial-gradient(40% 60% at 0% 100%, rgba(201, 150, 63, 0.12), transparent 70%),
-      linear-gradient(180deg, #121216, #17151a);
+    padding: clamp(24px, 4vw, 60px) 0 clamp(26px, 4vw, 52px);
+    color: var(--text);
+    background: var(--bg);
+  }
+  @media (min-width: 901px) {
+    .f-hero {
+      background:
+        radial-gradient(40% 44% at 80% 48%, rgba(230, 194, 122, 0.42), transparent 72%),
+        var(--bg);
+    }
   }
   .f-grid {
     display: grid;
@@ -395,22 +407,10 @@ const more = [
   .f-copy {
     grid-area: copy;
   }
-  .f-copy :global(.breadcrumbs a),
-  .f-copy :global(.breadcrumbs li) {
-    color: #a8a194;
-  }
-  .f-copy :global(.breadcrumbs li[aria-current]) {
-    color: #e9e5dc;
-  }
   .f-copy h1 {
-    color: #faf7f0;
-    font-size: clamp(2.2rem, 4.6vw, 3.6rem);
-  }
-  .f-copy .eyebrow {
-    color: #e6c27a;
+    font-size: clamp(2.2rem, 4.8vw, 3.9rem);
   }
   .f-copy .lead {
-    color: #c9c2b4;
     max-width: 560px;
   }
   .f-tabs {
@@ -428,9 +428,9 @@ const more = [
     gap: 10px;
     padding: 12px 14px;
     border-radius: 14px;
-    border: 1px solid rgba(250, 247, 240, 0.12);
-    background: rgba(250, 247, 240, 0.04);
-    color: #d9d2c4;
+    border: 1px solid var(--filet);
+    background: var(--card);
+    color: var(--ink);
     text-decoration: none;
     font-weight: 600;
     font-size: 0.95rem;
@@ -440,7 +440,7 @@ const more = [
       color 0.2s;
   }
   .f-tab :global(svg) {
-    color: #e6c27a;
+    color: var(--gold-strong);
     flex-shrink: 0;
   }
   /* nombre impair d'onglets : le dernier prend toute la largeur */
@@ -448,16 +448,19 @@ const more = [
     grid-column: 1 / -1;
   }
   .f-tab:hover {
-    border-color: rgba(230, 194, 122, 0.45);
-    color: #fff;
+    border-color: var(--ink);
+    color: var(--ink);
   }
   .f-tab[aria-selected='true'] {
-    background: rgba(230, 194, 122, 0.14);
-    border-color: rgba(230, 194, 122, 0.6);
-    color: #fff;
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #faf7f0;
+  }
+  .f-tab[aria-selected='true'] :global(svg) {
+    color: #e6c27a;
   }
   .f-tab:focus-visible {
-    outline: 3px solid rgba(230, 194, 122, 0.55);
+    outline: 3px solid var(--gold);
     outline-offset: 2px;
   }
   /* barre de progression du défilement automatique */
@@ -483,18 +486,18 @@ const more = [
     margin: 0 0 6px;
     font-weight: 750;
     font-size: 1.15rem;
-    color: #faf7f0;
+    color: var(--ink);
   }
   .f-text {
     margin: 0 0 10px;
-    color: #c9c2b4;
+    color: var(--muted);
   }
   .f-more {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     min-height: 44px;
-    color: #e6c27a;
+    color: var(--gold-strong);
     font-weight: 700;
     text-decoration: none;
   }
@@ -648,6 +651,11 @@ const more = [
     }
   }
 
+  .titre-bloc {
+    font-size: clamp(1.75rem, 3.4vw, 2.7rem);
+    letter-spacing: -0.04em;
+    line-height: 1.06;
+  }
   .feat {
     display: grid;
     grid-template-columns: 1.1fr 0.9fr;
@@ -665,7 +673,7 @@ const more = [
     justify-items: center;
   }
   .media .shot {
-    max-width: 420px;
+    max-width: 350px;
     width: 100%;
   }
   .cards-demo {

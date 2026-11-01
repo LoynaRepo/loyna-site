@@ -527,18 +527,35 @@ body {
 .side-guide {
   text-decoration: none;
 }
+/* Bandeau d'état du service, en haut de chaque écran : sursis (ambre), carte en pause ou suspension (rouge) */
 .banner {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 10px 12px;
   align-items: center;
   max-width: 1180px;
   margin: 0 auto 18px;
-  padding: 12px 16px;
+  padding: 12px 14px 12px 16px;
   border-radius: 14px;
   background: #fff4e0;
   border: 1px solid #f1d9a8;
   color: #6b4500;
   font-weight: 600;
+}
+.banner--red {
+  background: #fff4f2;
+  border-color: #f3d1cc;
+  color: #8c2017;
+}
+.banner > .ic {
+  flex: none;
+}
+.banner-t {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.banner .b {
+  flex: none;
 }
 
 /* --- Éléments de page --------------------------------------------------------------------------- */
@@ -1545,7 +1562,7 @@ body {
 .consents li > span:not(.ic) {
   flex: 1;
 }
-/* Niveau VIP (Premium et Pro) et parrainage (offre Pro) */
+/* Niveau VIP et parrainage (offre Pro) */
 .cd-id {
   flex-wrap: wrap;
 }
@@ -2772,13 +2789,23 @@ label.b {
   display: grid;
   gap: 20px;
 }
+/* Deux colonnes indépendantes sur ordinateur ; sur téléphone, un seul fil, « Bon à savoir » en dernier */
+.sub-col {
+  display: contents;
+}
+.sub-last {
+  order: 1;
+}
 @media (min-width: 1000px) {
   .sub-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: start;
   }
-  .plan-card {
-    grid-row: span 2;
+  .sub-col {
+    display: grid;
+    gap: 20px;
+    align-content: start;
+    min-width: 0;
   }
 }
 .plan-card {
@@ -3941,75 +3968,200 @@ a.top-merchant {
     height: 40px;
   }
 }
-/* Option « +500 cartes » (2026-10-30) : bouton sous la jauge et dans les alertes, panneau de l'Abonnement, confirmation */
-.alert-t {
-  display: grid;
-  gap: 10px;
-  min-width: 0;
+
+/* Grille du 2026-10-31 : compteur d'essai, mot de passe oublié, abonnement, panneau de démarrage, scanner en pause, écran Opérateur */
+.trial-line {
+  max-width: 1180px;
+  margin: -6px auto 12px;
+  text-align: right;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--muted);
 }
-.alert-b {
-  display: flex;
-  flex-wrap: wrap;
+.trial-line a {
+  color: inherit;
+}
+.login-forgot {
+  display: grid;
   gap: 8px;
-}
-.meter-w {
-  display: grid;
-  gap: 10px;
   justify-items: start;
 }
-.meter-w > .meter {
+.login-forgot .fld {
   width: 100%;
 }
-.packs-card {
+.plan-legacy {
+  margin: 0;
+  color: #faf7f0;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.plan-note a {
+  color: #e6c27a;
+}
+.plan-card .plan-portal {
+  color: #faf7f0;
+  border-color: rgba(250, 247, 240, 0.25);
+}
+.offer-price {
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+.offer-price b {
+  font-size: 1.22rem;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.offer-b {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+.offer-b .b span {
+  white-space: normal;
+  text-align: center;
+}
+.offers-notes {
+  color: var(--muted);
+}
+.change-confirm {
   display: grid;
   gap: 12px;
-  align-content: start;
 }
-.packs-card > .pnl-h {
-  margin-bottom: 0;
-}
-.packs-card p,
-.packs-card .btn-row,
-.packs-card ul {
+.change-confirm p,
+.change-confirm ul {
   margin: 0;
 }
-.packs-now {
-  display: grid;
-  gap: 2px;
+.change-price {
+  font-size: 1.05rem;
 }
-.packs-n {
-  font-size: 1.5rem;
-  font-weight: 700;
+.change-price b {
+  font-size: 1.35rem;
   letter-spacing: -0.02em;
-  color: var(--ink);
+  white-space: nowrap;
 }
-.packs-pending {
+.plain-ol {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+}
+.trial-start .pnl-sub {
+  margin-bottom: 0;
+}
+.ts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.ts-list li {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 8px 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--bg);
 }
-.pack-confirm {
+.ts-i {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--gold-soft);
+  color: var(--gold-strong);
+}
+.ts-list .is-done .ts-i {
+  background: #e6f4ea;
+  color: var(--green);
+}
+.ts-t {
+  flex: 1 1 200px;
+  min-width: 0;
   display: grid;
-  gap: 12px;
+  gap: 2px;
 }
-.pack-confirm p,
-.pack-confirm ul {
+.ts-t small {
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+.scan-paused {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 12px;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 28px 20px;
+  border-radius: 24px;
+  border: 1px solid rgba(250, 247, 240, 0.14);
+  background: rgba(250, 247, 240, 0.05);
+}
+.scan-paused p {
+  margin: 0;
+  color: #c9c2b4;
+}
+.scan-paused-i {
+  display: inline-grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(230, 194, 122, 0.14);
+  color: #e6c27a;
+}
+.op-offre {
+  min-width: 170px;
+}
+.op-m .op-join {
+  font-size: 0.86rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.op-m .op-copy {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+.op-manage {
+  display: grid;
+  gap: 18px;
+}
+.op-manage .ord-dl {
   margin: 0;
 }
-.pack-price {
-  font-size: 1.05rem;
+.op-manage .form-err {
+  margin: 0;
 }
-.pack-price b {
-  font-size: 1.35rem;
-  letter-spacing: -0.02em;
+.op-manage-s {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
 }
-/* Abonnement avec l'option : offre et consommation côte à côte, puis cartes supplémentaires sous l'offre */
-@media (min-width: 1000px) {
-  .sub-grid--packs .plan-card {
-    grid-row: auto;
-  }
-  .sub-grid--packs .packs-card {
-    grid-column: 1;
-  }
+.op-manage-s h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.op-manage-s p {
+  margin: 0;
+}
+.op-manage-s > .fld,
+.op-manage-s > .form,
+.op-manage-s > .tgl {
+  width: 100%;
+}
+.op-days {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+.op-days .fld {
+  width: 120px;
 }

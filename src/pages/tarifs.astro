@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import Jonction from '../components/Jonction.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import PricingCards from '../components/PricingCards.astro';
 import Icon from '../components/Icon.astro';
@@ -7,7 +8,7 @@ import CtaBand from '../components/CtaBand.astro';
 import CallbackForm from '../components/CallbackForm.astro';
 import Proximite from '../components/Proximite.astro';
 import PourVotreMetier from '../components/PourVotreMetier.astro';
-import {CARD_PACK, COMPARISON, LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, nombre, offerActive} from '../data/site';
+import {APPEL, COMPARISON, ENGAGEMENT, LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, MISE_EN_SERVICE_APRES, PHRASES, PLANS, SITE, TRIAL, essaiUrl, euro, nombre, offerActive} from '../data/site';
 import {getFaq} from '../lib/builder';
 
 const crumbs = [
@@ -16,31 +17,26 @@ const crumbs = [
 ];
 const faq = (await getFaq()).filter((f) => f.categorie === 'Tarifs et abonnement');
 
+// Un Offer par offre et par prix, toujours réglé au mois
 const offersLd = {
   '@type': 'Product',
   name: 'LOYNA — carte de fidélité digitale',
   description: SITE.description,
   brand: {'@type': 'Brand', name: 'LOYNA'},
-  offers: PLANS.flatMap((p) => [
-    {
+  offers: PLANS.flatMap((p) =>
+    [
+      {name: `${p.name}, sans engagement`, price: p.monthly},
+      {name: `${p.name}, avec ${ENGAGEMENT.months} mois d’engagement`, price: p.engaged},
+    ].map((o) => ({
       '@type': 'Offer',
-      name: `${p.name} — mensuel`,
-      price: p.monthly,
+      name: o.name,
+      price: o.price,
       priceCurrency: 'EUR',
       url: `${SITE.url}/tarifs/`,
       availability: 'https://schema.org/InStock',
-      priceSpecification: {'@type': 'UnitPriceSpecification', price: p.monthly, priceCurrency: 'EUR', unitCode: 'MON', valueAddedTaxIncluded: false},
-    },
-    {
-      '@type': 'Offer',
-      name: `${p.name} — annuel`,
-      price: p.yearly,
-      priceCurrency: 'EUR',
-      url: `${SITE.url}/tarifs/`,
-      availability: 'https://schema.org/InStock',
-      priceSpecification: {'@type': 'UnitPriceSpecification', price: p.yearly, priceCurrency: 'EUR', unitCode: 'ANN', valueAddedTaxIncluded: false},
-    },
-  ]),
+      priceSpecification: {'@type': 'UnitPriceSpecification', price: o.price, priceCurrency: 'EUR', unitCode: 'MON', valueAddedTaxIncluded: false},
+    })),
+  ),
 };
 const faqLd = {
   '@type': 'FAQPage',
@@ -48,16 +44,14 @@ const faqLd = {
 };
 const prixMin = Math.min(...PLANS.map((p) => p.monthly));
 const starter = PLANS[0];
-const premium = PLANS[1];
-// Option « +500 cartes » : offres concernées (« Starter et Premium »)
-const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) => p.name).join(' et ');
+const offer = offerActive();
 // Groupes du comparatif : une ligne de titre avant la première ligne de chaque groupe
 const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
 ---
 
-<Base stickyCta={{primary: {href: '/creer-ma-carte/', label: 'Créer ma carte'}, secondary: {href: '/contact/', label: 'Une question ?'}}}
+<Base stickyCta={{primary: TRIAL.open ? APPEL : {href: '/creer-ma-carte/', label: 'Créer ma carte'}, secondary: {href: '/contact/', label: 'Une question ?'}}}
   title={`Tarifs : carte de fidélité digitale dès ${euro(prixMin)} par mois`}
-  description={`${PLANS.map((p) => `${p.name} ${euro(p.monthly)}`).join(', ')} par mois, sans TVA. Notification de proximité incluse. ${offerActive() ? `Mise en service offerte jusqu’au ${LAUNCH_OFFER.untilLabel}.` : '−15 % et mise en service offerte en annuel.'}`}
+  description={`${PLANS.map((p) => `${p.name} ${euro(p.monthly)}`).join(', ')} par mois, sans TVA, sans engagement, ou −${ENGAGEMENT.discountPercent} % avec ${ENGAGEMENT.months} mois d’engagement. ${TRIAL.open ? `${TRIAL.label.replace(/^1 mois gratuit/, 'Essai d’un mois gratuit')}.` : offer ? `Mise en service offerte jusqu’au ${LAUNCH_OFFER.untilLabel}.` : 'Notification de proximité incluse.'}`}
   ogImage="/og/tarifs.png"
   breadcrumbs={crumbs}
   jsonLd={[offersLd, faqLd]}
@@ -66,31 +60,35 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
     <div class="container">
       <Breadcrumbs items={crumbs} />
       <p class="eyebrow">Tarifs</p>
-      <h1>Des formules simples, dès {euro(prixMin)} par mois</h1>
-      <p class="lead">Toutes les formules incluent la carte Apple Wallet et Google Wallet, la notification de proximité, les campagnes de notifications et le scanner. Premium ajoute les automatisations et les niveaux VIP, Pro le suivi par LOYNA. Votre carte est prête sous 24&nbsp;h.</p>
+      <h1>Deux offres simples, dès {euro(prixMin)} par mois</h1>
+      <p class="lead">Les deux offres comprennent la carte Apple Wallet et Google Wallet, les clients illimités, les messages qui partent tout seuls, la notification de proximité, les campagnes et le scanner. Pro ajoute le parrainage entre vos clients et les messages écrits par LOYNA.{TRIAL.open && <> {TRIAL.label.charAt(0).toUpperCase() + TRIAL.label.slice(1)}.</>}</p>
     </div>
   </section>
+
+  <Jonction de="sable" vers="creme" forme={2} />
 
   <section class="section pt0">
     <div class="container">
       <p class="ma-carte" id="ma-carte" hidden>
         <span class="mc-dots" aria-hidden="true"><i></i><i></i></span>
-        <span>Votre carte <strong id="mc-name"></strong> est prête à être créée : choisissez votre formule, nous la mettons en service sous 24&nbsp;h.</span>
+        <span>Votre carte <strong id="mc-name"></strong> est prête à être créée : {TRIAL.open ? 'essayez-la 1 mois gratuitement, ou choisissez votre offre.' : <>choisissez votre offre, nous la mettons en service sous 24&nbsp;h.</>}</span>
         <a href="/creer-ma-carte/">Modifier</a>
       </p>
       <PricingCards idPrefix="tarifs" level={2} />
     </div>
   </section>
 
-  <section class="section section--alt">
+  <Jonction de="creme" vers="sable" forme={3} retourne />
+
+  <section class="section section--alt tete-serree">
     <div class="container">
       <div class="section-head">
-        <h2>Comparer les formules</h2>
-        <p>Le détail de ce qui est inclus dans chaque formule.</p>
+        <h2>Comparer les offres</h2>
+        <p>Le détail de ce qui est inclus dans chaque offre.</p>
       </div>
       <div class="table-wrap">
         <table class="compare">
-          <caption class="visually-hidden">Comparatif des formules LOYNA</caption>
+          <caption class="visually-hidden">Comparatif des offres LOYNA</caption>
           <thead>
             <tr>
               <th scope="col">Fonctionnalité</th>
@@ -98,7 +96,8 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
                 PLANS.map((p) => (
                   <th scope="col">
                     {p.name}
-                    <span>{euro(p.monthly)}/mois</span>
+                    <span>{euro(p.monthly)}<i>/mois</i></span>
+                    <small>ou {euro(p.engaged)} avec engagement</small>
                   </th>
                 ))
               }
@@ -110,13 +109,16 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
                 <>
                   {row.group && (
                     <tr class="grp">
-                      <th scope="colgroup" colspan={4}>
+                      <th scope="colgroup" colspan={3}>
                         {row.group}
                       </th>
                     </tr>
                   )}
                 <tr>
-                  <th scope="row">{row.label}</th>
+                  <th scope="row">
+                    {row.label}
+                    {row.note && <small>{row.note}</small>}
+                  </th>
                   {row.values.map((v) => (
                     <td>
                       {v === true ? (
@@ -124,8 +126,8 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
                           <Icon name="check" size={18} label="Inclus" />
                         </span>
                       ) : v === false ? (
-                        <span class="no" aria-label="Non inclus">
-                          —
+                        <span class="no" role="img" aria-label="Non inclus">
+                          <Icon name="minus" size={18} />
                         </span>
                       ) : (
                         <strong>{v}</strong>
@@ -145,56 +147,54 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
     </div>
   </section>
 
-  <section class="section" id="quotas">
+  <Jonction de="sable" vers="creme" forme={1} />
+
+  <section class="section tete-serree" id="quotas">
     <div class="container">
       <div class="section-head">
-        <p class="eyebrow">Ce que comptent les quotas</p>
+        <p class="eyebrow">Ce qui est compté</p>
         <h2>Des limites claires, pensées pour vos clients</h2>
-        <p>Chaque formule fixe un nombre de cartes et un nombre de campagnes par semaine. Pro n’a aucune limite.</p>
+        <p>Les clients et les cartes sont illimités dans les deux offres. Seules les campagnes sont comptées avec Starter.</p>
       </div>
       <div class="grid grid-3">
         <div class="card">
           <span class="icon"><Icon name="wallet" /></span>
           <h3>Cartes</h3>
           <p>
-            Une carte, c’est un client inscrit à votre programme&nbsp;: {nombre(starter.cards ?? 0)} avec Starter, {nombre(premium.cards ?? 0)} avec Premium, sans limite avec Pro. Vous êtes prévenu dans votre espace à 80&nbsp;% et à 100&nbsp;%&nbsp;; au-delà, les nouvelles inscriptions sont refusées et le client voit un message d’attente. Un client supprimé ne compte plus.
+            Une carte, c’est un client inscrit à votre programme&nbsp;: sans limite, dans les deux offres.
           </p>
         </div>
         <div class="card">
           <span class="icon"><Icon name="megaphone" /></span>
           <h3>Campagnes</h3>
           <p>
-            Une campagne, c’est un message envoyé à vos clients, à tous ou à un groupe&nbsp;: elle compte pour une, qu’elle parte vers 30 ou 300 clients. Vous en avez {nombre(starter.campaignsPerWeek ?? 0)} par semaine avec Starter, {nombre(premium.campaignsPerWeek ?? 0)} avec Premium, sans limite avec Pro. Le compteur repart chaque lundi&nbsp;; une campagne programmée compte dans la semaine où elle part.
+            Une campagne, c’est un message envoyé à vos clients, à tous ou à un groupe&nbsp;: elle compte pour une, qu’elle parte vers 30 ou 300 clients. Vous en avez {nombre(starter.campaignsPerWeek ?? 0)} par semaine avec Starter, sans limite avec Pro. Le compteur repart chaque lundi&nbsp;; une campagne programmée compte dans la semaine où elle part.
           </p>
         </div>
         <div class="card">
           <span class="icon"><Icon name="bell-ring" /></span>
           <h3>Jamais décomptés</h3>
           <p>
-            Les messages automatiques (passage validé, récompense débloquée, anniversaire, relance, «&nbsp;Plus qu’un passage&nbsp;!&nbsp;», avis, parrainage, niveau VIP) et les notifications de proximité. Et pour ne pas lasser vos clients, chacun reçoit au plus un message commercial toutes les {MARKETING_INTERVAL_HOURS}&nbsp;h (réglable).
+            Les messages automatiques (passage validé, récompense débloquée, anniversaire, relance, «&nbsp;Plus qu’un passage&nbsp;!&nbsp;», avis, parrainage, niveau VIP) et les notifications de proximité. Et pour ne pas lasser vos clients, un même client reçoit au plus un message commercial par {MARKETING_INTERVAL_HOURS}&nbsp;h, réglable.
           </p>
         </div>
       </div>
-      <p class="pack-note" id="option-cartes">
-        <span class="pack-ic"><Icon name="circle-plus" size={22} /></span>
-        <span>
-          <strong>Besoin de plus de cartes&nbsp;?</strong> +{nombre(CARD_PACK.cards)} cartes pour {euro(CARD_PACK.monthly)} par mois, en {packPlans} ({euro(CARD_PACK.yearly)} par an avec un abonnement annuel). Les packs se cumulent et s’ajoutent depuis votre espace client, sans changer de formule. Ils ajoutent des cartes, pas de campagnes.
-        </span>
-      </p>
     </div>
   </section>
 
-  <section class="section section--dark" id="proximite">
+  <Jonction de="creme" vers="nuit" forme={5} />
+
+  <section class="section section--dark tete-serree" id="proximite">
     <div class="container prox-grid">
       <div>
-        <p class="eyebrow">Dans toutes les formules</p>
+        <p class="eyebrow">Dans toutes les offres</p>
         <h2>La notification de proximité, incluse dès Starter</h2>
         <p class="lead">Quand un client passe près de votre boutique, sa carte s’affiche sur l’écran de verrouillage de son téléphone, avec un court message&nbsp;: sa récompense qui l’attend, les passages qui restent, ou votre propre message.</p>
         <ul class="checks prox-checks">
           <li>iPhone&nbsp;: la carte s’affiche sur l’écran de verrouillage. Android&nbsp;: une notification apparaît quand le client s’attarde près de la boutique.</li>
           <li>Jamais comptée comme une campagne, sans coût par message.</li>
           <li>LOYNA ne reçoit jamais la position de vos clients&nbsp;: c’est leur téléphone qui détecte la proximité.</li>
-          <li>Avec Pro, jusqu’à 3 boutiques, chacune avec sa notification de proximité.</li>
+          <li>1 adresse avec Starter. Avec Pro, jusqu’à 3 adresses&nbsp;: une seule carte, un seul tableau de bord.</li>
         </ul>
         <p class="prox-note">Fonctionne quand le client a activé la localisation et laissé Wallet s’afficher sur l’écran verrouillé.</p>
       </div>
@@ -204,17 +204,19 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
     </div>
   </section>
 
-  <section class="section">
+  <Jonction de="nuit" vers="creme" forme={6} retourne />
+
+  <section class="section tete-serree">
     <div class="container grid grid-3">
-      <div class="card">
+      <div class="card" id="mise-en-service">
         <span class="icon"><Icon name="rocket" /></span>
-        <h2 class="h3">Mise en service : {euro(SETUP_FEE)}, une seule fois</h2>
-        <p>Création de votre carte à vos couleurs, de votre QR code d’inscription et de votre espace commerçant. {offerActive() ? <><span data-offer><strong>Offerte jusqu’au {LAUNCH_OFFER.untilLabel}</strong>, en mensuel comme en annuel (appliquée d’office dans votre panier). Ensuite : </span>offerte en paiement annuel.</> : <>Offerte en paiement annuel.</>}</p>
+        <h2 class="h3">Mise en service</h2>
+        <p>Création de votre carte à vos couleurs, de votre QR code d’inscription et de votre espace commerçant. {offer ? <><span data-offer>{PHRASES.miseEnService}</span><span data-offer-off hidden>{MISE_EN_SERVICE_APRES}</span></> : MISE_EN_SERVICE_APRES} Jamais refacturée à un client qui reprend un abonnement.</p>
       </div>
-      <div class="card">
-        <span class="icon"><Icon name="sparkles" /></span>
-        <h2 class="h3">−15&nbsp;% en paiement annuel</h2>
-        <p>Payez l’année en une fois : vous économisez 15&nbsp;% sur l’abonnement et la mise en service est offerte.</p>
+      <div class="card" id="engagement">
+        <span class="icon"><Icon name="percent" /></span>
+        <h2 class="h3">L’engagement, seulement si vous le voulez</h2>
+        <p>{PHRASES.engagement}</p>
       </div>
       <div class="card">
         <span class="icon"><Icon name="lock" /></span>
@@ -222,17 +224,38 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
         <p>Paiement par carte bancaire via Stripe. Factures, moyen de paiement et abonnement se gèrent depuis votre espace client.</p>
       </div>
     </div>
-  </section>
-
-  <section class="section section--dark">
-    <div class="container">
-      <CallbackForm title="Un doute sur la formule à choisir ?" text="Laissez votre numéro : on vous rappelle au créneau de votre choix pour trouver la formule adaptée à votre commerce. Ce rappel ne vous engage à rien." />
+    <div class:list={['container', 'grid', 'regles', {'grid-2': TRIAL.open}]}>
+      {
+        TRIAL.open && (
+          <div class="card" id="essai">
+            <span class="icon"><Icon name="gift" /></span>
+            <h2 class="h3">Essai</h2>
+            <p>{PHRASES.essai}</p>
+            <p class="regle-lien"><a href={essaiUrl}>Essayer 1 mois gratuitement</a></p>
+          </div>
+        )
+      }
+      <div class="card" id="arret">
+        <span class="icon"><Icon name="circle-pause" /></span>
+        <h2 class="h3">Si l’abonnement s’arrête</h2>
+        <p>{PHRASES.arret}</p>
+      </div>
     </div>
   </section>
 
+  <Jonction de="creme" vers="nuit" forme={4} />
+
+  <section class="section section--dark tete-serree">
+    <div class="container">
+      <CallbackForm title="Un doute sur l’offre à choisir ?" text="Laissez votre numéro : on vous rappelle au créneau de votre choix pour trouver l’offre adaptée à votre commerce. Ce rappel ne vous engage à rien." />
+    </div>
+  </section>
+
+  <Jonction de="nuit" vers={faq.length > 0 ? 'sable' : 'creme'} forme={2} retourne />
+
   {
     faq.length > 0 && (
-      <section class="section section--alt">
+      <section class="section section--alt tete-serree">
         <div class="container narrow">
           <div class="section-head">
             <h2>Questions sur les tarifs</h2>
@@ -252,13 +275,15 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
     )
   }
 
+  {faq.length > 0 && <Jonction de="sable" vers="creme" forme={3} />}
+
   <PourVotreMetier />
 
-  <CtaBand callbackHref="#rappel" title="Pas encore décidé ?" text="Créez l’aperçu de votre carte en 30 secondes, ou écrivez-nous : nous vous aidons à choisir la formule adaptée à votre commerce." />
+  <CtaBand callbackHref="#rappel" title="Pas encore décidé ?" text="Créez l’aperçu de votre carte en 30 secondes, ou écrivez-nous : nous vous aidons à choisir l’offre adaptée à votre commerce." />
 </Base>
 
 <script>
-  // Carte préparée dans le configurateur (même navigateur) : on la rappelle au-dessus des formules.
+  // Carte préparée dans le configurateur (même navigateur) : on la rappelle au-dessus des offres.
   try {
     const c = JSON.parse(localStorage.getItem('loyna-config') || 'null');
     const box = document.getElementById('ma-carte');
@@ -318,7 +343,7 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
   .table-wrap {
     overflow-x: auto;
     border-radius: var(--radius-lg);
-    border: 1px solid var(--line);
+    border: 1px solid #dccfb8;
     background: var(--card);
     box-shadow: var(--shadow);
   }
@@ -335,13 +360,32 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
   }
   .compare thead th {
     font-size: 1.05rem;
+    font-weight: 800;
     color: var(--ink);
-    background: var(--bg-alt);
+    background: #fbf6ec;
   }
   .compare thead th span {
     display: block;
     font-size: 0.85rem;
     font-weight: 600;
+    color: var(--muted);
+  }
+  .compare thead th i {
+    font-style: normal;
+  }
+  .compare thead th small {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  /* Condition écrite à côté de la ligne (site.ts, COMPARISON) */
+  .compare tbody th small {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.82rem;
+    font-weight: 500;
     color: var(--muted);
   }
   .compare tbody th {
@@ -358,23 +402,65 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
-  .pack-note {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    max-width: 860px;
-    margin: 30px auto 0;
-    padding: 16px 20px;
-    border-radius: 18px;
-    background: var(--gold-soft);
-    border: 1px solid rgba(201, 150, 63, 0.35);
-    color: var(--ink);
+  @media (max-width: 640px) {
+    .compare {
+      min-width: 0;
+      table-layout: fixed;
+      font-size: 0.86rem;
+      line-height: 1.32;
+    }
+    .compare th,
+    .compare td {
+      padding: 11px 3px;
+    }
+    .compare thead th:first-child,
+    .compare tbody th {
+      width: 44%;
+      padding-left: 12px;
+      padding-right: 6px;
+      text-align: left;
+    }
+    .compare thead th {
+      font-size: 0.84rem;
+      letter-spacing: -0.01em;
+    }
+    .compare thead th span {
+      font-size: 0.75rem;
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+    }
+    /* le prix, puis « /mois » en dessous : colonnes étroites */
+    .compare thead th i {
+      display: block;
+    }
+    .compare tr > :last-child {
+      padding-right: 8px;
+    }
+    .compare tbody .grp th:last-child {
+      padding-right: 6px;
+    }
+    .compare strong {
+      font-size: 0.75rem;
+      letter-spacing: -0.01em;
+    }
+    .yes {
+      width: 24px !important;
+      height: 24px !important;
+    }
+    .yes :global(svg) {
+      width: 15px;
+      height: 15px;
+    }
+    .compare tbody .grp th {
+      width: auto;
+    }
   }
-  .pack-ic {
-    display: inline-flex;
-    flex: none;
-    margin-top: 1px;
-    color: #6b4a14;
+  .regles {
+    margin-top: clamp(14px, 2vw, 22px);
+  }
+  .regle-lien {
+    margin: 10px 0 0;
+    font-weight: 700;
   }
   .table-note {
     margin: 18px auto 0;
@@ -410,7 +496,12 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
   }
   @media (max-width: 920px) {
     .prox-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (max-width: 520px) {
+    .prox-visual {
+      padding-inline: 0;
     }
   }
   .compare tbody tr:last-child > * {
@@ -422,10 +513,12 @@ const lignes = COMPARISON.map((row, i) => ({...row, n: i}));
     width: 30px;
     height: 30px;
     border-radius: 50%;
-    background: var(--gold-soft);
-    color: var(--gold-strong);
+    background: var(--ink);
+    color: #e6c27a;
   }
   .no {
-    color: #b9b1a3;
+    display: inline-grid;
+    place-items: center;
+    color: #a89f8f;
   }
 </style>

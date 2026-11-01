@@ -1,6 +1,6 @@
-// Rapport mensuel (Premium et Pro, fonction reports.monthly) : RPC monthly_report, mois en cours ou l'un
+// Rapport mensuel (toutes les offres, fonction reports.monthly) : RPC monthly_report, mois en cours ou l'un
 // des 11 précédents. Indicateurs comparés au mois précédent, passages par jour de la semaine, heures les plus
-// fréquentées, clients à relancer et 3 conseils (calculés par le serveur). Version verrouillée sinon.
+// fréquentées, clients à relancer et jusqu'à 3 conseils (calculés par le serveur). Version verrouillée sinon.
 import {useState} from 'preact/hooks';
 import {Icon} from '../icons';
 import {api, can, feature, merchant} from '../state';
@@ -203,7 +203,7 @@ function Locked() {
           <Icon name="file-chart-column" />
         </span>
         <div>
-          <h2>Votre rapport du mois, avec 3 conseils concrets</h2>
+          <h2>Votre rapport du mois, avec jusqu’à 3 conseils</h2>
           <p class="muted">Chaque 1er du mois, dans votre espace et par e-mail au propriétaire.</p>
         </div>
         <LockBadge feature="reports.monthly" />
@@ -214,7 +214,7 @@ function Locked() {
           'Comparaison avec le mois précédent',
           'Vos meilleurs jours et vos heures les plus fréquentées',
           'Les bons clients à relancer',
-          '3 conseils concrets, calculés à partir de vos chiffres',
+          'Jusqu’à 3 conseils, calculés à partir de vos chiffres',
         ].map((t) => (
           <li>
             <Icon name="circle-check" size={18} />

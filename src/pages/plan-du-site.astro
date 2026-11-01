@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import Jonction from '../components/Jonction.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import {getArticles, getSectors} from '../lib/builder';
 
@@ -47,6 +48,7 @@ const groups = [
       <h1>Plan du site</h1>
     </div>
   </section>
+  <Jonction de="sable" vers="creme" forme={6} retourne />
   <section class="section pt0">
     <div class="container grid grid-2">
       {

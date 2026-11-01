@@ -3,7 +3,7 @@
     python tools/builder_texte.py              # essai à blanc : montre ce qui changerait, n'écrit rien
     python tools/builder_texte.py --appliquer  # écrit dans Builder (clé privée de secrets/builder.env)
 
-Règle (offres Starter, Premium, Pro du 2026-10-25, dépôt LOYNA docs/OFFRES.md) : les fichiers de secours
+Règle (offres Starter et Pro du 2026-10-31, dépôt LOYNA docs/OFFRES.md) : les fichiers de secours
 (src/content-seed/) sont la version relue. Pour chaque entrée Builder qui a un équivalent dans le dépôt (même slug
 pour les articles et les secteurs, même question pour la FAQ), les champs qui diffèrent sont remplacés par ceux du
 dépôt ; les autres champs de l'entrée Builder ne bougent pas. Une question de FAQ renommée est retrouvée grâce à
@@ -36,6 +36,13 @@ RENOMMEES = {
     "Que comptent les quotas de cartes et de notifications ?": "Que comptent les quotas de cartes et de campagnes ?",
     # 1 mois offert au parrain et au filleul au lieu de -50 % (décision d'Ewan du 2026-10-31)
     "Les remises du parrainage se cumulent-elles ?": "Les mois offerts du parrainage se cumulent-ils ?",
+    # Grille Starter + Pro (décision d'Ewan du 2026-10-31) : ces questions n'ont plus de sens telles quelles, sinon elles resteraient en ligne
+    "Quelles automatisations sont incluses avec Premium ?": "Quelles automatisations sont incluses ?",
+    "Puis-je ajouter des cartes sans changer de formule ?": "Y a-t-il une limite de clients ou de cartes ?",
+    "Le paiement annuel est-il plus avantageux ?": "Que change l’engagement de 12 mois ?",
+    "Le parrainage fonctionne-t-il en paiement annuel ?": "Qui peut être parrainé ?",
+    "Que comptent les quotas de cartes et de campagnes ?": "Que compte une campagne ?",
+    "Comment résilier ou changer de formule ?": "Comment résilier ou changer d’offre ?",
 }
 # Champs « liste de textes » de Builder, stockés sous la forme [{"value": …}]
 LISTES = {"secteur": {"recompenses", "messages"}, "article": {"tags"}}
@@ -46,7 +53,6 @@ RETIRES = [
     ("Essentiel", re.compile(r"\bEssentiel\b|\bESSENTIEL\b")),
     ("Growth", re.compile(r"\bgrowth\b", re.I)),
     ("79 €", re.compile(rf"\b79{E}€")),
-    ("49 € par mois", re.compile(rf"\b49{E}€{E}(?:par mois|/{E}mois)")),
     ("ancien prix annuel", re.compile(r"499,80|805,80")),
     ("HT", re.compile(r"\bHT\b")),
     ("API et webhooks", re.compile(r"webhooks", re.I)),
@@ -57,6 +63,17 @@ RETIRES = [
     ("48 h entre deux messages", re.compile(rf"toutes les 48{E}(?:h\b|heures)", re.I)),
     # Parrainage LOYNA : -50 % remplacé par 1 mois offert au parrain et au filleul (2026-10-31)
     ("-50 % du parrainage", re.compile(rf"[-−]{E}50{E}%|50{E}%{E}de remise|remises? du parrainage", re.I)),
+    # Grille Starter + Pro (2026-10-31) : Premium, annuel et pack retirés de la vente, Pro à 49 €
+    ("Premium", re.compile(r"\bPremium\b")),
+    ("39,99", re.compile(r"\b39,99\b")),
+    ("407,90", re.compile(r"\b407,90\b")),
+    ("295,80", re.compile(r"\b295,80\b")),
+    ("907,80", re.compile(r"\b907,80\b")),
+    ("89 €", re.compile(rf"\b89{E}€")),
+    ("2 000 cartes", re.compile(rf"\b2{E}000{E}cartes")),
+    ("option +500", re.compile(rf"\+{E}?500\b|option{E}\+?500|4,99{E}€|50,90{E}€")),
+    ("paiement annuel", re.compile(r"paiement annuel|en annuel|abonnement annuel", re.I)),
+    ("en un clic", re.compile(r"en un clic", re.I)),
 ]
 
 

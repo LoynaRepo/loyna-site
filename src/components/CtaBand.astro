@@ -1,4 +1,7 @@
 ---
+import Icon from './Icon.astro';
+import mark from '../assets/logo-mark.svg?raw';
+import {APPEL, PHRASES, TRIAL} from '../data/site';
 interface Props {
   title?: string;
   text?: string;
@@ -8,20 +11,35 @@ interface Props {
 const {
   callbackHref = '/#rappel',
   title = 'Prêt à faire revenir vos clients ?',
-  text = "Créez l'aperçu de votre carte en quelques secondes, puis choisissez votre formule. Votre carte est prête sous 24 h.",
+  text = TRIAL.open ? PHRASES.essai : 'Créez l’aperçu de votre carte en quelques secondes, puis choisissez votre offre. Votre carte est prête sous 24 h.',
 } = Astro.props;
+// Symbole en filigrane, sans son dégradé : teinté par .filigrane
+const filigrane = mark.replace(/<defs>.*<\/defs>/s, '').replace(/fill="url\(#g\)"/, '').replace('<svg', '<svg aria-hidden="true"');
 ---
 
-<section class="section" aria-label="Passer à l'action">
+<section class="section cta-section" aria-label="Passer à l'action">
   <div class="container">
     <div class="cta-band">
-      <h2>{title.replace(' ?', ' ?')}</h2>
+      <span class="filigrane cta-filigrane" set:html={filigrane} />
+      <h2>{title.replace(' ?', ' ?')}</h2>
       <p>{text}</p>
       <div class="btn-row">
-        <a class="btn btn--gold" href="/creer-ma-carte/">Créer l’aperçu de ma carte</a>
-        <a class="btn btn--ghost" href="/tarifs/">Voir les tarifs</a>
+        <a class="btn btn--gold" href={APPEL.href}>{APPEL.label} <Icon name="arrow-right" size={18} /></a>
+        <a class="btn btn--ghost" href="/creer-ma-carte/">Créer l’aperçu de ma carte</a>
       </div>
-      <p class="cta-alt">Une question avant de vous lancer ? <a href={callbackHref}>Être rappelé gratuitement</a></p>
+      <p class="cta-alt">{TRIAL.open && <><a href="/tarifs/">Voir les tarifs</a> · </>}Une question avant de vous lancer ? <a href={callbackHref}>Être rappelé gratuitement</a></p>
     </div>
   </div>
 </section>
+
+<style>
+  .cta-section {
+    background: var(--bg);
+  }
+  .cta-band .cta-filigrane {
+    position: absolute;
+    right: -4%;
+    bottom: -22%;
+    width: min(52%, 460px);
+  }
+</style>

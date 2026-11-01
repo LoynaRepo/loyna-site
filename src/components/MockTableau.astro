@@ -1,0 +1,158 @@
+---
+// Tableau de bord de LOYNA Business dans une fenêtre, en HTML/CSS : les indicateurs sont ceux de l'application (voir
+// src/app/views/Dashboard.tsx), les chiffres sont un exemple et le disent.
+import Icon from './Icon.astro';
+const tuiles = [
+  {icon: 'users', label: 'Clients actifs', valeur: '248'},
+  {icon: 'user-plus', label: 'Nouveaux clients', valeur: '37'},
+  {icon: 'repeat', label: 'Passages', valeur: '1 162'},
+  {icon: 'gift', label: 'Récompenses', valeur: '84'},
+];
+const semaines = [62, 74, 70, 88, 96, 92, 112, 124];
+const haut = 132;
+const larg = 520;
+const pas = larg / (semaines.length - 1);
+const y = (v: number) => Math.round(haut - (v / 130) * (haut - 14));
+const ligne = semaines.map((v, i) => `${i ? 'L' : 'M'}${Math.round(i * pas)},${y(v)}`).join(' ');
+const aire = `${ligne} L${larg},${haut} L0,${haut} Z`;
+---
+
+<div class="fenetre mock" role="img" aria-label="Aperçu du tableau de bord de LOYNA Business, avec des chiffres d’exemple : clients actifs, nouveaux clients, passages, récompenses et passages par semaine">
+  <div class="fenetre-barre"><i></i><i></i><i></i><span>LOYNA Business · données d’exemple</span></div>
+  <div class="m-corps">
+    <div class="m-head">
+      <b><Icon name="layout-dashboard" size={17} /> Tableau de bord</b>
+      <small>30 derniers jours</small>
+    </div>
+    <div class="m-tuiles">
+      {
+        tuiles.map((t) => (
+          <div class="m-tuile">
+            <span class="m-ic">
+              <Icon name={t.icon} size={15} />
+            </span>
+            <small>{t.label}</small>
+            <b>{t.valeur}</b>
+          </div>
+        ))
+      }
+    </div>
+    <div class="m-graphe">
+      <small><Icon name="chart-column" size={14} /> Passages par semaine</small>
+      <svg viewBox={`0 0 ${larg} ${haut}`} preserveAspectRatio="none" aria-hidden="true">
+        <path class="m-aire" d={aire}></path>
+        <path class="m-ligne" d={ligne} vector-effect="non-scaling-stroke"></path>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<style>
+  .mock {
+    width: 100%;
+    max-width: 560px;
+    background: var(--card);
+  }
+  .m-corps {
+    padding: clamp(14px, 2vw, 20px);
+    display: grid;
+    gap: 12px;
+  }
+  .m-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--ink);
+  }
+  .m-head b {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 1rem;
+    letter-spacing: -0.01em;
+  }
+  .m-head :global(svg) {
+    color: var(--gold-strong);
+  }
+  .m-head small {
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .m-tuiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .m-tuile {
+    position: relative;
+    display: grid;
+    gap: 2px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background: #fbf6ec;
+  }
+  .m-tuile small {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--muted);
+    padding-right: 26px;
+    line-height: 1.25;
+  }
+  .m-tuile b {
+    font-size: clamp(1.45rem, 3vw, 1.85rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+  .m-ic {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--ink);
+    color: #e6c27a;
+  }
+  .m-graphe {
+    position: relative;
+    padding: 12px 14px 14px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background: #fbf6ec;
+  }
+  .m-graphe small {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .m-graphe svg {
+    display: block;
+    width: 100%;
+    height: clamp(84px, 13vw, 118px);
+  }
+  .m-aire {
+    fill: rgba(201, 150, 63, 0.18);
+  }
+  .m-ligne {
+    fill: none;
+    stroke: #a87530;
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+</style>

@@ -1,4 +1,4 @@
-// Calendrier des temps forts du commerce (offre Pro, campagnes clés en main), calculé dans le navigateur :
+// Calendrier des temps forts du commerce (toutes les offres, message déjà écrit), calculé dans le navigateur :
 // fêtes, saisons, soldes et événements des 60 prochains jours, chacun avec un message prêt à relire.
 // « Préparer » crée un brouillon programmé deux jours avant, à 10 h (heure du navigateur).
 

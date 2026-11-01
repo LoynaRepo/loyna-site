@@ -2,6 +2,7 @@
 //   node tools/qa-commercial.mjs 390 [1366 …]        captures pleine page dans out/qa-commercial/
 // Préparer d'abord les données fictives : python "<coffre>/_systeme/panel.py" publier --local --exemple
 // Connexion avec les identifiants de TEST (tools/commercial/acces-local.exemple.json, localhost uniquement).
+// QA_BASE : autre adresse du site ; QA_DONNEES : autre jeu de données chiffré (avec des clients : fiches capturées aussi).
 import puppeteer from 'puppeteer-core';
 import fs from 'node:fs';
 const CH = 'C:/Users/vaiko/Documents/LOYNA-Motion/node_modules/.remotion/chrome-headless-shell/win64/chrome-headless-shell-win64/chrome-headless-shell.exe';
@@ -13,12 +14,20 @@ const largeurs = process.argv.slice(2).map(Number).filter(Boolean);
 if (!largeurs.length) largeurs.push(390, 1366);
 fs.mkdirSync('out/qa-commercial', {recursive: true});
 const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
+// QA_DONNEES : autre fichier chiffré (identifiants de test), servi à la page à la place de public/espace-commercial/donnees.enc
+async function servirDonnees(page) {
+  if (!process.env.QA_DONNEES) return;
+  const contenu = fs.readFileSync(process.env.QA_DONNEES);
+  await page.setRequestInterception(true);
+  page.on('request', (r) => (new URL(r.url()).pathname === '/espace-commercial/donnees.enc' ? r.respond({status: 200, contentType: 'application/octet-stream', body: contenu}) : r.continue()));
+}
 
 const browser = await puppeteer.launch({executablePath: CH, headless: 'shell', args: ['--disable-gpu']});
 const erreurs = [];
 for (const largeur of largeurs) {
   const mobile = largeur < 700;
   const page = await browser.newPage();
+  await servirDonnees(page);
   page.on('console', (m) => m.type() === 'error' && erreurs.push(`${largeur}px : ${m.text()}`));
   page.on('pageerror', (e) => erreurs.push(`${largeur}px : ${e}`));
   await page.setViewport({width: largeur, height: mobile ? 844 : 860, deviceScaleFactor: 1, isMobile: mobile, hasTouch: mobile});
@@ -47,17 +56,37 @@ for (const largeur of largeurs) {
   await page.waitForSelector('.app', {timeout: 15000});
 
   // 2. onglets
-  for (const vue of ['tableau', 'prospects', 'appeler', 'tarifs', 'questions', 'aide']) {
+  for (const vue of ['tableau', 'prospects', 'appeler', 'preparer', 'clients', 'tarifs', 'questions', 'aide']) {
     await page.evaluate((v) => (location.hash = `#/${v}`), vue);
     await attendre(300);
     await capture(vue);
   }
+  // Tarifs : 2 offres, 2 prix par offre, 4 liens de secours
+  await page.evaluate(() => (location.hash = '#/tarifs'));
+  await attendre(300);
+  const tarifs = await page.evaluate(() => ({
+    offres: document.querySelectorAll('.cp-plan').length,
+    liens: document.querySelectorAll('.cp-liens-paiement .cp-lien-row').length,
+    prix: [...document.querySelectorAll('.cp-prix b')].map((b) => b.textContent.replace(/\s/g, ' ')).join(' · '),
+  }));
+  const tarifsOk = tarifs.offres === 2 && tarifs.liens === 4 && tarifs.prix === '29 € · 24,65 € · 49 € · 41,65 €';
+  console.log(`  tarifs : ${tarifsOk ? 'ok' : 'ÉCHEC'} (${tarifs.offres} offres, ${tarifs.liens} liens de secours, ${tarifs.prix})`);
+  if (!tarifsOk) erreurs.push(`${largeur}px : tarifs inattendus`);
   // 3. fiche d'un prospect (le premier de la liste « À appeler »)
   await page.evaluate(() => (location.hash = '#/appeler'));
   await attendre(300);
   const lien = await page.$eval('.cp-appel-nom', (a) => a.getAttribute('href'));
   await page.evaluate((h) => (location.hash = h), lien);
   await capture('fiche');
+  // fiches des clients, s'il y en a : chaque état (essai, carte suspendue, Pro, offre historique…)
+  await page.evaluate(() => (location.hash = '#/clients'));
+  await attendre(300);
+  const clients = await page.$$eval('a[href^="#/client/"]', (l) => [...new Set(l.map((a) => [a.getAttribute('href'), a.textContent.trim()].join('|')))]);
+  for (const c of clients) {
+    const [href, nom] = c.split('|');
+    await page.evaluate((h) => (location.hash = h), href);
+    await capture(`client-${nom.normalize('NFD').replace(/[^A-Za-z0-9]+/g, '-')}`);
+  }
   // 4. filtres de la liste (téléphone : panneau ouvert)
   await page.evaluate(() => (location.hash = '#/prospects'));
   await attendre(300);

@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Jonction from '../../components/Jonction.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import WalletCard from '../../components/WalletCard.astro';
 import Phone from '../../components/Phone.astro';
@@ -61,7 +62,7 @@ const proche = `Votre récompense vous attend chez ${s.carte.nom} !`;
         </div>
       </div>
       <div class="visual" aria-hidden="true">
-        <Phone width={290} screen="#000">
+        <Phone width={340} screen="#f3f1ec">
           <div class="wallet-ui">
             <p class="wallet-title">Wallet</p>
             <WalletCard
@@ -73,7 +74,7 @@ const proche = `Votre récompense vous attend chez ${s.carte.nom} !`;
               filled={Math.max(2, s.carte.total - 2)}
               total={s.carte.total}
               reward={s.carte.recompense}
-              width={258}
+              width={306}
             />
           </div>
         </Phone>
@@ -81,7 +82,9 @@ const proche = `Votre récompense vous attend chez ${s.carte.nom} !`;
     </div>
   </section>
 
-  <section class="section section--alt">
+  <Jonction sur vers="sable" forme={1} />
+
+  <section class="section section--alt tete-serree">
     <div class="container">
       <div class="section-head">
         <h2>Vos enjeux au quotidien</h2>
@@ -99,7 +102,9 @@ const proche = `Votre récompense vous attend chez ${s.carte.nom} !`;
     </div>
   </section>
 
-  <section class="section">
+  <Jonction de="sable" vers="creme" forme={3} retourne />
+
+  <section class="section tete-serree">
     <div class="container">
       <div class="section-head">
         <h2>Ce que LOYNA change pour vous</h2>
@@ -122,7 +127,9 @@ const proche = `Votre récompense vous attend chez ${s.carte.nom} !`;
     </div>
   </section>
 
-  <section class="section section--dark">
+  <Jonction de="creme" vers="nuit" forme={5} />
+
+  <section class="section section--dark tete-serree">
     <div class="container grid grid-2">
       <div>
         <h2>Idées de récompenses</h2>
@@ -156,17 +163,21 @@ const proche = `Votre récompense vous attend chez ${s.carte.nom} !`;
     </div>
   </section>
 
-  <section class="section">
+  <Jonction de="nuit" vers="creme" forme={2} retourne />
+
+  <section class="section tete-serree">
     <div class="container">
       <div class="section-head">
         <h2>Les tarifs</h2>
-        <p>Les mêmes formules pour tous les métiers, avec la notification de proximité incluse dès Starter.</p>
+        <p>Les mêmes offres pour tous les métiers, avec la notification de proximité incluse dès Starter.</p>
       </div>
       <PricingCards idPrefix={`s-${s.slug}`} compact />
     </div>
   </section>
 
-  <section class="section section--alt">
+  <Jonction de="creme" vers="sable" forme={4} />
+
+  <section class="section section--alt tete-serree">
     <div class="container narrow">
       <div class="section-head">
         <h2>Questions fréquentes</h2>
@@ -186,9 +197,11 @@ const proche = `Votre récompense vous attend chez ${s.carte.nom} !`;
     </div>
   </section>
 
+  {guides.length > 0 && <Jonction de="sable" vers="creme" forme={6} />}
+
   {
     guides.length > 0 && (
-      <section class="section" aria-labelledby="guides-titre">
+      <section class="section tete-serree" aria-labelledby="guides-titre">
         <div class="container">
           <div class="section-head">
             <h2 id="guides-titre">Guides pour votre métier</h2>
@@ -210,7 +223,9 @@ const proche = `Votre récompense vous attend chez ${s.carte.nom} !`;
     )
   }
 
-  <section class="section section--alt">
+  {guides.length > 0 && <Jonction de="creme" vers="sable" forme={3} />}
+
+  <section class="section section--alt tete-serree">
     <div class="container">
       <h2 class="others-title">Les autres métiers</h2>
       <div class="others">
@@ -225,34 +240,56 @@ const proche = `Votre récompense vous attend chez ${s.carte.nom} !`;
     </div>
   </section>
 
+  <Jonction de="sable" vers="creme" forme={1} retourne />
+
   <CtaBand />
 </Base>
 
 <style>
   .hero {
-    padding: clamp(40px, 6vw, 80px) 0;
+    position: relative;
+    overflow: hidden;
+    padding: clamp(22px, 4vw, 60px) 0 clamp(70px, 8vw, 110px);
+    background: var(--bg);
+  }
+  @media (min-width: 901px) {
+    .hero {
+      background:
+        radial-gradient(34% 42% at 80% 46%, rgba(230, 194, 122, 0.46), transparent 74%),
+        var(--bg);
+    }
   }
   .hero-grid {
     display: grid;
     grid-template-columns: 1.15fr 0.85fr;
-    gap: clamp(30px, 5vw, 70px);
-    align-items: center;
+    gap: clamp(26px, 5vw, 70px);
+    align-items: start;
   }
   .hero h1 {
-    font-size: clamp(2.1rem, 4.4vw, 3.5rem);
+    font-size: clamp(2.1rem, 4.6vw, 3.8rem);
   }
   .intro :global(p) {
     margin-bottom: 0.9em;
   }
+  /* le bas du téléphone, vide, plonge derrière la jonction */
   .visual {
     display: grid;
     justify-items: center;
+    height: 400px;
+    margin-bottom: -30px;
+  }
+  @media (min-width: 901px) {
+    .visual {
+      align-self: start;
+      height: 620px;
+      margin-bottom: 0;
+    }
   }
   .wallet-ui {
     position: absolute;
     inset: 0;
     padding: 44px 16px;
-    color: #fff;
+    color: #17140f;
   }
   .wallet-title {
     font-size: 24px;
@@ -356,7 +393,7 @@ const proche = `Votre récompense vous attend chez ${s.carte.nom} !`;
     align-items: center;
     padding: 12px 18px;
     border-radius: 999px;
-    border: 1px solid var(--line);
+    border: 1px solid var(--filet);
     background: var(--card);
     color: var(--ink);
     font-weight: 600;

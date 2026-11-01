@@ -1,0 +1,167 @@
+---
+// Essai du configurateur dans la page d'accueil : nom, activité et couleurs, la carte change en direct. Le vrai
+// configurateur (/creer-ma-carte/) prend ensuite le relais avec ces réglages (lib/carte-live.ts, ouvrirConfigurateur) ;
+// sans JavaScript, le formulaire y mène quand même avec le nom et l'activité dans l'adresse.
+import Icon from './Icon.astro';
+import WalletCard from './WalletCard.astro';
+import CardSwatches from './CardSwatches.astro';
+import {APPEL, CARD_ACTIVITES, TRIAL} from '../data/site';
+
+const depart = CARD_ACTIVITES.find((a) => a.nom === 'Boulangerie') ?? CARD_ACTIVITES[0];
+const nomDepart = 'Le Fournil d’Albane';
+---
+
+<div class="fenetre mc" id="mini-config" data-activites={JSON.stringify(CARD_ACTIVITES)}>
+  <div class="fenetre-barre"><i></i><i></i><i></i><span>Aperçu en direct</span></div>
+  <div class="mc-corps">
+    <form class="mc-form" method="get" action="/creer-ma-carte/" id="mc-form">
+      <div class="mc-champ">
+        <label for="mc-nom">Le nom de votre commerce</label>
+        <input id="mc-nom" name="nom" type="text" maxlength="32" value={nomDepart} autocomplete="organization" />
+      </div>
+      <div class="mc-champ">
+        <label for="mc-activite">Votre activité</label>
+        <select id="mc-activite" name="activite">
+          {CARD_ACTIVITES.map((a) => <option selected={a.nom === depart.nom}>{a.nom}</option>)}
+        </select>
+      </div>
+      <div class="mc-champ mc-couleurs">
+        <span class="mc-label">Vos couleurs</span>
+        <CardSwatches theme="light" bg={depart.fond} accent={depart.tampons} />
+      </div>
+      <button type="submit" class="btn btn--primary btn--block">Ouvrir le configurateur <Icon name="arrow-right" size={18} /></button>
+      <p class="mc-note">Gratuit, sans inscription. Logo, récompense et nombre de passages se règlent à l’étape suivante.</p>
+      {TRIAL.open && <a class="btn btn--ghost btn--block mc-essai" href={APPEL.href}>{APPEL.label}</a>}
+    </form>
+    <div class="mc-apercu" aria-hidden="true">
+      <p>Telle que vos clients la verront</p>
+      <WalletCard name={nomDepart} activity={depart.nom} bg={depart.fond} accent={depart.tampons} filled={7} total={10} reward={depart.recompense} width={330} qr={false} class="mc-carte" />
+    </div>
+  </div>
+</div>
+
+<script>
+  import {appliquerCarte, brancherCouleurs, marquerCouleurs, ouvrirConfigurateur, type CarteDemo} from '../lib/carte-live';
+
+  const racine = document.getElementById('mini-config');
+  if (racine) {
+    const activites = JSON.parse(racine.dataset.activites || '[]') as {nom: string; recompense: string; fond: string; tampons: string}[];
+    const carte = racine.querySelector<HTMLElement>('.mc-carte')!;
+    const form = racine.querySelector<HTMLFormElement>('#mc-form')!;
+    const nom = form.querySelector<HTMLInputElement>('#mc-nom')!;
+    const activite = form.querySelector<HTMLSelectElement>('#mc-activite')!;
+    const libres = {bg: form.querySelector<HTMLInputElement>('.swatches[data-target="bg"] input[type=color]')!, accent: form.querySelector<HTMLInputElement>('.swatches[data-target="accent"] input[type=color]')!};
+    const defauts = (n: string) => activites.find((a) => a.nom === n) ?? activites[0];
+    const touche = {bg: false, accent: false};
+    let d: CarteDemo = {name: nom.value, activity: activite.value, bg: libres.bg.value, accent: libres.accent.value, total: 10, reward: defauts(activite.value).recompense};
+    const montrer = () => appliquerCarte(carte, d, false);
+
+    nom.addEventListener('input', () => {
+      d = {...d, name: nom.value.trim() || 'Votre commerce'};
+      montrer();
+    });
+    // Changer d'activité : sa récompense et ses couleurs, sauf les couleurs déjà choisies par le visiteur
+    activite.addEventListener('input', () => {
+      const a = defauts(activite.value);
+      d = {...d, activity: a.nom, reward: a.recompense, bg: touche.bg ? d.bg : a.fond, accent: touche.accent ? d.accent : a.tampons};
+      libres.bg.value = d.bg;
+      libres.accent.value = d.accent;
+      marquerCouleurs(form);
+      montrer();
+    });
+    brancherCouleurs(form, (cible, couleur) => {
+      touche[cible] = true;
+      d = {...d, [cible]: couleur};
+      montrer();
+    });
+    marquerCouleurs(form);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      ouvrirConfigurateur({...d, name: nom.value.trim() || d.name});
+    });
+  }
+</script>
+
+<style>
+  .mc {
+    max-width: 1020px;
+    margin-inline: auto;
+  }
+  .mc-corps {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mc-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: clamp(18px, 3vw, 34px);
+    order: 2;
+  }
+  .mc-champ {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+  }
+  .mc-champ label,
+  .mc-label {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 0.95rem;
+  }
+  .mc-champ input[type='text'],
+  .mc-champ select {
+    width: 100%;
+    min-height: 50px;
+    padding: 10px 16px;
+    border-radius: 14px;
+    border: 1.5px solid var(--filet);
+    background: #fff;
+    font: 500 1rem var(--font);
+    color: var(--ink);
+  }
+  .mc-champ input[type='text']:focus,
+  .mc-champ select:focus {
+    outline: 3px solid rgba(201, 150, 63, 0.35);
+    border-color: var(--gold);
+  }
+  .mc-note {
+    margin: 0;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    color: var(--muted);
+    text-align: center;
+  }
+  .mc-apercu {
+    order: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    justify-items: center;
+    gap: 14px;
+    padding: clamp(22px, 4vw, 44px) clamp(18px, 3vw, 40px);
+    background:
+      radial-gradient(70% 70% at 50% 50%, rgba(230, 194, 122, 0.22), transparent 74%),
+      var(--ink);
+  }
+  .mc-apercu p {
+    margin: 0;
+    color: #e6c27a;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  @media (min-width: 860px) {
+    .mc-corps {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    }
+    .mc-form {
+      order: 0;
+    }
+    .mc-apercu {
+      order: 0;
+    }
+  }
+</style>

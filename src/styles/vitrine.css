@@ -1,0 +1,393 @@
+/* LOYNA : habillage des pages publiques (refonte du 2026-10-31). Mêmes couleurs, même logo, même police que la charte
+   (global.css) ; titres plus francs, pastilles, cartes très arrondies, jonctions irrégulières entre les sections.
+   Tout est sous .vitrine, la classe de <body> quand la page n'est pas « bare » : /visuel-carte/ (capturée pour les
+   e-mails), l'espace client, le panel commercial et les pages des cartes ne voient aucune de ces règles. */
+
+.vitrine {
+  --container: 1240px;
+  --section: clamp(44px, 6.4vw, 96px);
+  --j-h: clamp(46px, 6.8vw, 116px); /* hauteur des jonctions */
+  --radius: 22px;
+  --radius-lg: 30px;
+  --filet: #d9cbb2;
+  --nuit-2: #1b1a1f;
+  --shadow: 0 1px 2px rgba(18, 18, 22, 0.05), 0 16px 40px rgba(18, 18, 22, 0.07);
+  --shadow-lg: 0 2px 4px rgba(18, 18, 22, 0.05), 0 34px 80px rgba(18, 18, 22, 0.14);
+  background: var(--bg);
+}
+
+/* --- Titres ------------------------------------------------------------------------------------ */
+/* :where() : spécificité d'une simple balise, toute règle de composant ou de classe garde la main */
+:where(.vitrine) h1 {
+  font-size: clamp(2.4rem, 5.4vw, 4.4rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+}
+:where(.vitrine) h2 {
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+.vitrine .section-head h2,
+.vitrine .titre {
+  font-size: clamp(2rem, 4.2vw, 3.4rem);
+  letter-spacing: -0.042em;
+  line-height: 1.05;
+}
+/* or foncé sur fond clair (contraste de grand texte), or clair sur fond sombre */
+.vitrine .gold-text {
+  background-image: linear-gradient(100deg, #a87530 0%, #7a5418 100%);
+}
+.vitrine .section--dark .gold-text,
+.vitrine .cta-band .gold-text,
+.vitrine .sur-nuit .gold-text {
+  background-image: linear-gradient(100deg, #f0d49a 0%, #c9963f 100%);
+}
+.vitrine .lead {
+  line-height: 1.55;
+}
+
+/* --- Pastille au-dessus des titres ------------------------------------------------------------- */
+.vitrine .eyebrow {
+  padding: 6px 15px 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--filet);
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(18, 18, 22, 0.04);
+  color: var(--gold-strong);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1.3;
+  margin-bottom: 18px;
+}
+.vitrine .eyebrow::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+.vitrine .eyebrow:has(svg)::before {
+  display: none;
+}
+.vitrine .section--dark .eyebrow,
+.vitrine .sur-nuit .eyebrow {
+  background: rgba(250, 247, 240, 0.05);
+  border-color: rgba(230, 194, 122, 0.3);
+  box-shadow: none;
+  color: #e6c27a;
+}
+
+/* --- Sections : fonds unis sur les bords, pour que les jonctions se raccordent sans démarcation -- */
+.vitrine .section {
+  position: relative;
+}
+/* le contenu passe au-dessus des jonctions (z-index 1) : une ombre portée s'éteint en continu, sans être coupée net */
+.vitrine .section > .container,
+.vitrine .section > .narrow,
+.vitrine .page-hero > .container,
+.vitrine .page-hero > .narrow {
+  position: relative;
+  z-index: 2;
+}
+.vitrine .section--alt,
+.vitrine .section--warm {
+  background: var(--bg-alt);
+}
+.vitrine .section--blanc {
+  background: var(--card);
+}
+.vitrine .section--dark {
+  overflow: clip; /* une ombre portée ne déborde pas sur la courbe claire qui suit */
+  /* halo centré verticalement : il s'éteint avant les bords de la section */
+  background:
+    radial-gradient(44% 40% at 84% 50%, rgba(230, 194, 122, 0.12), transparent 72%),
+    radial-gradient(36% 34% at 8% 58%, rgba(201, 150, 63, 0.08), transparent 72%),
+    var(--ink);
+}
+.vitrine .section.pt0,
+.vitrine .section.pn-section {
+  padding-top: clamp(18px, 3vw, 40px);
+}
+/* juste après une jonction : la courbe compte déjà dans l'espace */
+.vitrine .section.tete-serree {
+  padding-top: clamp(28px, 4.4vw, 68px);
+}
+.vitrine .section-head {
+  max-width: 800px;
+  margin-bottom: clamp(32px, 5vw, 60px);
+}
+.vitrine .section-head p:not(.eyebrow) {
+  font-size: clamp(1.05rem, 1.5vw, 1.18rem);
+  line-height: 1.55;
+}
+/* mot en filigrane derrière le titre : pseudo-élément, aucun texte en plus dans la page */
+.vitrine .section-head[data-fantome] {
+  position: relative;
+  isolation: isolate;
+}
+.vitrine .section-head[data-fantome]::before {
+  content: attr(data-fantome);
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: calc(clamp(3.4rem, 10vw, 7.5rem) * -0.52);
+  translate: -50% 0;
+  font-size: clamp(3.4rem, 10vw, 7.5rem);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  white-space: nowrap;
+  color: rgba(201, 150, 63, 0.16);
+  pointer-events: none;
+}
+/* tête de section alignée à gauche */
+.vitrine .section-head--g {
+  margin-inline: 0;
+  text-align: left;
+}
+
+/* --- Boutons ----------------------------------------------------------------------------------- */
+.vitrine .btn {
+  padding: 14px 28px;
+}
+.vitrine .btn svg {
+  flex: none;
+  transition: transform 0.18s ease;
+}
+.vitrine .btn:hover svg {
+  transform: translateX(3px);
+}
+.vitrine .btn--primary {
+  box-shadow: 0 10px 24px rgba(18, 18, 22, 0.22);
+}
+.vitrine .btn--ghost {
+  background: rgba(255, 253, 248, 0.72);
+  border-color: var(--filet);
+  border-width: 1.5px;
+}
+.vitrine .section--dark .btn--ghost,
+.vitrine .cta-band .btn--ghost {
+  background: transparent;
+}
+
+/* --- Cartes et pages intérieures --------------------------------------------------------------- */
+.vitrine .card {
+  border-color: var(--filet);
+  box-shadow: var(--shadow);
+}
+.vitrine .section--alt .card,
+.vitrine .section--warm .card {
+  border-color: #dccfb8;
+}
+.vitrine .section--dark .card {
+  background: rgba(250, 247, 240, 0.04);
+  border-color: rgba(250, 247, 240, 0.1);
+}
+.vitrine .icon {
+  border-radius: 50%;
+  background: var(--ink);
+  color: #e6c27a;
+}
+.vitrine .section--dark .icon {
+  background: var(--grad-gold);
+  color: var(--ink);
+}
+.vitrine .checks li::before {
+  background-color: var(--gold-soft);
+}
+.vitrine .section--dark .checks li {
+  color: #e9e5dc;
+}
+
+/* En-tête des pages intérieures : fond sable, puis une jonction vers le contenu */
+.vitrine .page-hero {
+  padding: clamp(36px, 6vw, 84px) 0 clamp(14px, 2.4vw, 34px);
+  margin-bottom: 0;
+  border-bottom: 0;
+  background: var(--bg-alt);
+}
+.vitrine .page-hero h1 {
+  max-width: 920px;
+  margin-inline: auto;
+  font-size: clamp(2.05rem, 5vw, 4rem);
+}
+.vitrine .page-hero .lead {
+  margin-bottom: 0.4em;
+}
+.vitrine .page-hero .breadcrumbs {
+  margin-bottom: 16px;
+}
+.vitrine .page-hero .narrow h1 {
+  font-size: clamp(2.1rem, 4.6vw, 3.5rem);
+}
+
+/* Fil d'Ariane plus discret */
+.vitrine .breadcrumbs {
+  font-size: 0.86rem;
+}
+
+/* --- Questions fréquentes ---------------------------------------------------------------------- */
+.vitrine .faq details {
+  border-radius: 22px;
+  border-color: var(--filet);
+  padding: 0 clamp(18px, 2.4vw, 28px);
+  box-shadow: 0 1px 2px rgba(18, 18, 22, 0.04), 0 10px 26px rgba(18, 18, 22, 0.05);
+}
+.vitrine .faq summary {
+  padding: 20px 46px 20px 0;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+.vitrine .faq summary::after {
+  width: 32px;
+  height: 32px;
+  margin-top: -16px;
+  background-color: var(--ink);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e6c27a' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M12 6v12M6 12h12'/%3E%3C/svg%3E");
+  background-size: 16px;
+}
+.vitrine .faq .answer {
+  padding-bottom: 24px;
+}
+
+/* --- Dernier appel à l'action ------------------------------------------------------------------ */
+.vitrine .cta-band {
+  position: relative;
+  overflow: hidden;
+  border-radius: clamp(28px, 4vw, 48px);
+  background: radial-gradient(70% 90% at 90% 0%, rgba(230, 194, 122, 0.26), transparent 62%), radial-gradient(50% 70% at 0% 100%, rgba(201, 150, 63, 0.14), transparent 70%), var(--ink);
+  box-shadow: var(--shadow-lg);
+  padding: clamp(40px, 6.4vw, 92px) clamp(22px, 5vw, 80px);
+}
+.vitrine .cta-band h2 {
+  font-size: clamp(2rem, 4.6vw, 3.6rem);
+  letter-spacing: -0.042em;
+  line-height: 1.05;
+  margin-bottom: 0.4em;
+}
+.vitrine .cta-band > * {
+  position: relative;
+}
+
+/* --- Fenêtre d'application (tableau de bord, configurateur de l'accueil) ------------------------ */
+.vitrine .fenetre {
+  border-radius: 26px;
+  border: 1px solid var(--filet);
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.vitrine .fenetre-barre {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #fbf6ec;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.vitrine .fenetre-barre i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #dccfb8;
+}
+.vitrine .fenetre-barre i:first-child {
+  background: #c9963f;
+}
+.vitrine .fenetre-barre span {
+  margin-left: auto;
+}
+
+/* --- Liste de liens en pastilles (métiers) ------------------------------------------------------ */
+.vitrine .pastilles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.vitrine .pastilles a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--filet);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition: border-color 0.16s ease, transform 0.16s ease;
+}
+.vitrine .pastilles a:hover {
+  border-color: var(--ink);
+  transform: translateY(-1px);
+}
+
+/* Filigrane : le symbole LOYNA, très grand, coupé par le bord de sa section */
+.vitrine .filigrane {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.055;
+  color: #e6c27a;
+  -webkit-mask-image: linear-gradient(#000 40%, transparent 78%);
+  mask-image: linear-gradient(#000 40%, transparent 78%);
+}
+.vitrine .filigrane svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.vitrine .filigrane svg path {
+  fill: currentColor;
+}
+
+/* --- Apparition au défilement, sans JavaScript : ignorée par les navigateurs qui ne savent pas faire --- */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .vitrine .apparait {
+      animation: v-apparait linear both;
+      animation-timeline: view();
+      animation-range: entry 2% entry 34%;
+    }
+  }
+}
+@keyframes v-apparait {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- Téléphone --------------------------------------------------------------------------------- */
+@media (max-width: 760px) {
+  .vitrine .container {
+    width: min(100% - 40px, var(--container));
+  }
+  .vitrine .section-head {
+    margin-bottom: 28px;
+  }
+  .vitrine .card {
+    border-radius: 24px;
+  }
+  .vitrine .btn {
+    padding-inline: 22px;
+  }
+}

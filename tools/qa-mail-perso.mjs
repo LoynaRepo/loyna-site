@@ -2,7 +2,8 @@
 // local des notes (lancé et arrêté par ce script ; le serveur de développement d'Astro, port 4322, lui transmet
 // /espace-commercial/notes.php et sert /visuel-carte/). Captures dans out/qa-commercial/ :
 //   node tools/qa-mail-perso.mjs [1366]
-// Préparer d'abord : python "<coffre>/_systeme/panel.py" publier --local --exemple
+// Préparer d'abord : python "<coffre>/_systeme/panel.py" publier --local --exemple (ou QA_DONNEES : autre jeu de données chiffré,
+// servi à la page à la place de public/espace-commercial/donnees.enc)
 // Vérifie : compositeur prérempli (adresse, objet, prénom, activité et couleurs de la carte), aperçu du mail rempli
 // comme le coffre, visuel en direct dans l'iframe (changement d'activité sans recharger), note « [MAIL] » chiffrée
 // enregistrée sur le serveur et relue par le coffre (mail_perso.py), état « en attente » dans la fiche, annulation.
@@ -29,7 +30,8 @@ const verifier = (cond, message) => {
 };
 
 const acces = JSON.parse(fs.readFileSync('tools/commercial/acces-local.exemple.json', 'utf8'));
-const env = lireEnveloppe(fs.readFileSync('public/espace-commercial/donnees.enc', 'utf8'));
+const FICHIER_DONNEES = process.env.QA_DONNEES ?? 'public/espace-commercial/donnees.enc';
+const env = lireEnveloppe(fs.readFileSync(FICHIER_DONNEES, 'utf8'));
 const a = await deriverAcces(acces.identifiant, acces.mot_de_passe, env);
 const donnees = await ouvrir(env, a.cle);
 if (!donnees.exemple) throw new Error('public/espace-commercial/donnees.enc doit contenir le jeu fictif (panel.py publier --local --exemple)');
@@ -54,6 +56,10 @@ const browser = await puppeteer.launch({executablePath: EDGE, headless: true, ar
 const erreurs = [];
 try {
   const page = await browser.newPage();
+  if (process.env.QA_DONNEES) {
+    await page.setRequestInterception(true);
+    page.on('request', (r) => (new URL(r.url()).pathname === '/espace-commercial/donnees.enc' ? r.respond({status: 200, contentType: 'application/octet-stream', body: fs.readFileSync(FICHIER_DONNEES)}) : r.continue()));
+  }
   page.on('pageerror', (e) => erreurs.push(String(e)));
   await page.setViewport({width: largeur, height: 900, deviceScaleFactor: 1});
   const capture = async (nom) => {
@@ -93,11 +99,14 @@ try {
   verifier(await page.evaluate(() => document.querySelector('dialog[open] .cp-notes-err')?.textContent.includes('récapitulatif')), 'récap vide : message clair, rien d’enregistré');
 
   await taper('Récap de l’appel', 'Vous avez déjà une carte papier, mais vos clientes l’oublient\nVous voulez relancer celles qui ne reviennent plus\nDémarrage souhaité avant les fêtes');
-  await page.select('dialog[open] .mp-form > label.fld select', 'premium');
+  const offres = await page.$$eval('dialog[open] .mp-form > label.fld select option', (l) => l.map((o) => o.value));
+  verifier(offres.join() === ',starter,pro', `offres proposées : les offres vendues seulement (${offres.join(', ')})`);
+  verifier((await page.$eval('dialog[open] .mp-form > label.fld select option[value=starter]', (o) => o.textContent)).replace(/\s/g, ' ') === 'Starter, 29 € par mois sans TVA, ou 24,65 € avec 12 mois d’engagement', 'libellé de l’offre : ses 2 prix, sans TVA');
+  await page.select('dialog[open] .mp-form > label.fld select', 'pro');
   await taper('Prochaine étape (facultatif)', 'je vous rappelle jeudi en fin de matinée');
   await page.waitForFunction(() => document.querySelector('.mp-corps')?.innerText.includes('Démarrage souhaité avant les fêtes'), {timeout: 5000});
   const corps = await page.evaluate(() => document.querySelector('.mp-corps').innerText);
-  verifier(corps.includes(`Bonjour ${cible.prenom},`) && corps.includes('LOYNA Premium, 39,99') && corps.includes('Prochaine étape : je vous rappelle jeudi en fin de matinée.'),
+  verifier(corps.includes(`Bonjour ${cible.prenom},`) && corps.includes('LOYNA Pro, 49') && corps.includes('Prochaine étape : je vous rappelle jeudi en fin de matinée.'),
     'aperçu du mail : bonjour, puces, offre et prix, étape');
   // le visuel de l'iframe a bien reçu les réglages (même origine : lecture de son document)
   const visuel = async () => {
@@ -129,7 +138,7 @@ try {
       env: {...process.env, PYTHONIOENCODING: 'utf-8'},
     }),
   );
-  verifier(py.d.to === cible.email && py.d.offre === 'premium' && py.d.recap.length === 3 && py.d.activite === cible.activite_carte && py.objet === `Suite à notre échange – ${cible.nom}`,
+  verifier(py.d.to === cible.email && py.d.offre === 'pro' && py.d.recap.length === 3 && py.d.activite === cible.activite_carte && py.objet === `Suite à notre échange – ${cible.nom}`,
     'le coffre relit la note : adresse, offre, 3 puces, activité, objet');
   await page.waitForFunction(() => document.body.innerText.includes('Mail perso en attente d’envoi'), {timeout: 10000});
   verifier(!(await page.evaluate(() => document.querySelector('.cp-notes-liste')?.innerText.includes('[MAIL]') ?? false)), 'la note [MAIL] n’apparaît pas comme une note libre illisible');

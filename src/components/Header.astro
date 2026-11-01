@@ -1,14 +1,14 @@
 ---
 import Logo from './Logo.astro';
 import Icon from './Icon.astro';
-import {NAV} from '../data/site';
+import {APPEL, NAV} from '../data/site';
 const path = Astro.url.pathname;
 const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
 ---
 
 <header class="site-header">
   <div class="container bar">
-    <a href="/" class="brand" aria-label="LOYNA, accueil"><Logo height={32} tone="light" /></a>
+    <a href="/" class="brand" aria-label="LOYNA, accueil"><Logo height={32} tone="dark" /></a>
     <nav class="nav-desktop" aria-label="Navigation principale">
       <ul>
         {NAV.map((n) => <li><a href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}>{n.label}</a></li>)}
@@ -16,38 +16,54 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
     </nav>
     <div class="actions">
       <a href="/espace-client/" class="login">Espace client</a>
-      <a href="/tarifs/" class="btn btn--gold btn--sm">Commencer</a>
+      <a href={APPEL.href} class="btn btn--primary btn--sm" aria-current={isActive(APPEL.href) ? 'page' : undefined}>{APPEL.label} <Icon name="arrow-right" size={16} /></a>
     </div>
-    <details class="nav-mobile">
-      <summary aria-label="Ouvrir le menu"><Icon name="menu" size={26} /></summary>
+    <details class="nav-mobile" id="menu-mobile">
+      <summary aria-label="Ouvrir le menu"><Icon name="menu" size={22} /></summary>
       <div class="sheet">
         <ul>
           {NAV.map((n) => <li><a href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}>{n.label}</a></li>)}
           <li><a href="/espace-client/">Espace client</a></li>
           <li><a href="/contact/">Contact</a></li>
         </ul>
-        <a href="/tarifs/" class="btn btn--primary btn--block">Voir les offres</a>
+        <a href={APPEL.href} class="btn btn--primary btn--block">{APPEL.label}</a>
       </div>
     </details>
   </div>
 </header>
+
+<script>
+  // Menu du téléphone : se ferme quand on touche ailleurs ou avec la touche Échap
+  const menu = document.getElementById('menu-mobile') as HTMLDetailsElement | null;
+  if (menu) {
+    document.addEventListener('click', (e) => {
+      if (menu.open && !menu.contains(e.target as Node)) menu.open = false;
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && menu.open) {
+        menu.open = false;
+        menu.querySelector('summary')?.focus();
+      }
+    });
+  }
+</script>
 
 <style>
   .site-header {
     position: sticky;
     top: 0;
     z-index: 50;
-    background: rgba(18, 18, 22, 0.96);
-    backdrop-filter: saturate(160%) blur(14px);
-    -webkit-backdrop-filter: saturate(160%) blur(14px);
-    border-bottom: 1px solid rgba(230, 194, 122, 0.16);
+    background: rgba(247, 241, 230, 0.96);
+    backdrop-filter: saturate(170%) blur(16px);
+    -webkit-backdrop-filter: saturate(170%) blur(16px);
+    box-shadow: 0 1px 0 rgba(18, 18, 22, 0.07);
   }
   .bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 24px;
-    height: 76px;
+    gap: 16px;
+    height: 64px;
   }
   .brand {
     display: inline-flex;
@@ -55,48 +71,65 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
     flex-shrink: 0;
     padding-block: 6px;
   }
+  .nav-desktop {
+    display: none;
+  }
   .nav-desktop ul {
     display: flex;
-    gap: 6px;
+    gap: 2px;
     list-style: none;
     margin: 0;
-    padding: 0;
+    padding: 5px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--filet);
+    box-shadow: 0 1px 2px rgba(18, 18, 22, 0.04), 0 8px 22px rgba(18, 18, 22, 0.05);
   }
   .nav-desktop a {
     display: block;
-    padding: 9px 13px;
+    padding: 8px 15px;
     border-radius: 999px;
-    color: #d9d2c4;
+    color: #3a3730;
     text-decoration: none;
     font-weight: 600;
-    font-size: 0.96rem;
+    font-size: 0.93rem;
+    line-height: 1.3;
+    transition: background 0.16s ease, color 0.16s ease;
   }
-  .nav-desktop a:hover,
+  .nav-desktop a:hover {
+    background: var(--bg-alt);
+    color: var(--ink);
+  }
   .nav-desktop a[aria-current='page'] {
-    background: rgba(230, 194, 122, 0.14);
-    color: #fff;
+    background: var(--ink);
+    color: #faf7f0;
   }
   .actions {
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 16px;
+    margin-left: auto;
   }
   .login {
-    color: #d9d2c4;
-    font-weight: 600;
+    display: none;
+    color: #3a3730;
+    font-weight: 650;
     text-decoration: none;
-    font-size: 0.96rem;
+    font-size: 0.93rem;
+    white-space: nowrap;
   }
   .login:hover {
-    color: #e6c27a;
+    color: var(--ink);
+    text-decoration: underline;
   }
   .btn--sm {
+    display: none;
     min-height: 44px;
     padding: 10px 20px;
-    font-size: 0.95rem;
+    font-size: 0.93rem;
+    box-shadow: 0 8px 18px rgba(18, 18, 22, 0.2);
   }
   .nav-mobile {
-    display: none;
     position: relative;
   }
   .nav-mobile summary {
@@ -106,9 +139,10 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
     height: 46px;
     display: grid;
     place-items: center;
-    border-radius: 14px;
-    border: 1px solid rgba(230, 194, 122, 0.3);
-    color: #f8f4ec;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--filet);
+    color: var(--ink);
   }
   .nav-mobile summary::-webkit-details-marker {
     display: none;
@@ -116,48 +150,54 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
   .sheet {
     position: absolute;
     right: 0;
-    top: 58px;
-    width: min(88vw, 340px);
+    top: 56px;
+    width: min(calc(100vw - 40px), 340px);
     background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 22px;
+    border: 1px solid var(--filet);
+    border-radius: 24px;
     box-shadow: var(--shadow-lg);
-    padding: 14px;
+    padding: 12px;
   }
   .sheet ul {
     list-style: none;
-    margin: 0 0 12px;
+    margin: 0 0 10px;
     padding: 0;
   }
   .sheet a:not(.btn) {
     display: block;
-    padding: 13px 14px;
-    border-radius: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
     color: var(--ink);
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 650;
   }
-  .sheet a:not(.btn):hover {
+  .sheet a:not(.btn):hover,
+  .sheet a[aria-current='page'] {
     background: var(--bg-alt);
   }
-  @media (max-width: 1080px) {
-    .nav-desktop,
-    .login {
-      display: none;
+  @media (min-width: 521px) {
+    .btn--sm {
+      display: inline-flex;
     }
-    .nav-mobile {
+  }
+  @media (min-width: 761px) {
+    .bar {
+      height: 74px;
+    }
+  }
+  /* Six liens, plus l'appel principal : la pilule n'a sa place qu'à partir de cette largeur */
+  @media (min-width: 1200px) {
+    .nav-desktop {
       display: block;
     }
-  }
-  @media (max-width: 520px) {
-    .actions .btn {
+    .login {
+      display: inline;
+    }
+    .nav-mobile {
       display: none;
     }
-  }
-  /* Téléphone : barre plus basse, plus de place pour le contenu */
-  @media (max-width: 760px) {
-    .bar {
-      height: 64px;
+    .actions {
+      margin-left: 0;
     }
   }
 </style>

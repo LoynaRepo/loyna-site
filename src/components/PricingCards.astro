@@ -1,28 +1,29 @@
 ---
-// Grille tarifaire avec bascule mensuel / annuel en CSS pur (aucun JavaScript).
+// Grille tarifaire, deux offres, avec bascule « sans engagement » / « avec 12 mois d'engagement » en CSS pur (aucun JavaScript).
 // Offres, quotas et contenu : src/data/site.ts (source : docs/OFFRES.md du dépôt LOYNA).
-// Les boutons « Choisir » mènent au panier (/panier/ : QR codes sous verre, compte LOYNA, puis paiement Stripe).
+// Sous Starter, « Essayer 1 mois gratuitement » mène à /essai/ tant que TRIAL.open ; les boutons « Choisir » mènent au panier
+// (/panier/ : QR codes sous verre, compte LOYNA, puis paiement Stripe).
 import Icon from './Icon.astro';
-import {CARD_PACK, LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, nombre, offerActive, panierUrl, quotas} from '../data/site';
+import {LAUNCH_OFFER, MISE_EN_SERVICE_APRES, MARKETING_INTERVAL_HOURS, PHRASES, PLANS, SETUP_FEE, SITE, TRIAL, essaiUrl, euro, offerActive, panierUrl, quotas} from '../data/site';
 interface Props {
   idPrefix?: string;
   compact?: boolean;
-  /** Niveau du titre de chaque formule (2 si aucun h2 ne précède la grille). */
+  /** Niveau du titre de chaque offre (2 si aucun h2 ne précède la grille). */
   level?: 2 | 3;
+  /** Sur téléphone, la liste complète se replie derrière un lien (page d'accueil) ; /tarifs/ la montre toujours. */
+  repli?: boolean;
 }
-const {idPrefix = 'p', compact = false, level = 3} = Astro.props;
+const {idPrefix = 'p', compact = false, level = 3, repli = false} = Astro.props;
 const H = level === 2 ? 'h2' : 'h3';
 const offer = offerActive();
-// Option « +500 cartes » : offres concernées (« Starter et Premium »)
-const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) => p.name).join(' et ');
 ---
 
 <div class="pricing">
-  <div class="toggle" role="radiogroup" aria-label="Période de facturation">
-    <input type="radio" name={`${idPrefix}-period`} id={`${idPrefix}-m`} checked />
-    <label for={`${idPrefix}-m`}>Mensuel</label>
-    <input type="radio" name={`${idPrefix}-period`} id={`${idPrefix}-y`} class="yearly" />
-    <label for={`${idPrefix}-y`}>Annuel <span class="save">−15&nbsp;%</span></label>
+  <div class="toggle" role="radiogroup" aria-label="Durée de l’abonnement">
+    <input type="radio" name={`${idPrefix}-engagement`} id={`${idPrefix}-s`} checked />
+    <label for={`${idPrefix}-s`}>Sans engagement</label>
+    <input type="radio" name={`${idPrefix}-engagement`} id={`${idPrefix}-e`} class="engage-choix" />
+    <label for={`${idPrefix}-e`}>Avec 12 mois d’engagement, <span class="save">−15&nbsp;%</span></label>
   </div>
 
   <div class="plans">
@@ -33,42 +34,46 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
             <H class="plan-name" id={`${idPrefix}-${p.id}`}>{p.name}</H>
             {p.badge && <span class="badge">{p.badge}</span>}
           </header>
-          <p class="pitch">{p.pitch}</p>
-          <div class="price only-m">
+          <div class="price only-s">
             <span class="amount">{euro(p.monthly)}</span>
             <span class="per">/ mois, sans TVA</span>
           </div>
           {
             offer ? (
               <>
-                <p class="offer-tag only-m" data-offer>
+                <p class="offer-tag only-s" data-offer>
                   Mise en service <s>{euro(SETUP_FEE)}</s> offerte jusqu’au {LAUNCH_OFFER.untilLabel}
                 </p>
-                <p class="note only-m" data-offer-off hidden>+ {euro(SETUP_FEE)} de mise en service, une seule fois</p>
+                <p class="note only-s" data-offer-off hidden>+ {euro(SETUP_FEE)} de mise en service, une seule fois</p>
               </>
             ) : (
-              <p class="note only-m">+ {euro(SETUP_FEE)} de mise en service, une seule fois</p>
+              <p class="note only-s">+ {euro(SETUP_FEE)} de mise en service, une seule fois</p>
             )
           }
-          <div class="price only-y">
-            <span class="amount">{euro(p.yearly)}</span>
-            <span class="per">/ an, sans TVA</span>
+          <div class="price only-e">
+            <span class="amount">{euro(p.engaged)}</span>
+            <span class="per">/ mois, sans TVA</span>
           </div>
-          <p class="note only-y">
-            soit {euro(Math.round((p.yearly / 12) * 100) / 100)} / mois · <strong>mise en service offerte</strong>
+          <p class="note only-e">
+            12 mois réglés chaque mois · <strong>mise en service offerte</strong>
           </p>
+          <p class="pitch">{p.tagline}</p>
           <p class="quota">
             <Icon name="wallet" size={17} />
             <span>{quotas(p)}</span>
           </p>
-          <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-m`} href={panierUrl(p.id, 'mensuel')} rel="nofollow">
+          {p.id === 'starter' && TRIAL.open && (
+            <a class="btn btn--gold btn--block" href={essaiUrl}>
+              Essayer 1 mois gratuitement
+            </a>
+          )}
+          <a class={`btn ${p.id === 'starter' && TRIAL.open ? 'btn--clair' : p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-s`} href={panierUrl(p.id, 'sans')} rel="nofollow">
             Choisir {p.name}
           </a>
-          <p class="engage only-m"><strong>Engagement de 12 mois</strong>, réglés chaque mois, puis résiliable à la fin de n’importe quel mois, sans frais.</p>
-          <a class={`btn ${p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-y`} href={panierUrl(p.id, 'annuel')} rel="nofollow">
-            Choisir {p.name} en annuel
+          <a class={`btn ${p.id === 'starter' && TRIAL.open ? 'btn--clair' : p.highlight ? 'btn--gold' : 'btn--primary'} btn--block only-e`} href={panierUrl(p.id, 'engage')} rel="nofollow">
+            Choisir {p.name} avec engagement
           </a>
-          <p class="engage only-y">12 mois payés en une fois, renouvelables.</p>
+          <p class="engage">{PHRASES.prix(p)}</p>
           {!compact && (
             <>
               {p.intro && <p class="intro">{p.intro}</p>}
@@ -82,7 +87,13 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
                   </ul>
                 </div>
               )}
-              <ul class="checks">
+              {repli && <input class="plus-cb sr-only" type="checkbox" id={`${idPrefix}-${p.id}-plus`} />}
+              {repli && (
+                <label class="plus-lien" for={`${idPrefix}-${p.id}-plus`}>
+                  Voir le reste de l’offre <Icon name="chevron-down" size={16} />
+                </label>
+              )}
+              <ul class={`checks ${repli ? 'plus-liste' : ''}`}>
                 {p.features.map((f) => (
                   <li>{f}</li>
                 ))}
@@ -93,19 +104,35 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
       ))
     }
   </div>
-  <p class="fine">
-    Une campagne compte pour une, quel que soit le nombre de clients qui la reçoivent, et le compteur repart chaque lundi. Les messages automatiques et les notifications de proximité ne sont jamais décomptés, et un client reçoit au plus un message commercial toutes les {MARKETING_INTERVAL_HOURS}&nbsp;h (délai réglable). Besoin de plus de cartes&nbsp;? +{nombre(CARD_PACK.cards)} cartes pour {euro(CARD_PACK.monthly)} par mois en {packPlans} ({euro(CARD_PACK.yearly)} par an en annuel).
-  </p>
-  <p class="fine">
-    {
-      offer && (
-        <span data-offer>
-          Offre de lancement : mise en service offerte jusqu’au {LAUNCH_OFFER.untilLabel}, en mensuel comme en annuel (appliquée d’office dans votre panier).{' '}
-        </span>
-      )
-    }
-    Prix en euros, sans TVA ({SITE.vatNote}) : le prix affiché est le prix payé. Paiement sécurisé par Stripe, au nom de KOVA Elec (LOYNA, une marque de KOVA Elec) ; factures dans votre espace client.
-  </p>
+  <p class="pourquoi">{PHRASES.pourquoiPro}</p>
+  {repli && <input class="plus-cb sr-only" type="checkbox" id={`${idPrefix}-fine-plus`} />}
+  {repli && (
+    <label class="plus-lien plus-lien--fine" for={`${idPrefix}-fine-plus`}>
+      Précisions sur les prix et les campagnes <Icon name="chevron-down" size={16} />
+    </label>
+  )}
+  <div class={repli ? 'plus-liste' : undefined}>
+    {TRIAL.open && <p class="fine"><strong>Essai.</strong> {PHRASES.essai}</p>}
+    <p class="fine">
+      <strong>Mise en service.</strong>{' '}
+      {
+        offer ? (
+          <>
+            <span data-offer>{PHRASES.miseEnService}</span>
+            <span data-offer-off hidden>{MISE_EN_SERVICE_APRES}</span>
+          </>
+        ) : (
+          MISE_EN_SERVICE_APRES
+        )
+      }
+    </p>
+    <p class="fine">
+      <strong>Campagnes.</strong> Une campagne compte pour une, quel que soit le nombre de clients qui la reçoivent, et le compteur repart chaque lundi. Les messages automatiques et les notifications de proximité ne sont jamais décomptés. Un même client reçoit au plus un message commercial par {MARKETING_INTERVAL_HOURS}&nbsp;h, réglable.
+    </p>
+    <p class="fine">
+      Prix en euros, sans TVA ({SITE.vatNote}) : le prix affiché est le prix payé. Paiement sécurisé par Stripe, au nom de KOVA Elec (LOYNA, une marque de KOVA Elec) ; factures dans votre espace client.
+    </p>
+  </div>
 </div>
 
 <style>
@@ -117,8 +144,8 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
     padding: 5px;
     border-radius: 999px;
     background: var(--card);
-    border: 1px solid var(--line);
-    margin-bottom: 40px;
+    border: 1px solid var(--filet);
+    margin-bottom: clamp(24px, 3vw, 40px);
     box-shadow: var(--shadow);
   }
   .toggle input {
@@ -127,7 +154,8 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
     pointer-events: none;
   }
   .toggle label {
-    padding: 11px 24px;
+    min-height: 44px;
+    padding: 9px 24px;
     border-radius: 999px;
     font-weight: 700;
     cursor: pointer;
@@ -135,6 +163,8 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
     display: inline-flex;
     gap: 8px;
     align-items: center;
+    justify-content: center;
+    text-align: center;
   }
   .toggle input:checked + label {
     background: var(--ink);
@@ -145,21 +175,40 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
     outline-offset: 2px;
   }
   .save {
+    flex: none;
     font-size: 0.78rem;
     padding: 3px 8px;
     border-radius: 999px;
     background: var(--gold-soft);
     color: #6b4a14;
   }
+  /* Téléphone : les deux choix sur toute la largeur, leur texte passe à la ligne */
+  @media (max-width: 719px) {
+    .toggle {
+      display: flex;
+      left: 0;
+      transform: none;
+      border-radius: 26px;
+    }
+    .toggle label {
+      flex: 1 1 0;
+      min-width: 0;
+      flex-wrap: wrap;
+      padding: 9px 10px;
+      border-radius: 22px;
+      font-size: 0.92rem;
+      line-height: 1.25;
+    }
+  }
   .offer-tag {
     margin: -4px 0 0;
     padding: 8px 12px;
     border-radius: 12px;
-    background: rgba(31, 157, 92, 0.1);
-    border: 1px dashed rgba(31, 157, 92, 0.45);
-    color: #13663b;
-    font-size: 0.88rem;
-    font-weight: 600;
+    background: rgba(201, 150, 63, 0.13);
+    border: 1px solid rgba(201, 150, 63, 0.42);
+    color: #5e4110;
+    font-size: 0.86rem;
+    font-weight: 650;
     line-height: 1.4;
   }
   .offer-tag b {
@@ -173,18 +222,23 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
   .plans {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-    gap: 24px;
-    align-items: start;
+    gap: clamp(14px, 2vw, 22px);
+    align-items: stretch;
+    max-width: 960px;
+    margin-inline: auto;
   }
   .plan {
+    position: relative;
     background: var(--card);
-    border: 1px solid var(--line);
+    border: 1px solid var(--filet);
     border-radius: var(--radius-lg);
-    padding: 34px 30px;
+    padding: clamp(22px, 2.6vw, 32px) clamp(20px, 2.4vw, 28px);
     box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 13px;
+    font-size: 0.98rem;
+    line-height: 1.5;
   }
   .plan--hl {
     background: var(--ink);
@@ -200,17 +254,22 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
   }
   .plan-name {
     margin: 0;
-    font-size: 1.45rem;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold-strong);
   }
   .plan--hl .plan-name {
-    color: #faf7f0;
+    color: #e6c27a;
   }
   .badge {
     font-size: 0.75rem;
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    padding: 6px 12px;
+    padding: 4px 10px;
+    white-space: nowrap;
     border-radius: 999px;
     background: var(--gold-soft);
     color: #6b4a14;
@@ -222,7 +281,6 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
   .pitch {
     color: var(--muted);
     margin: 0;
-    min-height: 3.2em;
   }
   .plan--hl .pitch,
   .plan--hl .note {
@@ -233,12 +291,12 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
     flex-wrap: wrap;
     align-items: baseline;
     gap: 2px 8px;
-    margin-top: 6px;
+    margin-top: 4px;
   }
   .amount {
-    font-size: 2.9rem;
+    font-size: clamp(2.9rem, 4.4vw, 3.5rem);
     font-weight: 800;
-    letter-spacing: -0.04em;
+    letter-spacing: -0.05em;
     color: var(--ink);
     line-height: 1;
   }
@@ -248,6 +306,7 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
   .per {
     color: var(--muted);
     font-weight: 600;
+    font-size: 0.95rem;
     white-space: nowrap;
   }
   .plan--hl .per {
@@ -258,6 +317,19 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
     color: var(--muted);
     margin: 0 0 6px;
   }
+  .plan--hl .note strong {
+    color: #faf7f0;
+  }
+  /* Bouton secondaire sur la carte sombre (« Choisir Starter », sous l'essai) */
+  .btn--clair {
+    background: transparent;
+    color: #faf7f0;
+    border-color: rgba(250, 247, 240, 0.32);
+  }
+  .btn--clair:hover {
+    color: #fff;
+    border-color: #faf7f0;
+  }
   .engage {
     margin: -4px 0 0;
     font-size: 0.88rem;
@@ -265,14 +337,8 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
     text-align: center;
     color: var(--muted);
   }
-  .engage strong {
-    color: var(--ink);
-  }
   .plan--hl .engage {
     color: #b9b3a7;
-  }
-  .plan--hl .engage strong {
-    color: #faf7f0;
   }
   .intro {
     font-weight: 700;
@@ -305,7 +371,7 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
   .plan--hl .quota :global(svg) {
     color: #e6c27a;
   }
-  /* Bloc mis en avant : automatisations (Premium), services de LOYNA (Pro) */
+  /* Bloc mis en avant : ce qui part tout seul (Starter), ce que Pro ajoute */
   .focus {
     padding: 16px 16px 18px;
     border-radius: 18px;
@@ -339,6 +405,15 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
   .plan--hl :global(.checks li::before) {
     background-color: rgba(230, 194, 122, 0.18);
   }
+  .pourquoi {
+    max-width: 760px;
+    margin: clamp(22px, 3vw, 32px) auto 0;
+    text-align: center;
+    font-size: 1.04rem;
+    font-weight: 650;
+    line-height: 1.45;
+    color: var(--ink);
+  }
   .fine {
     text-align: center;
     color: var(--muted);
@@ -349,16 +424,75 @@ const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) =>
   .fine + .fine {
     margin-top: 10px;
   }
-  .only-y {
+  .fine strong {
+    color: var(--ink);
+  }
+  .only-e {
     display: none;
   }
-  .pricing:has(.yearly:checked) .only-y {
+  .pricing:has(.engage-choix:checked) .only-e {
     display: flex;
   }
-  .pricing:has(.yearly:checked) p.only-y {
+  .pricing:has(.engage-choix:checked) p.only-e {
     display: block;
   }
-  .pricing:has(.yearly:checked) .only-m {
+  .pricing:has(.engage-choix:checked) .only-s {
     display: none;
+  }
+  /* Liste repliable (téléphone) : case à cocher et étiquette, aucune ligne de JavaScript */
+  .plus-lien {
+    display: none;
+  }
+  @media (max-width: 719px) {
+    .plus-lien--fine {
+      display: flex !important;
+      margin-top: 14px;
+      text-align: center;
+      font-size: 0.92rem;
+    }
+    .plus-lien {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 44px;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .plan--hl .plus-lien {
+      color: #faf7f0;
+    }
+    .plus-lien :global(svg) {
+      transition: transform 0.2s;
+    }
+    .plus-cb:checked + .plus-lien :global(svg) {
+      transform: rotate(180deg);
+    }
+    .plus-cb:focus-visible + .plus-lien {
+      outline: 3px solid var(--gold);
+      outline-offset: 2px;
+      border-radius: 10px;
+    }
+    .plus-liste {
+      display: none;
+    }
+    .plus-cb:checked ~ .plus-liste {
+      display: grid;
+    }
+  }
+  @media (min-width: 720px) {
+    .plus-cb {
+      display: none;
+    }
+  }
+  /* Ordinateur : Starter, mis en avant, dépasse légèrement de la rangée */
+  @media (min-width: 980px) {
+    .plan--hl {
+      margin-block: -12px;
+      padding-block: calc(clamp(22px, 2.6vw, 32px) + 12px);
+    }
   }
 </style>

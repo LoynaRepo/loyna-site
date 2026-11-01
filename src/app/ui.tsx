@@ -2,8 +2,8 @@
 import type {ComponentChildren} from 'preact';
 import {useEffect, useRef, useState} from 'preact/hooks';
 import {Icon} from './icons';
-import {can, lockLabel, merchant, readOnly, toast, toasts} from './state';
-import {copy, num, qrSvg} from './util';
+import {api, can, choisirUrl, lockLabel, merchant, portalUrl, readOnly, service, session, toast, toasts, type ServiceState} from './state';
+import {copy, dayLong, num, qrSvg} from './util';
 
 type BtnKind = 'primary' | 'gold' | 'ghost' | 'danger' | 'quiet';
 export function Btn(props: {
@@ -253,7 +253,49 @@ export function Kpi({label, def, cur, prev, pct, vs}: {label: string; def?: stri
   );
 }
 
-/** Jauge de consommation de l'offre (cartes, notifications du mois) : limite null = illimité. */
+/** Texte du bandeau d'état (cahier des charges, section 2.2) et son unique bouton ; null si tout va bien. */
+export function serviceNotice(s: ServiceState | null | undefined): {text: string; tone: 'amber' | 'red'; button?: {label: string; href: string; external?: boolean; ownerOnly?: boolean}} | null {
+  const m = merchant.value;
+  if (!m || s === undefined) return null;
+  // État illisible : seul le statut du commerce est sûr
+  if (s === null) return m.merchant_status === 'SUSPENDED' ? {text: 'Votre carte est en pause. Écrivez à contact@loyna.fr.', tone: 'red'} : null;
+  const pay = {label: 'Régler ma facture', href: s.pay_url || portalUrl(session.value?.email), external: true};
+  // Démonstration : pas de panier relié à un commerce fictif
+  // Le panier rattache l'abonnement à ce commerce : checkout-create le réserve à son propriétaire
+  const panier = (label: string, plan = 'starter') => ({label, href: api.demo ? '/tarifs/' : choisirUrl(m.merchant_id, plan), ownerOnly: true});
+  if (s.state === 'GRACE') return {text: `Votre paiement n’est pas passé. Réglez votre facture avant le ${dayLong(s.stop_at)}, sinon votre carte sera mise en pause.`, tone: 'amber', button: pay};
+  if (s.state === 'SUSPENDED_MANUAL') return {text: 'Votre compte est suspendu par LOYNA. Écrivez à contact@loyna.fr.', tone: 'red'};
+  if (s.state !== 'STOPPED') return null;
+  const until = dayLong(s.data_delete_after);
+  if (s.stop_reason === 'PAYMENT_FAILED') return {text: `Paiement non régularisé : votre carte est en pause. Tout repart dès que la facture est réglée. Données conservées jusqu’au ${until}.`, tone: 'red', button: pay};
+  if (s.stop_reason === 'SUBSCRIPTION_ENDED') return {text: `Votre abonnement est terminé : votre carte est en pause. Données conservées jusqu’au ${until}.`, tone: 'red', button: panier('Reprendre mon abonnement', s.plan === 'PRO' ? 'pro' : 'starter')};
+  return {text: `Votre essai est terminé : votre carte est en pause. Vos clients et leurs soldes sont conservés jusqu’au ${until}.`, tone: 'red', button: panier('Choisir mon offre')};
+}
+
+/**
+ * Bandeau d'état en haut de chaque écran : sursis, essai terminé, impayé, abonnement terminé, suspension à la main. Le bouton
+ * n'est pas proposé à un employé (la page Abonnement lui est fermée) ni en consultation opérateur (lecture seule) ; choisir une
+ * offre revient au propriétaire.
+ */
+export function ServiceBanner() {
+  const n = serviceNotice(service.value);
+  if (!n) return null;
+  const action = n.button && can('settings.manage') && !readOnly() && (!n.button.ownerOnly || merchant.value?.role === 'OWNER') ? n.button : null;
+  const MAIL = 'contact@loyna.fr';
+  return (
+    <div class={`banner banner--${n.tone}`} role="status">
+      <Icon name="triangle-alert" />
+      <span class="banner-t">{n.text.split(MAIL).flatMap((x, i) => (i ? [<a href={`mailto:${MAIL}`}>{MAIL}</a>, x] : [x]))}</span>
+      {action && (
+        <Btn kind="gold" small href={action.href} target={action.external ? '_blank' : undefined}>
+          {action.label}
+        </Btn>
+      )}
+    </div>
+  );
+}
+
+/** Jauge de consommation de l'offre (campagnes de la semaine) : limite null = illimité. */
 export function UsageMeter({label, used, limit, extra}: {label: string; used: number; limit: number | null; extra?: ComponentChildren}) {
   const p = limit ? Math.min(100, Math.round((used / limit) * 100)) : null;
   return (
@@ -272,7 +314,7 @@ export function UsageMeter({label, used, limit, extra}: {label: string; used: nu
   );
 }
 
-/** Pastille d'une fonction absente de l'offre : « Inclus dans Premium », « Inclus dans Pro ». */
+/** Pastille d'une fonction absente de l'offre : « Inclus dans Pro ». */
 export function LockBadge({feature}: {feature: string}) {
   return (
     <span class="bdg bdg--lock">

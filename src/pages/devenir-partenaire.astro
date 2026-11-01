@@ -2,20 +2,30 @@
 // Programme partenaires (apporteurs d'affaires) : conditions dans PARTENAIRES (src/data/site.ts), prix des offres dans
 // PLANS. Les deux formulaires passent par /contact.php (sujets « Devenir partenaire » et « Recommandation partenaire ») :
 // mail « [Site LOYNA] … » vers contact@loyna.fr, puis /devenir-partenaire/envoye/.
+// Grille et règles identiques au contrat d'apporteur (annexe 1) et à « Programme apporteurs d'affaires » du coffre. Tout ce
+// qui parle de l'essai suit TRIAL.open.
 import Base from '../layouts/Base.astro';
+import Jonction from '../components/Jonction.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import Icon from '../components/Icon.astro';
-import {PARTENAIRES, PLANS, SITE, euro} from '../data/site';
+import {ENGAGEMENT, PARTENAIRES, PHRASES, PLANS, SITE, TRIAL, euro} from '../data/site';
 
 const crumbs = [
   {name: 'Accueil', url: '/'},
   {name: 'Devenir partenaire', url: '/devenir-partenaire/'},
 ];
 const P = PARTENAIRES;
-const montants = PLANS.map((p) => P.commission[p.id]);
+const maj = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+const montants = Object.values(P.commission);
 const fourchette = `de ${euro(Math.min(...montants))} à ${euro(Math.max(...montants))}`;
-const commissions = PLANS.map((p) => `${euro(P.commission[p.id])} pour un client ${p.name}`);
-const listeCommissions = `${commissions.slice(0, -1).join(', ')} et ${commissions[commissions.length - 1]}`;
+
+// Quand la commission est acquise et versée : selon l'engagement du commerce, pas selon son offre.
+const QUAND_ENGAGE = 'acquise au 1er paiement du commerce, versée après le 60e jour';
+const QUAND_SANS = 'acquise et versée au 3e paiement du commerce';
+const SANS_PAIEMENT = TRIAL.open
+  ? 'Le mois d’essai et le mois offert du parrainage ne comptent pas comme des paiements.'
+  : 'Le mois offert du parrainage ne compte pas comme un paiement.';
+const AUCUN_VERSEMENT = 'Aucun versement si l’abonnement a pris fin ou si un paiement a été contesté avant le 60e jour (avec engagement) ou avant le 3e paiement (sans engagement).';
 
 const steps = [
   {
@@ -31,16 +41,40 @@ const steps = [
   {
     icon: 'banknote',
     title: 'Vous touchez votre commission',
-    text: `Dès que le commerce a réglé sa première mensualité, votre commission est due : ${fourchette} selon l’offre choisie, versée par virement.`,
+    text: `Au bout de 2 mois d’abonnement payé par le commerce, vous touchez ${fourchette} selon l’offre qu’il prend, une seule fois, par virement.`,
   },
 ];
 
-// Ce que contient chaque offre, en une ligne (docs/BRIEF.md)
-const resume: Record<string, string> = {
-  starter: 'La carte de fidélité complète',
-  premium: 'La carte, plus les automatisations',
-  pro: 'Tout Premium, plus le suivi par LOYNA',
-};
+// Une carte par cas : pour Pro, le montant dépend de l'engagement.
+const starter = PLANS.find((p) => p.id === 'starter')!;
+const pro = PLANS.find((p) => p.id === 'pro')!;
+const avecEngagement = `avec ${ENGAGEMENT.months} mois d’engagement`;
+const cas = [
+  {
+    titre: 'Client Starter',
+    montant: P.commission.starter,
+    offre: starter.badge,
+    prix: starter.monthly,
+    precision: ` ou ${euro(starter.engaged)} ${avecEngagement}`,
+    quand: `Avec engagement : ${QUAND_ENGAGE}. Sans engagement : ${QUAND_SANS}.`,
+  },
+  {
+    titre: 'Client Pro, sans engagement',
+    montant: P.commission.pro,
+    offre: pro.badge,
+    prix: pro.monthly,
+    precision: '',
+    quand: `${maj(QUAND_SANS)}.`,
+  },
+  {
+    titre: 'Client Pro, avec engagement',
+    montant: P.commission.proEngage,
+    offre: pro.badge,
+    prix: pro.engaged,
+    precision: ` ${avecEngagement}`,
+    quand: `${maj(QUAND_ENGAGE)}.`,
+  },
+];
 
 const profils = [
   {icon: 'calculator', title: 'Expert-comptable', text: 'Vous suivez des commerçants indépendants tout au long de l’année.'},
@@ -71,12 +105,20 @@ const faq = [
   },
   {
     q: 'Combien et quand suis-je payé ?',
-    a: `${listeCommissions.charAt(0).toUpperCase()}${listeCommissions.slice(1)}, une seule fois par nouveau client. La commission est due quand le commerce a réglé sa première mensualité, ou son abonnement annuel s’il paie à l’année. Au début de chaque mois, LOYNA vous envoie un relevé, et le virement part dans les ${P.virementJours} jours qui suivent la réception de votre facture (professionnel) ou de votre note de commission (particulier).`,
+    a: `${PHRASES.commission} Une seule commission par commerce. ${maj(avecEngagement)} : elle est ${QUAND_ENGAGE}. Sans engagement : elle est ${QUAND_SANS}. ${SANS_PAIEMENT} ${AUCUN_VERSEMENT} Au début de chaque mois, LOYNA vous envoie un relevé, et le virement part dans les ${P.virementJours} jours qui suivent la réception de votre facture (professionnel) ou de votre note de commission (particulier).`,
   },
   {
     q: 'Et si le commerce connaît déjà LOYNA ?',
-    a: `La commission concerne les nouveaux clients : un commerce qui n’est pas déjà client LOYNA et qui n’a eu aucun échange avec nous (réponse, appel, rendez-vous) dans les ${P.reserveJours} jours avant votre recommandation. Nous vous confirmons sous ${P.confirmationJoursOuvres} jours ouvrés si elle est retenue ; elle vous est alors réservée pendant ${P.reserveJours} jours.`,
+    a: `La commission concerne les nouveaux clients : un commerce réel et en activité, qui n’est pas déjà client LOYNA${TRIAL.open ? ', qui n’a pas déjà démarré d’essai gratuit' : ''} et qui n’a eu aucun échange avec nous (réponse, appel, rendez-vous) dans les ${P.reserveJours} jours avant votre recommandation. Nous vous confirmons sous ${P.confirmationJoursOuvres} jours ouvrés si elle est retenue ; elle vous est alors réservée pendant ${P.reserveJours} jours.`,
   },
+  ...(TRIAL.open
+    ? [
+        {
+          q: 'Et si le commerçant commence par l’essai gratuit ?',
+          a: `Votre recommandation tient toujours : s’il démarre son essai pendant les ${P.reserveJours} jours où elle vous est réservée, il reste rattaché à vous s’il s’abonne pendant l’essai ou dans les ${P.reserveJours} jours qui suivent sa fin. Le mois d’essai ne compte pas comme un paiement : le décompte de votre commission part de son premier vrai paiement.`,
+        },
+      ]
+    : []),
   {
     q: 'Faut-il avoir une entreprise ?',
     a: 'Non. Un professionnel nous envoie une facture ; un particulier, une note de commission. Un particulier déclare ses commissions dans sa déclaration de revenus. Si ses recommandations deviennent régulières, il doit s’inscrire comme micro-entrepreneur.',
@@ -113,6 +155,7 @@ const faqLd = {
   title="Devenir partenaire LOYNA : apporteur d’affaires"
   description={`Recommandez LOYNA aux commerçants : ${fourchette} de commission par nouveau client. Gratuit, sans exclusivité, LOYNA s’occupe de la vente.`}
   breadcrumbs={crumbs}
+  finPage="nuit"
   jsonLd={[pageLd, faqLd]}
   stickyCta={{primary: {href: '#candidature', label: 'Devenir partenaire'}, secondary: {href: '#recommandation', label: 'Recommander'}}}
 >
@@ -127,12 +170,14 @@ const faqLd = {
         <a class="btn btn--ghost" href="#recommandation">Déjà partenaire&nbsp;? Recommander un commerce</a>
       </div>
       <ul class="pills" aria-label="L’essentiel du programme">
-        <li><Icon name="badge-euro" size={18} /> {fourchette.charAt(0).toUpperCase() + fourchette.slice(1)} par nouveau client</li>
+        <li><Icon name="badge-euro" size={18} /> {maj(fourchette)} par nouveau client</li>
         <li><Icon name="shield-check" size={18} /> Recommandation réservée {P.reserveJours}&nbsp;jours</li>
-        <li><Icon name="sparkles" size={18} /> Gratuit et sans exclusivité</li>
+        <li><Icon name="badge-check" size={18} /> Gratuit et sans exclusivité</li>
       </ul>
     </div>
   </section>
+
+  <Jonction de="sable" vers="creme" forme={2} />
 
   <section class="section pt0" id="comment-ca-marche">
     <div class="container">
@@ -158,23 +203,26 @@ const faqLd = {
     </div>
   </section>
 
-  <section class="section section--warm" id="commissions">
+  <Jonction de="creme" vers="sable" forme={1} retourne />
+
+  <section class="section section--warm tete-serree" id="commissions">
     <div class="container">
       <div class="section-head">
         <p class="eyebrow">Votre commission</p>
         <h2>Une commission pour chaque nouveau client</h2>
-        <p>Versée une seule fois, selon l’offre que choisit le commerce.</p>
+        <p>Versée une seule fois par commerce, selon l’offre qu’il prend et son engagement.</p>
       </div>
       <div class="grid grid-3">
         {
-          PLANS.map((p) => (
+          cas.map((c) => (
             <article class="card com-card">
-              <h3 class="com-plan">Client {p.name}</h3>
-              <p class="com-amount">{euro(P.commission[p.id])}</p>
+              <h3 class="com-plan">{c.titre}</h3>
+              <p class="com-amount">{euro(c.montant)}</p>
               <p class="com-unit">pour vous, une seule fois</p>
               <p class="com-client">
-                {resume[p.id]}. Le commerce paie <strong>{euro(p.monthly)} par mois</strong> ou {euro(p.yearly)} par an, sans TVA.
+                {c.offre}. Le commerce paie <strong>{euro(c.prix)} par mois</strong>{c.precision}, sans TVA.
               </p>
+              <p class="com-quand">{c.quand}</p>
             </article>
           ))
         }
@@ -182,7 +230,10 @@ const faqLd = {
       <div class="card com-when">
         <h3>Quand est-elle versée&nbsp;?</h3>
         <ul class="checks">
-          <li>Elle est due quand le commerce a réglé sa première mensualité, ou son abonnement annuel s’il paie à l’année.</li>
+          <li>{maj(avecEngagement)}&nbsp;: elle est {QUAND_ENGAGE}.</li>
+          <li>Sans engagement&nbsp;: elle est {QUAND_SANS}.</li>
+          <li>{SANS_PAIEMENT}</li>
+          <li>{AUCUN_VERSEMENT}</li>
           <li>Au début de chaque mois, LOYNA vous envoie un relevé de vos commissions.</li>
           <li>Virement dans les {P.virementJours}&nbsp;jours qui suivent la réception de votre facture (professionnel) ou de votre note de commission (particulier).</li>
         </ul>
@@ -191,7 +242,9 @@ const faqLd = {
     </div>
   </section>
 
-  <section class="section" id="pour-qui">
+  <Jonction de="sable" vers="creme" forme={4} />
+
+  <section class="section tete-serree" id="pour-qui">
     <div class="container">
       <div class="section-head">
         <p class="eyebrow">Pour qui&nbsp;?</p>
@@ -229,7 +282,9 @@ const faqLd = {
     </div>
   </section>
 
-  <section class="section section--alt" id="cadre">
+  <Jonction de="creme" vers="sable" forme={3} />
+
+  <section class="section section--alt tete-serree" id="cadre">
     <div class="container">
       <div class="section-head">
         <p class="eyebrow">Le cadre</p>
@@ -243,7 +298,7 @@ const faqLd = {
             Nous vous confirmons sous {P.confirmationJoursOuvres}&nbsp;jours ouvrés si la recommandation est retenue. Une fois retenue, elle vous est réservée pendant {P.reserveJours}&nbsp;jours.
           </p>
           <p class="cadre-detail">
-            Un commerce compte comme nouveau s’il n’est pas déjà client LOYNA et n’a eu aucun échange avec nous (réponse, appel, rendez-vous) dans les {P.reserveJours}&nbsp;jours qui précèdent votre recommandation.
+            Un commerce compte comme nouveau s’il est réel et en activité, s’il n’est pas déjà client LOYNA{TRIAL.open && ', s’il n’a pas déjà démarré d’essai gratuit'} et s’il n’a eu aucun échange avec nous (réponse, appel, rendez-vous) dans les {P.reserveJours}&nbsp;jours qui précèdent votre recommandation.
           </p>
         </div>
         <div class="card">
@@ -260,7 +315,9 @@ const faqLd = {
     </div>
   </section>
 
-  <section class="section" id="questions">
+  <Jonction de="sable" vers="creme" forme={6} retourne />
+
+  <section class="section tete-serree" id="questions">
     <div class="container narrow">
       <div class="section-head">
         <h2>Questions fréquentes</h2>
@@ -280,7 +337,9 @@ const faqLd = {
     </div>
   </section>
 
-  <section class="section section--alt" id="candidature">
+  <Jonction de="creme" vers="sable" forme={2} retourne />
+
+  <section class="section section--alt tete-serree" id="candidature">
     <div class="container p-form-wrap">
       <div class="p-copy">
         <p class="eyebrow">Candidature</p>
@@ -288,7 +347,7 @@ const faqLd = {
         <p class="lead">Présentez-vous en quelques lignes. Nous revenons vers vous par e-mail pour faire connaissance et préparer votre contrat d’apporteur d’affaires, signé avant votre première recommandation.</p>
         <ul class="checks">
           <li>Gratuit, sans exclusivité ni volume minimum</li>
-          <li>{fourchette.charAt(0).toUpperCase() + fourchette.slice(1)} par nouveau client</li>
+          <li>{maj(fourchette)} par nouveau client</li>
           <li>Une question&nbsp;? <a href={`mailto:${SITE.email}`}>{SITE.email}</a></li>
         </ul>
       </div>
@@ -350,7 +409,9 @@ const faqLd = {
     </div>
   </section>
 
-  <section class="section section--dark" id="recommandation">
+  <Jonction de="sable" vers="nuit" forme={5} />
+
+  <section class="section section--dark tete-serree" id="recommandation">
     <div class="container p-form-wrap">
       <div class="p-copy">
         <p class="eyebrow">Déjà partenaire&nbsp;?</p>
@@ -555,6 +616,10 @@ const faqLd = {
   }
   .com-client strong {
     color: var(--ink);
+  }
+  .card .com-quand {
+    margin-top: 12px;
+    font-size: 0.95rem;
   }
   .com-when {
     max-width: 860px;

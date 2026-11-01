@@ -1,0 +1,100 @@
+---
+// Jonction irrégulière entre deux sections (demande d'Ewan du 2026-10-31). SVG étiré sur toute la largeur : le fond du bloc
+// reprend la section du dessus, la courbe remplit la section du dessous, et un filet doré suit la courbe.
+// Le tracé descend de quelques pixels sous le bloc (overflow visible) : la courbe recouvre le haut de la section suivante,
+// de même couleur, donc aucun liseré possible entre les deux, quelle que soit la largeur ou la densité de l'écran.
+// `sur` : la jonction se pose sur la section précédente (fond transparent), qui passe derrière la courbe.
+export type Teinte = 'creme' | 'sable' | 'blanc' | 'nuit';
+interface Props {
+  de?: Teinte;
+  vers?: Teinte;
+  /** Tracé (1 à 6), jamais le même deux fois de suite sur une page. */
+  forme?: 1 | 2 | 3 | 4 | 5 | 6;
+  /** Symétrie gauche-droite du tracé. */
+  retourne?: boolean;
+  /** Filet doré le long de la courbe (par défaut, oui). */
+  filet?: boolean;
+  sur?: boolean;
+  class?: string;
+}
+const {de = 'creme', vers = 'sable', forme = 1, retourne = false, filet = true, sur = false, class: cls = ''} = Astro.props;
+
+const COULEURS: Record<Teinte, string> = {creme: 'var(--bg)', sable: 'var(--bg-alt)', blanc: 'var(--card)', nuit: 'var(--ink)'};
+
+// Courbes sur une largeur de 1440 et une hauteur de 120 : amplitudes et longueurs d'onde volontairement inégales.
+const TRACES: Record<number, {courbe: string; voile: string}> = {
+  // grande houle décentrée, petite reprise à gauche
+  1: {courbe: 'M0,70 C120,46 248,40 392,64 C536,88 650,106 806,88 C962,70 1048,24 1214,24 C1316,24 1392,40 1440,54', voile: 'M0,52 C170,20 300,36 450,50 C620,66 720,86 880,66 C1030,48 1120,6 1260,12 C1340,16 1400,26 1440,34'},
+  // dune décalée vers la droite, longue pente à gauche
+  2: {courbe: 'M0,96 C180,74 360,44 600,28 C800,14 980,14 1130,34 C1260,52 1360,84 1440,104', voile: 'M0,76 C210,48 400,30 640,16 C840,6 1020,6 1170,24 C1290,38 1380,62 1440,80'},
+  // trois vagues d'amplitude décroissante
+  3: {courbe: 'M0,38 C130,90 250,106 396,78 C520,54 590,30 716,40 C846,52 930,90 1058,86 C1190,82 1306,46 1440,36', voile: 'M0,24 C150,62 270,84 420,58 C550,36 620,14 760,22 C890,32 980,66 1100,62 C1230,58 1330,28 1440,18'},
+  // longue diagonale souple
+  4: {courbe: 'M0,26 C250,18 430,34 640,62 C860,92 1110,112 1290,92 C1360,84 1410,72 1440,62', voile: 'M0,12 C270,6 470,16 680,42 C900,70 1130,92 1310,72 C1370,64 1414,54 1440,44'},
+  // crêtes franches, creux large au centre-droit
+  5: {courbe: 'M0,74 C80,76 150,44 262,44 C392,44 446,92 590,94 C762,96 824,28 1000,28 C1176,28 1280,80 1440,64', voile: 'M0,54 C100,50 180,22 290,26 C410,30 480,70 620,72 C780,74 850,10 1020,10 C1190,10 1300,58 1440,44'},
+  // ondulation irrégulière, plus nerveuse
+  6: {courbe: 'M0,52 C72,30 142,66 232,60 C362,52 430,18 562,30 C700,44 760,102 902,96 C1040,90 1102,40 1232,46 C1330,52 1392,78 1440,72', voile: 'M0,36 C90,14 170,44 260,40 C390,32 460,4 590,12 C730,22 800,80 930,76 C1060,72 1130,22 1250,28 C1340,32 1400,56 1440,52'},
+};
+const {courbe, voile} = TRACES[forme];
+const ferme = (t: string) => `${t} L1440,126 L0,126 Z`;
+// identifiant de dégradé unique dans la page, indépendant de l'ordre de rendu
+const uid = 'j' + Math.random().toString(36).slice(2, 8);
+---
+
+<div
+  class:list={['jonction', cls, {'jonction--sur': sur, 'jonction--retournee': retourne}]}
+  style={`--j-de:${COULEURS[de]};--j-vers:${COULEURS[vers]}`}
+  aria-hidden="true"
+>
+  <svg viewBox="0 0 1440 120" preserveAspectRatio="none" focusable="false">
+    {
+      filet && (
+        <defs>
+          <linearGradient id={uid} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#a87530" />
+            <stop offset="0.45" stop-color="#e6c27a" />
+            <stop offset="1" stop-color="#c9963f" />
+          </linearGradient>
+        </defs>
+      )
+    }
+    {filet && <path class="j-voile" d={ferme(voile)} />}
+    {filet && <path d={ferme(courbe)} fill={`url(#${uid})`} />}
+    <path class="j-fond" d={ferme(courbe)} transform={filet ? 'translate(0 6)' : undefined} />
+  </svg>
+</div>
+
+<style>
+  .jonction {
+    position: relative;
+    z-index: 1;
+    display: block;
+    height: var(--j-h);
+    margin-block: -1px;
+    background: var(--j-de);
+    pointer-events: none;
+  }
+  .jonction--sur {
+    margin-top: calc(var(--j-h) * -1);
+    background: transparent;
+    z-index: 3;
+  }
+  .jonction svg {
+    display: block;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    overflow: visible;
+  }
+  .jonction--retournee svg {
+    transform: scaleX(-1);
+  }
+  .j-fond {
+    fill: var(--j-vers);
+  }
+  .j-voile {
+    fill: #c9963f;
+    opacity: 0.14;
+  }
+</style>

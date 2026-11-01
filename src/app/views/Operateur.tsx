@@ -4,16 +4,20 @@
 // propriétaire (lien « Choisir mon mot de passe », e-mail « Votre carte LOYNA est prête » : action send_access) et
 // commerces existants (RPC op_merchants), dont l'espace s'ouvre en consultation, lecture seule (« Ouvrir son espace »,
 // demande d'Ewan du 2026-10-29 : op_merchant_context). Le serveur contrôle chaque appel : l'onglet n'est qu'un affichage.
+// Grille du 2026-10-31 : essais et arrêts visibles dans la liste, « Gérer » pour suspendre et lever, exempter (compte offert),
+// prolonger l'essai ou la conservation, sortie d'engagement pour fermeture, préparer une campagne pour un Pro (RPC op_*,
+// journal d'audit côté serveur). Création limitée à Starter et Pro.
 import type {ComponentChildren} from 'preact';
 import {useEffect, useRef, useState} from 'preact/hooks';
-import {CARD_ACCENTS, CARD_ACTIVITES, CARD_BGS} from '../../data/site';
+import {CARD_ACCENTS, CARD_ACTIVITES, CARD_BGS, normalizeOffer} from '../../data/site';
 import {STATUS} from '../Commande';
 import {Icon} from '../icons';
-import {LOGO_ACCEPT, LOGO_MIN_SIDE, logoToPng, type PngLogo} from '../logo-png';
+import {LOGO_ACCEPT, LOGO_MIN_SIDE, logoToFiles, type LogoFiles} from '../logo-png';
 import {idDuLien, lireCartePreparee} from '../../lib/carte-preparee';
 import {api, go, merchant, openConsultation, PLAN_ORDER, planLabel, rememberMerchant, staffCtx, toast, toastError, type PlanCode} from '../state';
-import {Badge, Btn, CardPreview, Empty, ErrorBox, Field, LinkBox, PageHead, Panel, Segmented, Spinner, useBusy, useLoad} from '../ui';
-import {contrast, copy, date, download, euros, initials, joinUrl, num, plural, qrSvg} from '../util';
+import {campaignName, sendAt, tempsForts} from '../temps-forts';
+import {Badge, Btn, CardPreview, Empty, ErrorBox, Field, LinkBox, Modal, PageHead, Panel, Segmented, Spinner, Toggle, useBusy, useLoad} from '../ui';
+import {contrast, copy, date, dayLong, download, euros, initials, joinUrl, localInput, num, phoneFr, plural, qrSvg} from '../util';
 
 interface OrderItem {
   lookup_key: string | null;
@@ -43,7 +47,6 @@ export interface OpOrder {
   customer_email: string | null;
   customer_phone: string | null;
   plan: PlanCode;
-  billing_period: 'monthly' | 'yearly';
   status: string;
   ordered_at: string;
   current_period_end: string | null;
@@ -70,6 +73,13 @@ export interface OpMerchant {
   owner_status: 'INVITED' | 'ACTIVE' | 'DISABLED' | null;
   subscription_status: string | null;
   is_member: boolean;
+  /** Date de fin de l'essai (passée si l'essai est terminé), null sans essai. */
+  trial_ends_at: string | null;
+  billing_exempt: boolean;
+  service_stop_source: 'AUTO' | 'MANUAL' | null;
+  service_stop_reason: 'TRIAL_ENDED' | 'PAYMENT_FAILED' | 'SUBSCRIPTION_ENDED' | 'OPERATOR' | null;
+  data_delete_after: string | null;
+  siret: string | null;
 }
 export interface Created {
   status: 'CREATED';
@@ -87,14 +97,12 @@ const REF_STATUS: Record<OpReferral['status'], string> = {
   applique: 'mois offert du parrain posé',
   annule: 'annulé',
 };
-const MERCHANT_STATUS = {ACTIVE: 'Actif', SUSPENDED: 'Suspendu', CLOSED: 'Fermé'} as const;
+const STOP_REASON: Record<string, string> = {TRIAL_ENDED: 'essai terminé', PAYMENT_FAILED: 'paiement échoué', SUBSCRIPTION_ENDED: 'abonnement terminé', OPERATOR: 'suspendu à la main'};
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const HEX_RE = /^#[0-9a-f]{6}$/i;
 const MAX_STAMPS = 100;
 
-/** « +33639981234 » → « 06 39 98 12 34 » (numéros français), sinon tel quel. */
-const phoneFr = (p: string) => (/^\+33\d{9}$/.test(p) ? `0${p.slice(3)}`.replace(/(\d{2})(?=\d)/g, '$1 ') : p);
 /** « Barber & Co » → « barber-et-co » (adresse d'inscription loyna.fr/join/…). */
 export function slugify(s: string): string {
   return s
@@ -191,7 +199,7 @@ export function Operateur() {
           {value: 'commerces', label: `Commerces (${merchants.length})`},
         ]}
       />
-      {tab === 'commandes' ? <Orders orders={orders} onCreate={(o) => setCreating({order: o})} /> : <Merchants list={merchants} />}
+      {tab === 'commandes' ? <Orders orders={orders} onCreate={(o) => setCreating({order: o})} /> : <Merchants list={merchants} reload={data.reload} />}
     </div>
   );
 }
@@ -241,7 +249,7 @@ function OrderCard({order: o, onCreate}: {order: OpOrder; onCreate: () => void})
         <Row k="E-mail">{o.customer_email ? <a href={`mailto:${o.customer_email}`}>{o.customer_email}</a> : '–'}</Row>
         <Row k="Téléphone">{o.customer_phone ? <a href={`tel:${o.customer_phone}`}>{phoneFr(o.customer_phone)}</a> : '–'}</Row>
         <Row k="Offre">
-          LOYNA {planLabel(o.plan)}, {o.billing_period === 'yearly' ? 'annuel' : 'mensuel (engagement de 12 mois)'}
+          LOYNA {planLabel(o.plan)}, {o.commitment_end ? `avec 12 mois d’engagement (jusqu’au ${date(o.commitment_end)})` : 'sans engagement'}
         </Row>
         <Row k="Commande du">{date(o.ordered_at)}</Row>
         <Row k="QR codes sous verre">
@@ -282,7 +290,26 @@ function OrderCard({order: o, onCreate}: {order: OpOrder; onCreate: () => void})
 }
 
 // --- Commerces existants --------------------------------------------------------------------------------
-function Merchants({list}: {list: OpMerchant[]}) {
+const LIVE_SUB = ['active', 'trialing', 'past_due', 'unpaid'];
+/** Essai en cours : date à venir, sans abonnement vivant. */
+const onTrial = (m: OpMerchant) => !LIVE_SUB.includes(m.subscription_status ?? '') && !!m.trial_ends_at && new Date(m.trial_ends_at).getTime() > Date.now();
+
+/** État du service d'un commerce : compte offert, essai jusqu'au…, en pause (motif), suspendu à la main. */
+function ServiceBadges({m}: {m: OpMerchant}) {
+  return (
+    <>
+      {m.billing_exempt && <Badge tone="green">Compte offert</Badge>}
+      {onTrial(m) && <Badge tone="blue">Essai jusqu’au {date(m.trial_ends_at)}</Badge>}
+      {m.status === 'SUSPENDED' &&
+        (m.service_stop_source === 'AUTO' ? <Badge tone="amber">En pause : {STOP_REASON[m.service_stop_reason ?? ''] ?? 'motif inconnu'}</Badge> : <Badge tone="red">Suspendu à la main</Badge>)}
+      {m.status === 'CLOSED' && <Badge tone="red">Fermé</Badge>}
+    </>
+  );
+}
+
+function Merchants({list, reload}: {list: OpMerchant[]; reload: () => void}) {
+  const [managing, setManaging] = useState<string | null>(null);
+  const managed = list.find((m) => m.id === managing);
   if (!list.length) return <Empty icon="store" title="Aucun commerce pour l’instant" />;
   const open = (m: OpMerchant) => {
     const mine = staffCtx.value?.memberships.find((x) => x.merchant_id === m.id);
@@ -300,7 +327,6 @@ function Merchants({list}: {list: OpMerchant[]}) {
               <th>Commerce</th>
               <th>Offre</th>
               <th class="r">Cartes</th>
-              <th>Inscription des clients</th>
               <th>
                 <span class="sr-only">Action</span>
               </th>
@@ -323,32 +349,32 @@ function Merchants({list}: {list: OpMerchant[]}) {
                         {m.owner_email ?? 'sans propriétaire'}
                         {m.owner_status === 'INVITED' && ' · pas encore connecté'}
                       </small>
+                      {m.siret && <small>SIRET {m.siret}</small>}
+                      <span class="op-join">
+                        <a href={joinUrl(m.slug)} target="_blank" rel="noopener">
+                          loyna.fr/join/{m.slug}
+                        </a>
+                        <button type="button" class="op-copy" title="Copier le lien" aria-label={`Copier le lien d’inscription de ${m.name}`} onClick={async () => toast((await copy(joinUrl(m.slug))) ? 'Lien copié' : 'Copie impossible : sélectionnez le lien.', 'info')}>
+                          <Icon name="copy" size={16} />
+                        </button>
+                      </span>
                     </span>
                   </span>
                 </td>
-                <td class="nowrap">
-                  LOYNA {planLabel(m.subscription_plan)}
-                  {m.status !== 'ACTIVE' && (
-                    <>
-                      {' '}
-                      <Badge tone="red">{MERCHANT_STATUS[m.status] ?? m.status}</Badge>
-                    </>
-                  )}
-                  <small class="op-sub">{m.subscription_status ? (STATUS[m.subscription_status]?.[0] ?? m.subscription_status) : 'sans abonnement Stripe relié'}</small>
+                <td class="op-offre">
+                  <span class="op-badges">
+                    <span class="nowrap">LOYNA {planLabel(m.subscription_plan)}</span>
+                    <ServiceBadges m={m} />
+                  </span>
+                  <small class="op-sub">{m.subscription_status ? (STATUS[m.subscription_status]?.[0] ?? m.subscription_status) : onTrial(m) || m.billing_exempt ? 'pas d’abonnement Stripe à relier' : 'sans abonnement Stripe relié'}</small>
+                  {m.data_delete_after && <small class="op-sub">Données supprimées le {date(m.data_delete_after)}</small>}
                 </td>
                 <td class="r">{num(m.cards)}</td>
-                <td>
-                  <span class="op-join">
-                    <a href={joinUrl(m.slug)} target="_blank" rel="noopener">
-                      loyna.fr/join/{m.slug}
-                    </a>
-                    <button type="button" class="op-copy" title="Copier le lien" aria-label={`Copier le lien d’inscription de ${m.name}`} onClick={async () => toast((await copy(joinUrl(m.slug))) ? 'Lien copié' : 'Copie impossible : sélectionnez le lien.', 'info')}>
-                      <Icon name="copy" size={16} />
-                    </button>
-                  </span>
-                </td>
                 <td class="r">
                   <span class="op-actions">
+                    <Btn kind="ghost" small icon="settings" onClick={() => setManaging(m.id)}>
+                      Gérer
+                    </Btn>
                     {m.owner_email && <EnvoyerAcces m={m} />}
                     <Btn kind="ghost" small icon="download" onClick={() => download(`qr-${m.slug}.svg`, qrSvg(joinUrl(m.slug)), 'image/svg+xml')}>
                       QR code
@@ -369,9 +395,353 @@ function Merchants({list}: {list: OpMerchant[]}) {
       </div>
       <p class="muted small op-foot">
         « Ouvrir son espace » affiche l’espace du commerce tel que son propriétaire le voit (statistiques, clients, campagnes, réglages), en lecture seule : rien ne peut y être modifié ni envoyé. Chaque ouverture est
-        notée dans le journal du commerce. « Ouvrir » (commerces dont vous faites partie de l’équipe) donne votre accès habituel.
+        notée dans le journal du commerce. « Ouvrir » (commerces dont vous faites partie de l’équipe) donne votre accès habituel. « Gérer » : suspension, compte offert, prolongations, sortie d’engagement, campagne préparée.
       </p>
+      {managed && <ManageMerchant key={managed.id} m={managed} onClose={() => setManaging(null)} onChanged={reload} />}
     </Panel>
+  );
+}
+
+// --- Gérer un commerce : actions réservées aux opérateurs, chacune notée dans le journal d'audit par le serveur -------
+const OP_REFUSED: Record<string, string> = {
+  FORBIDDEN: 'Action réservée aux opérateurs LOYNA.',
+  NOT_FOUND: 'Ce commerce est introuvable : actualisez la liste.',
+  MERCHANT_CLOSED: 'Ce commerce est fermé.',
+  REASON_REQUIRED: 'Indiquez le motif de la suspension.',
+  NOT_SUSPENDED_MANUAL: 'Ce commerce n’est pas suspendu à la main : un arrêt automatique se lève par le paiement, l’exemption ou la prolongation de l’essai.',
+  INVALID_DAYS: 'Nombre de jours : de 1 à 365.',
+  SUBSCRIPTION_NOT_FOUND: 'Cet abonnement n’est pas connu de LOYNA : vérifiez l’identifiant (sub_…).',
+  ALREADY_LINKED: 'Cet abonnement est déjà relié à un autre commerce.',
+  SUBSCRIPTION_EXISTS: 'Ce commerce a déjà un abonnement en cours.',
+  SIRET_INVALID: 'Ce SIRET n’est pas valable.',
+  NOT_STOPPED: 'Aucune suppression n’est prévue pour ce commerce : il n’est pas à l’arrêt automatique.',
+  NO_SUBSCRIPTION: 'Aucun abonnement Stripe relié à ce commerce.',
+  MERCHANT_PAUSED: 'Ce commerce est en pause : la campagne ne pourrait pas partir.',
+  FEATURE_NOT_AVAILABLE: 'Les campagnes préparées sont réservées à l’offre Pro.',
+  INVALID_NAME: 'Nom de la campagne : 120 caractères au plus.',
+  INVALID_TITLE: 'Titre : 60 caractères au plus.',
+  INVALID_BODY: 'Message : 300 caractères au plus.',
+  INVALID_AUDIENCE: 'Destinataires inconnus : rechargez la page.',
+  INVALID_DATE: 'La date d’envoi proposée doit être à venir.',
+};
+const refused = (e: any) => OP_REFUSED[e?.code] ?? (e instanceof Error ? e.message : 'Action impossible.');
+
+function ManageMerchant({m, onClose, onChanged}: {m: OpMerchant; onClose: () => void; onChanged: () => void}) {
+  const [busy, run] = useBusy();
+  const [reason, setReason] = useState('');
+  const [trialDays, setTrialDays] = useState(7);
+  const [keepDays, setKeepDays] = useState(30);
+  const [proof, setProof] = useState('');
+  const [subId, setSubId] = useState('');
+  const [unlinked, setUnlinked] = useState<{stripe_subscription_id: string; customer_email: string | null; business_name: string | null; plan: string}[]>([]);
+  const [siretReason, setSiretReason] = useState('');
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(''); // dans la fenêtre : un toast passerait derrière elle
+  const manual = m.status === 'SUSPENDED' && m.service_stop_source !== 'AUTO';
+  const liveSub = LIVE_SUB.includes(m.subscription_status ?? '');
+  useEffect(() => {
+    if (liveSub) return;
+    api.rpc<{subscriptions?: typeof unlinked}>('op_unlinked_subscriptions', {}).then((r) => setUnlinked(r?.subscriptions ?? []), () => setUnlinked([]));
+  }, [liveSub]);
+
+  /** Appel d'une RPC op_* : `{status: 'OK'}` attendu, le reste est un refus du serveur. */
+  const act = (fn: string, args: Record<string, unknown>, okText: string, after?: () => void) =>
+    run(async () => {
+      setError('');
+      setDone('');
+      try {
+        const r = await api.rpc<{status?: string; message?: string}>(fn, {p_merchant_id: m.id, ...args});
+        if (r?.status && r.status !== 'OK') return setError(OP_REFUSED[r.status] ?? r.message ?? 'Action refusée par le serveur.');
+        setDone(okText);
+        after?.();
+        onChanged();
+      } catch (e) {
+        setError(refused(e));
+      }
+    });
+  const suspend = () => {
+    if (!reason.trim()) return setError('Indiquez le motif de la suspension.');
+    if (!confirm(`Suspendre ${m.name} ?\nScan, inscriptions et messages s’arrêtent tout de suite. Seul un opérateur pourra lever la suspension.`)) return;
+    act('op_set_merchant_suspension', {p_suspended: true, p_reason: reason.trim()}, `${m.name} est suspendu.`, () => setReason(''));
+  };
+  const attach = () => {
+    if (!subId.trim()) return setError('Indiquez l’identifiant de l’abonnement (sub_…).');
+    if (!confirm(`Relier l’abonnement ${subId.trim()} à ${m.name} ?\nSon offre s’applique et le service suit cet abonnement.`)) return;
+    act('op_attach_subscription', {p_stripe_subscription_id: subId.trim()}, `Abonnement relié à ${m.name}.`, () => setSubId(''));
+  };
+  const releaseSiret = () => {
+    if (!siretReason.trim()) return setError('Indiquez le motif : qui a réclamé ce SIRET, avec quel justificatif.');
+    if (!confirm(`Libérer le SIRET ${m.siret} ?\n${m.name} le perd, et le vrai commerçant peut démarrer son essai.`)) return;
+    run(async () => {
+      setError('');
+      setDone('');
+      try {
+        const r = await api.rpc<{status?: string}>('op_release_trial_siret', {p_siret: m.siret, p_reason: siretReason.trim()});
+        if (r?.status && r.status !== 'OK') return setError(OP_REFUSED[r.status] ?? 'Action refusée par le serveur.');
+        setDone('SIRET libéré.');
+        setSiretReason('');
+        onChanged();
+      } catch (e) {
+        setError(refused(e));
+      }
+    });
+  };
+  const lift = () => act('op_set_merchant_suspension', {p_suspended: false, p_reason: null}, `Suspension levée : ${m.name} suit de nouveau son abonnement ou son essai.`);
+  const closure = () => {
+    if (!proof.trim()) return setError('Décrivez le justificatif de radiation reçu.');
+    if (!confirm(`Sortie pour fermeture de ${m.name} ?\nL’engagement s’arrête et l’abonnement prend fin à la fin du mois en cours : rien n’est dû ensuite.`)) return;
+    run(async () => {
+      setError('');
+      setDone('');
+      try {
+        await api.edge('merchant-bootstrap', {action: 'commitment_exit', merchant_id: m.id, justificatif: proof.trim()});
+        setDone('Sortie enregistrée : l’abonnement prend fin à la fin du mois en cours.');
+        setProof('');
+        onChanged();
+      } catch (e) {
+        setError(refused(e));
+      }
+    });
+  };
+
+  return (
+    <Modal open onClose={onClose} wide title={`Gérer ${m.name}`}>
+      <div class="op-manage">
+        <dl class="ord-dl">
+          <Row k="Offre">LOYNA {planLabel(m.subscription_plan)}</Row>
+          <Row k="Abonnement">{m.subscription_status ? (STATUS[m.subscription_status]?.[0] ?? m.subscription_status) : 'aucun'}</Row>
+          {m.trial_ends_at && <Row k="Fin de l’essai">{dayLong(m.trial_ends_at)}</Row>}
+          {m.status !== 'ACTIVE' && <Row k="Arrêt">{m.service_stop_source === 'AUTO' ? `automatique : ${STOP_REASON[m.service_stop_reason ?? ''] ?? 'motif inconnu'}` : 'suspension à la main'}</Row>}
+          {m.data_delete_after && <Row k="Données supprimées le">{dayLong(m.data_delete_after)}</Row>}
+          {m.siret && <Row k="SIRET">{m.siret}</Row>}
+        </dl>
+        {error && (
+          <p class="form-err" role="alert">
+            {error}
+          </p>
+        )}
+        {done && (
+          <p class="note" role="status">
+            {done}
+          </p>
+        )}
+
+        <section class="op-manage-s">
+          <h3>Suspension</h3>
+          {manual ? (
+            <>
+              <p class="muted small">La levée rend la main à la décision automatique : si rien n’est payé, l’arrêt automatique revient aussitôt.</p>
+              <Btn kind="gold" small icon="rotate-ccw" busy={busy} onClick={lift}>
+                Lever la suspension
+              </Btn>
+            </>
+          ) : (
+            <>
+              <Field label="Motif" hint="Obligatoire, noté dans le journal. Aucune suppression automatique pendant une suspension.">
+                <input type="text" maxLength={200} value={reason} onInput={(e) => setReason((e.target as HTMLInputElement).value)} />
+              </Field>
+              <Btn kind="danger" small icon="power" busy={busy} onClick={suspend}>
+                Suspendre
+              </Btn>
+            </>
+          )}
+        </section>
+
+        <section class="op-manage-s">
+          <h3>Compte offert</h3>
+          <Toggle
+            checked={m.billing_exempt}
+            disabled={busy}
+            onChange={(v) => act('op_set_billing_exempt', {p_exempt: v}, v ? `${m.name} est exempté de tout arrêt.` : `${m.name} n’est plus exempté.`)}
+            label="Exempter ce commerce"
+            hint="Jamais arrêté ni supprimé automatiquement, aucun abonnement à régler."
+          />
+        </section>
+
+        {m.trial_ends_at && !liveSub && (
+          <section class="op-manage-s">
+            <h3>Prolonger l’essai</h3>
+            <div class="op-days">
+              <Field label="Jours en plus">
+                <input type="number" min={1} max={365} value={trialDays} onInput={(e) => setTrialDays(Math.round(Number((e.target as HTMLInputElement).value) || 0))} />
+              </Field>
+              <Btn kind="ghost" small icon="calendar-clock" busy={busy} disabled={trialDays < 1} onClick={() => act('op_extend_trial', {p_days: trialDays}, `Essai prolongé de ${plural(trialDays, 'jour', 'jours')}.`)}>
+                Prolonger l’essai
+              </Btn>
+            </div>
+          </section>
+        )}
+
+        {m.data_delete_after && (
+          <section class="op-manage-s">
+            <h3>Prolonger la conservation</h3>
+            <p class="muted small">Quand un commerçant annonce son retour : la suppression de ses données est repoussée d’autant.</p>
+            <div class="op-days">
+              <Field label="Jours en plus">
+                <input type="number" min={1} max={365} value={keepDays} onInput={(e) => setKeepDays(Math.round(Number((e.target as HTMLInputElement).value) || 0))} />
+              </Field>
+              <Btn kind="ghost" small icon="calendar-clock" busy={busy} disabled={keepDays < 1} onClick={() => act('op_extend_retention', {p_days: keepDays}, `Conservation prolongée de ${plural(keepDays, 'jour', 'jours')}.`)}>
+                Prolonger la conservation
+              </Btn>
+            </div>
+          </section>
+        )}
+
+        {!liveSub && (
+          <section class="op-manage-s">
+            <h3>Relier un abonnement</h3>
+            <p class="muted small">Commande payée avec une autre adresse : Stripe prélève ce client, mais rien ne la relie à ce commerce.</p>
+            <Field label="Identifiant de l’abonnement" hint="sub_…, donné par le mail « Commande non rattachée ».">
+              <input type="text" maxLength={100} list="op-non-rattaches" value={subId} onInput={(e) => setSubId((e.target as HTMLInputElement).value)} />
+            </Field>
+            <datalist id="op-non-rattaches">
+              {unlinked.map((s) => (
+                <option value={s.stripe_subscription_id}>{[s.customer_email, s.business_name, s.plan].filter(Boolean).join(' · ')}</option>
+              ))}
+            </datalist>
+            {unlinked.length > 0 && <p class="muted small">{plural(unlinked.length, 'commande non rattachée', 'commandes non rattachées')} : {unlinked.map((s) => `${s.customer_email ?? s.stripe_subscription_id}`).join(', ')}.</p>}
+            <Btn kind="ghost" small icon="link" busy={busy} onClick={attach}>
+              Relier cet abonnement
+            </Btn>
+          </section>
+        )}
+
+        {m.siret && (
+          <section class="op-manage-s">
+            <h3>SIRET usurpé</h3>
+            <p class="muted small">Le vrai commerçant réclame le SIRET {m.siret} : après vérification, ce commerce le perd et l’essai redevient possible pour lui. Suspendez ce commerce à part s’il y a lieu.</p>
+            <Field label="Motif" hint="Obligatoire, noté dans le journal.">
+              <input type="text" maxLength={200} value={siretReason} onInput={(e) => setSiretReason((e.target as HTMLInputElement).value)} />
+            </Field>
+            <Btn kind="danger" small icon="link" busy={busy} onClick={releaseSiret}>
+              Libérer ce SIRET
+            </Btn>
+          </section>
+        )}
+
+        {liveSub && (
+          <section class="op-manage-s">
+            <h3>Sortie pour fermeture</h3>
+            <p class="muted small">Après vérification du justificatif de radiation (Registre national des entreprises ou avis de situation INSEE) : fin à la fin du mois en cours, rien de dû ensuite. La vente du fonds n’ouvre pas cette sortie.</p>
+            <Field label="Justificatif reçu" hint="Décrivez-le : nature, date, numéro. Noté dans le journal.">
+              <textarea rows={2} maxLength={500} value={proof} onInput={(e) => setProof((e.target as HTMLTextAreaElement).value)} />
+            </Field>
+            <Btn kind="danger" small icon="log-out" busy={busy} onClick={closure}>
+              Sortie pour fermeture
+            </Btn>
+          </section>
+        )}
+
+        {m.subscription_plan !== 'STARTER' && <PrepareCampaign m={m} />}
+      </div>
+    </Modal>
+  );
+}
+
+// « LOYNA écrit et programme vos messages » (Pro, et Premium comme un Pro) : un brouillon « à valider », jamais envoyé sans le commerçant
+const CAMPAIGN_AUDIENCES: {value: string; label: string}[] = [
+  {value: 'ALL', label: 'Tous les clients'},
+  {value: 'ACTIVE', label: 'Clients venus ces 30 derniers jours'},
+  {value: 'INACTIVE_30', label: 'Absents depuis 30 jours'},
+  {value: 'INACTIVE_60', label: 'Absents depuis 60 jours'},
+  {value: 'INACTIVE_90', label: 'Absents depuis 90 jours'},
+  {value: 'REWARD_AVAILABLE', label: 'Avec une récompense à utiliser'},
+];
+
+function PrepareCampaign({m}: {m: OpMerchant}) {
+  const empty = {name: '', title: '', body: '', audience: 'ALL', when: ''};
+  const [f, setF] = useState(empty);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState('');
+  const [busy, run] = useBusy();
+  const moments = tempsForts(new Date(), 60);
+  const set = <K extends keyof typeof f>(k: K, v: string) => setF((x) => ({...x, [k]: v}));
+  const pickMoment = (key: string) => {
+    const t = moments.find((x) => x.key === key);
+    if (!t) return;
+    const at = sendAt(t);
+    setF((x) => ({...x, name: campaignName(t), title: t.title, body: t.message, when: at ? localInput(at) : ''}));
+  };
+  const submit = () => {
+    if (!f.name.trim()) return setError('Donnez un nom à la campagne.');
+    if (!f.body.trim()) return setError('Écrivez le message.');
+    setError('');
+    setDone('');
+    run(async () => {
+      try {
+        const r = await api.rpc<{status?: string; message?: string}>('op_prepare_campaign', {
+          p_merchant_id: m.id,
+          p_name: f.name.trim(),
+          p_title: f.title.trim() || null,
+          p_body: f.body.trim(),
+          p_audience: f.audience,
+          p_scheduled_at: f.when ? new Date(f.when).toISOString() : null,
+        });
+        if (r?.status && r.status !== 'OK') return setError(OP_REFUSED[r.status] ?? r.message ?? 'Campagne refusée par le serveur.');
+        setDone(`Campagne préparée pour ${m.name} : un e-mail lui demande de la valider.`);
+        setF(empty);
+      } catch (e) {
+        setError(refused(e));
+      }
+    });
+  };
+  return (
+    <section class="op-manage-s">
+      <h3>Préparer une campagne</h3>
+      <p class="muted small">Elle arrive dans son espace avec la mention « Préparée par LOYNA · à valider », et il reçoit un e-mail. Rien ne part sans sa validation.</p>
+      <div class="form">
+        {moments.length > 0 && (
+          <Field label="Partir d’un temps fort (facultatif)">
+            <select value="" onChange={(e) => pickMoment((e.target as HTMLSelectElement).value)}>
+              <option value="">Choisir…</option>
+              {moments.map((t) => (
+                <option value={t.key}>
+                  {t.label} ({t.date.toLocaleDateString('fr-FR', {day: 'numeric', month: 'long'})})
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+        <div class="row2">
+          <Field label="Nom de la campagne" hint="Il n’est pas montré aux clients.">
+            <input type="text" maxLength={120} value={f.name} onInput={(e) => set('name', (e.target as HTMLInputElement).value)} />
+          </Field>
+          <Field label="Titre (facultatif)" hint={`${f.title.length} / 60`}>
+            <input type="text" maxLength={60} value={f.title} onInput={(e) => set('title', (e.target as HTMLInputElement).value)} />
+          </Field>
+        </div>
+        <Field label="Message" hint={`${f.body.length} / 300 · {prenom} et {commerce} sont remplacés`}>
+          <textarea rows={3} maxLength={300} value={f.body} onInput={(e) => set('body', (e.target as HTMLTextAreaElement).value)} />
+        </Field>
+        <div class="row2">
+          <Field label="Destinataires">
+            <select value={f.audience} onChange={(e) => set('audience', (e.target as HTMLSelectElement).value)}>
+              {CAMPAIGN_AUDIENCES.map((a) => (
+                <option value={a.value}>{a.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Envoi proposé (facultatif)" hint="Il pourra le changer en validant.">
+            <input type="datetime-local" value={f.when} onInput={(e) => set('when', (e.target as HTMLInputElement).value)} />
+          </Field>
+        </div>
+        {error && (
+          <p class="form-err" role="alert">
+            {error}
+          </p>
+        )}
+        {done && (
+          <p class="note" role="status">
+            {done}
+          </p>
+        )}
+        <div class="btn-row">
+          <Btn kind="gold" small icon="badge-check" busy={busy} onClick={submit}>
+            Préparer la campagne
+          </Btn>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -421,6 +791,8 @@ function EnvoyerAcces({m}: {m: OpMerchant}) {
 interface Form {
   name: string;
   business_type: string;
+  siret: string;
+  exempt: boolean; // compte offert : jamais arrêté, ni essai ni abonnement
   address: string;
   postal_code: string;
   city: string;
@@ -441,6 +813,8 @@ function initialForm(order: OpOrder | null, taken: Set<string>): Form {
   return {
     name,
     business_type: '',
+    siret: '',
+    exempt: false,
     address: '',
     postal_code: '',
     city: '',
@@ -462,6 +836,7 @@ function validate(f: Form): string | null {
   if (!f.name.trim()) return 'Indiquez le nom du commerce.';
   if (!SLUG_RE.test(f.slug)) return 'Adresse d’inscription invalide : lettres minuscules, chiffres et tirets seulement.';
   if (!EMAIL_RE.test(f.owner_email.trim())) return 'Adresse e-mail du propriétaire invalide.';
+  if (f.siret.trim() && !/^\d{14}$/.test(f.siret.replace(/\s/g, ''))) return 'SIRET : 14 chiffres, ou laissez le champ vide.';
   if (!Number.isInteger(f.threshold) || f.threshold < 1 || f.threshold > MAX_STAMPS) return `Nombre de passages : de 1 à ${MAX_STAMPS}.`;
   if (!f.reward.trim()) return 'Indiquez la récompense (exemple : -10 €, Café offert).';
   if (!HEX_RE.test(f.bg) || !HEX_RE.test(f.accent)) return 'Couleurs attendues au format #RRGGBB.';
@@ -473,13 +848,13 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
   const [id] = useState(newMerchantId);
   const [f, setF] = useState<Form>(() => initialForm(order, taken.current));
   const [touched, setTouched] = useState<Touched>({});
-  const [logo, setLogo] = useState<PngLogo | null>(null);
+  const [logo, setLogo] = useState<(LogoFiles & {url: string}) | null>(null);
   const [logoErr, setLogoErr] = useState('');
   const [converting, setConverting] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState<(Created & {name: string; email: string}) | null>(null);
+  const [result, setResult] = useState<(Created & {name: string; email: string; exempt: boolean}) | null>(null);
   const [busy, run] = useBusy();
-  const logoRef = useRef<PngLogo | null>(null);
+  const logoRef = useRef<{url: string} | null>(null);
   logoRef.current = logo;
   useEffect(() => () => logoRef.current && URL.revokeObjectURL(logoRef.current.url), []);
 
@@ -501,9 +876,9 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
     setLogoErr('');
     setConverting(true);
     try {
-      const png = await logoToPng(file);
+      const files = await logoToFiles(file);
       if (logo) URL.revokeObjectURL(logo.url);
-      setLogo(png);
+      setLogo({...files, url: URL.createObjectURL(files.logo_blob)});
     } catch (e) {
       setLogoErr(e instanceof Error ? e.message : 'Ce logo est illisible.');
     } finally {
@@ -532,7 +907,7 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
         reward: c.recompense,
         bg: c.fond,
         accent: c.tampons,
-        plan: order ? x.plan : (c.offre.toUpperCase() as PlanCode),
+        plan: order ? x.plan : (normalizeOffer(c.offre, c.periode, c.engagement).plan.toUpperCase() as PlanCode),
       }));
       setTouched((t) => ({...t, reward: true, bg: true, accent: true}));
       if (c.logo) {
@@ -560,18 +935,25 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
     run(async () => {
       try {
         let logo_url: string | undefined;
+        let icon_url: string | undefined;
         if (logo) {
           try {
-            const url = await api.uploadPublic('merchant-assets', `${id}/logo.png`, logo.blob);
-            logo_url = url.startsWith('http') ? `${url}?v=${Date.now()}` : url; // ?v : contourne le cache des cartes
+            const fresh = (url: string) => (url.startsWith('http') ? `${url}?v=${Date.now()}` : url); // ?v : contourne le cache des cartes
+            logo_url = fresh(await api.uploadPublic('merchant-assets', `${id}/logo.png`, logo.logo_blob));
+            icon_url = fresh(await api.uploadPublic('merchant-assets', `${id}/icon.png`, logo.icon_blob));
           } catch (err) {
             throw new Error(`Logo non envoyé : ${err instanceof Error ? err.message : 'réessayez.'}`);
           }
         }
         const opt = (v: string) => (v.trim() ? v.trim() : undefined);
         const email = f.owner_email.trim().toLowerCase();
+        const siret = f.siret.replace(/\s/g, '');
+        // `exempt` et `siret` : contrat de merchant-bootstrap (cahier des charges, 4.1)
+        const extra = {exempt: f.exempt, ...(siret ? {siret} : {})};
         const r = await api.edge<Created>('merchant-bootstrap', {
+          ...extra,
           merchant: {
+            ...extra,
             id,
             name: f.name.trim(),
             slug: f.slug,
@@ -583,13 +965,14 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
             secondary_color: f.accent.toLowerCase(),
             subscription_plan: f.plan,
             logo_url,
+            icon_url,
           },
           owner: {email, display_name: f.owner_name.trim() || 'Propriétaire'},
           program: {reward_threshold: f.threshold},
           rewards: [{name: f.reward.trim(), threshold: f.threshold, ...rewardKind(f.reward)}],
         });
         taken.current.add(r.slug);
-        setResult({...r, name: f.name.trim(), email});
+        setResult({...r, name: f.name.trim(), email, exempt: f.exempt});
       } catch (err: any) {
         if (err?.code === 'SLUG_TAKEN') {
           taken.current.add(f.slug);
@@ -611,7 +994,7 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
       </PageHead>
       {order && (
         <p class="note op-recap">
-          <strong>{order.business_name || order.customer_name || order.customer_email}</strong> · LOYNA {planLabel(order.plan)} {order.billing_period === 'yearly' ? 'annuel' : 'mensuel'}
+          <strong>{order.business_name || order.customer_name || order.customer_email}</strong> · LOYNA {planLabel(order.plan)} {order.commitment_end ? 'avec engagement' : 'sans engagement'}
           {order.customer_email && ` · ${order.customer_email}`}
           {order.customer_phone && ` · ${phoneFr(order.customer_phone)}`}
         </p>
@@ -647,6 +1030,9 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
                   <option value={a.nom} />
                 ))}
               </datalist>
+              <Field label="SIRET (facultatif)" hint="14 chiffres. Un essai pris plus tard par ce commerce sera refusé.">
+                <input type="text" maxLength={20} inputMode="numeric" autoComplete="off" value={f.siret} onInput={(e) => set('siret', (e.target as HTMLInputElement).value)} />
+              </Field>
               <Field label="Adresse (facultatif)" hint="Le client place ensuite sa boutique pour la notification de proximité (Réglages).">
                 <input type="text" maxLength={200} autoComplete="off" value={f.address} onInput={(e) => set('address', (e.target as HTMLInputElement).value)} />
               </Field>
@@ -705,6 +1091,11 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
                 <Segmented label="Offre" value={f.plan} onChange={(p) => set('plan', p)} options={PLAN_ORDER.map((p) => ({value: p, label: planLabel(p)}))} />
                 <span class="fld-h">{order ? `Payée : ${planLabel(order.plan)}. L’offre de la commande rattachée s’applique d’elle-même.` : 'Sans commande, l’offre choisie ici s’applique.'}</span>
               </div>
+              <label class="check">
+                <input type="checkbox" checked={f.exempt} onChange={(e) => set('exempt', (e.target as HTMLInputElement).checked)} />
+                <span>Compte offert : jamais arrêté, aucun abonnement à régler</span>
+              </label>
+              {!order && !f.exempt && <span class="fld-h">Sans commande reliée ni cette case, le commerce reçoit un essai d’un mois.</span>}
             </div>
           </Panel>
 
@@ -868,7 +1259,7 @@ function ColorRow({label, value, swatches, onChange}: {label: string; value: str
 }
 
 // --- Commerce créé : inscription des clients et accès du propriétaire -----------------------------------
-function CreatedView({r, onClose}: {r: Created & {name: string; email: string}; onClose: () => void}) {
+function CreatedView({r, onClose}: {r: Created & {name: string; email: string; exempt: boolean}; onClose: () => void}) {
   const [link, setLink] = useState(r.owner.setup_link);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [busy, run] = useBusy();
@@ -892,7 +1283,11 @@ function CreatedView({r, onClose}: {r: Created & {name: string; email: string}; 
       </PageHead>
       <p class="note op-recap">
         <strong>LOYNA {planLabel(r.subscription_plan)}</strong> ·{' '}
-        {r.orders_linked > 0 ? `${plural(r.orders_linked, 'commande rattachée', 'commandes rattachées')} : l’offre payée est appliquée.` : 'Aucune commande rattachée : vérifiez l’adresse du propriétaire si le client a déjà payé.'}
+        {r.orders_linked > 0
+          ? `${plural(r.orders_linked, 'commande rattachée', 'commandes rattachées')} : l’offre payée est appliquée.`
+          : r.exempt
+            ? 'Compte offert : aucun abonnement à régler.'
+            : 'Aucune commande rattachée : le commerce reçoit un essai d’un mois. Vérifiez l’adresse du propriétaire si le client a déjà payé.'}
       </p>
       <div class="op-done">
         <Panel title="Inscription des clients" sub="Lien et QR code du comptoir : le client final s’y inscrit et ajoute sa carte à son Wallet.">

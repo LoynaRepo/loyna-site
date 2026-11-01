@@ -1,9 +1,10 @@
 // Mail perso après un appel : le panel (src/commercial/mail-perso.ts) et le coffre (_systeme/mail_perso.py) doivent
 // dire la même chose. Avec le vrai modèle du coffre (« 03 Modèles/Mail perso après appel.md »), l'aperçu du panel et
 // le mail construit par le coffre sont identiques (objet et HTML), pour la même note « [MAIL] » ; mêmes paramètres du
-// visuel, mêmes prix, mêmes activités ; contraste des couleurs de chaque ambiance (src/data/site.ts).
+// visuel, mêmes prix, mêmes activités ; contraste des couleurs de chaque ambiance (src/data/site.ts). Offres vendues seulement.
 //   node tools/commercial/test_mail_perso.mjs
-// Données fictives seulement ; rien n'est écrit ni envoyé.
+// Le coffre change à l'étape 8 de la mise en ligne : avant, COFFRE_SYSTEME=<offre2>\coffre_pret\_systeme pour comparer à la
+// copie préparée. Données fictives seulement ; rien n'est écrit ni envoyé.
 import {execFileSync} from 'node:child_process';
 import {registerHooks} from 'node:module';
 
@@ -43,7 +44,7 @@ const python = (code, entree) =>
 // --- Même mail des deux côtés --------------------------------------------------------------------------------------
 const base = {
   v: 1, to: 'ongles-azur@example.com', objet: '', prenom: 'Inès', recap: 'Déjà une carte papier\n- Veut relancer les inactives\n\n',
-  offre: 'premium', etape: 'je vous rappelle jeudi', activite: 'Onglerie', recompense: 'Pose de vernis offerte',
+  offre: 'pro', etape: 'je vous rappelle jeudi', activite: 'Onglerie', recompense: 'Pose de vernis offerte',
   fond: '#a8325f', tampons: '#ffd6e4', ambiance: '#fbe4ec', signataire: 'Ewan',
 };
 const cas = [
@@ -51,6 +52,8 @@ const cas = [
   {nom: "L'Atelier & Co <Sète>", ville: '', d: {...base, prenom: '', offre: '', etape: 'rappel lundi !', objet: 'Votre carte, « L’Atelier »'}, jour: [2026, 9, 26]},
   {nom: 'Sushi Mood', ville: 'Montpellier', d: {...base, offre: 'pro', signataire: 'Léa', activite: 'Sushi', recompense: 'Plateau offert', fond: '#121216', tampons: '#e63946', ambiance: '#2b0b10', recap: '• un\n* deux\n— trois'}, jour: [2026, 9, 27]},
   {nom: 'Le Fournil Ambré', ville: 'Béziers', d: {...base, offre: 'starter', prenom: 'Paul', fond: 'n’importe quoi', etape: ''}, jour: [2026, 9, 27]},
+  // note restée sur une offre retirée de la vente : aucune offre citée, des deux côtés
+  {nom: 'Maison Ancienne', ville: 'Lunel', d: {...base, offre: 'premium'}, jour: [2026, 9, 27]},
 ];
 const auj = new Date(2026, 9, 27, 15, 0);
 const py = python(
@@ -69,7 +72,7 @@ from documents_client import FORMULES
 import loyna_mail
 activites = sorted({x[1] for x in loyna_mail.CORRESPONDANCE_SECTEUR} | {"Autre"})
 print(json.dumps({"modele": {"objet": objet_modele, "html": html_modele}, "sorties": sorties,
-                  "prix": {k: v["mensuel"] for k, v in FORMULES.items()}, "activites": activites}, ensure_ascii=False))
+                  "prix": {k: {"mensuel": v["mensuel"], "engage": v.get("engage"), "vendue": v.get("vendue")} for k, v in FORMULES.items()}, "activites": activites}, ensure_ascii=False))
 `,
   cas.map((c) => ({nom: c.nom, ville: c.ville, jour: [c.jour[0], c.jour[1] + 1, c.jour[2]], note: mp.texteNoteMail(c.d)})),
 );
@@ -87,7 +90,14 @@ cas.forEach((c, i) => {
   verifier(JSON.stringify(mp.lignesRecap(c.d.recap)) === JSON.stringify(p.puces), `${c.nom} : mêmes puces (${p.puces.length})`);
 });
 verifier(py.sorties[1].html.includes('du 26 octobre') && py.sorties[0].html.includes('de ce jour'), 'appel de la veille : « du 26 octobre »');
-verifier(site.PLANS.every((x) => py.prix[x.id] === x.monthly), `prix mensuels identiques (site.ts = documents_client.FORMULES : ${site.PLANS.map((x) => x.monthly).join(', ')})`);
+verifier(site.PLANS.every((x) => py.prix[x.id]?.mensuel === x.monthly && py.prix[x.id]?.engage === x.engaged), `prix identiques, sans et avec engagement (site.ts = documents_client.FORMULES : ${site.PLANS.map((x) => `${x.monthly} / ${x.engaged}`).join(', ')})`);
+verifier(Object.entries(py.prix).filter(([, v]) => v.vendue).map(([k]) => k).sort().join() === site.PLANS.map((x) => x.id).sort().join(), `offres vendues identiques (${site.PLANS.map((x) => x.id).join(', ')})`);
+verifier(mp.texteOffre('starter').replace(/\s/g, ' ') === 'Starter, 29 € par mois sans TVA, ou 24,65 € avec 12 mois d’engagement' && mp.texteOffre('pro').replace(/\s/g, ' ') === 'Pro, 49 € par mois sans TVA, ou 41,65 € avec 12 mois d’engagement' && mp.texteOffre('premium') === '',
+  'offre du compositeur : ses 2 prix, sans TVA ; offre retirée : rien');
+const avecOffre = (c) => py.sorties[cas.indexOf(c)].html;
+verifier(avecOffre(cas[0]).replace(/\s/g, ' ').includes('<strong>LOYNA Pro</strong>, 49 € par mois sans TVA, ou 41,65 € avec 12 mois d’engagement.') && avecOffre(cas[3]).replace(/\s/g, ' ').includes('<strong>LOYNA Starter</strong>, 29 € par mois sans TVA, ou 24,65 € avec 12 mois d’engagement.'),
+  'mail du coffre : l’offre avec ses 2 prix, sans TVA');
+verifier(!avecOffre(cas.at(-1)).includes('Premium') && !avecOffre(cas.at(-1)).includes('dont nous avons parlé'), 'note sur une offre retirée : aucune offre dans le mail');
 verifier(py.activites.every((a) => site.ACTIVITES_VISUEL.includes(a)), `toutes les activités du coffre ont leur ambiance (${py.activites.length})`);
 verifier(site.ACTIVITES_VISUEL.every((a) => site.CARD_AMBIANCES[a]), 'chaque activité du visuel a sa palette');
 

@@ -2,10 +2,14 @@
 // proximité (adresse placée grâce à la Base adresse nationale, table merchant_locations), affiche du
 // comptoir avec le QR code d'inscription, formulaire d'inscription, dos de la carte et scanner.
 // Les messages automatiques sont dans le menu Automatisations.
+// Logo : logo.png (Google Wallet) et icon.png (carte Apple), les deux fichiers légers de logoToFiles (cahier des charges de la
+// grille, chantier A, point 8) ; sans le second, une carte Apple garderait l'ancien logo. #/reglages/affiche et
+// #/reglages/boutique ouvrent la page à la bonne section (panneau de démarrage de l'essai, accueil).
 import {useEffect, useState} from 'preact/hooks';
 import {CARD_BGS} from '../../data/site';
 import type {GeoResult} from '../backend';
 import {Icon} from '../icons';
+import {LOGO_ACCEPT, logoToFiles} from '../logo-png';
 import {api, feature, featureLimit, lowestPlanAbove, maxAnyPlan, merchant, staffCtx, toast, toastError} from '../state';
 import {Badge, Btn, CardPreview, ErrorBox, Field, LinkBox, LockBadge, Modal, PageHead, Panel, ReadOnlyZone, Segmented, Spinner, Toggle, useBusy, useLoad} from '../ui';
 import {contrast, download, joinUrl, qrSvg} from '../util';
@@ -16,6 +20,7 @@ interface Merchant {
   slug: string;
   business_type: string | null;
   logo_url: string | null;
+  icon_url: string | null;
   primary_color: string;
   secondary_color: string;
   address: string | null;
@@ -56,7 +61,7 @@ interface Program {
 }
 const TEXT_COLORS = ['#ffffff', '#f8f4ec', '#121216', '#d9b27a'];
 
-export function Reglages() {
+export function Reglages({section}: {section?: string}) {
   const m = merchant.value!;
   const data = useLoad(async () => {
     const [mer, set, shops, progs] = await Promise.all([
@@ -67,6 +72,10 @@ export function Reglages() {
     ]);
     return {merchant: mer[0], settings: set[0], shops, program: progs.find((p) => p.status === 'ACTIVE') ?? progs[0] ?? null};
   }, [m.merchant_id]);
+  const ready = !!data.data;
+  useEffect(() => {
+    if (ready && section) document.getElementById(`r-${section}`)?.scrollIntoView({block: 'start'});
+  }, [ready, section]);
 
   if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
   if (!data.data) return <Spinner />;
@@ -120,7 +129,7 @@ function jump(id: string) {
 }
 
 function Branding({initial}: {initial: Merchant}) {
-  const pick = (x: Merchant) => ({name: x.name, business_type: x.business_type, logo_url: x.logo_url, primary_color: x.primary_color, secondary_color: x.secondary_color, phone: x.phone, website: x.website});
+  const pick = (x: Merchant) => ({name: x.name, business_type: x.business_type, logo_url: x.logo_url, icon_url: x.icon_url, primary_color: x.primary_color, secondary_color: x.secondary_color, phone: x.phone, website: x.website});
   const [f, setF] = useState(() => pick(initial));
   const [base, setBase] = useState(() => pick(initial));
   const [error, setError] = useState('');
@@ -133,11 +142,12 @@ function Branding({initial}: {initial: Merchant}) {
     file &&
     run(async () => {
       setError('');
-      if (file.type !== 'image/png') return setError('Le logo doit être une image PNG (fond transparent conseillé).');
-      if (file.size > 2 * 1024 * 1024) return setError('Logo trop lourd : 2 Mo maximum.');
       try {
-        const url = await api.uploadPublic('merchant-assets', `${initial.id}/logo.png`, file);
-        set('logo_url', url.startsWith('http') ? `${url}?v=${Date.now()}` : url); // ?v : contourne le cache des cartes
+        const files = await logoToFiles(file);
+        const fresh = (url: string) => (url.startsWith('http') ? `${url}?v=${Date.now()}` : url); // ?v : contourne le cache des cartes
+        const logo = await api.uploadPublic('merchant-assets', `${initial.id}/logo.png`, files.logo_blob);
+        const icon = await api.uploadPublic('merchant-assets', `${initial.id}/icon.png`, files.icon_blob);
+        setF((x) => ({...x, logo_url: fresh(logo), icon_url: fresh(icon)}));
         toast('Logo envoyé : enregistrez pour l’appliquer aux cartes.', 'info');
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Envoi impossible.');
@@ -157,6 +167,7 @@ function Branding({initial}: {initial: Merchant}) {
             name: f.name.trim(),
             business_type: f.business_type?.trim() || null,
             logo_url: f.logo_url,
+            icon_url: f.icon_url,
             primary_color: f.primary_color,
             secondary_color: f.secondary_color,
             phone: f.phone?.trim() || null,
@@ -199,15 +210,15 @@ function Branding({initial}: {initial: Merchant}) {
               <label class="b b--ghost b--sm">
                 <Icon name="upload" size={16} />
                 <span>{f.logo_url ? 'Changer le logo' : 'Ajouter un logo'}</span>
-                <input type="file" accept="image/png" class="sr-only" onChange={(e) => upload((e.target as HTMLInputElement).files?.[0])} />
+                <input type="file" accept={LOGO_ACCEPT} class="sr-only" onChange={(e) => upload((e.target as HTMLInputElement).files?.[0])} />
               </label>
               {f.logo_url && (
-                <button type="button" class="linkish small" onClick={() => set('logo_url', null)}>
+                <button type="button" class="linkish small" onClick={() => setF((x) => ({...x, logo_url: null, icon_url: null}))}>
                   Retirer
                 </button>
               )}
             </div>
-            <span class="fld-h">PNG, carré de préférence, 2 Mo maximum.</span>
+            <span class="fld-h">PNG, JPG, WEBP ou SVG (converti en PNG), carré de préférence, fond transparent conseillé.</span>
           </div>
           <div class="fld">
             <span class="fld-l">Couleur de la carte</span>
@@ -426,12 +437,18 @@ function Boutique(props: {merchant: Merchant; shops: Shop[]; message: string | n
                   Inclus dans {lowestPlanAbove('locations.max', 1)}
                 </span>
               ) : null}{' '}
-              Plusieurs adresses ? Avec {lowestPlanAbove('locations.max', 1) || 'l’offre supérieure'} : jusqu’à {maxAnyPlan('locations.max') ?? 3} boutiques, chacune avec sa notification de proximité.
+              Plusieurs adresses ? Avec {lowestPlanAbove('locations.max', 1) || 'l’offre supérieure'} : jusqu’à {maxAnyPlan('locations.max') ?? 3} adresses, chacune avec sa notification de proximité : une seule carte, un seul tableau de bord.
             </p>
           ) : (
-            <p class="muted small">Votre offre inclut {limit} boutiques au plus.</p>
+            <p class="muted small">Votre offre inclut {limit} boutiques au plus : une seule carte, un seul tableau de bord.</p>
           )}
         </div>
+      )}
+      {/* Retour de Pro à Starter : rien n'est supprimé, seules les premières adresses restent dans les cartes */}
+      {shops.length > limit && (
+        <p class="fld-h warn">
+          Votre offre inclut {limit > 1 ? `${limit} adresses` : '1 adresse'} pour la notification de proximité : {limit > 1 ? `seules les ${limit} premières restent actives` : 'seule la première reste active'}, les autres sont conservées.
+        </p>
       )}
 
       <ProximityMessage initial={message} program={program} />

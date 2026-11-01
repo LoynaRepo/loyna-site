@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import Jonction from '../components/Jonction.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import Icon from '../components/Icon.astro';
 import {SITE} from '../data/site';
@@ -30,6 +31,7 @@ const contactLd = {
       <p class="lead">Une question, une démo, ou un exemple de carte à votre nom et à vos couleurs : laissez-nous un message, nous revenons vers vous rapidement.</p>
     </div>
   </section>
+  <Jonction de="sable" vers="creme" forme={3} />
   <section class="section pt0">
     <div class="container contact">
       <form class="panel" method="post" action="/contact.php" id="contact-form">

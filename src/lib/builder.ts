@@ -4,6 +4,7 @@
 import sectorsSeed from '../content-seed/sectors.json';
 import faqSeed from '../content-seed/faq.json';
 import settingsSeed from '../content-seed/site-settings.json';
+import {TRIAL} from '../data/site';
 
 const PUBLIC_KEY = '61b8020017bc4b33a6d54bd3e667bb03'; // clé publique (lecture seule), sans risque côté client
 const API = 'https://cdn.builder.io/api/v3/content';
@@ -49,6 +50,8 @@ export interface FaqItem {
   a: string;
   categorie: string;
   ordre: number;
+  /** Question sur l'essai gratuit : retirée du site tant que TRIAL.open est faux. */
+  essai?: boolean;
 }
 
 export interface Article {
@@ -70,6 +73,8 @@ export interface Article {
 export interface SiteSettings {
   heroTitle: string;
   heroSubtitle: string;
+  /** Texte court du haut de l'accueil (refonte du 2026-10-31) ; sans lui, heroSubtitle. */
+  heroLead?: string;
   announcement: string;
   nomDirigeant: string;
   nomCommercial: string;
@@ -108,7 +113,9 @@ export async function getSectors(): Promise<Sector[]> {
 export async function getFaq(): Promise<FaqItem[]> {
   const remote = await fetchModel<FaqItem>('faq');
   const list = remote && remote.length ? remote : (faqSeed as FaqItem[]);
-  return [...list].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
+  // Le texte de la question sert aussi de repère : Builder pourrait ne pas garder le champ `essai`
+  const visibles = TRIAL.open ? list : list.filter((f) => !f.essai && !/\bessai\b/i.test(f.q));
+  return [...visibles].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
 }
 
 const articleFiles = import.meta.glob<{default: Article}>('../content-seed/articles/*.json', {eager: true});

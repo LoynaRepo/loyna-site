@@ -1,13 +1,13 @@
 // Fiche d'un client : prochaine action, parcours en étapes (avec les boutons « Commerce créé », « Documents
-// envoyés », « QR codes livrés »), notes, abonnement, QR codes sous verre, coordonnées, liens Stripe et espace
-// client, carte, historique. Rien n'est modifié dans le coffre d'ici : les boutons enregistrent une note chiffrée
-// que panel.py recopie dans la fiche à la publication suivante.
+// envoyés », « QR codes livrés »), essai ou carte suspendue, services de Pro, notes, abonnement, QR codes sous verre,
+// coordonnées, liens Stripe et espace client, carte, historique. Rien n'est modifié dans le coffre d'ici : les boutons
+// enregistrent une note chiffrée que panel.py recopie dans la fiche à la publication suivante.
 import type {ComponentChildren} from 'preact';
 import qrcode from 'qrcode-generator';
 import {useMemo, useState} from 'preact/hooks';
-import {ACTIONS, annulerAction, clientsAffiches, noteLibre, noterAction, type ClientAffiche, type CodeAction} from '../clients';
+import {ACTIONS, annulerAction, clientsAffiches, libelleOffre, noteLibre, noterAction, offreHistorique, type ClientAffiche, type CodeAction} from '../clients';
 import {isoJour} from '../clients-regles';
-import {dateLongue, euros, fr, lienMail, lienSur, lienTel} from '../format';
+import {dateLongue, euros, fr, lienMail, lienSur, lienTel, pluriel} from '../format';
 import {Icon} from '../icons';
 import {ErreurNotes, notesEtat} from '../notes';
 import {donnees, toast} from '../store';
@@ -43,19 +43,17 @@ export function ClientFiche({id}: {id: string}) {
   const mail = lienMail(c.email);
   const tel = c.tel_principal && lienTel(c.tel_principal.lien);
   const obsidian = d.exemple ? null : `obsidian://open?vault=${encodeURIComponent(d.coffre)}&file=${encodeURIComponent(`08 Clients/${c.fiche}`)}`;
-  const prochaine = ACTION_DE_ETAPE[c.action.code]; // commerce, documents ou QR codes : bouton direct
+  const services = c.services_pro ?? [];
+  // commerce, documents, QR codes ou service de Pro : bouton direct
+  const prochaine = c.action.code === 'service_pro' ? services.find((s) => s.a_faire)?.code : ACTION_DE_ETAPE[c.action.code];
   const historique = [...c.historique].reverse();
   const o = c.offre;
-  const prix =
-    o.prix === null
-      ? '—'
-      : o.periodicite === 'annuel'
-        ? `${euros(o.prix)} par an (${euros(o.mensuel)} par mois), sans TVA`
-        : `${euros(o.prix)} par mois, sans TVA`;
+  const enEssai = !!c.essai?.en_cours;
+  const prix = o.prix === null ? '—' : enEssai ? 'rien à payer pendant l’essai, aucun revenu' : `${euros(o.mensuel ?? o.prix)} par mois, sans TVA`;
 
   return (
     <div class="page">
-      <PageHead eyebrow={[c.activite, o.libelle].filter(Boolean).join(' · ') || 'Client'} title={c.commerce} back={{href: '#/clients', label: 'Clients'}}>
+      <PageHead eyebrow={[c.activite, libelleOffre(o)].filter(Boolean).join(' · ') || 'Client'} title={c.commerce} back={{href: '#/clients', label: 'Clients'}}>
         <span class="cp-badges">
           <BadgeEtape c={c} />
           {o.formule && <Badge tone="gold">{o.formule}</Badge>}
@@ -105,14 +103,18 @@ export function ClientFiche({id}: {id: string}) {
                       <strong>{e.libelle}</strong>
                       <small>
                         {e.sans_objet
-                          ? 'aucun QR code commandé'
+                          ? e.code === 'documents'
+                            ? 'aucun document pendant l’essai'
+                            : 'aucun QR code commandé'
                           : e.fait
                             ? e.date
                               ? `le ${dateLongue(e.date)}`
                               : 'fait'
                             : e.code === 'qr' && c.qr.limite
                               ? `${c.qr.commandes} à livrer avant le ${dateLongue(c.qr.limite)}`
-                              : 'à faire'}
+                              : e.code === 'actif' && enEssai
+                                ? 'à la première souscription'
+                                : 'à faire'}
                         {attente && ` · noté dans le panel${attente.texte ? ` (${attente.texte})` : ''}, pas encore dans le coffre`}
                       </small>
                     </div>
@@ -127,10 +129,14 @@ export function ClientFiche({id}: {id: string}) {
             </ol>
             {c.etat && (
               <p class={`cl-etat cl-etat--${c.etat.code}`}>
-                <Icon name={c.etat.code === 'paiement_echoue' ? 'circle-alert' : c.etat.code === 'termine' ? 'ban' : 'calendar-clock'} size={18} />
+                <Icon name={c.etat.code === 'paiement_echoue' || c.etat.code === 'carte_suspendue' ? 'circle-alert' : c.etat.code === 'termine' ? 'ban' : 'calendar-clock'} size={18} />
                 <span>
                   <strong>{c.etat.libelle}</strong>
-                  {c.etat.code === 'paiement_echoue' && c.etat.date && ` le ${dateLongue(c.etat.date)} : relancer le client (portail Stripe), puis remettre « statut_paiement: payé » dans la fiche une fois réglé.`}
+                  {c.etat.code === 'essai' &&
+                    `${c.etat.date ? ` jusqu’au ${dateLongue(c.etat.date)}` : ''}${c.essai?.jours_restants != null && c.essai.jours_restants >= 0 ? ` (encore ${pluriel(c.essai.jours_restants, 'jour', 'jours')})` : ''}. Aucun prélèvement, aucun document, aucun service de Pro. Sans abonnement à la fin, la carte se met en pause. Les mails de relance partent du produit : pas de prospection.`}
+                  {c.etat.code === 'carte_suspendue' &&
+                    `${c.etat.date ? ` depuis le ${dateLongue(c.etat.date)}` : ''}${c.etat.motif ? ` : ${c.etat.motif}` : ''}. La carte reste dans les téléphones avec son solde, mais elle ne crédite plus. Tout repart dès que le paiement passe ou que l’abonnement est repris. Sans reprise, données supprimées 90 jours après l’arrêt.`}
+                  {c.etat.code === 'paiement_echoue' && c.etat.date && ` le ${dateLongue(c.etat.date)} : relancer le client (portail Stripe), puis remettre « statut_paiement: payé » dans la fiche une fois réglé. Sans règlement, la carte se met en pause 15 jours après le premier échec.`}
                   {c.etat.code === 'resiliation' &&
                     `${c.etat.demande_le ? ` le ${dateLongue(c.etat.demande_le)}` : ''}${c.etat.date ? ` : l’abonnement prend fin le ${dateLongue(c.etat.date)}.` : '.'}`}
                   {c.etat.code === 'termine' && (c.etat.date ? ` le ${dateLongue(c.etat.date)}.` : '.')}
@@ -139,6 +145,31 @@ export function ClientFiche({id}: {id: string}) {
             )}
           </Panel>
 
+          {services.length > 0 && (
+            <Panel title="Services de Pro" sub="À livrer une fois, sous 15 jours. Les boutons enregistrent la date tout de suite ; elle est recopiée dans la fiche du coffre au prochain passage d’un agent.">
+              <ol class="cl-parcours">
+                {services.map((s) => {
+                  const attente = c.enAttente[s.code];
+                  return (
+                    <li class={attente ? 'attente' : s.fait_le ? 'on' : s.a_faire ? 'courant' : ''}>
+                      <span class="cl-pt" aria-hidden="true">
+                        <Icon name={s.fait_le ? 'check' : 'clock'} size={14} />
+                      </span>
+                      <div class="cl-pt-t">
+                        <strong>{s.libelle}</strong>
+                        <small>
+                          {s.fait_le ? `fait le ${dateLongue(s.fait_le)}` : s.a_faire ? `à faire avant le ${dateLongue(s.limite)}` : `dû à partir du ${dateLongue(s.du_le)}`}
+                          {attente && ` · noté dans le panel${attente.texte ? ` (${attente.texte})` : ''}, pas encore dans le coffre`}
+                        </small>
+                      </div>
+                      <div class="cl-pt-a">{attente ? <Annuler c={c} code={s.code} /> : !s.fait_le && <BoutonAction c={c} code={s.code} />}</div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </Panel>
+          )}
+
           <Panel title="Notes" sub="Chiffrées dans ce navigateur avant l’envoi : le serveur ne peut pas les lire." class="cp-pnl-notes">
             <NotesProspect p={c} filtre={noteLibre} />
           </Panel>
@@ -146,10 +177,17 @@ export function ClientFiche({id}: {id: string}) {
           <Panel title="Abonnement">
             <dl class="cp-dl">
               <Ligne t="Offre">
-                {o.libelle || '—'}
+                {libelleOffre(o) || '—'}
                 <small>{fr(prix)}</small>
+                {offreHistorique(o.formule) && <small>{fr('Plus vendue : il garde son prix et sa durée, avec les droits de Pro.')}</small>}
               </Ligne>
-              <Ligne t="Souscrit le">{c.date_souscription ? dateLongue(c.date_souscription) : '—'}</Ligne>
+              {c.essai?.demarre_le && (
+                <Ligne t="Essai">
+                  {`démarré le ${dateLongue(c.essai.demarre_le)}`}
+                  {c.essai.fin && <small>{`${enEssai ? 'jusqu’au' : 'fin le'} ${dateLongue(c.essai.fin)}`}</small>}
+                </Ligne>
+              )}
+              <Ligne t="Souscrit le">{c.date_souscription ? dateLongue(c.date_souscription) : enEssai ? 'pas encore' : '—'}</Ligne>
               {c.montant_paye && (
                 <Ligne t="Montant payé">
                   {c.montant_paye}
@@ -158,16 +196,14 @@ export function ClientFiche({id}: {id: string}) {
                 </Ligne>
               )}
               <Ligne t="Paiement">
-                {c.etat?.code === 'paiement_echoue' ? <Badge tone="red">échoué</Badge> : c.paiement.statut || '—'}
-                {c.paiement.document && <small>{c.paiement.document === 'facture' ? 'facture LOYNA' : 'récapitulatif de paiement Stripe'}</small>}
+                {c.etat?.code === 'paiement_echoue' || (c.etat?.code === 'carte_suspendue' && c.paiement.statut === 'échoué') ? <Badge tone="red">échoué</Badge> : enEssai ? 'aucun pendant l’essai' : c.paiement.statut || '—'}
+                {c.paiement.document && !enEssai && <small>{c.paiement.document === 'facture' ? 'facture LOYNA' : 'récapitulatif de paiement Stripe'}</small>}
               </Ligne>
-              {c.engagement.fin && <Ligne t={c.engagement.libelle}>{dateLongue(c.engagement.fin)}</Ligne>}
+              {c.engagement.fin ? <Ligne t={c.engagement.libelle}>{dateLongue(c.engagement.fin)}</Ligne> : c.engagement.actif === false && !enEssai && <Ligne t="Engagement">sans engagement</Ligne>}
               {c.etat?.code === 'resiliation' && <Ligne t="Résiliation">{c.etat.date ? `fin le ${dateLongue(c.etat.date)}` : 'demandée'}</Ligne>}
               <Ligne t="Documents">
-                {c.parcours.find((e) => e.code === 'documents')?.fait ? 'envoyés' : 'pas encore envoyés'}
-                <small>
-                  <code>documents_client.py envoyer "08 Clients/{c.fiche}.md"</code>
-                </small>
+                {enEssai ? 'aucun pendant l’essai' : c.parcours.find((e) => e.code === 'documents')?.fait ? 'envoyés' : 'pas encore envoyés'}
+                <small>{enEssai ? 'Les 4 PDF partent à la première souscription.' : <code>documents_client.py envoyer "08 Clients/{c.fiche}.md"</code>}</small>
               </Ligne>
             </dl>
           </Panel>
@@ -254,6 +290,11 @@ export function ClientFiche({id}: {id: string}) {
               {c.siren && (
                 <Ligne t="SIREN">
                   <Lien href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${c.siren}`}>{c.siren.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')}</Lien>
+                </Ligne>
+              )}
+              {c.siret && (
+                <Ligne t="SIRET">
+                  <Lien href={`https://annuaire-entreprises.data.gouv.fr/etablissement/${c.siret}`}>{c.siret.replace(/(\d{3})(\d{3})(\d{3})(\d{5})/, '$1 $2 $3 $4')}</Lien>
                 </Ligne>
               )}
               {lienSur(c.instagram) && (

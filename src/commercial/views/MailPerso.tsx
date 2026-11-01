@@ -18,9 +18,9 @@ import {
   lireNoteMail,
   objetParDefaut,
   paramsVisuel,
-  prixMensuel,
   probleme,
   texteNoteMail,
+  texteOffre,
   type DemandeMail,
   type Offre,
 } from '../mail-perso';
@@ -141,7 +141,7 @@ function Compositeur({p, fermer}: {p: Prospect; fermer: () => void}) {
           <select value={d.offre} onChange={(e) => champ('offre', (e.target as HTMLSelectElement).value as Offre)}>
             <option value="">Aucune</option>
             {PLANS.map((o) => (
-              <option value={o.id}>{`${o.name} · ${prixMensuel(o.id)} par mois`}</option>
+              <option value={o.id}>{texteOffre(o.id)}</option>
             ))}
           </select>
         </Field>

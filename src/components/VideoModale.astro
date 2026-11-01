@@ -1,0 +1,106 @@
+---
+// Vidéo de présentation en surimpression : un lien marqué data-video l'ouvre ici, sans quitter la page. Le fichier n'est
+// demandé qu'au clic (aucun poids au chargement). Sans JavaScript, le lien mène simplement à /demo/.
+import Icon from './Icon.astro';
+---
+
+<dialog class="vm" id="video-modale" aria-label="LOYNA en vidéo">
+  <button type="button" class="vm-fermer" aria-label="Fermer la vidéo"><Icon name="x" size={20} /></button>
+  <div class="vm-cadre"><span class="vm-roue" aria-hidden="true"></span></div>
+</dialog>
+
+<script>
+  const modale = document.getElementById('video-modale') as HTMLDialogElement | null;
+  if (modale && typeof modale.showModal === 'function') {
+    const cadre = modale.querySelector<HTMLElement>('.vm-cadre')!;
+    document.addEventListener('click', (e) => {
+      const me = e as MouseEvent;
+      if (me.button || me.metaKey || me.ctrlKey || me.shiftKey || me.altKey) return;
+      const lien = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[data-video]');
+      if (!lien) return;
+      e.preventDefault();
+      const v = document.createElement('video');
+      v.src = lien.dataset.video!;
+      v.controls = true;
+      v.autoplay = true;
+      v.playsInline = true;
+      v.setAttribute('width', '720');
+      v.setAttribute('height', '1280');
+      v.addEventListener('playing', () => cadre.classList.add('lit'), {once: true});
+      cadre.append(v);
+      modale.showModal();
+    });
+    // À la fermeture, la vidéo s'arrête et son fichier n'est plus chargé
+    modale.addEventListener('close', () => {
+      cadre.querySelector('video')?.remove();
+      cadre.classList.remove('lit');
+    });
+    modale.addEventListener('click', (e) => {
+      if (e.target === modale) modale.close();
+    });
+    modale.querySelector('.vm-fermer')!.addEventListener('click', () => modale.close());
+  }
+</script>
+
+<style>
+  .vm {
+    position: fixed;
+    inset: 0;
+    width: min(92vw, calc(88dvh * 9 / 16));
+    max-width: 440px;
+    margin: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 26px;
+    background: #0b0b0f;
+    overflow: visible;
+  }
+  .vm::backdrop {
+    background: rgba(18, 18, 22, 0.78);
+    backdrop-filter: blur(4px);
+  }
+  .vm-cadre {
+    position: relative;
+    aspect-ratio: 9 / 16;
+    border-radius: 26px;
+    overflow: hidden;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
+  }
+  .vm-cadre :global(video) {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .vm-roue {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 46px;
+    height: 46px;
+    margin: -23px 0 0 -23px;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 255, 255, 0.25);
+    border-top-color: #e6c27a;
+    animation: spin 0.8s linear infinite;
+  }
+  .vm-cadre.lit .vm-roue {
+    display: none;
+  }
+  .vm-fermer {
+    position: absolute;
+    z-index: 2;
+    right: -6px;
+    top: -6px;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--grad-gold);
+    color: var(--ink);
+    cursor: pointer;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
+  }
+</style>

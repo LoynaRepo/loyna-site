@@ -72,7 +72,7 @@ export function Programme() {
       <div class="page">
         <PageHead eyebrow={m.merchant_name} title="Programme" />
         <Empty icon="gift" title="Aucun programme actif">
-          Votre programme est créé par LOYNA à la mise en service. Écrivez à <a href="mailto:contact@loyna.fr">contact@loyna.fr</a>.
+          Aucun programme n’est encore actif sur ce commerce. Écrivez à <a href="mailto:contact@loyna.fr">contact@loyna.fr</a>.
         </Empty>
       </div>
     );

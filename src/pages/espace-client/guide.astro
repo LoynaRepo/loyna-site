@@ -5,18 +5,22 @@
 // Page publique, noindex et hors du plan du site ; elle s'imprime en PDF A4 de 4 pages.
 //   - captures : node tools/guide-captures.mjs [adresse du site]  → public/espace-client/guide/*.webp
 //   - PDF publié à côté : node tools/guide-pdf.mjs [adresse du site] → public/espace-client/guide/guide-demarrage-loyna.pdf
-// Ne rien écrire ici qui n'existe pas dans l'espace client (src/app/views/) ni dans les offres (src/data/site.ts).
+// Ne rien écrire ici qui n'existe pas dans l'espace client (src/app/views/) ni dans les offres (src/data/site.ts). Les textes
+// sur l'essai sortent avec TRIAL.open, comme sur le reste du site.
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
 import Base from '../../layouts/Base.astro';
 import mark from '../../assets/logo-mark.svg?raw';
 import word from '../../assets/logo-word.svg?raw';
-import {SITE} from '../../data/site';
+import {PHRASES, PLANS, SITE, TRIAL, euro} from '../../data/site';
 
 const markSvg = mark.replace('id="g"', 'id="lg-guide"').replace('url(#g)', 'url(#lg-guide)').replace('<svg', '<svg aria-hidden="true"');
 const wordSvg = word.replace('<svg', '<svg role="img" aria-label="LOYNA"');
 const PDF = '/espace-client/guide/guide-demarrage-loyna.pdf';
+// Typographie française déjà posée ici : le PDF peut être imprimé depuis le serveur de développement, sans la passe de la construction
+const fr = (t: string) => t.replace(/ ([:;?!»])/g, ' $1').replace(/« /g, '« ');
+const [starter, pro] = PLANS;
 
 interface Etape {
   id: string;
@@ -33,7 +37,7 @@ const ETAPES: Etape[] = [
     img: '01-connexion',
     alt: 'Écran de connexion de l’espace client : adresse e-mail, mot de passe et bouton « Se connecter ».',
     texte:
-      'Ouvrez <strong>loyna.fr/espace-client</strong> sur votre téléphone ou votre ordinateur, et connectez-vous avec votre adresse e-mail et le mot de passe choisi grâce au lien reçu par e-mail. Sur téléphone, les menus sont en bas de l’écran, les autres sous « Plus ». Mot de passe oublié : écrivez à <a href="mailto:contact@loyna.fr">contact@loyna.fr</a>.',
+      'Ouvrez <strong>loyna.fr/espace-client</strong> sur votre téléphone ou votre ordinateur, et connectez-vous avec votre adresse e-mail et votre mot de passe. Sur téléphone, les menus sont en bas de l’écran, les autres sous « Plus ». Mot de passe oublié : touchez « Mot de passe oublié ou première connexion ? », vous recevez un lien par e-mail pour en choisir un nouveau.',
   },
   {
     id: 'reglages',
@@ -41,7 +45,7 @@ const ETAPES: Etape[] = [
     img: '02-reglages',
     alt: 'Menu Réglages : ajout du logo, couleur de la carte, couleur du texte et téléphone.',
     texte:
-      'Menu <strong>Réglages</strong> : ajoutez votre logo, choisissez vos couleurs, indiquez votre téléphone, puis touchez « Enregistrer ». Dans « Boutique et proximité », saisissez l’adresse de la boutique (jusqu’à 3 boutiques avec l’offre Pro) : la carte s’affiche sur l’écran verrouillé des clients qui passent tout près.',
+      'Menu <strong>Réglages</strong> : ajoutez votre logo, choisissez vos couleurs, indiquez votre téléphone, puis touchez « Enregistrer ». Dans « Boutique et proximité », saisissez l’adresse de la boutique (1 adresse avec Starter, jusqu’à 3 avec Pro : une seule carte, un seul tableau de bord) : la carte s’affiche sur l’écran verrouillé des clients qui passent tout près.',
   },
   {
     id: 'qr-code',
@@ -65,7 +69,7 @@ const ETAPES: Etape[] = [
     img: '05-programme',
     alt: 'Programme : liste des récompenses avec le bouton « Ajouter ».',
     texte:
-      'Votre carte est déjà réglée par LOYNA : vérifiez-la dans le menu <strong>Programme</strong>. Dans « Récompenses », touchez « Ajouter », ou le crayon, pour créer ou modifier une récompense, par exemple « Café offert » à 10 passages.',
+      'Votre carte est déjà réglée : vérifiez-la dans le menu <strong>Programme</strong>. Dans « Récompenses », touchez « Ajouter », ou le crayon, pour créer ou modifier une récompense, par exemple « Café offert » à 10 passages.',
   },
   {
     id: 'automatisations',
@@ -73,7 +77,7 @@ const ETAPES: Etape[] = [
     img: '06-automatisations',
     alt: 'Automatisations : message d’anniversaire avec son interrupteur et son texte.',
     texte:
-      'Menu <strong>Automatisations</strong> : chaque message automatique a son interrupteur ; activez-le, adaptez le texte, puis touchez « Enregistrer ». Message après chaque passage : toutes les offres ; anniversaire, relance des clients absents, « Plus qu’un passage ! », avis Google et niveaux VIP : dès l’offre Premium ; parrainage entre vos clients : offre Pro.',
+      'Menu <strong>Automatisations</strong> : chaque message automatique a son interrupteur ; activez-le, adaptez le texte, puis touchez « Enregistrer ». Message après chaque passage, anniversaire, relance des clients absents, « Plus qu’un passage ! » et avis Google : toutes les offres ; niveaux VIP et parrainage entre vos clients : offre Pro.',
   },
   {
     id: 'campagnes',
@@ -81,7 +85,7 @@ const ETAPES: Etape[] = [
     img: '07-campagnes',
     alt: 'Nouvelle campagne : message, raccourcis prénom et nom du commerce, bouton « Vérifier les destinataires ».',
     texte:
-      'Menu <strong>Campagnes</strong>, « Nouvelle campagne » : écrivez votre message, touchez « Vérifier les destinataires », puis envoyez ; il s’affiche sur le téléphone de vos clients, grâce à leur carte. Groupes de clients et envoi programmé : dès l’offre Premium. Avec l’offre Pro, LOYNA prépare aussi des campagnes, envoyées seulement après votre validation.',
+      'Menu <strong>Campagnes</strong>, « Nouvelle campagne » : écrivez votre message, touchez « Vérifier les destinataires », puis envoyez ; il s’affiche sur le téléphone de vos clients, grâce à leur carte. Groupes de clients, envoi programmé et calendrier des temps forts : toutes les offres, avec 5 campagnes par semaine en Starter et sans limite en Pro. Avec l’offre Pro, LOYNA écrit et programme vos messages, envoyés seulement après votre validation.',
   },
   {
     id: 'clients',
@@ -89,7 +93,7 @@ const ETAPES: Etape[] = [
     img: '08-clients',
     alt: 'Liste des clients : recherche, filtres et solde de chaque client.',
     texte:
-      'Menu <strong>Clients</strong> : cherchez un client par son prénom, son nom ou son téléphone, ou filtrez la liste. Sa fiche montre son solde, ses passages et ses récompenses : vous pouvez y utiliser une récompense ou lui renvoyer sa carte.',
+      'Menu <strong>Clients</strong> : cherchez un client par son prénom, son nom ou son téléphone, ou filtrez la liste. Sa fiche montre son solde, ses passages et ses récompenses : vous pouvez y utiliser une récompense ou lui renvoyer sa carte. « Exporter en CSV » donne tous vos clients dans un fichier lisible par Excel, à tout moment (propriétaire et responsables).',
   },
   {
     id: 'equipe',
@@ -105,7 +109,25 @@ const ETAPES: Etape[] = [
     img: '10-rapport',
     alt: 'Rapport mensuel : passages et clients venus, comparés au mois précédent.',
     texte:
-      'Menu <strong>Rapport</strong> (dès l’offre Premium) : vos passages, nouveaux clients, clients revenus et récompenses du mois, comparés au mois précédent, avec 3 conseils concrets. Avec toutes les offres, l’<strong>Accueil</strong> montre vos chiffres des 7, 30 ou 90 derniers jours.',
+      'Menu <strong>Rapport</strong> : vos passages, nouveaux clients, clients revenus et récompenses du mois, comparés au mois précédent, avec jusqu’à 3 conseils. L’<strong>Accueil</strong> montre vos chiffres des 7, 30 ou 90 derniers jours.',
+  },
+  {
+    id: 'abonnement',
+    titre: TRIAL.open ? 'Abonnement : votre essai, votre offre' : 'Abonnement : votre offre',
+    img: TRIAL.open ? '12-abonnement' : '12-abonnement-offre',
+    alt: TRIAL.open ? 'Menu Abonnement pendant l’essai : date de fin de l’essai, jours restants et bouton « Choisir mon offre ».' : 'Menu Abonnement : votre offre, son prix, la prochaine échéance et le portail des factures.',
+    texte: `${
+      TRIAL.open
+        ? 'Pendant l’essai d’un mois, sans carte bancaire, un compteur discret indique les jours restants : aucun prélèvement à la fin. Pour continuer, touchez « Choisir mon offre » dans le menu <strong>Abonnement</strong>. Le premier paiement a lieu le jour de la souscription et les jours restants ne sont pas reportés. '
+        : 'Menu <strong>Abonnement</strong> : votre offre et vos échéances. '
+    }Starter : ${euro(starter.monthly)} par mois, ou ${euro(starter.engaged)} avec 12 mois d’engagement. Pro : ${euro(pro.monthly)} par mois, ou ${euro(pro.engaged)} avec 12 mois d’engagement. Sans TVA. Le changement d’offre se fait dans ce menu ; factures, carte bancaire et résiliation, sur le portail sécurisé Stripe.`,
+  },
+  {
+    id: 'pause',
+    titre: 'Si votre carte passe en pause',
+    img: '13-pause',
+    alt: 'Bandeau rouge « votre carte est en pause », avec le motif, la date de conservation des données et le bouton pour repartir.',
+    texte: `${PHRASES.arret} Le bandeau en haut de l’écran donne le motif et le bouton pour repartir ; pendant la pause, votre espace et l’export de vos clients restent ouverts.`,
   },
   {
     id: 'aide',
@@ -125,7 +147,7 @@ const taille = async (nom: string) => {
   const m = await sharp(f).metadata();
   return {width: m.width, height: m.height};
 };
-const etapes = await Promise.all(ETAPES.map(async (e, i) => ({...e, n: i + 1, ...(await taille(e.img))})));
+const etapes = await Promise.all(ETAPES.map(async (e, i) => ({...e, texte: fr(e.texte), n: i + 1, ...(await taille(e.img))})));
 const PREMIERES = [
   {id: 'reglages', titre: 'Réglages', texte: 'Vérifiez votre logo et vos couleurs, ajoutez votre téléphone et l’adresse de votre boutique.'},
   {id: 'qr-code', titre: 'Le QR code au comptoir', texte: 'Imprimez l’affiche et posez-la près de la caisse.'},
@@ -137,7 +159,7 @@ const PREMIERES = [
   bare
   noindex
   title="Guide de démarrage LOYNA Business · votre espace client"
-  description="Votre espace client LOYNA Business en 2 minutes : connexion, réglages, QR code au comptoir, scanner, programme, automatisations, campagnes, clients, équipe et rapport."
+  description="Votre espace client LOYNA Business en 2 minutes : connexion, réglages, QR code au comptoir, scanner, programme, automatisations, campagnes, clients, équipe, rapport et abonnement."
 >
   <div class="g">
     <header class="g-head">
@@ -158,9 +180,9 @@ const PREMIERES = [
            panneau « Parrainez un commerçant » du menu Abonnement (views/Abonnement.tsx) et carte « Parrainez un commerçant » de l'accueil de l'espace client -->
       <section class="g-promo" aria-labelledby="g-promo-h">
         <p class="g-promo-tag">Offre parrainage</p>
-        <h2 id="g-promo-h">1 mois offert et un QR code offert pour vous, 1 mois offert pour le commerçant que vous recommandez</h2>
+        <h2 id="g-promo-h" set:html={fr(PHRASES.parrainage)} />
         <p>
-          Vous connaissez un commerçant à qui une carte de fidélité rendrait service ? Partagez votre code depuis le menu <strong>Abonnement</strong> : il a <strong>son premier mois offert</strong>, et vous <strong>votre mois suivant offert</strong> plus <strong>1 QR code sous verre offert</strong>, dès qu’il a payé sa première mensualité. Dans les trois offres, pour les abonnements mensuels.
+          Vous connaissez un commerçant à qui une carte de fidélité rendrait service&nbsp;? Partagez votre code depuis le menu <strong>Abonnement</strong>&nbsp;: il a <strong>son premier mois offert</strong>, et vous <strong>votre mois suivant offert</strong> plus <strong>1 QR code sous verre offert</strong>, dès qu’il a payé sa première mensualité. Dans toutes les offres.
         </p>
         <p class="g-promo-liens"><a href="/espace-client/#/abonnement">Voir mon code de parrainage</a> · <a href="/faq/#parrainage-loyna">Comment ça marche</a></p>
       </section>
@@ -174,7 +196,7 @@ const PREMIERES = [
                 <span class="g-first-n">{i + 1}</span>
                 <span>
                   <a href={`#${p.id}`}>{p.titre}</a>
-                  <small>{p.texte}</small>
+                  <small set:html={fr(p.texte)} />
                 </span>
               </li>
             ))
@@ -483,7 +505,7 @@ const PREMIERES = [
     }
   }
 
-  /* Impression et PDF : A4, deux colonnes, trois pages */
+  /* Impression et PDF : A4, deux colonnes, quatre pages au plus */
   @page {
     size: A4;
     margin: 10mm 11mm;

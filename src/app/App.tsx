@@ -2,8 +2,9 @@
 import type {ComponentChildren} from 'preact';
 import {useEffect, useRef, useState} from 'preact/hooks';
 import {Icon} from './icons';
-import {api, can, canSee, closeConsultation, go, isOperator, loadPlans, merchant, PLAN_ORDER, planLabel, readOnly, rememberMerchant, rememberedMerchant, route, session, setBackend, staffCtx, toastError, type Membership, type StaffContext} from './state';
-import {Btn, Field, Spinner, Toasts} from './ui';
+import {api, can, canSee, closeConsultation, go, isOperator, loadPlans, loadService, merchant, PLAN_ORDER, planLabel, PORTAL, readOnly, reloadServiceIfStale, rememberMerchant, rememberedMerchant, route, service, session, setBackend, staffCtx, toastError, type Membership, type StaffContext} from './state';
+import {publicEdge} from './http';
+import {Btn, Field, ServiceBanner, Spinner, Toasts} from './ui';
 import {frenchTypography} from './util';
 import {Commande} from './Commande';
 
@@ -28,7 +29,6 @@ function loadView(name: string): Promise<ViewComp> {
   return loaded[name] ? Promise.resolve(loaded[name]) : LOADERS[name]().then((c) => (loaded[name] = c));
 }
 
-const PORTAL = 'https://billing.stripe.com/p/login/28E28u2vEcIt4tvbiw5Ne00';
 // Guide de démarrage (page publique imprimable, lien aussi dans l'e-mail « Votre carte LOYNA est prête »)
 const GUIDE = '/espace-client/guide/';
 const ROLE_LABEL = {OWNER: 'Propriétaire', ADMIN: 'Responsable', STAFF: 'Employé'} as const;
@@ -158,13 +158,57 @@ function Splash() {
 }
 
 // --- Connexion ------------------------------------------------------------------------------------
+/** Mot de passe oublié, en libre-service : la réponse est la même que l'adresse existe ou non (fonction password-recover). */
+function Forgot({email: known}: {email: string}) {
+  const [email, setEmail] = useState(known);
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const send = async () => {
+    const address = email.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) return setError('Indiquez l’adresse e-mail de votre compte.');
+    setError('');
+    setBusy(true);
+    try {
+      if (!api.demo) await publicEdge('password-recover', {body: {email: address}});
+      setSent(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Envoi impossible. Réessayez dans un instant.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (sent)
+    return (
+      <p role="status">
+        <strong>Si un compte existe avec cette adresse, un lien vient de partir.</strong> Ouvrez-le pour choisir un nouveau mot de passe (pensez aux courriers indésirables).
+      </p>
+    );
+  return (
+    <div class="login-forgot">
+      <Field label="Adresse e-mail de votre compte">
+        <input type="email" autocomplete="username" value={email} onInput={(e) => setEmail((e.target as HTMLInputElement).value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), send())} />
+      </Field>
+      {error && (
+        <p class="form-err" role="alert">
+          {error}
+        </p>
+      )}
+      <Btn kind="ghost" small icon="mail" busy={busy} onClick={send}>
+        Recevoir un lien
+      </Btn>
+    </div>
+  );
+}
+
 function Login({logo, withSide = true}: {logo: string; withSide?: boolean}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [help, setHelp] = useState(false);
+  // /espace-client/?oubli=1 : lien « mot de passe oublié » du panier et de la page de choix du mot de passe
+  const [help, setHelp] = useState(() => new URLSearchParams(location.search).has('oubli'));
 
   const submit = async (e: Event) => {
     e.preventDefault();
@@ -217,11 +261,11 @@ function Login({logo, withSide = true}: {logo: string; withSide?: boolean}) {
         {help && (
           <div class="login-help">
             <p>
-              <strong>Employé :</strong> demandez à votre responsable un nouveau lien depuis le menu <em>Équipe</em>. Vous y choisirez vous-même votre mot de passe.
+              <strong>Mot de passe oublié :</strong> saisissez l’adresse de votre compte, vous recevez un lien pour en choisir un nouveau.
             </p>
+            <Forgot email={email} />
             <p>
-              <strong>Propriétaire :</strong> connectez-vous avec l’adresse e-mail de votre commande et le mot de passe que vous avez choisi. Pas encore de mot de passe, ou vous l’avez oublié ? Écrivez à{' '}
-              <a href="mailto:contact@loyna.fr?subject=Nouveau%20lien%20de%20connexion%20LOYNA%20Business">contact@loyna.fr</a> depuis cette adresse : nous vous envoyons un lien pour en choisir un.
+              <strong>Première connexion d’un employé :</strong> demandez à votre responsable votre lien d’accès, depuis le menu <em>Équipe</em>. Vous y choisirez vous-même votre mot de passe.
             </p>
             <p>
               <strong>Pour bien démarrer :</strong> <a href={GUIDE}>le guide de démarrage</a> présente chaque partie de votre espace en 2 minutes.
@@ -261,7 +305,7 @@ function Login({logo, withSide = true}: {logo: string; withSide?: boolean}) {
           <Icon name="credit-card" />
           <span>
             <strong>Abonnement et factures</strong>
-            <small>Portail sécurisé Stripe : factures, carte bancaire, formule</small>
+            <small>Portail sécurisé Stripe : factures, carte bancaire, résiliation</small>
           </span>
           <Icon name="arrow-right" size={18} />
         </a>
@@ -279,7 +323,13 @@ function Workspace({logo}: {logo: string}) {
   const loadCtx = async () => {
     setError('');
     try {
-      const c = await api.rpc<StaffContext>('my_staff_context');
+      let c = await api.rpc<StaffContext>('my_staff_context');
+      // Compte sans commerce : un essai dont l'activation n'a pas abouti juste après la confirmation (coupure réseau, onglet
+      // fermé) s'active ici. Réponse NONE pour un compte du panier ; une erreur ne bloque pas l'ouverture de l'espace.
+      if (!c.memberships?.length && !c.is_platform_admin) {
+        const t = await api.edge<{status: string}>('trial', {action: 'activate'}).catch(() => null);
+        if (t?.status === 'ACTIVATED') c = await api.rpc<StaffContext>('my_staff_context');
+      }
       staffCtx.value = c;
       loadPlans();
       const list = c.memberships ?? [];
@@ -457,6 +507,14 @@ function Shell({logo}: {logo: string}) {
   if (!items.some((n) => n.view === view) && view !== 'client' && view !== 'campagne') view = defaultView();
 
   useEffect(() => setMore(false), [route.value]);
+  // État du service (essai, sursis, arrêt) : lu à l'ouverture du commerce, relu au retour sur l'onglet
+  useEffect(() => {
+    service.value = undefined;
+    loadService();
+    const onVisible = () => !document.hidden && reloadServiceIfStale();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [m.merchant_id]);
 
   const logout = signOutAll;
   const switchMerchant = () => {
@@ -526,12 +584,8 @@ function Shell({logo}: {logo: string}) {
       <div class="main">
         {ro && <ConsultationBar name={m.merchant_name} />}
         {api.demo && !ro && <DemoBar />}
-        {m.merchant_status === 'SUSPENDED' && (
-          <div class="banner">
-            <Icon name="triangle-alert" />
-            Votre compte est suspendu : les passages ne peuvent plus être validés. Écrivez à <a href="mailto:contact@loyna.fr">contact@loyna.fr</a>.
-          </div>
-        )}
+        <ServiceBanner />
+        {view !== 'scanner' && <TrialCounter />}
         <View view={view} id={route.value.id} />
       </div>
 
@@ -610,8 +664,8 @@ function View({view, id}: {view: string; id?: string}) {
         ? ['clients', {}]
         : view === 'campagne'
           ? ['campagnes', {id}]
-          : view === 'abonnement'
-            ? ['abonnement', {portal: PORTAL}]
+          : view === 'reglages'
+            ? ['reglages', {section: id}]
             : LOADERS[view]
               ? [view, {}]
               : ['accueil', {}];
@@ -638,6 +692,19 @@ function View({view, id}: {view: string; id?: string}) {
       </div>
     );
   return C ? <C {...props} /> : <Spinner />;
+}
+
+/** Compteur discret pendant l'essai, en haut de chaque écran sauf le scanner. */
+function TrialCounter() {
+  const s = service.value;
+  if (s?.state !== 'TRIAL') return null;
+  const n = s.trial_days_left ?? 0;
+  const text = n > 1 ? `Essai : encore ${n} jours` : n === 1 ? 'Essai : encore 1 jour' : 'Essai : dernier jour';
+  return (
+    <p class="trial-line">
+      {canSee('settings.manage') ? <a href="#/abonnement">{text}</a> : text}
+    </p>
+  );
 }
 
 /** Bandeau permanent d'une consultation opérateur (écran Opérateur → « Ouvrir son espace ») : lecture seule. */
@@ -682,7 +749,8 @@ function DemoBar() {
         <label class="demobar-plan">
           <span>Offre</span>
           <select class="sel-sm" value={plan} onChange={(e) => switchPlan((e.target as HTMLSelectElement).value)} aria-label="Offre affichée dans la démonstration">
-            {PLAN_ORDER.map((p) => (
+            {/* ?demo&offre=premium (développement) : écran de Barber Kong, offre retirée de la liste */}
+            {(PLAN_ORDER.includes(plan) ? PLAN_ORDER : [...PLAN_ORDER, plan]).map((p) => (
               <option value={p}>{planLabel(p)}</option>
             ))}
           </select>

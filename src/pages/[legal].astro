@@ -1,6 +1,7 @@
 ---
 // Pages juridiques : contenus dans src/content-seed/legal, identité de l'éditeur depuis Builder.io (site-settings).
 import Base from '../layouts/Base.astro';
+import Jonction from '../components/Jonction.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import {getSettings} from '../lib/builder';
 import {SITE} from '../data/site';
@@ -62,6 +63,7 @@ const crumbs = [
       <h1>{meta.title}</h1>
     </div>
   </section>
+  <Jonction de="sable" vers="creme" forme={2} />
   <section class="section pt0">
     <div class="narrow prose legal" set:html={html} />
   </section>

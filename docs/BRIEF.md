@@ -1,7 +1,7 @@
 # Brief produit LOYNA — source unique pour tous les textes du site
 
 Ne rien inventer en dehors de ce document : pas de statistiques, pas de clients, pas de témoignages,
-pas d'avis, pas de chiffres de résultats, pas de récompenses ou labels, pas d'essai gratuit.
+pas d'avis, pas de chiffres de résultats, pas de récompenses ou labels. Le seul essai gratuit est celui décrit plus bas.
 
 ## L'entreprise
 - LOYNA, une marque de KOVA Elec (entreprise individuelle d'Ewan, fondateur de LOYNA), basée à Montpellier (Occitanie).
@@ -29,17 +29,15 @@ Côté commerçant (application « LOYNA Business », sur téléphone ou ordinat
 - Clients : liste, recherche, filtres (actifs, inactifs, récompense disponible, nouveaux), fiche client
   (solde, historique, récompenses, consentements), ajustement manuel motivé et tracé.
 - Notifications Wallet (seul canal, sans coût par message) : passage validé, récompense disponible, offre ou
-  nouveauté. Au plus un message commercial toutes les 48 h par client (délai réglable).
+  nouveauté. Un même client reçoit au plus un message commercial par 24 h, réglable.
 - Notification de proximité (toutes les offres) : quand le client passe près de la boutique, sa carte s'affiche sur
   l'écran de verrouillage (iPhone) ou en notification quand il s'attarde près de la boutique (Android). LOYNA ne
   reçoit jamais la position du client : c'est le téléphone qui détecte la proximité. Dire « s'affiche », jamais
   « à chaque passage » (il faut la localisation activée).
-- Campagnes de notifications vers tous les clients (dans le quota de l'offre). Avec Premium : groupes de clients
-  (fidèles, inactifs 30/60/90 jours, anniversaires du mois, récompense disponible, critères sur mesure) et
-  campagnes programmées.
-- Automatisations (Premium et Pro) : anniversaire, relance des inactifs, « Plus qu'un passage ! », demande d'avis
-  Google après la 3e visite, double tampon aux heures creuses, campagnes programmées, groupes de clients, rapport
-  mensuel avec 3 conseils.
+- Campagnes de notifications vers tous les clients ou un groupe (fidèles, inactifs 30/60/90 jours, anniversaires du mois,
+  récompense disponible, critères sur mesure), tout de suite ou programmées : 5 par semaine avec Starter, illimitées avec Pro.
+- Automatisations (toutes les offres) : anniversaire, relance des clients qui ne reviennent plus, « Plus qu'un passage ! »,
+  demande d'avis Google après la 3e visite, rapport du mois par e-mail avec jusqu'à 3 conseils.
 - Tableau de bord : clients actifs, nouveaux clients, passages, récompenses débloquées et utilisées,
   clients inactifs, évolution de l'activité. Aucun indicateur inventé.
 - Équipe : un compte par personne (propriétaire, administrateur, employé), rôles et droits, pas de limite d'employés.
@@ -53,28 +51,36 @@ Côté commerçant (application « LOYNA Business », sur téléphone ou ordinat
 Mise en place : la carte est prête sous 24 h (hors personnalisation exceptionnelle). Matériel : rien de
 spécial, un smartphone suffit pour scanner. Données : protégées, chiffrées, jamais utilisées à des fins commerciales.
 
-## Les offres (décision d'Ewan du 2026-10-25 ; source de vérité : dépôt LOYNA, docs/OFFRES.md)
-Prix par mois, sans TVA. Toujours dans cet ordre : Starter, Premium, Pro.
-- STARTER — 29 € (295,80 € par an) : la carte de fidélité complète. 500 cartes et 2 000 notifications par mois,
-  notification de proximité, inscription par QR code (affiche du comptoir fournie), passages ou points,
-  récompenses automatiques, scanner et comptes équipe, tableau de bord, notifications automatiques, campagnes,
-  support par e-mail.
-- PREMIUM — 39,99 € (407,90 € par an) : les automatisations qui font revenir les clients. Tout Starter avec 2 000
-  cartes et 24 000 notifications par mois, plus les automatisations (liste ci-dessus), le rapport mensuel avec
-  3 conseils et les statistiques avancées.
-- PRO — 89 € (907,80 € par an) : LOYNA travaille avec vous. Tout Premium avec cartes et notifications illimitées,
-  plus suivi personnalisé (point mensuel de 30 min et plan d'action), campagnes clés en main validées en un clic
-  (jamais envoyées sans la validation du commerçant), jusqu'à 3 boutiques, niveaux VIP, parrainage, kit comptoir
-  imprimé, support prioritaire.
-- Quotas : une carte = un client inscrit (au-delà, nouvelles inscriptions refusées ; alerte à 80 % et 100 %) ; une
-  notification = un message de campagne reçu par une carte (recharge le 1er du mois). Les messages automatiques
-  et les notifications de proximité ne sont jamais décomptés.
-- Mise en service : 49 € une fois en mensuel, offerte en paiement annuel. Un seul message : « offerte jusqu'au
-  31 décembre 2026, en mensuel comme en annuel », puis « offerte en paiement annuel ».
-- Paiement annuel : -15 %.
-- Engagement (décision d'Ewan du 2026-10-09) : mensuel = 12 mois minimum réglés mois par mois, puis résiliable à la fin de n'importe quel mois sans frais ; annuel = 12 mois réglés d'avance, reconduit pour 12 mois sauf résiliation avant l'échéance.
+## Les offres (décision d'Ewan du 2026-10-31 ; source de vérité : dépôt LOYNA, docs/OFFRES.md)
+Prix par mois, sans TVA, toujours réglés au mois. Toujours dans cet ordre : Starter, Pro. Phrases fixes, au mot près : `PHRASES`
+de `src/data/site.ts`. Premium n'est plus vendue : seul Barber Kong la garde, à son prix, comme offre historique.
+- STARTER, « La carte complète » : 29 € par mois, sans TVA, sans engagement : vous arrêtez à la fin de n'importe quel mois. Ou
+  24,65 € par mois avec 12 mois d'engagement, réglés chaque mois. La carte complète, sans limite de clients, avec les messages qui
+  partent tout seuls : Apple Wallet et Google Wallet, QR code et affiche du comptoir, passages, points ou montant dépensé, récompenses
+  automatiques, scanner et comptes équipe illimités, notification de proximité (1 adresse), anniversaire, relance, « Plus qu'un
+  passage ! », demande d'avis Google, 5 campagnes par semaine, tableau de bord, rapport du mois, export CSV, support par e-mail.
+- PRO, « LOYNA s'en occupe » : 49 € par mois, sans TVA, sans engagement : vous arrêtez à la fin de n'importe quel mois. Ou 41,65 € par
+  mois avec 12 mois d'engagement, réglés chaque mois. Vos clients invitent leurs amis, LOYNA écrit vos messages : tout Starter, plus le
+  parrainage entre clients, les messages écrits et programmés par LOYNA (rien ne part sans validation), les niveaux VIP en couleur, les
+  campagnes illimitées, 3 adresses (une seule carte, un seul tableau de bord), la carte sans la mention LOYNA, la carte finie à la main,
+  une vidéo et des visuels, le kit comptoir (1 QR code sous verre par adresse, offert une fois), un point de 30 minutes par mois à la
+  demande, le support prioritaire (sans délai chiffré ni téléphone).
+- Essai : 1 mois gratuit, sans carte bancaire. Votre carte est créée tout de suite à partir de vos réglages et du modèle de votre
+  métier. 1 essai par commerce. Il donne Starter, depuis `/essai/`, SIRET demandé. Pas de prélèvement à la fin : la carte se met en pause.
+- Arrêt : si l'abonnement s'arrête ou si un paiement reste impayé 15 jours, la carte reste dans le téléphone de vos clients mais elle ne
+  crédite plus, et les inscriptions et les messages s'arrêtent. Tout repart automatiquement dès que le paiement passe ou que l'abonnement
+  est repris, avec vos clients et leurs soldes. Sans reprise, vos données sont supprimées 90 jours après l'arrêt.
+- Quotas : cartes et clients illimités partout ; une campagne compte pour une, quel que soit le nombre de destinataires, le compteur
+  repart chaque lundi. Les messages automatiques et les notifications de proximité ne sont jamais décomptés.
+- Mise en service : offerte jusqu'au 31 décembre 2026. Ensuite : offerte avec 12 mois d'engagement, 49 € une seule fois sans engagement.
+  Jamais refacturée à un client qui reprend un abonnement.
+- Engagement (seulement proposé) : avec 12 mois d'engagement : 15 % de moins, réglé chaque mois, rien d'avance. Sortie possible si
+  votre commerce ferme, sur justificatif de radiation. Après les 12 mois : même prix, résiliable à la fin de n'importe quel mois, sans
+  nouvelle durée.
+- Jamais vendu : SMS, carte iOS 27, API, webhooks, caisse, intégrations, statistiques par boutique, import de fichier clients, cartes
+  cadeaux, roue et jeux, double tampon, tampons offerts à l'inscription, téléphone ou délai de réponse chiffré. Aucune phrase de résultat.
 - Entreprise : LOYNA est une activité de KOVA Elec, nom commercial d'Ewan Touquet, entrepreneur individuel (SIREN 932 811 839, siège SIRET 932 811 839 00020, Fabrègues). Les paiements Stripe apparaissent au nom de KOVA ELEC. TVA non applicable, art. 293 B du CGI.
-- Offre de lancement (décision d'Ewan du 2026-10-09) : mise en service offerte en mensuel (elle l'est toujours en annuel) avec le code promo Stripe LANCEMENT2026, jusqu'au 31 décembre 2026 23 h 59 (coupon loyna_lancement_2026_v2, -49 € sur la 1re facture). L'ancien code « LANCEMENT » (coupon limité au produit mise en service) est refusé par Stripe Checkout : à désactiver dans le Dashboard.
+- Offre de lancement (décision d'Ewan du 2026-10-09) : mise en service offerte à tous avec le code promo Stripe LANCEMENT2026, jusqu'au 31 décembre 2026 23 h 59 (coupon loyna_lancement_2026_v2, -49 € sur la 1re facture). L'ancien code « LANCEMENT » (coupon limité au produit mise en service) est refusé par Stripe Checkout : à désactiver dans le Dashboard.
 - Paiement en ligne sécurisé par Stripe (carte bancaire). Facture disponible dans l'espace client.
 
 ## Cibles

@@ -1,19 +1,48 @@
-// Confirmation de l'adresse e-mail d'un compte créé dans le panier de loyna.fr :
-// /espace-client/confirmer/?token_hash=…&type=signup (lien de l'e-mail « Confirmez votre adresse e-mail – LOYNA »,
-// envoyé par la fonction checkout-create du dépôt LOYNA). Le jeton est vérifié par Supabase Auth (verifyOtp), ce qui
-// ouvre la session : le compte n'a plus qu'à ouvrir son espace client, où sa commande apparaît.
+// Confirmation de l'adresse e-mail d'un compte créé dans le panier de loyna.fr ou pour un essai depuis /essai/ :
+// /espace-client/confirmer/?token_hash=…&type=signup (lien de l'e-mail « Confirmez votre adresse e-mail – LOYNA » ou
+// « Confirmez votre adresse pour démarrer votre essai LOYNA », envoyé par les fonctions checkout-create et trial du dépôt
+// LOYNA). Le jeton est vérifié par Supabase Auth (verifyOtp), ce qui ouvre la session ; puis `trial {action: 'activate'}` crée
+// le commerce d'une demande d'essai (aucun commerce avant cette confirmation) et mène à /espace-client/?bienvenue=1. Compte du
+// panier : réponse NONE, sa commande apparaît dans son espace client.
 import {useEffect, useState} from 'preact/hooks';
-import {linkError, verifySignupLink} from './backend';
+import {linkError, supabaseBackend, verifySignupLink} from './backend';
 import {Icon} from './icons';
 import {Btn, Spinner} from './ui';
 import {frenchTypography} from './typo';
 
+/** Refus de l'activation d'un essai : l'adresse reste confirmée, le compte existe. */
+const TRIAL_REFUSED: Record<string, string> = {
+  TRIAL_CLOSED: 'Les essais gratuits sont fermés pour le moment.',
+  TRIAL_FULL: 'Les essais gratuits sont complets pour le moment.',
+  TRIAL_ALREADY_USED: 'Un essai a déjà été utilisé pour ce commerce, cet e-mail ou ce téléphone.',
+  ACCOUNT_HAS_MERCHANT: 'Ce compte a déjà un commerce : ouvrez votre espace client.',
+};
+
 export default function Confirmer({logo}: {logo: string}) {
-  const [state, setState] = useState<'loading' | 'done' | 'invalid' | 'error' | 'nolink'>('loading');
+  const [state, setState] = useState<'loading' | 'done' | 'trial' | 'trial_refused' | 'trial_error' | 'invalid' | 'error' | 'nolink'>('loading');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
 
   useEffect(() => frenchTypography(), []);
+  /** Session ouverte : active l'essai s'il y en a un d'attente ; relancer ne recrée rien (le jeton, lui, est déjà utilisé). */
+  const activate = async () => {
+    setState('loading');
+    try {
+      const r = await supabaseBackend.edge<{status: string}>('trial', {action: 'activate'});
+      if (r?.status === 'ACTIVATED') {
+        setState('trial');
+        location.replace('/espace-client/?bienvenue=1');
+      } else setState('done');
+    } catch (e: any) {
+      if (TRIAL_REFUSED[e?.code]) {
+        setMessage(TRIAL_REFUSED[e.code]);
+        return setState('trial_refused');
+      }
+      // Fonction indisponible ou réseau coupé : on ne sait pas s'il y a un essai, l'espace client réessaiera à l'ouverture
+      setMessage(e?.message || 'L’activation n’a pas abouti. Réessayez dans un instant.');
+      setState('trial_error');
+    }
+  };
   useEffect(() => {
     const q = new URLSearchParams(location.search);
     const token = q.get('token_hash') ?? '';
@@ -23,8 +52,8 @@ export default function Confirmer({logo}: {logo: string}) {
     verifySignupLink(token).then(
       (address) => {
         setEmail(address);
-        setState('done');
         history.replaceState(null, '', location.pathname); // le jeton ne reste pas dans l'adresse
+        return activate();
       },
       (e) => {
         if (e?.code === 'LINK_INVALID') return setState('invalid');
@@ -52,6 +81,50 @@ export default function Confirmer({logo}: {logo: string}) {
             <Btn kind="gold" href="/espace-client/" icon="arrow-right">
               Ouvrir mon espace client
             </Btn>
+          </>
+        )}
+        {state === 'trial' && (
+          <>
+            <span class="done-i">
+              <Icon name="circle-check" size={34} />
+            </span>
+            <h1>Votre carte est prête</h1>
+            <p class="muted">Votre adresse est confirmée et votre essai a démarré : nous ouvrons votre espace client.</p>
+            <Btn kind="gold" href="/espace-client/?bienvenue=1" icon="arrow-right">
+              Ouvrir mon espace client
+            </Btn>
+          </>
+        )}
+        {state === 'trial_refused' && (
+          <>
+            <h1>Adresse confirmée</h1>
+            <p class="muted" role="alert">
+              {message} Votre compte {email ? <strong>{email}</strong> : 'LOYNA'} est bien activé : vous pouvez choisir une offre ou écrire à <a href="mailto:contact@loyna.fr">contact@loyna.fr</a>.
+            </p>
+            <div class="btn-row">
+              <Btn kind="gold" href="/tarifs/" icon="arrow-right">
+                Voir les offres
+              </Btn>
+              <Btn kind="ghost" href="/espace-client/" icon="arrow-right">
+                Ouvrir mon espace client
+              </Btn>
+            </div>
+          </>
+        )}
+        {state === 'trial_error' && (
+          <>
+            <h1>Adresse confirmée</h1>
+            <p class="muted" role="alert">
+              {message}
+            </p>
+            <div class="btn-row">
+              <Btn icon="refresh-cw" onClick={activate}>
+                Réessayer
+              </Btn>
+              <Btn kind="ghost" href="/espace-client/" icon="arrow-right">
+                Ouvrir mon espace client
+              </Btn>
+            </div>
           </>
         )}
         {state === 'invalid' && (

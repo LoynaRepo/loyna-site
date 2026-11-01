@@ -117,7 +117,7 @@ try {
     coupure = true;
     const texteCoupure = 'Note tapée pendant une coupure de réseau.';
     await page.type(zone, texteCoupure);
-    await page.click('.cp-notes-ajout button[type=submit]');
+    await page.$eval('.cp-notes-ajout button[type=submit]', (b) => b.click()); // sans la souris : sur téléphone, la barre du bas peut recouvrir le bouton
     await page.waitForSelector('.cp-notes-err', {timeout: 10000});
     verifier((await page.$eval(zone, (t) => t.value)) === texteCoupure, 'erreur réseau : texte conservé dans la zone');
     await page.evaluate(() => document.querySelector('.cp-notes-err')?.scrollIntoView({block: 'center'}));
@@ -151,7 +151,7 @@ try {
     const ailleurs = [...(await lireNotes(cible.id)), {id: 'f6f6f6f6f6f6f6f6', cree_le: new Date().toISOString(), modifie_le: new Date().toISOString(), texte: 'Ajoutée sur un autre appareil.'}];
     await ecrireNotes(cible.id, ailleurs);
     await page.type(zone, 'Ajoutée ici en même temps.');
-    await page.click('.cp-notes-ajout button[type=submit]');
+    await page.$eval('.cp-notes-ajout button[type=submit]', (b) => b.click()); // sans la souris : sur téléphone, la barre du bas peut recouvrir le bouton
     await page.waitForFunction(() => [...document.querySelectorAll('.cp-note-t')].some((p) => p.textContent.includes('Ajoutée ici')), {timeout: 10000});
     const finales = await lireNotes(cible.id);
     verifier(finales.some((n) => n.texte === 'Ajoutée sur un autre appareil.') && finales.some((n) => n.texte === 'Ajoutée ici en même temps.'), 'ajouts simultanés : fusion automatique, les deux notes gardées');

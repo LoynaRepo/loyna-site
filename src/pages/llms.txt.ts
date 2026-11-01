@@ -1,12 +1,11 @@
 // Résumé du site pour les moteurs de réponse IA (convention llms.txt).
-import {CARD_PACK, LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SITE, SETUP_FEE, euro, nombre, offerActive, quotas} from '../data/site';
+import {MARKETING_INTERVAL_HOURS, MISE_EN_SERVICE_APRES, PHRASES, PLANS, SITE, TRIAL, offerActive, quotas} from '../data/site';
 import {getArticles, getSectors} from '../lib/builder';
 
 export async function GET() {
   const sectors = await getSectors();
   const articles = await getArticles();
   const contenu = (p: (typeof PLANS)[number]) => [...(p.focus?.items ?? []), ...p.features].join(', ');
-  const packPlans = PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) => p.name).join(' et ');
   const body = `# LOYNA
 
 > ${SITE.description}
@@ -14,11 +13,12 @@ export async function GET() {
 LOYNA (une marque de KOVA Elec) est un logiciel français (Montpellier) de carte de fidélité digitale pour les commerces indépendants : la carte est ajoutée à Apple Wallet ou Google Wallet sans application, le commerçant valide chaque passage en un scan, les récompenses et les notifications Wallet sont automatiques. Avec la notification de proximité, incluse dans toutes les offres, la carte s’affiche sur l’écran de verrouillage du client quand il passe près de la boutique ; LOYNA ne reçoit jamais sa position, c’est le téléphone qui détecte la proximité.
 
 ## Offres (prix sans TVA : ${SITE.vatNote})
-${PLANS.map((p) => `- ${p.name} : ${euro(p.monthly)} par mois ou ${euro(p.yearly)} par an. ${quotas(p)}. ${p.pitch} ${p.intro ? `${p.intro} ` : ''}${contenu(p)}.`).join('\n')}
-- Campagnes : une campagne (message envoyé à tous les clients ou à un groupe) compte pour une, quel que soit le nombre de destinataires ; le compteur de campagnes repart chaque lundi. Les messages automatiques et les notifications de proximité ne sont jamais décomptés. Un client reçoit au plus un message commercial toutes les ${MARKETING_INTERVAL_HOURS} h (délai réglable).
-- Option +${nombre(CARD_PACK.cards)} cartes (${packPlans} ; Pro a des cartes illimitées) : ${euro(CARD_PACK.monthly)} par mois par pack, ou ${euro(CARD_PACK.yearly)} par an par pack avec un abonnement annuel, sans TVA. Cumulable, ajoutée depuis l’espace client ; elle ajoute des cartes, pas de campagnes.
-- Paiement mensuel : engagement de 12 mois, réglés chaque mois, puis résiliable à la fin de n’importe quel mois, sans frais. Paiement annuel : 12 mois payés d’avance, −15 %.
-- Mise en service : ${euro(SETUP_FEE)} une seule fois en paiement mensuel, ${offerActive() ? `offerte jusqu’au ${LAUNCH_OFFER.untilLabel}, en mensuel comme en annuel (offre de lancement)` : 'offerte en paiement annuel'}.
+${PLANS.map((p) => `- ${p.name} : ${PHRASES.prix(p)} ${quotas(p)}. ${p.tagline} ${p.intro ? `${p.intro} ` : ''}${contenu(p)}.`).join('\n')}
+- Pourquoi Pro : ${PHRASES.pourquoiPro}
+- Campagnes : une campagne (message envoyé à tous les clients ou à un groupe) compte pour une, quel que soit le nombre de destinataires ; le compteur de campagnes repart chaque lundi. Les messages automatiques et les notifications de proximité ne sont jamais décomptés. Un même client reçoit au plus un message commercial par ${MARKETING_INTERVAL_HOURS} h, réglable.
+- Engagement : ${PHRASES.engagement}
+- Mise en service : ${offerActive() ? PHRASES.miseEnService : MISE_EN_SERVICE_APRES}
+${TRIAL.open ? `- Essai : ${PHRASES.essai}\n` : ''}- Arrêt : ${PHRASES.arret}
 
 ## Pages principales
 - [Fonctionnalités](${SITE.url}/fonctionnalites/)

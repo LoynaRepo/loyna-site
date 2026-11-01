@@ -34,6 +34,8 @@ CHEMIN_CARTES = "/espace-commercial/cartes.php"
 TAILLE_REQUETE_CARTES_MAX = 1600000
 TAILLE_LOGO_MAX = 1400000
 CARTES_MAX = 300
+OFFRES = ("starter", "pro")  # à l'écriture ; les fiches déjà écrites restent servies telles quelles, comme dans cartes.php
+ENGAGEMENTS = ("sans", "engage")
 PREFIXE_LOGO = "data:image/png;base64,"
 RE_ID_CARTE = re.compile(r"[a-z0-9]{16}")
 RE_COULEUR = re.compile(r"#[0-9a-f]{6}")
@@ -222,12 +224,12 @@ def carte_propre(c):
             and isinstance(c.get("fond"), str) and RE_COULEUR.fullmatch(c["fond"])
             and isinstance(c.get("tampons"), str) and RE_COULEUR.fullmatch(c["tampons"])
             and entier(c.get("passages"), 1, 100)
-            and c.get("offre") in ("starter", "premium", "pro") and c.get("periode") in ("mensuel", "annuel")
+            and c.get("offre") in OFFRES and c.get("engagement") in ENGAGEMENTS
             and isinstance(qr, dict) and entier(qr.get("unit"), 0, 20) and entier(qr.get("pack5"), 0, 4) and entier(qr.get("pack10"), 0, 4)
             and texte(c.get("prospect", ""), 0, 64)):
         return None
     return {"nom": c["nom"].strip(), "activite": c.get("activite", "").strip(), "recompense": c["recompense"].strip(),
-            "fond": c["fond"], "tampons": c["tampons"], "passages": c["passages"], "offre": c["offre"], "periode": c["periode"],
+            "fond": c["fond"], "tampons": c["tampons"], "passages": c["passages"], "offre": c["offre"], "engagement": c["engagement"],
             "qr": {"unit": qr["unit"], "pack5": qr["pack5"], "pack10": qr["pack10"]}, "prospect": c.get("prospect", "").strip()}
 
 

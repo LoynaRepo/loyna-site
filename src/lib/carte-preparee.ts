@@ -1,7 +1,7 @@
 // Carte préparée avec un commerçant depuis le panel commercial (Ewan, 2026-10-30) : réglages, logo et offre, rangés par
-// /espace-commercial/cartes.php et repris par le lien du panier (/panier/?carte=<id>) et par l'écran Opérateur.
-// Ni contact ni e-mail : seulement ce qui figure sur la carte et l'offre choisie.
-import type {Periode, PlanId} from '../data/site';
+// /espace-commercial/cartes.php et repris par le lien du panier (/panier/?carte=<id>), par celui de l'essai
+// (/essai/?carte=<id>) et par l'écran Opérateur. Ni contact ni e-mail : seulement ce qui figure sur la carte et l'offre choisie.
+import type {Engagement} from '../data/site';
 
 export const ADRESSE_CARTES = '/espace-commercial/cartes.php';
 export const RE_ID_CARTE = /^[a-z0-9]{16}$/;
@@ -14,8 +14,11 @@ export interface CartePreparee {
   tampons: string; // #rrggbb
   passages: number;
   logo: string | null; // data:image/png;base64,…
-  offre: PlanId;
-  periode: Periode;
+  /** starter ou pro ; les anciennes fiches peuvent valoir premium : toujours lire par normalizeOffer(c.offre, c.periode, c.engagement). */
+  offre: string;
+  engagement?: Engagement;
+  /** Anciennes fiches seulement : mensuel ou annuel. */
+  periode?: string;
   qr: {unit: number; pack5: number; pack10: number};
   prospect?: string; // identifiant de la fiche du panel (jamais renvoyé par la lecture publique)
 }
@@ -29,7 +32,7 @@ export async function lireCartePreparee(id: string): Promise<CartePreparee | nul
   return d?.carte ?? null;
 }
 
-/** Identifiant dans un lien collé (https://loyna.fr/panier/?carte=…) ou l'identifiant seul. */
+/** Identifiant dans un lien collé (https://loyna.fr/panier/?carte=…, /essai/?carte=…) ou l'identifiant seul. */
 export function idDuLien(texte: string): string | null {
   const t = texte.trim();
   const m = /[?&]carte=([a-z0-9]{16})\b/.exec(t);
@@ -38,3 +41,4 @@ export function idDuLien(texte: string): string | null {
 }
 
 export const lienCarte = (id: string, origine = 'https://loyna.fr') => `${origine}/panier/?carte=${id}`;
+export const lienEssaiCarte = (id: string, origine = 'https://loyna.fr') => `${origine}/essai/?carte=${id}`;

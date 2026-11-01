@@ -1,12 +1,13 @@
 // Campagnes de notifications Wallet : brouillons dans la table campaigns (RLS), aperçu, envoi et suivi par
-// la fonction campaign-send. Campagnes par semaine (décision d'Ewan du 2026-10-30 : Starter 2, Premium 5, Pro
-// illimitées, quel que soit le nombre de destinataires ; le compteur repart chaque lundi) affichées avant l'envoi ;
-// au-delà, le serveur refuse (QUOTA_EXCEEDED, avec son message en français et la date du lundi). Une campagne programmée
-// compte dans la semaine de son envoi. Pro : calendrier des temps forts et campagnes préparées par LOYNA
-// (prepared_by_loyna), qui ne partent jamais sans la validation du commerçant.
+// la fonction campaign-send. Campagnes par semaine (décision d'Ewan du 2026-10-30, chiffres de la grille du 2026-10-31 :
+// Starter 5, Pro illimitées, quel que soit le nombre de destinataires ; le compteur repart chaque lundi) affichées avant
+// l'envoi ; au-delà, le serveur refuse (QUOTA_EXCEEDED, avec son message en français et la date du lundi). Une campagne
+// programmée compte dans la semaine de son envoi. Toutes les offres : calendrier des temps forts. Pro : campagnes préparées
+// par LOYNA (prepared_by_loyna), qui ne partent jamais sans la validation du commerçant, en 2 gestes. Carte en pause : les
+// brouillons restent, l'envoi est refusé (MERCHANT_PAUSED).
 import {useEffect, useState} from 'preact/hooks';
 import {Icon} from '../icons';
-import {api, can, feature, go, includedIn, loadUsage, merchant, readOnly, toast, toastError, type CampaignQuota, type PlanUsage} from '../state';
+import {api, can, feature, go, includedIn, loadUsage, merchant, readOnly, servicePaused, toast, toastError, type CampaignQuota, type PlanUsage} from '../state';
 import {campaignName, sendAt, tempsForts, type TempsFort} from '../temps-forts';
 import {Badge, Btn, Empty, ErrorBox, Field, LockBadge, Modal, NotifPreview, OffersLink, PageHead, Panel, Spinner, useBusy, useLoad} from '../ui';
 import {date, dateTime, localInput, mondayLabel, num, plural} from '../util';
@@ -59,7 +60,8 @@ const FEATURES: Record<string, string> = {
   'wallet.notifications': 'notifications Wallet',
 };
 const MAX_LEN = 300;
-const prepared = (c: Pick<Campaign, 'prepared_by_loyna' | 'status'>) => !!c.prepared_by_loyna && c.status === 'DRAFT';
+const PAUSED_TEXT = 'Votre carte est en pause : aucune campagne ne part pour le moment. Ce brouillon reste enregistré, vous pourrez l’envoyer après la reprise.';
+const prepared =(c: Pick<Campaign, 'prepared_by_loyna' | 'status'>) => !!c.prepared_by_loyna && c.status === 'DRAFT';
 
 /** « Campagnes cette semaine : 1 / 2 · il en reste 1 · le compteur repart le lundi 2 novembre » */
 function quotaText(q: Quota): string {
@@ -154,12 +156,12 @@ function List() {
           ))}
         </ul>
       )}
-      {enabled && list.data && !readOnly() && (feature('campaigns.prepared') ? <Calendar campaigns={list.data} onCreated={list.reload} /> : <ProTeaser />)}
+      {enabled && list.data && !readOnly() && <Calendar campaigns={list.data} onCreated={list.reload} />}
     </div>
   );
 }
 
-// --- Pro : calendrier des temps forts des 60 prochains jours ------------------------------------------------
+// --- Toutes les offres : calendrier des temps forts des 60 prochains jours ------------------------------------
 function Calendar({campaigns, onCreated}: {campaigns: Campaign[]; onCreated: () => void}) {
   const m = merchant.value!;
   const [busy, run] = useBusy();
@@ -229,24 +231,20 @@ function Calendar({campaigns, onCreated}: {campaigns: Campaign[]; onCreated: () 
       ) : (
         <p class="muted">Aucun temps fort dans les 60 prochains jours.</p>
       )}
-      <p class="muted small">LOYNA prépare aussi vos campagnes : elles apparaissent dans la liste ci-dessus, avec la mention « Préparée par LOYNA · à valider ».</p>
+      {feature('campaigns.prepared') ? (
+        <p class="muted small">LOYNA écrit aussi vos messages : ils apparaissent dans la liste ci-dessus, avec la mention « Préparée par LOYNA · à valider ». Rien ne part sans vous.</p>
+      ) : (
+        <div class="upsell upsell--wide upsell--pro">
+          <p>
+            <strong>Avec Pro, LOYNA écrit ces messages pour vous et les programme.</strong> Vous n’avez plus qu’à valider : rien ne part sans vous.
+          </p>
+          <div class="btn-row">
+            <LockBadge feature="campaigns.prepared" />
+            <OffersLink />
+          </div>
+        </div>
+      )}
     </Panel>
-  );
-}
-
-function ProTeaser() {
-  return (
-    <div class="upsell upsell--wide upsell--pro">
-      <Icon name="calendar-heart" size={26} />
-      <p>
-        <strong>Avec Pro, LOYNA prépare vos campagnes.</strong> Le calendrier des temps forts (fêtes, saisons, soldes, événements) est préparé pour vous : les campagnes sont rédigées et programmées,
-        puis vous les validez en un clic. Une campagne préparée par LOYNA ne part jamais sans votre validation.
-      </p>
-      <div class="btn-row">
-        <LockBadge feature="campaigns.prepared" />
-        <OffersLink />
-      </div>
-    </div>
   );
 }
 
@@ -293,6 +291,19 @@ function Editor({id}: {id: string}) {
     }
     setPreview(null);
   }, [load.data, isNew]);
+  // Campagne préparée par LOYNA : destinataires vérifiés d'office, il reste 2 gestes (valider, confirmer)
+  const toCheck = load.data?.prepared_by_loyna && load.data.status === 'DRAFT' && !readOnly() ? load.data.id : null;
+  useEffect(() => {
+    if (!toCheck) return;
+    let alive = true;
+    api.edge('campaign-send', {action: 'preview', campaign_id: toCheck}).then(
+      (r) => alive && setPreview(r),
+      () => {}, // le bouton « Vérifier les destinataires » reste là
+    );
+    return () => {
+      alive = false;
+    };
+  }, [toCheck]);
 
   if (load.error) return <ErrorBox error={load.error} retry={load.reload} />;
   if (!isNew && load.loading) return <Spinner />;
@@ -380,11 +391,12 @@ function Editor({id}: {id: string}) {
         else if (r.status === 'QUOTA_EXCEEDED')
           return setError(r.message ?? `Toutes les campagnes de la semaine sont utilisées. Le compteur repart le ${mondayLabel(r.resets_at)}.`);
         else if (r.status === 'FEATURE_NOT_AVAILABLE') return setError(`Cette campagne utilise une fonction non incluse dans votre offre${FEATURES[r.feature] ? ` (${FEATURES[r.feature]})` : ''}.`);
+        else if (r.status === 'MERCHANT_PAUSED') return setError(PAUSED_TEXT);
         else return setError('Envoi impossible : la campagne n’est plus un brouillon.');
         go('campagnes');
-      } catch (e) {
+      } catch (e: any) {
         setConfirm(false);
-        setError(e instanceof Error ? e.message : 'Envoi impossible.');
+        setError(e?.code === 'MERCHANT_PAUSED' ? PAUSED_TEXT : e instanceof Error ? e.message : 'Envoi impossible.');
       }
     });
 
@@ -415,6 +427,7 @@ function Editor({id}: {id: string}) {
   const insert = (token: string) => set('message_body', (c.message_body + (c.message_body && !/\s$/.test(c.message_body) ? ' ' : '') + token).slice(0, MAX_LEN));
   const q: Quota | null = preview?.campaigns_quota ?? usage.data?.campaigns ?? null;
   const sendLabel = byLoyna ? (when ? 'Valider et programmer' : 'Valider et envoyer') : when ? 'Programmer l’envoi' : 'Envoyer maintenant';
+  const paused = servicePaused();
 
   return (
     <div class="page">
@@ -572,10 +585,7 @@ function Editor({id}: {id: string}) {
                 )}
                 {preview.quota_ok === false && (
                   <div class="form-err" role="alert">
-                    <span>
-                      Toutes les campagnes de la semaine sont utilisées. Le compteur repart le {mondayLabel(preview.campaigns_quota?.resets_at)}
-                      {feature('campaigns.scheduled') ? ' : choisissez une date à partir de ce jour-là, ou passez à l’offre supérieure.' : ' : vous pourrez alors envoyer cette campagne, ou passer à l’offre supérieure.'}
-                    </span>
+                    <span>Toutes les campagnes de la semaine sont utilisées. Le compteur repart le {mondayLabel(preview.campaigns_quota?.resets_at)} : choisissez une date à partir de ce jour-là, ou passez à Pro, où les campagnes sont illimitées.</span>
                   </div>
                 )}
                 {preview.quota_ok === false && (
@@ -586,7 +596,9 @@ function Editor({id}: {id: string}) {
                 {preview.feature_missing && (
                   <p class="form-err">Fonction non incluse dans votre offre : {FEATURES[String(preview.feature_missing)] ?? String(preview.feature_missing)}.</p>
                 )}
-                {can('campaigns.send') ? (
+                {paused ? (
+                  <p class="note">{PAUSED_TEXT}</p>
+                ) : can('campaigns.send') ? (
                   <div class="form">
                     {feature('campaigns.scheduled') && (
                       <Field label={byLoyna ? 'Envoi proposé (modifiable)' : 'Programmer (facultatif)'} hint={pastProposal ? 'La date proposée est passée : vide = envoi immédiat, ou choisissez une nouvelle date.' : 'Vide = envoi immédiat.'}>
@@ -650,7 +662,15 @@ function Sent({c}: {c: Campaign}) {
           {c.sent_at ? ` · envoyée le ${dateTime(c.sent_at)}` : c.scheduled_at ? ` · prévue le ${dateTime(c.scheduled_at)}` : ''}
           {c.prepared_by_loyna ? ' · préparée par LOYNA' : ''}
         </p>
-        {c.error && <p class="form-err">{c.error === 'QUOTA_EXCEEDED' ? 'Non envoyée : les campagnes de la semaine étaient toutes utilisées à l’heure prévue.' : c.error}</p>}
+        {c.error && (
+          <p class="form-err">
+            {c.error === 'QUOTA_EXCEEDED'
+              ? 'Non envoyée : les campagnes de la semaine étaient toutes utilisées à l’heure prévue.'
+              : c.error === 'MERCHANT_PAUSED'
+                ? 'Interrompue : la carte est passée en pause pendant l’envoi, le reste n’est pas parti.'
+                : c.error}
+          </p>
+        )}
       </Panel>
       {c.status === 'DRAFT' ? (
         <Panel title="Résultats">

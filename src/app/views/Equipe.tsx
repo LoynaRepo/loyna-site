@@ -19,7 +19,7 @@ interface Staff {
 const ROLES: Record<Role, string> = {OWNER: 'Propriétaire', ADMIN: 'Responsable', STAFF: 'Employé'};
 const ROLE_HINT: Record<Role, string> = {
   STAFF: 'Scanner, voir les clients (sans leurs coordonnées), utiliser les récompenses.',
-  ADMIN: 'Tout gérer sauf les intégrations ; peut gérer les employés.',
+  ADMIN: 'Tout gérer ; peut gérer les employés, pas les responsables.',
   OWNER: 'Accès complet, y compris l’équipe et les responsables.',
 };
 
@@ -31,7 +31,8 @@ export function Equipe() {
       api.select<{permission: string; description: string}>('permissions_catalog', {order: ['permission', true]}),
       api.select<{role: Role; permission: string}>('role_permissions'),
     ]);
-    return {staff, catalog, roles};
+    // Le droit « intégrations » reste en base, sans aucun écran derrière : il n'est pas proposé
+    return {staff, catalog: catalog.filter((c) => c.permission !== 'integrations.manage'), roles};
   }, [m.merchant_id]);
   const [invite, setInvite] = useState(false);
   const [link, setLink] = useState<{name: string; url: string} | null>(null);

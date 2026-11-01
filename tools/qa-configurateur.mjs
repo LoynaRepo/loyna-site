@@ -1,5 +1,5 @@
 // Essais du configurateur (/creer-ma-carte/) : réglages passés dans le lien, priorité sur le brouillon enregistré,
-// récompense et couleurs par activité, modifications du visiteur respectées.
+// récompense et couleurs par activité, modifications du visiteur respectées, logo gardé pour l'essai.
 // node tools/qa-configurateur.mjs   (serveur de développement sur le port 4322) → captures dans out/qa/
 import puppeteer from 'puppeteer-core';
 import fs from 'node:fs';
@@ -55,6 +55,7 @@ const choisirActivite = (page, nom) =>
     s.dispatchEvent(new Event('change', {bubbles: true}));
   }, nom);
 
+const fs_source = fs.readFileSync(new URL('../src/data/site.ts', import.meta.url), 'utf8');
 const BROUILLON = {name: 'Mon Salon', activity: 'Coiffure', bg: '#14532d', accent: '#ffd166', total: 8, filled: 3, reward: 'Coupe offerte', variant: 'google', touche: {reward: true, bg: true, accent: true}};
 
 // 1. Lien Boulangerie (activité seule) : récompense et couleurs de l'activité
@@ -183,6 +184,43 @@ const BROUILLON = {name: 'Mon Salon', activity: 'Coiffure', bg: '#14532d', accen
   });
   verifier('téléphone : réglage libre (curseur puis code couleur), les deux cartes suivent', reglage, {ouvert: true, apresCurseur: [true, true], code: '#2a6f97', grande: '#2a6f97', roue: true});
   await page.screenshot({path: 'out/qa/configurateur-telephone.png'});
+  await ctx.close();
+}
+
+// Logo choisi : converti par logoToFiles, gardé dans l'onglet pour l'essai, montré sur la carte et retrouvé au retour sur la page
+{
+  const {page, ctx} = await ouvrir('/creer-ma-carte/');
+  // PNG de 800 x 400, généré ici, sans fichier du dépôt
+  const donnees = await page.evaluate(() => {
+    const c = document.createElement('canvas');
+    c.width = 800;
+    c.height = 400;
+    const x = c.getContext('2d');
+    x.fillStyle = '#7a3d1c';
+    x.fillRect(0, 0, 800, 400);
+    return c.toDataURL('image/png').split(',')[1];
+  });
+  const chemin = `out/qa/logo-essai-${process.pid}.png`;
+  fs.writeFileSync(chemin, Buffer.from(donnees, 'base64'));
+  await (await page.$('#c-logo')).uploadFile(chemin);
+  await page.waitForFunction(() => document.querySelector('#file-name').textContent.endsWith('.png'), {timeout: 15000});
+  const garde = await page.evaluate(() => {
+    const l = JSON.parse(sessionStorage.getItem('loyna-config-logo') || 'null');
+    const dim = (b) =>
+      new Promise((ok) => {
+        const i = new Image();
+        i.onload = () => ok([i.naturalWidth, i.naturalHeight]);
+        i.src = `data:image/png;base64,${b}`;
+      });
+    return Promise.all([dim(l.logo_png), dim(l.icon_png)]).then(([a, b]) => ({logo: a, icone: b, logoKo: atob(l.logo_png).length <= 200000, iconeKo: atob(l.icon_png).length <= 60000, surLaCarte: !!document.querySelector('#card-slot .wc-logo img')}));
+  });
+  verifier('logo : 660 px et 320 px au plus, légers, sur la carte', garde, {logo: [660, 330], icone: [320, 160], logoKo: true, iconeKo: true, surLaCarte: true});
+  await page.reload({waitUntil: 'networkidle0'});
+  verifier('logo : retrouvé en revenant sur la page', await page.evaluate(() => !!document.querySelector('#card-slot .wc-logo img')), true);
+  const essai = await page.evaluate(() => document.querySelector('#go-essai')?.getAttribute('href') ?? null);
+  const ouvert = /export const TRIAL = \{open: true/.test(fs_source);
+  verifier('bouton principal vers l’essai, et lien vers les offres gardé', [essai, await page.$eval('#go-plans', (e) => e.getAttribute('href'))], [ouvert ? '/essai/' : null, '/tarifs/?carte=1']);
+  fs.rmSync(chemin, {force: true});
   await ctx.close();
 }
 

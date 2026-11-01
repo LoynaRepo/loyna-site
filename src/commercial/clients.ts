@@ -1,4 +1,5 @@
-// Clients du panel commercial : boutons « Commerce créé », « Documents envoyés », « QR codes livrés ».
+// Clients du panel commercial : boutons « Commerce créé », « Documents envoyés », « QR codes livrés », et pour un Pro
+// « Carte finie à la main », « Vidéo et visuels envoyés », « Kit comptoir envoyé ».
 // Même mécanisme que le refus d'un prospect : une note chiffrée « [CLIENT:<action>] AAAA-MM-JJ · précision » est
 // enregistrée auprès de notes.php ; le parcours change tout de suite dans le panel, et panel.py la recopie dans la
 // fiche du coffre (propriété datée et ligne d'historique) à la publication suivante. Tant que ce n'est pas fait,
@@ -8,7 +9,7 @@ import {nouvelId} from './notes-crypto';
 import {actionsNotees, clientAJour, estNoteAction, texteAction, trierClients, type ClientAffiche, type CodeAction} from './clients-regles';
 import type {Client} from './types';
 
-export {ACTIONS, estNoteAction, type ClientAffiche, type CodeAction} from './clients-regles';
+export {ACTIONS, estNoteAction, libelleOffre, offreHistorique, type ClientAffiche, type CodeAction} from './clients-regles';
 
 /** Clients affichés (actions en attente comprises), urgences d'abord. À utiliser dans un useMemo. */
 export function clientsAffiches(clients: Client[] | undefined, blocs: Record<string, BlocNotes>, auj = new Date()): ClientAffiche[] {

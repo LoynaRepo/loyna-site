@@ -22,12 +22,14 @@ const type = async (sel, v) => {
   await page.focus(sel);
   await page.keyboard.type(v);
 };
-// connexion de démonstration
+// la démonstration s'ouvre déjà connectée ; formulaire seulement sur une ancienne version
 await page.goto(B, {waitUntil: 'networkidle0'});
-await type('input[type=email]', 'camille@exemple.test');
-await type('input[type=password]', 'demo-local');
-await clickText('button', 'Se connecter');
-await wait(1500);
+if (await page.$('input[type=email]')) {
+  await type('input[type=email]', 'camille@exemple.test');
+  await type('input[type=password]', 'demo-local');
+  await clickText('button', 'Se connecter');
+  await wait(1500);
+}
 console.log('après connexion :', await page.evaluate(() => document.querySelector('h1')?.textContent));
 
 // 1. ajuster un solde

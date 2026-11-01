@@ -1,5 +1,5 @@
 ---
-// « Être rappelé » : seconde porte d'entrée, sans engagement, pour les commerçants qui préfèrent en parler
+// « Être rappelé » : seconde porte d'entrée, pour les commerçants qui préfèrent en parler
 // avant de payer. Envoie une demande « [Site LOYNA] Être rappelé » à contact@loyna.fr (contact.php),
 // reprise par l'agent Trieur qui fixe le rendez-vous téléphonique dans l'agenda.
 import Icon from './Icon.astro';
@@ -11,7 +11,7 @@ interface Props {
 const {
   id = 'rappel',
   title = 'Vous préférez en parler avant de vous lancer ?',
-  text = 'Laissez votre numéro : on vous rappelle au créneau de votre choix pour répondre à vos questions et vous montrer votre future carte. Sans engagement.',
+  text = 'Laissez votre numéro : on vous rappelle au créneau de votre choix pour répondre à vos questions et vous montrer votre future carte.',
 } = Astro.props;
 const uid = id;
 ---

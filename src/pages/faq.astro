@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import Jonction from '../components/Jonction.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import CtaBand from '../components/CtaBand.astro';
 import {getFaq} from '../lib/builder';
@@ -25,7 +26,7 @@ const faqLd = {
 
 <Base
   title="Questions fréquentes : carte de fidélité digitale"
-  description="Sans application ? iPhone et Android ? Matériel, délais, notifications Wallet, tarifs, engagement, données : toutes les réponses sur LOYNA."
+  description="Sans application ? iPhone et Android ? Matériel, délais, notifications Wallet, tarifs, données : toutes les réponses sur LOYNA."
   breadcrumbs={crumbs}
   jsonLd={faqLd}
 >
@@ -40,6 +41,7 @@ const faqLd = {
       </nav>
     </div>
   </section>
+  <Jonction de="sable" vers="creme" forme={6} />
   <section class="section pt0">
     <div class="narrow">
       {
@@ -74,13 +76,16 @@ const faqLd = {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 10px;
-    margin-top: 30px;
+    gap: 8px;
+    margin-top: 24px;
   }
   .cats a {
-    padding: 9px 16px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 16px;
     border-radius: 999px;
-    border: 1px solid var(--line);
+    border: 1px solid var(--filet);
     background: var(--card);
     color: var(--ink);
     text-decoration: none;
@@ -88,9 +93,9 @@ const faqLd = {
     font-size: 0.93rem;
   }
   .group + .group {
-    margin-top: 56px;
+    margin-top: clamp(36px, 5vw, 56px);
   }
   .group h2 {
-    font-size: 1.6rem;
+    font-size: clamp(1.5rem, 2.6vw, 1.9rem);
   }
 </style>

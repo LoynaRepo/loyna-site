@@ -5,6 +5,7 @@
 // TODO Ewan : présenter l'associé (nom complet et accord pour être cité), ajouter de vraies photos (équipe, carte
 // au comptoir) et les profils publics (FONDATEUR.sameAs et SITE.sameAs dans src/data/site.ts).
 import Base from '../layouts/Base.astro';
+import Jonction from '../components/Jonction.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import Icon from '../components/Icon.astro';
 import CtaBand from '../components/CtaBand.astro';
@@ -60,6 +61,8 @@ const identite = [
     </div>
   </section>
 
+  <Jonction de="sable" vers="creme" forme={1} />
+
   <section class="section pt0">
     <div class="container grid grid-2 duo">
       <div>
@@ -90,7 +93,9 @@ const identite = [
     </div>
   </section>
 
-  <section class="section section--alt">
+  <Jonction de="creme" vers="sable" forme={3} retourne />
+
+  <section class="section section--alt tete-serree">
     <div class="container narrow">
       <h2>Ce que fait LOYNA</h2>
       <p>
@@ -112,7 +117,9 @@ const identite = [
     </div>
   </section>
 
-  <section class="section">
+  <Jonction de="sable" vers="creme" forme={6} />
+
+  <section class="section tete-serree">
     <div class="container narrow">
       <h2>Pourquoi une carte dans le Wallet ?</h2>
       <p>
@@ -131,7 +138,9 @@ const identite = [
     </div>
   </section>
 
-  <section class="section section--alt">
+  <Jonction de="creme" vers="sable" forme={2} />
+
+  <section class="section section--alt tete-serree">
     <div class="container narrow contact">
       <h2>Nous contacter</h2>
       <p>Une question sur LOYNA, une démonstration ou un exemple de carte à votre nom : écrivez-nous, nous vous répondons par e-mail.</p>
@@ -142,6 +151,8 @@ const identite = [
       <p class="petit">Éditeur du site, hébergement et conditions : <a href="/mentions-legales/">mentions légales</a>, <a href="/cgv/">CGV</a>.</p>
     </div>
   </section>
+
+  <Jonction de="sable" vers="creme" forme={4} retourne />
 
   <CtaBand />
 </Base>

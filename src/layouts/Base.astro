@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import '../styles/vitrine.css';
 import fontLatin from '@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2?url';
 import Seo from '../components/Seo.astro';
 import Header from '../components/Header.astro';
@@ -7,6 +8,7 @@ import Footer from '../components/Footer.astro';
 import StickyCta from '../components/StickyCta.astro';
 import Consent from '../components/Consent.astro';
 import OfferBar from '../components/OfferBar.astro';
+import type {Teinte} from '../components/Jonction.astro';
 import {getSettings} from '../lib/builder';
 import {LAUNCH_OFFER, SITE, offerActive} from '../data/site';
 
@@ -27,6 +29,8 @@ interface Props {
   manifest?: string; // application ajoutée à l'écran d'accueil (espace client) ; par défaut, celui du site
   /** Barre d'action fixe sur mobile : false pour la masquer, ou liens personnalisés. */
   stickyCta?: false | {primary?: Link; secondary?: Link};
+  /** Fond de la dernière section de la page, pour la jonction du pied de page (par défaut : crème). */
+  finPage?: Teinte;
 }
 const props = Astro.props;
 const {stickyCta = {}} = props;
@@ -56,7 +60,7 @@ const gaId = (settings.ga4Id || SITE.ga4Id || '').trim();
       bingVerification={(settings.bingVerification || SITE.bingVerification || '').trim()}
       sameAs={[...SITE.sameAs, ...(settings.sameAs || '').split(/\s+/)].filter((u) => /^https:\/\//.test(u))}
     />
-    <meta name="theme-color" content="#121216" />
+    <meta name="theme-color" content={props.bare ? '#121216' : '#f7f1e6'} />
     <meta name="format-detection" content="telephone=no" />
     <!-- Logo dans les résultats Google : icône carrée d'un multiple de 48 px (2026-10-29). favicon.ico contient 16, 32 et 48 px. -->
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
@@ -70,14 +74,14 @@ const gaId = (settings.ga4Id || SITE.ga4Id || '').trim();
     <link rel="sitemap" href="/sitemap.xml" />
     <slot name="head" />
   </head>
-  <body>
+  <body class={props.bare ? undefined : 'vitrine'}>
     <a class="skip-link" href="#contenu">Aller au contenu</a>
-    {!props.bare && <OfferBar announcement={settings.announcement || ''} />}
     {!props.bare && <Header />}
+    {!props.bare && <OfferBar announcement={settings.announcement || ''} />}
     <main id="contenu">
       <slot />
     </main>
-    {!props.bare && <Footer consent={!!gaId} />}
+    {!props.bare && <Footer consent={!!gaId} de={props.finPage} />}
     {!props.bare && stickyCta !== false && <StickyCta {...stickyCta} />}
     {!props.bare && <Consent gaId={gaId} />}
   </body>

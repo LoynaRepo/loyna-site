@@ -54,32 +54,39 @@ export const FONDATEUR = {
   sameAs: [] as string[],
 };
 
-// Offres Starter, Premium et Pro : source de vérité dans le dépôt LOYNA, docs/OFFRES.md (décision d'Ewan du
-// 2026-10-25). Ne rien ajouter ici qui n'y figure pas.
-export type PlanId = 'starter' | 'premium' | 'pro';
+// Offres Starter et Pro : source de vérité dans le dépôt LOYNA, docs/OFFRES.md (décision d'Ewan du 2026-10-31). Ne rien
+// ajouter ici qui n'y figure pas. Premium n'est plus vendue : voir LEGACY_PLANS.
+export type PlanId = 'starter' | 'pro';
+
+// Toujours réglé au mois, plus d'annuel payé d'avance : sans engagement, ou avec 12 mois d'engagement (ENGAGEMENT).
+export type Engagement = 'sans' | 'engage';
 
 export interface Plan {
   id: PlanId;
   name: string;
-  monthly: number; // € par mois (sans TVA : franchise en base, art. 293 B du CGI)
-  yearly: number; // € par an (-15 %), sans TVA
-  /** Cartes clients (clients inscrits au programme) ; null = illimitées. */
-  cards: number | null;
+  badge: string;
+  /** Phrase de vente de l'offre (PHRASES). */
+  tagline: string;
+  monthly: number; // € par mois sans engagement (sans TVA : franchise en base, art. 293 B du CGI)
+  engaged: number; // € par mois avec 12 mois d'engagement (-15 %), sans TVA
+  /** Cartes clients (clients inscrits au programme) : illimitées dans toutes les offres. */
+  cards: null;
   /** Campagnes de notifications par semaine, quel que soit le nombre de destinataires (compteur remis à zéro chaque
    *  lundi, décision d'Ewan du 2026-10-30) ; null = illimitées. */
   campaignsPerWeek: number | null;
   /** Boutiques (adresses), chacune avec la notification de proximité. */
   shops: number;
+  /** Même phrase que `tagline`, pour les écrans qui affichent déjà `pitch`. */
   pitch: string;
   intro?: string;
-  /** Bloc mis en avant dans la grille tarifaire : automatisations (Premium), services de LOYNA (Pro). */
+  /** Bloc mis en avant dans la grille tarifaire : ce qui part tout seul (Starter), ce que Pro ajoute. */
   focus?: {title: string; items: string[]};
   features: string[];
+  /** Offre mise en avant (Starter), jamais « la plus choisie » : aucun chiffre de ce type n'existe. */
   highlight?: boolean;
-  badge?: string;
-  // Liens de paiement Stripe (mensuel avec mise en service, annuel sans) ; retour vers /merci/?offre=<id>-mensuel|annuel.
-  // Depuis le 2026-10-27, on achète par le panier (/panier/) ; ces liens servent de secours au panier.
-  links: {monthly: string; yearly: string};
+  // Liens de paiement Stripe, retour vers /merci/?offre=<id>-mensuel|engage. On achète par le panier (/panier/) ; ces
+  // liens lui servent de secours. Code LANCEMENT2026 prérempli sur `sans` seulement : `engage` n'a pas de mise en service.
+  links: {sans: string; engage: string};
 }
 
 // Couleurs proposées pour la carte (configurateur, haut de l'accueil, page Fonctionnalités)
@@ -187,6 +194,12 @@ export function visuelActivite(nom: string): {nom: string; recompense: string} &
   return {nom: trouve, recompense, ...CARD_AMBIANCES[trouve]};
 }
 
+// Version des CGV acceptée à l'essai (`cgv_version`) : même valeur dans supabase/functions/_shared/offer-terms.ts du
+// dépôt LOYNA.
+export const CGV_VERSION = '2026-11-01';
+
+// SETUP_FEE et PARTENAIRES gardent leur nom et leur ordre : routes_ecrire.py (application locale du coffre « Loyna
+// Prospection ») donne au chat qui rédige tout ce qui se trouve entre les deux, 9 000 caractères au plus.
 export const SETUP_FEE = 49;
 
 // QR code d'inscription personnalisé sous verre (option du 2026-10-26, dépôt LOYNA docs/OFFRES.md) : achat unique,
@@ -201,14 +214,22 @@ export const QR_VERRE = {
   deliveryDays: 15,
 };
 
+// Engagement (décision d'Ewan du 2026-10-31) : seulement proposé, réglé chaque mois, 15 % de moins.
+export const ENGAGEMENT = {months: 12, discountPercent: 15};
+
+// Essai depuis le site (même décision) : 1 mois de Starter, sur /essai/ (noindex). `open: false` : tous les boutons
+// retombent sur « Choisir mon offre » et les textes sur l'essai sortent, cette constante suffit.
+export const TRIAL = {open: true, label: '1 mois gratuit, sans carte bancaire'};
+export const essaiUrl = '/essai/';
+
 // Panier (décision d'Ewan du 2026-10-27) : les boutons « Choisir » y mènent ; le compte LOYNA y est créé avant le
 // paiement. Les liens de paiement Stripe (`links` des offres) servent de secours au panier.
-export type Periode = 'mensuel' | 'annuel';
-export const panierUrl = (plan: PlanId, periode: Periode) => `/panier/?offre=${plan}&periode=${periode}`;
+export const panierUrl = (plan: PlanId, e: Engagement) => `/panier/?offre=${plan}&engagement=${e === 'engage' ? 1 : 0}`;
 
-// Offre de lancement (décision d'Ewan du 2026-10-09) : mise en service offerte en mensuel avec un code promo
-// Stripe (coupon loyna_lancement_2026_v2 : -49 € sur la 1re facture, valable sur les liens mensuels).
-// Après la date, le site la masque tout seul (au build et dans le navigateur) et Stripe refuse le code.
+// Offre de lancement (décision d'Ewan du 2026-10-09) : mise en service offerte pour tous jusqu'à cette date, avec un code
+// promo Stripe (coupon loyna_lancement_2026_v2 : -49 € sur la 1re facture, valable sur les liens sans engagement).
+// Ensuite : offerte avec engagement, SETUP_FEE une seule fois sans engagement, jamais refacturée à qui reprend un
+// abonnement. Après la date, le site la masque tout seul (au build et dans le navigateur) et Stripe refuse le code.
 export const LAUNCH_OFFER = {
   code: 'LANCEMENT2026',
   until: '2026-12-31T23:59:59+01:00',
@@ -221,161 +242,215 @@ export const offerActive = (now = new Date()) => now < new Date(LAUNCH_OFFER.unt
 // automatiques et la notification de proximité ne sont jamais décomptés.
 export const MARKETING_INTERVAL_HOURS = 24;
 
-// Option « +500 cartes » (décision d'Ewan du 2026-10-30, dépôt LOYNA docs/OFFRES.md) : Starter et Premium seulement
-// (Pro est illimité), cumulable, sans TVA. Mensuel : 4,99 € par mois et par pack (premier mois au prorata, sur la
-// facture suivante), retirable à la fin d'un mois. Annuel : 50,90 € par an et par pack (4,99 × 12, -15 %, proposition
-// à valider : une seule valeur à changer ici), retirable à l'échéance annuelle. Cartes seulement, pas de campagnes.
-// Produit Stripe loyna_cartes_500 (prix loyna_cartes_500_mensuel et loyna_cartes_500_annuel).
-export const CARD_PACK = {
-  cards: 500,
-  monthly: 4.99,
-  yearly: 50.9,
-  maxPacks: 20,
-  plans: ['starter', 'premium'] as PlanId[],
+// Offre retirée de la vente, jamais dans PLANS ni dans une liste de vente. Seul Barber Kong la garde, à son prix et pour la
+// durée de son engagement : écran Abonnement (« offre historique »), droits de Pro en base sauf la carte sans mention.
+export const LEGACY_PLANS = {premium: {name: 'Premium', monthly: 39.99}};
+
+// Phrases fixes de la grille, au mot près partout : à reprendre d'ici. `essai` ne s'affiche que si TRIAL.open.
+export const PHRASES = {
+  starter: 'La carte complète, sans limite de clients, avec les messages qui partent tout seuls.',
+  pro: 'Vos clients invitent leurs amis, LOYNA écrit vos messages.',
+  pourquoiPro: 'Pour 20 € de plus par mois, 17 € avec engagement, vos clients invitent leurs amis et LOYNA écrit vos messages à votre place : vous n’avez plus qu’à valider.',
+  prix: (p: Plan) => `${euro(p.monthly)} par mois, sans TVA, sans engagement : vous arrêtez à la fin de n’importe quel mois. Ou ${euro(p.engaged)} par mois avec ${ENGAGEMENT.months} mois d’engagement, réglés chaque mois.`,
+  engagement: 'Avec 12 mois d’engagement : 15 % de moins, réglé chaque mois, rien d’avance. Sortie possible si votre commerce ferme, sur justificatif de radiation. Après les 12 mois : même prix, résiliable à la fin de n’importe quel mois, sans nouvelle durée.',
+  essai: '1 mois gratuit, sans carte bancaire. Votre carte est créée tout de suite à partir de vos réglages et du modèle de votre métier. 1 essai par commerce.',
+  arret: 'Si l’abonnement s’arrête ou si un paiement reste impayé 15 jours, la carte reste dans le téléphone de vos clients mais elle ne crédite plus, et les inscriptions et les messages s’arrêtent. Tout repart automatiquement dès que le paiement passe ou que l’abonnement est repris, avec vos clients et leurs soldes. Sans reprise, vos données sont supprimées 90 jours après l’arrêt.',
+  miseEnService: 'Offerte jusqu’au 31 décembre 2026. Ensuite : offerte avec 12 mois d’engagement, 49 € une seule fois sans engagement.',
+  parrainage: 'Parrainez un commerçant : 1 mois offert à chacun.',
+  commission: '60 € en Starter, 80 € en Pro sans engagement, 150 € en Pro avec engagement.',
 };
+
+// Repère à remplacer à l'étape 3 de la mise en ligne par les 4 URL de `stripe:catalog -- --apply --live` (dépôt LOYNA), puis
+// à supprimer. Jusque-là, chaque lien mène au panier de la même offre. Jamais les 6 anciens liens : ancienne grille.
 
 export const PLANS: Plan[] = [
   {
     id: 'starter',
     name: 'Starter',
+    badge: 'La carte complète',
+    tagline: PHRASES.starter,
     monthly: 29,
-    yearly: 295.8,
-    cards: 500,
-    campaignsPerWeek: 2,
-    shops: 1,
-    pitch: 'La carte de fidélité complète, à vos couleurs.',
-    features: [
-      'Carte Apple Wallet et Google Wallet à vos couleurs',
-      'Notification de proximité',
-      'Inscription par QR code, affiche du comptoir fournie',
-      'Passages ou points, récompenses automatiques',
-      'Scanner LOYNA Business et comptes équipe',
-      'Notifications à chaque passage et à chaque récompense',
-      'Campagnes de notifications à tous vos clients',
-      'Tableau de bord',
-      'Support par e-mail',
-    ],
-    links: {monthly: 'https://buy.stripe.com/00wdRcgmucItbVX5Yc5Ne06', yearly: 'https://buy.stripe.com/4gMbJ40nw6k5aRTdqE5Ne07'},
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    monthly: 39.99,
-    yearly: 407.9,
-    cards: 2000,
+    engaged: 24.65,
+    cards: null,
     campaignsPerWeek: 5,
     shops: 1,
-    pitch: 'Les automatisations qui font revenir vos clients.',
-    intro: 'Tout Starter, plus :',
+    pitch: PHRASES.starter,
     focus: {
-      title: 'Les automatisations',
+      title: 'Ça part tout seul',
       items: [
-        'Anniversaire',
-        'Relance des clients inactifs',
-        '« Plus qu’un passage ! »',
-        'Demande d’avis Google après la 3e visite',
-        'Campagnes programmées',
-        'Groupes de clients',
-        'Rapport mensuel avec 3 conseils',
+        'Notification à chaque passage et à chaque récompense',
+        'Notification de proximité : votre carte s’affiche quand un client passe près de chez vous (1 adresse)',
+        'Anniversaire, avec la surprise de votre choix (à activer en un réglage)',
+        'Relance des clients qui ne reviennent plus',
+        '« Plus qu’un passage ! »',
+        'Demande d’avis Google après la 3e visite, réglable (à activer en un réglage)',
       ],
     },
-    features: ['Niveaux VIP bronze, argent et or : la carte de votre client change de couleur à chaque niveau', 'Statistiques avancées'],
+    features: [
+      'Clients et cartes illimités',
+      'Carte Apple Wallet et Google Wallet à vos couleurs, avec votre logo (cachets à vos initiales d’office pour barbiers et coiffeurs)',
+      'QR code d’inscription et affiche du comptoir à imprimer',
+      'Passages, points ou montant dépensé, récompenses automatiques',
+      'Scanner sur votre téléphone, comptes équipe illimités avec rôles',
+      'Vos tampons papier repris sur la carte, client par client',
+      '5 campagnes de notifications par semaine, à tous ou à un groupe de clients, tout de suite ou programmées',
+      'Calendrier de 15 temps forts, message déjà écrit',
+      'Tableau de bord et courbes jour par jour',
+      'Rapport du mois par e-mail, avec jusqu’à 3 conseils',
+      'Export de tous vos clients en CSV, à tout moment',
+      'Support par e-mail et guide de démarrage',
+    ],
     highlight: true,
-    badge: 'Automatisations',
-    links: {monthly: 'https://buy.stripe.com/dRm14q3zI23P5xzdqE5Ne08', yearly: 'https://buy.stripe.com/fZu8wSfiq6k5aRT86k5Ne09'},
+    links: {sans: 'https://buy.stripe.com/4gMfZk2vE9whd012M05Ne0c', engage: 'https://buy.stripe.com/6oU00m1rA5g11hjdqE5Ne0d'},
   },
   {
     id: 'pro',
     name: 'Pro',
-    monthly: 89,
-    yearly: 907.8,
+    badge: 'LOYNA s’en occupe',
+    tagline: PHRASES.pro,
+    monthly: 49,
+    engaged: 41.65,
     cards: null,
     campaignsPerWeek: null,
     shops: 3,
-    pitch: 'LOYNA travaille avec vous.',
-    intro: 'Tout Premium, plus :',
+    pitch: PHRASES.pro,
+    intro: 'Tout Starter, plus :',
     focus: {
-      title: 'LOYNA travaille avec vous',
+      title: 'Vos clients invitent, LOYNA écrit',
       items: [
-        'Suivi personnalisé : un point mensuel de 30 min',
-        'Campagnes clés en main, validées en un clic',
-        'Kit comptoir imprimé, envoyé à votre commerce',
-        'Support prioritaire',
+        'Parrainage entre vos clients : chacun invite ses amis avec son lien, bonus aux deux à la première visite',
+        'LOYNA écrit et programme vos messages, au moins un par mois : vous validez, rien ne part sans vous',
+        'Niveaux VIP bronze, argent et or : la carte de vos meilleurs clients change de couleur',
+        'Votre carte finie à la main : logo retouché et, sur une carte à tampons, cachets à vos initiales (une fois, sous 15 jours)',
+        'Votre carte sans la mention LOYNA',
+        'Une vidéo et des visuels de votre carte, prêts à poster (une fois, sous 15 jours)',
+        'Kit comptoir : 1 QR code sous verre par adresse, offert une fois',
+        'Un point de 30 minutes par mois avec LOYNA, à votre demande',
       ],
     },
-    features: ['Jusqu’à 3 boutiques', 'Parrainage entre vos clients'],
-    badge: 'Le plus complet',
-    links: {monthly: 'https://buy.stripe.com/00w28u2vEbEp1hjbiw5Ne0a', yearly: 'https://buy.stripe.com/28E28u8U27o99NP2M05Ne0b'},
+    features: [
+      'Campagnes de notifications illimitées',
+      'Jusqu’à 3 adresses avec la notification de proximité : une seule carte, un seul tableau de bord',
+      'Support prioritaire',
+    ],
+    links: {sans: 'https://buy.stripe.com/00w6oKdai5g19NPeuI5Ne0e', engage: 'https://buy.stripe.com/14AbJ42vE4bX5xzeuI5Ne0f'},
   },
 ];
 
-// Programme partenaires (apporteurs d'affaires, page /devenir-partenaire/), conditions validées par Ewan le 2026-10-29,
-// échéance avancée le 2026-10-30 : commission unique par nouveau client selon son offre, due dès sa 1re mensualité
-// (ou son paiement annuel), virement sous 30 jours après la facture ou la note de commission ; recommandation
-// confirmée sous 2 jours ouvrés et réservée 90 jours ; contrat résiliable avec 1 mois de préavis.
+// Programme partenaires (apporteurs d'affaires, page /devenir-partenaire/), conditions de la grille du 2026-10-31 :
+// commission unique par commerce, selon son offre (`pro` : Pro sans engagement ; `proEngage` : Pro avec engagement). Avec
+// engagement : acquise au 1er paiement, versée après le 60e jour ; sans engagement : acquise et versée au 3e paiement.
+// Virement sous 30 jours après la facture ou la note de commission ; recommandation confirmée sous 2 jours ouvrés et
+// réservée 90 jours ; contrat résiliable avec 1 mois de préavis.
 export const PARTENAIRES = {
-  commission: {starter: 60, premium: 80, pro: 150} as Record<PlanId, number>,
+  commission: {starter: 60, pro: 80, proEngage: 150},
   reserveJours: 90,
   confirmationJoursOuvres: 2,
   virementJours: 30,
   preavisMois: 1,
 };
 
+// Anciens liens et anciennes cartes préparées : ?offre=premium → starter, avec un avis (`legacy`) ; ?periode=annuel →
+// engage ; ?periode=mensuel → sans. `engagement` l'emporte sur `periode` : '1' ou 'engage' (panierUrl, fiches des cartes),
+// '0' ou 'sans'. Tout le reste : starter, sans engagement. Prend aussi le null de URLSearchParams.get().
+export function normalizeOffer(offre?: string | null, periode?: string | null, engagement?: string | null): {plan: PlanId; engagement: Engagement; legacy: boolean} {
+  const demande = offre?.trim().toLowerCase();
+  const choix = engagement?.trim().toLowerCase();
+  const engage = choix === '1' || choix === 'engage' || (choix !== '0' && choix !== 'sans' && periode?.trim().toLowerCase() === 'annuel');
+  return {plan: demande === 'pro' ? 'pro' : 'starter', engagement: engage ? 'engage' : 'sans', legacy: demande === 'premium'};
+}
+
+// Appel principal de tout le site : l'essai, ou le choix d'une offre tant que l'essai est fermé (TRIAL.open).
+export const APPEL = TRIAL.open ? {href: essaiUrl, label: 'Essayer 1 mois gratuitement'} : {href: '/tarifs/', label: 'Choisir mon offre'};
+
+// Mise en service une fois l'offre de lancement finie, à la place de PHRASES.miseEnService (data-offer-off).
+export const MISE_EN_SERVICE_APRES = 'Offerte avec 12 mois d’engagement, 49 € une seule fois sans engagement.';
+
+// Nombre de commerces clients (décision du 2026-10-31). Le vrai chiffre et lui seul : les abonnements actifs de la table
+// billing_subscriptions (dépôt LOYNA), à reporter ici à la main, jamais arrondi ni estimé (docs/BRIEF.md). Le bloc « Ils nous
+// font confiance » de l'accueil (Confiance.astro) reste masqué sous le seuil et s'affiche seul, à la construction suivante,
+// dès que le nombre l'atteint.
+export const CLIENTS = {
+  commerces: 1, // 1 abonnement actif à la lecture du 31/10/2026
+  seuil: 10,
+};
+export const clientsAffiches = () => CLIENTS.commerces >= CLIENTS.seuil;
+
 /** Nombre à la française, espace insécable entre les milliers : « 24 000 ». */
 export const nombre = (n: number) => n.toLocaleString('fr-FR').replace(/[   ]/g, ' ');
 
-/** « 2 campagnes par semaine », « Campagnes illimitées » (campagnes de notifications, quel que soit le nombre de clients). */
+/** « 5 campagnes par semaine », « Campagnes illimitées » (campagnes de notifications, quel que soit le nombre de clients). */
 export function campagnesParSemaine(p: Plan): string {
   if (p.campaignsPerWeek === null) return 'Campagnes illimitées';
   return `${nombre(p.campaignsPerWeek)} campagne${p.campaignsPerWeek > 1 ? 's' : ''} par semaine`;
 }
 
-/** Quotas d'une offre en clair : « 500 cartes et 2 campagnes par semaine », « Cartes et campagnes illimitées ». */
+/** Quotas d'une offre en clair : « Cartes illimitées et 5 campagnes par semaine », « Cartes et campagnes illimitées ». */
 export function quotas(p: Plan): string {
-  if (p.cards === null && p.campaignsPerWeek === null) return 'Cartes et campagnes illimitées';
-  const cartes = p.cards === null ? 'cartes illimitées' : `${nombre(p.cards)} cartes`;
-  const campagnes = campagnesParSemaine(p);
-  return `${cartes} et ${campagnes.charAt(0).toLowerCase()}${campagnes.slice(1)}`;
+  if (p.campaignsPerWeek === null) return 'Cartes et campagnes illimitées';
+  return `Cartes illimitées et ${campagnesParSemaine(p)}`;
 }
 
-const parOffre = <T,>(f: (p: Plan) => T) => PLANS.map(f) as [T, T, T];
+const parOffre = <T,>(f: (p: Plan) => T) => PLANS.map(f) as [T, T];
 
-// Tableau comparatif détaillé (✓ = inclus, chaîne = valeur), par groupes (titre sur la première ligne du groupe)
+// Tableau comparatif détaillé (✓ = inclus, chaîne = valeur), par groupes (titre sur la première ligne du groupe) ;
+// `note` : condition à écrire à côté de la ligne.
 export interface ComparisonRow {
   group?: string;
   label: string;
-  values: [string | boolean, string | boolean, string | boolean];
+  values: [string | boolean, string | boolean];
+  note?: string;
 }
 export const COMPARISON: ComparisonRow[] = [
-  {group: 'Cartes et campagnes', label: 'Cartes clients', values: parOffre((p) => (p.cards === null ? 'Illimitées' : nombre(p.cards)))},
-  {label: 'Campagnes de notifications par semaine', values: parOffre((p) => (p.campaignsPerWeek === null ? 'Illimitées' : nombre(p.campaignsPerWeek)))},
+  {group: 'Votre carte', label: 'Clients et cartes illimités', values: [true, true]},
+  {label: 'Carte Apple Wallet et Google Wallet à vos couleurs, avec votre logo (cachets à vos initiales d’office pour barbiers et coiffeurs)', values: [true, true]},
+  {label: 'QR code d’inscription et affiche du comptoir à imprimer', values: [true, true]},
+  {label: 'Passages, points ou montant dépensé, récompenses automatiques', values: [true, true]},
+  {label: 'Scanner sur votre téléphone, comptes équipe illimités avec rôles', values: [true, true]},
+  {label: 'Vos tampons papier repris sur la carte, client par client', values: [true, true]},
+  {group: 'Ça part tout seul', label: 'Notification à chaque passage et à chaque récompense', values: [true, true]},
   {
-    label: `Option +${nombre(CARD_PACK.cards)} cartes`,
-    values: parOffre((p) => (CARD_PACK.plans.includes(p.id) ? `${nombre(CARD_PACK.monthly)} € par mois` : 'Cartes illimitées')),
+    label: 'Notification de proximité : votre carte s’affiche quand un client passe près de chez vous',
+    values: parOffre((p) => `${nombre(p.shops)} adresse${p.shops > 1 ? 's' : ''}`),
+    note: 'Avec 3 adresses : une seule carte, un seul tableau de bord.',
   },
-  {label: 'Boutiques (adresses)', values: parOffre((p) => (p.shops > 1 ? `Jusqu’à ${p.shops}` : String(p.shops)))},
-  {group: 'La carte de fidélité', label: 'Carte Apple Wallet et Google Wallet à vos couleurs', values: [true, true, true]},
-  {label: 'Notification de proximité', values: [true, true, true]},
-  {label: 'Inscription par QR code, affiche du comptoir fournie', values: [true, true, true]},
-  {label: 'Passages ou points, récompenses automatiques', values: [true, true, true]},
-  {label: 'Scanner LOYNA Business et comptes équipe', values: [true, true, true]},
-  {label: 'Notifications à chaque passage et à chaque récompense', values: [true, true, true]},
-  {label: 'Campagnes de notifications à tous vos clients', values: [true, true, true]},
-  {label: 'Tableau de bord', values: [true, true, true]},
-  {group: 'Les automatisations', label: 'Anniversaire', values: [false, true, true]},
-  {label: 'Relance des clients inactifs', values: [false, true, true]},
-  {label: '« Plus qu’un passage ! »', values: [false, true, true]},
-  {label: 'Demande d’avis Google après la 3e visite', values: [false, true, true]},
-  {label: 'Campagnes programmées', values: [false, true, true]},
-  {label: 'Groupes de clients', values: [false, true, true]},
-  {label: 'Rapport mensuel avec 3 conseils', values: [false, true, true]},
-  {label: 'Niveaux VIP bronze, argent et or : la carte change de couleur à chaque niveau', values: [false, true, true]},
-  {label: 'Statistiques avancées', values: [false, true, true]},
-  {group: 'LOYNA travaille avec vous', label: 'Suivi personnalisé : un point mensuel de 30 min', values: [false, false, true]},
-  {label: 'Campagnes clés en main, validées en un clic', values: [false, false, true]},
-  {label: 'Parrainage entre vos clients', values: [false, false, true]},
-  {label: 'Kit comptoir imprimé', values: [false, false, true]},
-  {label: 'Support', values: ['Par e-mail', 'Par e-mail', 'Prioritaire']},
+  {label: 'Anniversaire, avec la surprise de votre choix', values: [true, true], note: 'À activer en un réglage, une fois la surprise choisie.'},
+  {label: 'Relance des clients qui ne reviennent plus', values: [true, true]},
+  {label: '« Plus qu’un passage ! »', values: [true, true]},
+  {label: 'Demande d’avis Google après la 3e visite, réglable', values: [true, true], note: 'À activer en un réglage, avec votre lien d’avis.'},
+  {
+    group: 'Quand vous voulez leur écrire',
+    label: 'Campagnes de notifications',
+    values: parOffre((p) => (p.campaignsPerWeek === null ? 'Illimitées' : `${nombre(p.campaignsPerWeek)} par semaine`)),
+    note: `Un même client reçoit au plus un message commercial par ${MARKETING_INTERVAL_HOURS} h, réglable.`,
+  },
+  {label: 'À tous ou à un groupe de clients', values: [true, true]},
+  {label: 'Tout de suite ou programmées', values: [true, true]},
+  {label: 'Calendrier de 15 temps forts, message déjà écrit', values: [true, true]},
+  {group: 'Vous savez où vous en êtes', label: 'Tableau de bord et courbes jour par jour', values: [true, true]},
+  {label: 'Rapport du mois par e-mail, avec jusqu’à 3 conseils', values: [true, true]},
+  {label: 'Export de tous vos clients en CSV, à tout moment', values: [true, true]},
+  {label: 'Support par e-mail et guide de démarrage', values: [true, 'Prioritaire'], note: 'Support prioritaire : traité avant les autres.'},
+  {group: 'Vos clients invitent, LOYNA écrit', label: 'Parrainage entre vos clients : chacun invite ses amis avec son lien, bonus aux deux à la première visite', values: [false, true]},
+  {label: 'LOYNA écrit et programme vos messages, au moins un par mois : vous validez, rien ne part sans vous', values: [false, true]},
+  {label: 'Niveaux VIP bronze, argent et or : la carte de vos meilleurs clients change de couleur', values: [false, true], note: 'À activer en un réglage, comme le parrainage entre vos clients.'},
+  {
+    label: 'Votre carte finie à la main : logo retouché et, sur une carte à tampons, cachets à vos initiales',
+    values: [false, 'Une fois, sous 15 jours'],
+    note: TRIAL.open ? 'À partir du 1er paiement, jamais pendant l’essai.' : 'À partir du 1er paiement.',
+  },
+  {label: 'Votre carte sans la mention LOYNA', values: [false, true]},
+  {
+    label: 'Une vidéo et des visuels de votre carte, prêts à poster',
+    values: [false, 'Une fois, sous 15 jours'],
+    note: TRIAL.open ? 'À partir du 1er paiement, jamais pendant l’essai.' : 'À partir du 1er paiement.',
+  },
+  {
+    label: 'Kit comptoir : 1 QR code sous verre par adresse',
+    values: ['Option payante', 'Offert, une fois'],
+    note: 'Avec engagement, envoyé après le 1er paiement ; sans engagement, après le 3e. Sous 15 jours ensuite.',
+  },
+  {label: 'Un point de 30 minutes par mois avec LOYNA, à votre demande', values: [false, true]},
 ];
 
 export const NAV = [

@@ -1,13 +1,15 @@
 // « Préparer une carte » (Ewan, 2026-10-30, pour ses rendez-vous en visio) : la carte du commerçant se règle en direct
-// (nom, logo, couleurs, passages, récompense), avec l'offre et les QR codes sous verre, puis un lien de paiement
-// /panier/?carte=<id> reprend exactement ce qui vient d'être fait. Paiement : le panier habituel (compte, puis Stripe).
+// (nom, logo, couleurs, passages, récompense), avec l'offre et les QR codes sous verre, puis 2 liens reprennent exactement ce
+// qui vient d'être fait : /essai/?carte=<id> (1 mois gratuit, sans carte bancaire, donne Starter) et /panier/?carte=<id> (le
+// panier habituel : compte, puis Stripe). Une ancienne fiche (Premium, « periode ») se lit par normalizeOffer().
 import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import {logoToPng, LOGO_ACCEPT} from '../../app/logo-png';
 import {qrSvg} from '../../app/util';
-import {CARD_ACCENTS, CARD_ACTIVITES, CARD_BGS, euro, LAUNCH_OFFER, offerActive, PLANS, QR_VERRE, quotas, SETUP_FEE, type Periode, type PlanId} from '../../data/site';
+import {CARD_ACCENTS, CARD_ACTIVITES, CARD_BGS, ENGAGEMENT, euro, normalizeOffer, PHRASES, PLANS, QR_VERRE, quotas, SETUP_FEE, TRIAL, type Engagement} from '../../data/site';
 import {TelephoneWallet} from '../../lib/CarteWallet';
-import {lienCarte, lireCartePreparee, type CartePreparee} from '../../lib/carte-preparee';
-import {cartesPreparees, chargerCartes, couleursDuLogo, enregistrerCarte, montants, preparerPour, supprimerCarte} from '../cartes';
+import {lienCarte, lienEssaiCarte, lireCartePreparee} from '../../lib/carte-preparee';
+import {cartesPreparees, chargerCartes, couleursDuLogo, enregistrerCarte, montants, preparerPour, supprimerCarte, type Reglages} from '../cartes';
+import {phraseMiseEnService} from '../contenu';
 import {dateHeure} from '../format';
 import {Icon} from '../icons';
 import {aller, toast} from '../store';
@@ -15,20 +17,24 @@ import {Btn, Copier, Field, PageHead, Panel, Spinner} from '../ui';
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const normal = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
-const vide = (): CartePreparee => {
+const vide = (): Reglages => {
   const plan = PLANS.find((p) => p.highlight) ?? PLANS[0];
-  return {nom: '', activite: '', recompense: '', fond: '#121216', tampons: '#d9b27a', passages: 10, logo: null, offre: plan.id as PlanId, periode: 'mensuel', qr: {unit: 0, pack5: 0, pack10: 0}, prospect: ''};
+  return {nom: '', activite: '', recompense: '', fond: '#121216', tampons: '#d9b27a', passages: 10, logo: null, offre: plan.id, engagement: 'sans', qr: {unit: 0, pack5: 0, pack10: 0}, prospect: ''};
 };
 const LIGNES_QR = [
   {cle: 'unit', label: 'À l’unité', prix: QR_VERRE.unit, max: QR_VERRE.maxUnit},
   {cle: 'pack5', label: 'Pack de 5', prix: QR_VERRE.pack5, max: QR_VERRE.maxPack},
   {cle: 'pack10', label: 'Pack de 10', prix: QR_VERRE.pack10, max: QR_VERRE.maxPack},
 ] as const;
-const empreinte = (c: CartePreparee) => JSON.stringify(c);
+const empreinte = (c: Reglages) => JSON.stringify(c);
+// Ce que le formulaire d'essai (src/app/Essai.tsx) garde d'une carte préparée
+const ESSAI_PASSAGES = {min: 4, max: 15};
+const ESSAI_RECOMPENSE_MAX = 40;
 
 export function Preparer({id}: {id?: string}) {
-  const [c, setC] = useState<CartePreparee>(vide);
+  const [c, setC] = useState<Reglages>(vide);
   const [enregistree, setEnregistree] = useState<string | null>(null); // état enregistré, pour repérer les modifications
+  const [ancienne, setAncienne] = useState<'' | 'premium' | 'periode'>(''); // fiche écrite avant la grille Starter + Pro
   const [chargement, setChargement] = useState(!!id);
   const [touche, setTouche] = useState({recompense: false, fond: false, tampons: false});
   const [couleursLogo, setCouleursLogo] = useState<string[]>([]);
@@ -59,6 +65,7 @@ export function Preparer({id}: {id?: string}) {
       }
       setC(base);
       setEnregistree(null);
+      setAncienne('');
       setCouleursLogo([]);
       setTouche({recompense: false, fond: false, tampons: false});
       setChargement(false);
@@ -75,9 +82,13 @@ export function Preparer({id}: {id?: string}) {
           aller('preparer');
           return;
         }
-        const d: CartePreparee = {...vide(), ...lue, prospect: cartesPreparees.value?.find((x) => x.id === id)?.prospect ?? ''};
+        const o = normalizeOffer(lue.offre, lue.periode, lue.engagement);
+        const {periode: _periode, ...reglages} = lue;
+        const d: Reglages = {...vide(), ...reglages, offre: o.plan, engagement: o.engagement, prospect: cartesPreparees.value?.find((x) => x.id === id)?.prospect ?? ''};
+        const avantGrille = !lue.engagement; // reste lisible telle quelle ; le bouton de mise à jour la passe au format neuf
         setC(d);
-        setEnregistree(empreinte(d));
+        setAncienne(avantGrille ? (o.legacy ? 'premium' : 'periode') : '');
+        setEnregistree(avantGrille ? '' : empreinte(d));
         setTouche({recompense: true, fond: true, tampons: true});
         setObtenus(Math.min(3, d.passages));
         if (d.logo) couleursDuLogo(d.logo).then(setCouleursLogo);
@@ -89,8 +100,8 @@ export function Preparer({id}: {id?: string}) {
     };
   }, [id]);
 
-  const champ = <K extends keyof CartePreparee>(k: K, v: CartePreparee[K]) => setC((x) => ({...x, [k]: v}));
-  function choisirActivite(activite: string, depart?: CartePreparee) {
+  const champ = <K extends keyof Reglages>(k: K, v: Reglages[K]) => setC((x) => ({...x, [k]: v}));
+  function choisirActivite(activite: string, depart?: Reglages) {
     const a = CARD_ACTIVITES.find((x) => normal(x.nom) === normal(activite));
     setC((x) => {
       const b = depart ?? x;
@@ -124,7 +135,8 @@ export function Preparer({id}: {id?: string}) {
   const total = Math.max(1, Math.trunc(c.passages) || 1);
   const faits = Math.min(obtenus, total);
   const modifiee = enregistree !== null && enregistree !== empreinte(c);
-  const lien = id ? lienCarte(id, location.origin.includes('loyna.fr') ? 'https://loyna.fr' : location.origin) : '';
+  const origine = location.origin.includes('loyna.fr') ? 'https://loyna.fr' : location.origin;
+  const liens = TRIAL.open ? 'les liens' : 'le lien de paiement';
   const probleme = !c.nom.trim() ? 'Indiquez le nom du commerce.' : !c.recompense.trim() ? 'Indiquez la récompense.' : !HEX.test(c.fond) || !HEX.test(c.tampons) ? 'Couleurs attendues au format #RRGGBB.' : total > 100 ? 'Nombre de passages : 100 au plus.' : '';
 
   const enregistrer = async () => {
@@ -132,11 +144,12 @@ export function Preparer({id}: {id?: string}) {
     setErreur('');
     setBusy(true);
     try {
-      const propre: CartePreparee = {...c, passages: total, fond: c.fond.toLowerCase(), tampons: c.tampons.toLowerCase(), nom: c.nom.trim(), activite: c.activite.trim(), recompense: c.recompense.trim()};
+      const propre: Reglages = {...c, passages: total, fond: c.fond.toLowerCase(), tampons: c.tampons.toLowerCase(), nom: c.nom.trim(), activite: c.activite.trim(), recompense: c.recompense.trim()};
       const nouvelId = await enregistrerCarte(id ?? null, propre);
       setC(propre);
       setEnregistree(empreinte(propre));
-      toast(id ? 'Lien mis à jour : le même lien montre la nouvelle version.' : 'Lien de paiement prêt.');
+      setAncienne('');
+      toast(id ? (TRIAL.open ? 'Liens mis à jour : les mêmes liens montrent la nouvelle version.' : 'Lien mis à jour : le même lien montre la nouvelle version.') : TRIAL.open ? 'Liens prêts.' : 'Lien de paiement prêt.');
       if (!id) {
         justeCreee.current = nouvelId;
         aller(`preparer/${nouvelId}`);
@@ -265,19 +278,26 @@ export function Preparer({id}: {id?: string}) {
           </Panel>
 
           <Panel title="3. L’offre">
-            <div class="pc-periode" role="radiogroup" aria-label="Période de facturation">
-              {(['mensuel', 'annuel'] as Periode[]).map((p) => (
-                <button type="button" role="radio" aria-checked={c.periode === p} class={c.periode === p ? 'on' : ''} onClick={() => champ('periode', p)}>
-                  {p === 'mensuel' ? 'Mensuel' : 'Annuel −15 %'}
+            {ancienne && (
+              <p class="pc-note warn">
+                {ancienne === 'premium'
+                  ? 'Cette carte avait été préparée en Premium, offre qui n’est plus proposée : elle est reprise ici en Starter. Vérifiez l’offre, puis mettez à jour les liens.'
+                  : 'Cette carte a été préparée avant les offres actuelles : vérifiez l’offre et l’engagement, puis mettez à jour les liens.'}
+              </p>
+            )}
+            <div class="pc-periode" role="radiogroup" aria-label="Engagement">
+              {(['sans', 'engage'] as Engagement[]).map((e) => (
+                <button type="button" role="radio" aria-checked={c.engagement === e} class={c.engagement === e ? 'on' : ''} onClick={() => champ('engagement', e)}>
+                  {e === 'sans' ? 'Sans engagement' : `Avec ${ENGAGEMENT.months} mois d’engagement, −${ENGAGEMENT.discountPercent} %`}
                 </button>
               ))}
             </div>
             <div class="pc-offres" role="radiogroup" aria-label="Offre">
               {PLANS.map((p) => (
-                <button type="button" role="radio" aria-checked={c.offre === p.id} class={`pc-offre ${c.offre === p.id ? 'on' : ''}`} onClick={() => champ('offre', p.id as PlanId)}>
+                <button type="button" role="radio" aria-checked={c.offre === p.id} class={`pc-offre ${c.offre === p.id ? 'on' : ''}`} onClick={() => champ('offre', p.id)}>
                   <strong>{p.name}</strong>
                   <span class="pc-offre-p">
-                    {euro(m.mensuel ? p.monthly : p.yearly)} <small>{m.mensuel ? '/ mois' : '/ an'}</small>
+                    {euro(c.engagement === 'engage' ? p.engaged : p.monthly)} <small>/ mois</small>
                   </span>
                   <small>{quotas(p)}</small>
                 </button>
@@ -305,12 +325,12 @@ export function Preparer({id}: {id?: string}) {
             </div>
           </Panel>
 
-          <Panel title="4. Le lien de paiement">
+          <Panel title={TRIAL.open ? '4. Le récapitulatif et les liens' : '4. Le lien de paiement'}>
             <dl class="pc-recap">
               <div>
                 <dt>
                   LOYNA {m.plan.name}
-                  <small>{m.mensuel ? 'mensuel, engagement de 12 mois' : 'annuel (−15 %)'}</small>
+                  <small>{m.engage ? `avec ${ENGAGEMENT.months} mois d’engagement` : 'sans engagement'}</small>
                 </dt>
                 <dd>{euro(m.abonnement)}</dd>
               </div>
@@ -330,11 +350,10 @@ export function Preparer({id}: {id?: string}) {
               </div>
             </dl>
             <p class="pc-note">
-              {m.mensuel
-                ? `Puis ${euro(m.plan.monthly)} par mois. Engagement de 12 mois, réglés chaque mois, puis résiliable à la fin de n’importe quel mois, sans frais.`
-                : `Puis ${euro(m.plan.yearly)} par an, à chaque échéance, sauf résiliation avant cette date.`}{' '}
-              Sans TVA.{m.mensuel && offerActive() ? ` Mise en service offerte jusqu’au ${LAUNCH_OFFER.untilLabel}.` : ''}
+              {PHRASES.prix(m.plan)} {m.engage ? `${PHRASES.engagement} ` : ''}
+              {phraseMiseEnService()}
             </p>
+            {TRIAL.open && <p class="pc-note">Ce montant est celui du lien de paiement. Le lien d’essai ne demande rien : {TRIAL.label}.</p>}
             {erreur && (
               <p class="form-err" role="alert">
                 <Icon name="circle-alert" size={18} />
@@ -343,13 +362,13 @@ export function Preparer({id}: {id?: string}) {
             )}
             {(!id || modifiee) && (
               <Btn kind="gold" block icon={id ? 'save' : 'link'} busy={busy} onClick={enregistrer}>
-                {id ? 'Mettre à jour le lien' : 'Créer le lien de paiement'}
+                {id ? `Mettre à jour ${liens}` : `Créer ${liens}`}
               </Btn>
             )}
-            {id && modifiee && <p class="pc-note warn">Modifications pas encore enregistrées : le lien montre encore l’ancienne version.</p>}
+            {id && modifiee && <p class="pc-note warn">Modifications pas encore enregistrées : {TRIAL.open ? 'les liens montrent' : 'le lien montre'} encore l’ancienne version.</p>}
           </Panel>
 
-          {id && !modifiee && <Partage lien={lien} nom={c.nom.trim()} />}
+          {id && !modifiee && <Partage paiement={lienCarte(id, origine)} essai={TRIAL.open ? lienEssaiCarte(id, origine) : null} nom={c.nom.trim()} passages={total} recompense={c.recompense.trim()} />}
         </div>
 
         <aside class="pc-droite">
@@ -400,19 +419,17 @@ function Couleurs({label, valeur, pastilles, logo, changer}: {label: string; val
   );
 }
 
-/** Le lien à envoyer pendant le rendez-vous. */
-function Partage({lien, nom}: {lien: string; nom: string}) {
-  const message = `Bonjour, voici votre carte de fidélité ${nom} telle que nous venons de la préparer, avec le lien pour finaliser votre commande : ${lien}`;
-  const qr = useMemo(() => qrSvg(lien, '#121216', 2), [lien]);
+/** Un lien à envoyer : à copier, à ouvrir, ou dans un message tout prêt. */
+function LienAEnvoyer({genre, lien, copier, message}: {genre: 'essai' | 'paiement'; lien: string; copier: string; message: string}) {
   return (
-    <Panel title="Le lien à envoyer" class="pc-partage">
-      <p class="pc-lien">
+    <>
+      <p class={`pc-lien pc-lien--${genre}`}>
         <a href={lien} target="_blank" rel="noopener">
           {lien.replace(/^https?:\/\//, '')}
         </a>
       </p>
       <div class="pc-actions">
-        <Copier texte={lien} label="Copier le lien" small={false} />
+        <Copier texte={lien} label={copier} small={false} />
         <Btn kind="ghost" icon="external-link" href={lien} external>
           Ouvrir
         </Btn>
@@ -426,8 +443,52 @@ function Partage({lien, nom}: {lien: string; nom: string}) {
         </Btn>
         <Copier texte={message} label="Copier le message" />
       </div>
-      <div class="pc-qr-lien" aria-label="QR code du lien : à scanner depuis l’écran partagé" dangerouslySetInnerHTML={{__html: qr}} />
-      <p class="pc-note">À scanner depuis l’écran partagé. Le lien montre sa carte et son offre : il crée son compte puis paie sur Stripe. Si vous modifiez la carte, le même lien reste valable.</p>
+    </>
+  );
+}
+
+/** Les liens à envoyer pendant le rendez-vous : l'essai et le paiement. Règle provisoire du plan : pendant une visite, le QR
+ *  code à l'écran mène à l'essai, pas au paiement. Essai fermé (TRIAL.open) : seul le paiement reste, QR code compris. */
+function Partage({paiement, essai, nom, passages, recompense}: {paiement: string; essai: string | null; nom: string; passages: number; recompense: string}) {
+  const cible = essai ?? paiement;
+  const qr = useMemo(() => qrSvg(cible, '#121216', 2), [cible]);
+  const qrCode = (
+    <div class={`pc-qr-lien pc-qr-lien--${essai ? 'essai' : 'paiement'}`} aria-label={`QR code du lien ${essai ? 'd’essai' : 'de paiement'} : à scanner depuis l’écran`} dangerouslySetInnerHTML={{__html: qr}} />
+  );
+  return (
+    <Panel title={essai ? 'Les liens à envoyer' : 'Le lien à envoyer'} class="pc-partage">
+      {essai && (
+        <>
+          <h3 class="pc-t3 pc-t3--premier">Essai : {TRIAL.label}</h3>
+          <LienAEnvoyer
+            genre="essai"
+            lien={essai}
+            copier="Copier le lien d’essai"
+            message={`Bonjour, voici votre carte de fidélité ${nom} telle que nous venons de la préparer. Pour l’essayer, ${TRIAL.label} : ${essai}`}
+          />
+          {qrCode}
+          <p class="pc-note">À scanner depuis l’écran : il mène à l’essai, pas au paiement. Le lien montre sa carte : il crée son compte et confirme son e-mail, puis la carte est créée tout de suite. L’essai donne Starter, quelle que soit l’offre choisie ici ; Pro se prend à tout moment.</p>
+          {recompense.length > ESSAI_RECOMPENSE_MAX && (
+            <p class="pc-note warn">
+              Récompense de {recompense.length} caractères : l’essai en garde {ESSAI_RECOMPENSE_MAX}. Raccourcissez-la si le texte coupé ne convient pas.
+            </p>
+          )}
+          {(passages < ESSAI_PASSAGES.min || passages > ESSAI_PASSAGES.max) && (
+            <p class="pc-note warn">
+              Cette carte a {passages} passage{passages > 1 ? 's' : ''} : l’essai en accepte de {ESSAI_PASSAGES.min} à {ESSAI_PASSAGES.max}, sa page la reprendra avec {Math.min(ESSAI_PASSAGES.max, Math.max(ESSAI_PASSAGES.min, passages))}.
+            </p>
+          )}
+        </>
+      )}
+      <h3 class={`pc-t3 ${essai ? '' : 'pc-t3--premier'}`}>Paiement</h3>
+      <LienAEnvoyer
+        genre="paiement"
+        lien={paiement}
+        copier="Copier le lien de paiement"
+        message={`Bonjour, voici votre carte de fidélité ${nom} telle que nous venons de la préparer, avec le lien pour finaliser votre commande : ${paiement}`}
+      />
+      {!essai && qrCode}
+      <p class="pc-note">{essai ? '' : 'À scanner depuis l’écran partagé. '}Le lien montre sa carte et son offre : il crée son compte puis paie sur Stripe. Si vous modifiez la carte, {essai ? 'les mêmes liens restent valables' : 'le même lien reste valable'}.</p>
     </Panel>
   );
 }
@@ -435,8 +496,13 @@ function Partage({lien, nom}: {lien: string; nom: string}) {
 function ListeCartes({active}: {active?: string}) {
   const liste = cartesPreparees.value;
   if (!liste?.length) return null;
+  const offreDe = (x: (typeof liste)[number]) => {
+    const o = normalizeOffer(x.offre, x.periode, x.engagement);
+    const nom = PLANS.find((p) => p.id === o.plan)?.name;
+    return o.legacy ? `${nom} (ancienne fiche Premium)` : `${nom} ${o.engagement === 'engage' ? 'avec engagement' : 'sans engagement'}`;
+  };
   const supprimer = async (id: string, nom: string) => {
-    if (!confirm(`Supprimer la carte préparée de ${nom} ?\nSon lien ne fonctionnera plus.`)) return;
+    if (!confirm(`Supprimer la carte préparée de ${nom} ?\n${TRIAL.open ? 'Ses liens ne fonctionneront plus.' : 'Son lien ne fonctionnera plus.'}`)) return;
     try {
       await supprimerCarte(id);
       toast('Carte supprimée.');
@@ -456,11 +522,14 @@ function ListeCartes({active}: {active?: string}) {
             <a href={`#/preparer/${x.id}`}>
               <strong>{x.nom}</strong>
               <small>
-                {PLANS.find((p) => p.id === x.offre)?.name} {x.periode} · {x.passages} passages · {x.recompense} · {dateHeure(x.modifie_le)}
+                {offreDe(x)} · {x.passages} passages · {x.recompense} · {dateHeure(x.modifie_le)}
               </small>
             </a>
-            <Copier texte={lienCarte(x.id)} label="Lien" />
-            <Btn kind="quiet" small icon="trash-2" title={`Supprimer la carte de ${x.nom}`} onClick={() => supprimer(x.id, x.nom)} />
+            <span class="pc-liste-a">
+              {TRIAL.open && <Copier texte={lienEssaiCarte(x.id)} label="Essai" />}
+              <Copier texte={lienCarte(x.id)} label={TRIAL.open ? 'Paiement' : 'Lien'} />
+              <Btn kind="quiet" small icon="trash-2" title={`Supprimer la carte de ${x.nom}`} onClick={() => supprimer(x.id, x.nom)} />
+            </span>
           </li>
         ))}
       </ul>

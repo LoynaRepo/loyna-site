@@ -1,12 +1,12 @@
-// Contenus d'aide à la vente du panel commercial. Règle : rien d'inventé. Chaque réponse est tirée des offres du
-// 2026-10-25 (dépôt LOYNA, docs/OFFRES.md), de docs/BRIEF.md, de la FAQ du site (src/content-seed/faq.json / Builder),
-// de la FAQ du coffre (05 Règles/FAQ Loyna.md), des pages du site ou de src/data/site.ts (prix et quotas importés, jamais
-// recopiés). Les « repères » d'horaires d'appel sont des conseils pratiques, signalés comme tels. Règles de démarchage :
-// pages CNIL citées (lues le 23/10/2026).
-// Formulation validée par Ewan (relecture du site, 23/10/2026) : jamais « HT » (TVA non applicable) ; engagement du
-// mensuel dit en clair ; un seul message sur la mise en service ; « LOYNA, une marque de KOVA Elec », Ewan « fondateur
-// de LOYNA » (jamais « société Loyna »). Proximité : dire « s'affiche », jamais « à chaque passage ».
-import {CARD_PACK, LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SETUP_FEE, SITE, euro, nombre, offerActive, quotas} from '../data/site';
+// Contenus d'aide à la vente du panel commercial. Règle : rien d'inventé. Chaque réponse est tirée de la grille Starter + Pro
+// du 2026-10-31 (dépôt LOYNA, docs/OFFRES.md), de docs/BRIEF.md, de la FAQ du site (src/content-seed/faq.json / Builder),
+// de la FAQ du coffre (05 Règles/FAQ Loyna.md), des pages du site ou de src/data/site.ts (prix, quotas et phrases fixes
+// importés, jamais recopiés). Les « repères » d'horaires d'appel sont des conseils pratiques, signalés comme tels. Règles de
+// démarchage : pages CNIL citées (lues le 23/10/2026).
+// Formulation validée par Ewan (relecture du site, 23/10/2026) : jamais « HT » (TVA non applicable), toujours « sans TVA » ;
+// un seul message sur la mise en service ; « LOYNA, une marque de KOVA Elec », Ewan « fondateur de LOYNA » (jamais « société
+// Loyna »). Proximité : dire « s'affiche », jamais « à chaque passage ». Aucune phrase de résultat, jamais « en un clic ».
+import {MARKETING_INTERVAL_HOURS, PHRASES, PLANS, SETUP_FEE, SITE, TRIAL, euro, essaiUrl, nombre, offerActive, quotas} from '../data/site';
 
 export interface Reponse {
   id: string;
@@ -18,7 +18,7 @@ export interface Reponse {
 }
 
 const S = {
-  offres: 'Offres LOYNA du 25/10/2026, campagnes par semaine et option +500 cartes du 30/10/2026 (dépôt LOYNA, docs/OFFRES.md)',
+  offres: 'Grille Starter + Pro du 31/10/2026 (dépôt LOYNA, docs/OFFRES.md)',
   brief: 'Brief produit (docs/BRIEF.md)',
   faq: 'FAQ du site (loyna.fr/faq/)',
   faqCoffre: 'FAQ Loyna du coffre (05 Règles)',
@@ -28,12 +28,14 @@ const S = {
   demo: 'Démonstration LOYNA Business (loyna.fr/espace-client/demo/)',
   video: 'Démo vidéo (loyna.fr/demo/)',
   simulateur: 'Simulateur de rentabilité (loyna.fr, accueil)',
+  cgv: 'Conditions générales de vente (loyna.fr/cgv/)',
 };
 
 export const LIENS = {
+  essai: {label: 'Essai d’un mois', href: `${SITE.url}${essaiUrl}`},
   apercu: {label: 'Aperçu gratuit de sa carte', href: 'https://loyna.fr/creer-ma-carte/'},
   demo: {label: 'Démonstration LOYNA Business', href: 'https://loyna.fr/espace-client/demo/'},
-  video: {label: 'Vidéo de 80 secondes', href: 'https://loyna.fr/demo/'},
+  video: {label: 'Vidéo de présentation', href: 'https://loyna.fr/demo/'},
   tarifs: {label: 'Page Tarifs', href: 'https://loyna.fr/tarifs/'},
   simulateur: {label: 'Simulateur de rentabilité', href: 'https://loyna.fr/#rentabilite'},
   papier: {label: 'Article papier ou digitale', href: 'https://loyna.fr/blog/carte-fidelite-papier-ou-digitale/'},
@@ -41,48 +43,37 @@ export const LIENS = {
 };
 
 const prixMin = () => Math.min(...PLANS.map((p) => p.monthly));
-const listePrix = (cle: 'monthly' | 'yearly') => PLANS.map((p) => `${p.name} ${euro(p[cle])}`).join(', ');
+const listePrix = (cle: 'monthly' | 'engaged') => PLANS.map((p) => `${p.name} ${euro(p[cle])}`).join(', ');
 const offre = (id: string) => PLANS.find((p) => p.id === id)!;
-/** « Starter : 500 cartes et 2 campagnes par semaine ; Premium : … ; Pro : cartes et campagnes illimitées » */
+/** « Starter : cartes illimitées et 5 campagnes par semaine ; Pro : cartes et campagnes illimitées » */
 const listeQuotas = () => PLANS.map((p) => `${p.name} : ${quotas(p).charAt(0).toLowerCase()}${quotas(p).slice(1)}`).join(' ; ');
-/** Offres où l'option « +500 cartes » existe : « Starter et Premium ». */
-const packPlans = () => PLANS.filter((p) => CARD_PACK.plans.includes(p.id)).map((p) => p.name).join(' et ');
-/** L'option « +500 cartes » en une phrase (prix tirés de src/data/site.ts). */
-export const phraseOptionCartes = () =>
-  `Option +${nombre(CARD_PACK.cards)} cartes, en ${packPlans()} : ${euro(CARD_PACK.monthly)} par mois par pack (${euro(CARD_PACK.yearly)} par an avec un abonnement annuel), sans TVA, cumulable, ajoutée depuis l’espace client (Abonnement) sans changer de formule. Elle ajoute des cartes, pas de campagnes.`;
 
-/** Le seul message sur la mise en service : offerte pendant l'offre de lancement, sinon 49 € une fois. */
+/** Le seul message sur la mise en service (phrase fixe de la grille) ; l'offre de lancement passée, sa seconde partie seule. */
 export function phraseMiseEnService(): string {
   return offerActive()
-    ? `Mise en service offerte jusqu’au ${LAUNCH_OFFER.untilLabel}, en mensuel comme en annuel (code ${LAUNCH_OFFER.code}, déjà appliqué par nos boutons).`
-    : `Mise en service : ${euro(SETUP_FEE)} une seule fois, offerte en paiement annuel.`;
+    ? `Mise en service : ${PHRASES.miseEnService.charAt(0).toLowerCase()}${PHRASES.miseEnService.slice(1)}`
+    : `Mise en service : offerte avec 12 mois d’engagement, ${euro(SETUP_FEE)} une seule fois sans engagement.`;
 }
 export const MENTION_PRIX = `Prix en euros, sans TVA (${SITE.vatNote}) : le prix affiché est le prix payé.`;
-export const ENGAGEMENT_MENSUEL = 'Engagement de 12 mois, réglés chaque mois, puis résiliable à la fin de n’importe quel mois, sans frais.';
-export const ENGAGEMENT_ANNUEL = '12 mois payés en une fois, renouvelables.';
 export const KOVA = 'KOVA Elec est l’entreprise individuelle d’Ewan qui édite LOYNA ; c’est pour cela que le paiement et les factures sont à ce nom.';
-
-/** « a, b et c », premières lettres en minuscule (listes tirées de src/data/site.ts). */
-function enListe(items: string[]): string {
-  const l = items.map((x) => x.charAt(0).toLowerCase() + x.slice(1));
-  return l.length > 1 ? `${l.slice(0, -1).join(', ')} et ${l[l.length - 1]}` : (l[0] ?? '');
-}
 
 /** Réponses courtes aux questions et objections probables (onglet « Questions clients »). */
 export function objections(): Reponse[] {
-  const premium = offre('premium');
+  const starter = offre('starter');
   const pro = offre('pro');
   return [
     {
       id: 'prix',
       q: 'C’est combien ?',
       r: [
-        `Trois formules, par mois, sans TVA : ${listePrix('monthly')}. ${MENTION_PRIX}`,
-        `${listeQuotas()}. La notification de proximité est incluse dans les trois.`,
-        `En paiement annuel, 15 % de réduction : ${listePrix('yearly')} par an, sans TVA.`,
+        `Deux offres. ${starter.name} : ${PHRASES.prix(starter)}`,
+        `${pro.name} : ${PHRASES.prix(pro)}`,
+        `${listeQuotas()}. La notification de proximité est incluse dans les deux.`,
         phraseMiseEnService(),
-        `Besoin de plus de cartes en ${packPlans()} : +${nombre(CARD_PACK.cards)} cartes pour ${euro(CARD_PACK.monthly)} par mois (${euro(CARD_PACK.yearly)} par an en annuel).`,
+        ...(TRIAL.open ? [`Et vous pouvez essayer. ${PHRASES.essai}`] : []),
+        MENTION_PRIX,
       ],
+      attention: `Si on vous cite d’autres prix, ils viennent de l’ancienne grille : seuls ${listePrix('monthly')} sans engagement, et ${listePrix('engaged')} avec engagement, sont vendus. Toujours « sans TVA ».`,
       liens: [LIENS.tarifs],
       sources: [S.tarifs, S.offres],
     },
@@ -92,20 +83,21 @@ export function objections(): Reponse[] {
       r: [
         'Quand un client passe près de votre boutique, sa carte s’affiche sur l’écran de verrouillage de son téléphone, avec un court message : « Votre récompense vous attend chez … ! », « Plus que 2 passages avant votre récompense chez … », ou votre propre message.',
         'Exemple : votre client passe devant votre boulangerie, et sa carte s’affiche en notification.',
-        'Sur iPhone, la carte s’affiche sur l’écran de verrouillage ; sur Android, une notification apparaît quand le client s’attarde près de la boutique. C’est inclus dans les trois formules et jamais compté comme une campagne.',
+        `Sur iPhone, la carte s’affiche sur l’écran de verrouillage ; sur Android, une notification apparaît quand le client s’attarde près de la boutique. C’est inclus dans les deux offres (${starter.shops} adresse en ${starter.name}, ${pro.shops} en ${pro.name}) et jamais compté comme une campagne.`,
       ],
       attention: 'Dites « s’affiche », jamais « à chaque passage » : il faut que le client ait activé la localisation et laissé Wallet s’afficher sur l’écran verrouillé, et c’est le téléphone qui décide de l’affichage.',
       sources: [S.offres],
     },
     {
-      id: 'premium',
-      q: 'Qu’est-ce que Premium apporte de plus ?',
+      id: 'starter-ou-pro',
+      q: 'Starter ou Pro, quelle différence ?',
       r: [
-        `Les automatisations qui font revenir vos clients, pour ${euro(premium.monthly)} par mois, sans TVA : ${enListe(premium.focus?.items ?? [])}.`,
-        'Ces messages partent tout seuls : vous choisissez le texte et la surprise, et ils ne comptent jamais dans vos campagnes.',
-        'Les niveaux VIP bronze, argent et or : vos clients montent de niveau avec leurs passages et leur carte change de couleur à chaque niveau (vos couleurs, puis argent, puis or), avec l’avantage de votre choix et un message à chaque nouveau niveau.',
-        `Et plus de place : ${quotas(premium)}.`,
+        `${starter.name} : ${PHRASES.starter}`,
+        `${pro.name} : ${PHRASES.pro}`,
+        'Dans les deux offres : anniversaire, relance des clients qui ne reviennent plus, « Plus qu’un passage ! », demande d’avis Google, groupes de clients, campagnes programmées, courbes et rapport du mois.',
+        PHRASES.pourquoiPro,
       ],
+      attention: 'Starter est l’offre mise en avant, jamais « la plus choisie » : aucun chiffre de ce type n’existe. Si on vous parle de Premium (ancien réel, ancienne planche) : « L’offre Premium n’est plus proposée. Voici l’offre Starter, qui reprend ses automatisations. »',
       liens: [LIENS.tarifs],
       sources: [S.offres, S.tarifs],
     },
@@ -113,17 +105,20 @@ export function objections(): Reponse[] {
       id: 'pro',
       q: 'Que comprend Pro ?',
       r: [
-        `Avec Pro, LOYNA travaille avec vous, pour ${euro(pro.monthly)} par mois, sans TVA : un point mensuel de 30 minutes (chiffres, objectifs, réglages de la récompense) et un plan d’action.`,
-        'Des campagnes clés en main : nous préparons le calendrier des temps forts (fêtes, saisons, soldes, événements), nous rédigeons et programmons les campagnes, et vous les validez en un clic. Rien ne part sans votre validation.',
-        `Jusqu’à ${pro.shops} boutiques, parrainage entre vos clients, kit comptoir imprimé (chevalet QR code et vitrophanie), ${quotas(pro).toLowerCase()} et support prioritaire.`,
+        `${PHRASES.pro} ${PHRASES.prix(pro)}`,
+        'LOYNA écrit et programme vos messages, au moins un par mois : vous validez, rien ne part sans vous. Et un point de 30 minutes par mois avec LOYNA, à votre demande.',
+        'Parrainage entre vos clients : chacun invite ses amis avec son lien, bonus aux deux à la première visite. Niveaux VIP bronze, argent et or : la carte de vos meilleurs clients change de couleur.',
+        `Campagnes illimitées, jusqu’à ${pro.shops} adresses avec la notification de proximité (une seule carte, un seul tableau de bord), votre carte sans la mention LOYNA et support prioritaire.`,
+        'Une fois, sous 15 jours : votre carte finie à la main (logo retouché et, sur une carte à tampons, cachets à vos initiales), une vidéo et des visuels de votre carte, prêts à poster. Et le kit comptoir : 1 QR code sous verre par adresse, offert une fois.',
       ],
+      attention: 'Kit : avec engagement, envoyé après le 1er paiement ; sans engagement, après le 3e ; sous 15 jours ensuite. Vidéo, visuels et carte finie à la main : à partir du 1er paiement, jamais pendant l’essai. Support prioritaire : traité avant les autres, sans délai chiffré ni téléphone. Aucune statistique par boutique n’existe. La validation d’un message se fait en 2 gestes : ne dites jamais « en un clic ».',
       sources: [S.offres],
     },
     {
       id: 'notifications',
       q: 'Les notifications, c’est compris ? Combien ?',
       r: [
-        'Oui, sans coût par message. Dans toutes les formules, le client est prévenu automatiquement à chaque passage et quand sa récompense est débloquée.',
+        'Oui, sans coût par message. Dans les deux offres, le client est prévenu automatiquement à chaque passage et quand sa récompense est débloquée.',
         `Pour vos campagnes (offres, nouveautés), un nombre de campagnes par semaine : ${PLANS.map((p) => `${p.campaignsPerWeek === null ? 'illimitées' : nombre(p.campaignsPerWeek)} avec ${p.name}`).join(', ')}. Une campagne compte pour une, qu’elle parte vers 30 ou 300 clients, et le compteur repart chaque lundi.`,
         `Les messages automatiques et les notifications de proximité ne sont jamais décomptés. Et un client reçoit au plus un message commercial toutes les ${MARKETING_INTERVAL_HOURS} h, pour ne pas le lasser (délai réglable).`,
       ],
@@ -133,12 +128,9 @@ export function objections(): Reponse[] {
       id: 'quotas',
       q: 'Et si j’ai plus de clients que prévu ?',
       r: [
-        `Une carte, c’est un client inscrit à votre programme. ${listeQuotas()}.`,
-        'Vous êtes prévenu dans votre espace à 80 % et à 100 %. Une fois la limite atteinte, les nouvelles inscriptions sont refusées et le client voit un message d’attente : c’est le moment d’ajouter des cartes ou de passer à la formule supérieure. Les clients supprimés ne comptent plus.',
-        `${phraseOptionCartes()} Les cartes sont disponibles tout de suite ; un pack se retire à la fin du mois payé (en annuel, à l’échéance).`,
-        'Le compteur de campagnes repart chaque lundi.',
+        'Aucune limite : clients et cartes sont illimités dans les deux offres, sans supplément.',
+        `Ce qui change, c’est le nombre de campagnes : ${listeQuotas()}. Une campagne compte pour une, qu’elle parte vers 30 ou 300 clients, et le compteur repart chaque lundi.`,
       ],
-      attention: 'Le retrait d’un pack est refusé tant que les clients inscrits dépassent la limite sans ce pack. Avec Pro, les cartes sont illimitées : l’option n’existe pas.',
       sources: [S.offres, S.tarifs],
     },
     {
@@ -195,21 +187,35 @@ export function objections(): Reponse[] {
     {
       id: 'engagement',
       q: 'Je suis engagé combien de temps ?',
-      r: [
-        `En mensuel : ${ENGAGEMENT_MENSUEL.charAt(0).toLowerCase()}${ENGAGEMENT_MENSUEL.slice(1)}`,
-        `En annuel : ${ENGAGEMENT_ANNUEL.replace(/\.$/, '')}, avec 15 % de réduction et la mise en service offerte.`,
-      ],
-      attention: 'La FAQ du coffre n’a pas de réponse validée sur l’engagement : le Trieur ne répond pas seul à cette question par mail.',
-      sources: [S.brief, S.faq],
+      r: ['Seulement si vous le choisissez. Sans engagement, vous arrêtez à la fin de n’importe quel mois.', PHRASES.engagement],
+      attention: 'L’engagement est proposé, jamais imposé. La sortie vaut pour un commerce qui ferme, sur justificatif de radiation : la vente du fonds ne l’ouvre pas d’office, renvoyez cette question à Ewan.',
+      sources: [S.offres, S.cgv],
     },
     {
       id: 'essai',
       q: 'Je peux essayer gratuitement ?',
+      r: TRIAL.open
+        ? [
+            `Oui. ${PHRASES.essai}`,
+            `L’essai donne l’offre ${starter.name} complète, avec ses ${starter.campaignsPerWeek} campagnes par semaine. Aucun prélèvement : à la fin du mois, la carte se met en pause tant qu’aucune offre n’est choisie. Pro se prend à tout moment, sans essai propre.`,
+            'Vous souscrivez quand vous voulez : le premier paiement a lieu le jour de la souscription, et les jours d’essai restants ne sont pas reportés.',
+          ]
+        : ['Il n’y a pas d’essai gratuit. En revanche, sans rien payer, vous pouvez voir l’aperçu de votre carte à votre nom et à vos couleurs (gratuit, sans inscription), la démonstration de LOYNA Business avec des données fictives, et la vidéo de présentation.'],
+      attention: TRIAL.open
+        ? 'Lien à envoyer : loyna.fr/essai/, ou le lien d’essai de « Préparer une carte », qui reprend sa carte. Sont demandés : SIRET, e-mail, téléphone et mot de passe ; 1 essai par SIRET, par e-mail et par téléphone. Aucun service de Pro pendant l’essai, ni document. Si la page annonce que les essais sont complets, proposez l’abonnement ou l’aperçu gratuit.'
+        : undefined,
+      liens: TRIAL.open ? [LIENS.essai, LIENS.apercu, LIENS.demo] : [LIENS.apercu, LIENS.demo, LIENS.video],
+      sources: TRIAL.open ? [S.offres, S.cgv] : [S.brief, S.configurateur, S.demo, S.video],
+    },
+    {
+      id: 'arret',
+      q: 'Et si j’arrête ?',
       r: [
-        'Il n’y a pas d’essai gratuit. En revanche, sans rien payer, vous pouvez voir l’aperçu de votre carte à votre nom et à vos couleurs (gratuit, sans inscription), la démonstration de LOYNA Business avec des données fictives, et la vidéo de 80 secondes.',
+        PHRASES.arret,
+        'Pendant l’arrêt, vous gardez l’accès à votre espace client : vous consultez vos clients, vous les exportez en CSV et vous reprenez l’abonnement quand vous voulez, sans mise en service à payer.',
       ],
-      liens: [LIENS.apercu, LIENS.demo, LIENS.video],
-      sources: [S.brief, S.configurateur, S.demo, S.video],
+      attention: 'Ne dites jamais que la carte disparaît : elle reste dans le téléphone, solde affiché, mais elle ne crédite plus. Une suspension décidée par LOYNA n’est levée que par LOYNA. Avec engagement, l’arrêt ne dispense pas des mensualités dues.',
+      sources: [S.offres, S.cgv],
     },
     {
       id: 'references',
@@ -256,7 +262,10 @@ export function objections(): Reponse[] {
     {
       id: 'delai',
       q: 'Combien de temps pour que ce soit prêt ?',
-      r: ['Votre carte est prête sous 24 h, hors personnalisation exceptionnelle. Vous affichez ensuite votre QR code et vous scannez vos premiers clients.'],
+      r: [
+        'Votre carte est prête sous 24 h, hors personnalisation exceptionnelle. Vous affichez ensuite votre QR code et vous scannez vos premiers clients.',
+        ...(TRIAL.open ? ['Avec l’essai, elle est créée tout de suite à partir de vos réglages et du modèle de votre métier.'] : []),
+      ],
       sources: [S.faqCoffre, S.faq],
     },
     {
@@ -276,9 +285,13 @@ export function objections(): Reponse[] {
     },
     {
       id: 'changer',
-      q: 'Je pourrai changer de formule ou résilier ?',
-      r: ['Oui, depuis votre espace client. En mensuel, une résiliation demandée pendant les 12 premiers mois prend effet à la fin de cette première année ; ensuite, à la fin du mois en cours.'],
-      sources: [S.faq],
+      q: 'Je pourrai changer d’offre ou résilier ?',
+      r: [
+        'Oui, depuis votre espace client. Sans engagement : le changement d’offre est immédiat, au prorata, et une résiliation prend effet à la fin du mois en cours. Vous pouvez aussi prendre l’engagement : 12 mois à partir de ce jour.',
+        'Avec engagement : passer de Starter à Pro reste possible, avec la même date de fin ; revenir à Starter ou retirer l’engagement attend la fin des 12 mois, et une résiliation prend effet à leur terme. Ensuite : même prix, résiliable à la fin de n’importe quel mois.',
+      ],
+      attention: 'Aucune mise en service n’est facturée à un changement d’offre.',
+      sources: [S.offres, S.cgv],
     },
     {
       id: 'telephone',
@@ -290,10 +303,10 @@ export function objections(): Reponse[] {
       id: 'reflechir',
       q: 'Je vais réfléchir. Envoyez-moi une documentation.',
       r: [
-        'Proposez d’envoyer par mail la vidéo de présentation (pièce jointe prévue par la FAQ du coffre), le lien de la démonstration, l’aperçu de sa carte et la page Tarifs.',
+        `Proposez d’envoyer par mail la vidéo de présentation (pièce jointe prévue par la FAQ du coffre), le lien de la démonstration, l’aperçu de sa carte${TRIAL.open ? ', l’essai d’un mois' : ''} et la page Tarifs.`,
         'Fixez ensemble le moment où vous le rappelez, et notez-le dans la fiche.',
       ],
-      liens: [LIENS.video, LIENS.demo, LIENS.apercu, LIENS.tarifs],
+      liens: [...(TRIAL.open ? [LIENS.essai] : []), LIENS.video, LIENS.demo, LIENS.apercu, LIENS.tarifs],
       sources: [S.faqCoffre, S.video, S.demo, S.configurateur],
     },
   ];
@@ -329,7 +342,8 @@ export function derouleAppel(): {titre: string; duree?: string; points: string[]
         '« À chaque visite, vous scannez leur carte avec votre téléphone : un scan, un passage validé. »',
         '« Au seuil que vous choisissez, la récompense se débloque toute seule et le client reçoit une notification sur son téléphone. »',
         '« Et quand il passe près de votre boutique, sa carte s’affiche sur l’écran de verrouillage de son téléphone. »',
-        `« Votre carte est prête sous 24 h, à partir de ${euro(prixMin())} par mois, sans TVA. Avec Premium, les automatisations font revenir vos clients toutes seules. »`,
+        `« Votre carte est prête sous 24 h, à partir de ${euro(prixMin())} par mois, sans TVA, sans engagement. La relance et les rappels partent tout seuls, l’anniversaire et l’avis Google s’activent en un réglage, dans les deux offres. »`,
+        ...(TRIAL.open ? [`« Vous pouvez l’essayer : ${TRIAL.label}. »`] : []),
       ],
     },
     {
@@ -339,7 +353,9 @@ export function derouleAppel(): {titre: string; duree?: string; points: string[]
     {
       titre: 'Conclusion',
       points: [
-        'Intéressé : proposer un rendez-vous de 15 minutes, ou, s’il veut commencer, la page Tarifs et le lien de paiement (onglet Tarifs).',
+        TRIAL.open
+          ? 'Intéressé : proposer un rendez-vous de 15 minutes, ou, s’il veut commencer, l’essai d’un mois ou le paiement : les 2 liens sont dans « Préparer une carte ». En visite, le QR code à l’écran mène à l’essai, pas au paiement.'
+          : 'Intéressé : proposer un rendez-vous de 15 minutes, ou, s’il veut commencer, le lien de paiement de « Préparer une carte ».',
         'Hésite : « Je vous envoie l’aperçu de votre carte et la démonstration ? » : loyna.fr/creer-ma-carte/ et loyna.fr/espace-client/demo/. Vérifier son adresse e-mail.',
         'Pas intéressé : remercier, demander la raison principale, passer la fiche en « refus ».',
         'Ne veut plus être contacté : Liste STOP et fiche en « stop », tout de suite.',

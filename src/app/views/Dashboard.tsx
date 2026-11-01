@@ -1,17 +1,15 @@
-// Accueil : indicateurs de la période (avec la période précédente), consommation de l'offre (cartes, campagnes de la
-// semaine) avec alertes à 80 % et 100 % et bouton « Ajouter 500 cartes » (option du 2026-10-30, packs.tsx), courbe
-// quotidienne et suivi LOYNA (Pro).
+// Accueil : indicateurs de la période (avec la période précédente), campagnes de la semaine avec alertes à 80 % et 100 %,
+// courbe quotidienne et suivi LOYNA (Pro). Pendant l'essai : panneau de démarrage (affiche, adresse, première carte, guide) ;
+// /espace-client/?bienvenue=1 l'accueille juste après l'activation.
 // Parrainage LOYNA (29/10/2026, Ewan : le montrer aux commerçants déjà clients) :
-// bandeau « Parrainez un commerçant » pour le propriétaire d'un abonnement mensuel actif (my_referral, CGV 4.8),
+// bandeau « Parrainez un commerçant » pour le propriétaire d'un abonnement actif (my_referral, CGV 4.8),
 // masquable 30 jours ; le détail (filleuls, mois obtenus) reste dans Abonnement.
 // Définitions des indicateurs : en-tête de supabase/migrations/…_analytics.sql (dépôt LOYNA).
-import {useState} from 'preact/hooks';
-import {CARD_PACK, nombre} from '../../data/site';
+import {useEffect, useState} from 'preact/hooks';
 import {Icon} from '../icons';
-import {AddPackButton, canManagePacks} from '../packs';
-import {api, can, feature, includedIn, loadUsage, merchant, planLabel, readOnly, toast, type PlanUsage} from '../state';
+import {api, can, feature, includedIn, loadUsage, merchant, planLabel, readOnly, service, servicePaused, toast, type PlanUsage} from '../state';
 import {Btn, ErrorBox, Kpi, LinkBox, Panel, Segmented, Spinner, UsageMeter, useLoad} from '../ui';
-import {copy, date, joinUrl, mondayLabel, num} from '../util';
+import {copy, date, dayLong, joinUrl, mondayLabel, num} from '../util';
 
 interface Period {
   visits: number;
@@ -50,7 +48,7 @@ const METRICS = [
 ] as const;
 
 // --- Parrainage LOYNA (CGV 4.8 : premier mois offert au filleul ; pour le parrain, son mois suivant offert
-// et 1 QR code sous verre offert par filleul qui paie sa première mensualité ; abonnements mensuels) -------------
+// et 1 QR code sous verre offert par filleul qui paie sa première mensualité) -------------------------------------
 const MASQUE = 'loyna_parrainage_masque_jusqua';
 const masqueJusqua = () => {
   try {
@@ -65,7 +63,7 @@ function ParrainageAccueil() {
   const data = useLoad(() => (masque ? Promise.resolve(null) : api.rpc<{status: string; code?: string; link?: string; eligibility?: string; months_waiting?: number}>('my_referral').catch(() => null)), [masque]);
   const r = data.data;
   if (masque || !r || r.status !== 'OK' || r.eligibility !== 'ACTIVE' || !r.code || !r.link) return null;
-  const message = `Je vous recommande LOYNA, la carte de fidélité dans Apple Wallet et Google Wallet. Avec mon code ${r.code}, votre premier mois est offert (abonnement mensuel) : ${r.link}`;
+  const message = `Je vous recommande LOYNA, la carte de fidélité dans Apple Wallet et Google Wallet. Avec mon code ${r.code}, votre premier mois est offert : ${r.link}`;
   const cacher = () => {
     try {
       localStorage.setItem(MASQUE, String(Date.now() + 30 * 86400000));
@@ -80,9 +78,9 @@ function ParrainageAccueil() {
         <Icon name="gift" size={26} />
       </span>
       <div class="rb-t">
-        <strong>Parrainez un commerçant : 1 mois offert chacun</strong>
+        <strong>Parrainez un commerçant : 1 mois offert à chacun.</strong>
         <small>
-          Son premier mois est offert. Pour vous, votre mois suivant offert et 1 QR code sous verre, dès qu’il a payé sa première mensualité (abonnements mensuels).
+          Son premier mois est offert. Pour vous, votre mois suivant offert et 1 QR code sous verre, dès qu’il a payé sa première mensualité.
           {(r.months_waiting ?? 0) > 0 ? ` ${num(r.months_waiting!)} mois offert${r.months_waiting! > 1 ? 's' : ''} à venir.` : ''}
         </small>
         <div class="rb-a">
@@ -105,6 +103,46 @@ function ParrainageAccueil() {
   );
 }
 
+/**
+ * Essai : les gestes qui font vivre la carte dès le premier jour. Seul ce qui se vérifie est coché (adresse enregistrée,
+ * premier client inscrit). `bienvenue` : juste après l'activation (/espace-client/?bienvenue=1).
+ */
+function TrialStart({customers, locations, bienvenue}: {customers: number | null; locations: number | null; bienvenue: boolean}) {
+  const m = merchant.value!;
+  const s = service.value;
+  const steps: {done?: boolean; title: string; text: string; href: string; label: string; external?: boolean}[] = [
+    {title: 'Imprimez l’affiche du comptoir', text: 'Vos clients la scannent et ajoutent leur carte à leur téléphone, sans application.', href: '#/reglages/affiche', label: 'Affiche du comptoir'},
+    {done: !!locations, title: 'Ajoutez l’adresse de votre boutique', text: 'Votre carte s’affiche sur l’écran verrouillé d’un client qui passe près de chez vous.', href: '#/reglages/boutique', label: 'Boutique et proximité'},
+    {done: !!customers, title: 'Créez votre première carte', text: 'Inscrivez-vous comme un client : vous verrez la carte telle qu’ils la reçoivent, puis scannez-la.', href: joinUrl(m.merchant_slug), label: 'Page d’inscription', external: true},
+    {title: 'Activez l’anniversaire et l’avis Google', text: 'La relance et « Plus qu’un passage ! » sont déjà actifs. Ces deux-là attendent votre surprise et votre lien d’avis.', href: '#/automatisations', label: 'Automatisations'},
+    {title: 'Parcourez le guide de démarrage', text: 'Chaque partie de votre espace, en 2 minutes.', href: '/espace-client/guide/', label: 'Guide de démarrage', external: true},
+  ];
+  return (
+    <Panel
+      class="trial-start"
+      title={bienvenue ? 'Votre carte est prête : 5 gestes pour démarrer' : 'Votre essai : 5 gestes pour démarrer'}
+      sub={s?.trial_ends_at ? `Essai gratuit jusqu’au ${dayLong(s.trial_ends_at)}, sans carte bancaire : aucun prélèvement à la fin.` : undefined}
+    >
+      <ol class="ts-list">
+        {steps.map((x) => (
+          <li class={x.done ? 'is-done' : ''}>
+            <span class="ts-i">
+              <Icon name={x.done ? 'circle-check' : 'arrow-right'} size={18} />
+            </span>
+            <span class="ts-t">
+              <strong>{x.title}</strong>
+              <small>{x.text}</small>
+            </span>
+            <Btn kind="ghost" small href={x.href} target={x.external ? '_blank' : undefined}>
+              {x.label}
+            </Btn>
+          </li>
+        ))}
+      </ol>
+    </Panel>
+  );
+}
+
 export function Dashboard() {
   const m = merchant.value!;
   const [days, setDays] = useState(30);
@@ -112,6 +150,15 @@ export function Dashboard() {
   const usage = useLoad(() => loadUsage().catch(() => null), [m.merchant_id]);
   const hour = new Date().getHours();
   const hello = hour < 5 || hour >= 18 ? 'Bonsoir' : 'Bonjour';
+  // ?bienvenue=1 : retour de la confirmation d'adresse (Confirmer.tsx), retiré de l'adresse une fois lu
+  const [bienvenue] = useState(() => new URLSearchParams(location.search).has('bienvenue'));
+  useEffect(() => {
+    if (!bienvenue) return;
+    const u = new URL(location.href);
+    u.searchParams.delete('bienvenue');
+    history.replaceState(null, '', u);
+  }, []);
+  const paused = servicePaused();
 
   return (
     <div class="page">
@@ -135,7 +182,9 @@ export function Dashboard() {
         </div>
       </header>
 
-      {can('scan.validate') && (
+      {service.value?.state === 'TRIAL' && can('settings.manage') && !readOnly() && <TrialStart customers={k.data?.totals.customers ?? null} locations={usage.data?.locations.used ?? null} bienvenue={bienvenue} />}
+
+      {can('scan.validate') && !paused && (
         <a href="#/scanner" class="quick-scan">
           <span class="qs-i">
             <Icon name="scan-line" size={28} />
@@ -148,7 +197,7 @@ export function Dashboard() {
         </a>
       )}
 
-      {usage.data && <QuotaAlerts u={usage.data} reload={usage.reload} />}
+      {usage.data && !paused && <QuotaAlerts u={usage.data} />}
 
       {can('settings.manage') && <ParrainageAccueil />}
 
@@ -210,70 +259,29 @@ export function Dashboard() {
       )}
 
       <div class={`dash-grid dash-grid--top ${feature('support.followup') ? '' : 'dash-grid--one'}`}>
-        {usage.data && <UsagePanel u={usage.data} reload={usage.reload} />}
+        {usage.data && <UsagePanel u={usage.data} />}
         {feature('support.followup') && <FollowUp />}
       </div>
 
-      <Panel title="Inscription de nouveaux clients" sub="À afficher au comptoir : le client scanne ce QR code avec son téléphone et ajoute sa carte en quelques secondes.">
-        <LinkBox url={joinUrl(m.merchant_slug)} note={can('settings.manage') ? <a href="#/reglages">Télécharger l’affiche du comptoir</a> : undefined} />
-      </Panel>
+      {!paused && (
+        <Panel title="Inscription de nouveaux clients" sub="À afficher au comptoir : le client scanne ce QR code avec son téléphone et ajoute sa carte en quelques secondes.">
+          <LinkBox url={joinUrl(m.merchant_slug)} note={can('settings.manage') ? <a href="#/reglages/affiche">Télécharger l’affiche du comptoir</a> : undefined} />
+        </Panel>
+      )}
     </div>
   );
 }
 
 const ratio = (used: number, limit: number | null) => (limit ? used / limit : 0);
 
-/**
- * Alertes à 80 % et 100 % des cartes (inscriptions refusées au-delà ; bouton « Ajouter 500 cartes » pour le propriétaire
- * ou un administrateur, en Starter et Premium) et des campagnes de la semaine (refusées au-delà, jusqu'à lundi).
- */
-function QuotaAlerts({u, reload}: {u: PlanUsage; reload: () => void}) {
+/** Alertes à 80 % et 100 % des campagnes de la semaine (refusées au-delà, jusqu'à lundi). */
+function QuotaAlerts({u}: {u: PlanUsage}) {
   const link = can('settings.manage') ? (
     <a href="#/abonnement" class="alert-a">
       Voir les offres
     </a>
   ) : null;
-  const packs = canManagePacks();
   const out = [];
-  const c = ratio(u.cards.used, u.cards.limit);
-  if (u.cards.limit && c >= 1)
-    out.push(
-      <div class="alert alert--full" role="alert">
-        <Icon name="triangle-alert" />
-        <div class="alert-t">
-          <p>
-            <strong>
-              Toutes vos cartes sont utilisées ({num(u.cards.used)} / {num(u.cards.limit)}).
-            </strong>{' '}
-            Les nouvelles inscriptions sont refusées : {packs ? `ajoutez ${nombre(CARD_PACK.cards)} cartes, ou passez à l’offre supérieure` : 'passez à l’offre supérieure'} pour accueillir de nouveaux clients. {link}
-          </p>
-          {packs && (
-            <div class="alert-b">
-              <AddPackButton usage={u} onDone={reload} />
-            </div>
-          )}
-        </div>
-      </div>,
-    );
-  else if (u.cards.limit && c >= 0.8)
-    out.push(
-      <div class="alert" role="status">
-        <Icon name="triangle-alert" />
-        <div class="alert-t">
-          <p>
-            <strong>
-              {Math.floor(c * 100)} % de vos cartes sont utilisées ({num(u.cards.used)} / {num(u.cards.limit)}).
-            </strong>{' '}
-            Au-delà de {num(u.cards.limit)}, les nouvelles inscriptions seront refusées.{packs ? ` Besoin de place ? Ajoutez ${nombre(CARD_PACK.cards)} cartes.` : ''} {link}
-          </p>
-          {packs && (
-            <div class="alert-b">
-              <AddPackButton usage={u} onDone={reload} />
-            </div>
-          )}
-        </div>
-      </div>,
-    );
   const q = u.campaigns;
   const n = q ? ratio(q.used, q.limit) : 0;
   if (q && q.limit && n >= 1)
@@ -303,12 +311,11 @@ function QuotaAlerts({u, reload}: {u: PlanUsage; reload: () => void}) {
   return out.length ? <div class="alerts">{out}</div> : null;
 }
 
-function UsagePanel({u, reload}: {u: PlanUsage; reload: () => void}) {
-  const packs = u.cards.packs ?? 0;
+function UsagePanel({u}: {u: PlanUsage}) {
   return (
     <Panel
       title={`Votre offre ${planLabel(u.plan)}`}
-      sub="Une carte = un client inscrit. Une campagne = un envoi à vos clients, quel que soit leur nombre : les messages automatiques et la proximité ne sont jamais décomptés."
+      sub="Clients et cartes illimités. Une campagne = un envoi à vos clients, quel que soit leur nombre : les messages automatiques et la proximité ne sont jamais décomptés."
       actions={
         can('settings.manage') ? (
           <Btn kind="ghost" small href="#/abonnement" icon="arrow-right">
@@ -318,15 +325,6 @@ function UsagePanel({u, reload}: {u: PlanUsage; reload: () => void}) {
       }
     >
       <div class="meters">
-        <div class="meter-w">
-          <UsageMeter
-            label="Cartes"
-            used={u.cards.used}
-            limit={u.cards.limit}
-            extra={packs > 0 ? ` · dont +${nombre(packs * (u.cards.pack_size ?? CARD_PACK.cards))} avec vos packs` : undefined}
-          />
-          {canManagePacks() && u.cards.limit !== null && ratio(u.cards.used, u.cards.limit) < 0.8 && <AddPackButton usage={u} onDone={reload} kind="ghost" />}
-        </div>
         {u.campaigns && (
           <UsageMeter
             label="Campagnes cette semaine"
@@ -343,10 +341,11 @@ function UsagePanel({u, reload}: {u: PlanUsage; reload: () => void}) {
 /** Pro : suivi personnalisé, un point mensuel de 30 minutes avec LOYNA. */
 function FollowUp() {
   const m = merchant.value!;
-  const subject = encodeURIComponent(`Point mensuel LOYNA Pro · ${m.merchant_name}`);
+  const offre = `LOYNA ${planLabel(m.subscription_plan)}`; // Premium (Barber Kong) a le même suivi, sous son nom
+  const subject = encodeURIComponent(`Point mensuel ${offre} · ${m.merchant_name}`);
   return (
     <Panel dark class="follow">
-      <p class="eyebrow">LOYNA Pro</p>
+      <p class="eyebrow">{offre}</p>
       <h2>Votre suivi LOYNA : point mensuel de 30 min</h2>
       <p class="muted">Chaque mois, faites le point avec LOYNA : vos chiffres, vos objectifs, les réglages de la récompense, et un plan d’action.</p>
       <div class="btn-row">

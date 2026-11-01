@@ -1,12 +1,12 @@
 ---
-// Haut de la page d'accueil : la carte s'anime toute seule (défilé de cartes métiers), et le visiteur
-// peut taper le nom de son commerce et choisir une couleur pour voir SA carte en direct.
-// « Voir ma carte » ouvre le configurateur prérempli (sans JavaScript : /creer-ma-carte/?nom=…).
+// Haut de la page d'accueil : la carte s'anime toute seule (défilé de cartes métiers), et le visiteur peut taper le nom
+// de son commerce pour voir SA carte en direct. « Créer ma carte » ouvre le configurateur prérempli (sans JavaScript :
+// /creer-ma-carte/?nom=…) ; l'appel principal (APPEL) mène à l'essai. Sur ordinateur, le téléphone plonge derrière la jonction
+// qui suit ; sur téléphone, la carte seule, en éventail, reste visible dès le premier écran.
 import Icon from './Icon.astro';
 import Phone from './Phone.astro';
 import WalletCard from './WalletCard.astro';
-import CardSwatches from './CardSwatches.astro';
-import {LAUNCH_OFFER, PLANS, euro, offerActive} from '../data/site';
+import {APPEL, PLANS, TRIAL, euro} from '../data/site';
 import type {Sector} from '../lib/builder';
 
 interface Props {
@@ -29,19 +29,12 @@ const demos: Demo[] = [
   })),
 ];
 const first = demos[0];
-const offer = offerActive();
 ---
 
 <section class="hero" id="hero" data-demos={JSON.stringify(demos)}>
   <div class="container hero-grid">
     <div class="h-copy">
-      {
-        offer && (
-          <a class="offer-pill" href="/tarifs/" data-offer>
-            <Icon name="gift" size={15} /> Offre de lancement · mise en service offerte jusqu’au {LAUNCH_OFFER.untilLabel}
-          </a>
-        )
-      }
+      <p class="eyebrow"><Icon name="wallet-cards" size={15} /> Apple Wallet et Google Wallet</p>
       <h1 set:html={titleHtml} />
       <p class="lead">{subtitle}</p>
     </div>
@@ -49,14 +42,14 @@ const offer = offerActive();
     <div class="h-visual" aria-hidden="true">
       <!-- Ordinateur : la carte dans le Wallet d'un téléphone -->
       <div class="phone-wrap">
-        <Phone width={300} screen="#000">
+        <Phone width={336} screen="#f3f1ec">
           <div class="wallet-ui">
-            <div class="status"><span>9:41</span><span class="bars"></span></div>
+            <div class="status"><span>9:41</span><span class="bars"><i></i><i></i><i></i></span></div>
             <p class="wallet-title">Wallet</p>
             <div class="stack s1">Banque</div>
             <div class="stack s2">Carte transport</div>
             <div class="live-slot">
-              <WalletCard name={first.name} activity={first.activity} bg={first.bg} accent={first.accent} filled={7} total={first.total} reward={first.reward} width={252} class="live" />
+              <WalletCard name={first.name} activity={first.activity} bg={first.bg} accent={first.accent} filled={7} total={first.total} reward={first.reward} width={300} class="live" />
             </div>
           </div>
           <div class="toast">
@@ -64,15 +57,16 @@ const offer = offerActive();
             <span class="t-text"><span class="t-head"><b data-name>{first.name}</b><small><Icon name="map-pin" size={11} /> À proximité</small></span><span>Vous passez près de <span data-name>{first.name}</span> : votre carte est prête.</span></span>
           </div>
         </Phone>
-        <div class="pill pill-scan"><span class="ok">✓</span> Passage validé</div>
-        <div class="pill pill-reward">🎁 Récompense débloquée</div>
+        <div class="pill pill-scan"><span class="ok"><Icon name="check" size={14} /></span><span>Passage validé<small>La carte se met à jour</small></span></div>
+        <div class="pill pill-reward"><span class="pk"><Icon name="gift" size={15} /></span><span>Récompense débloquée</span></div>
+        <div class="pill pill-prox"><span class="pk"><Icon name="map-pin" size={15} /></span><span>Près de la boutique</span></div>
       </div>
-      <!-- Mobile : la carte seule, en éventail -->
+      <!-- Téléphone : la carte seule, en éventail -->
       <div class="card-fan">
         <div class="fan-back fan-b1"></div>
         <div class="fan-back fan-b2"></div>
         <WalletCard name={first.name} activity={first.activity} bg={first.bg} accent={first.accent} filled={7} total={first.total} reward={first.reward} width={300} qr={false} class="live" />
-        <div class="pill pill-fan"><span class="ok">✓</span> Passage validé</div>
+        <div class="pill pill-fan"><span class="ok"><Icon name="check" size={13} /></span><span>Passage validé</span></div>
       </div>
     </div>
 
@@ -81,23 +75,31 @@ const offer = offerActive();
         <label for="try-name">Essayez avec le nom de votre commerce</label>
         <div class="try-row">
           <input id="try-name" name="nom" type="text" maxlength="40" placeholder="Ex. : Le Fournil d’Albane" autocomplete="organization" />
-          <button type="submit" class="btn btn--gold">Voir ma carte <Icon name="arrow-right" size={18} /></button>
+          <button type="submit" class="btn btn--primary">Créer ma carte <Icon name="arrow-right" size={18} /></button>
         </div>
-        <div class="try-colors"><CardSwatches /></div>
       </form>
-      <p class="hero-alt">Gratuit, sans inscription · <a href="/tarifs/">voir les tarifs</a> · <a href="#rappel">être rappelé</a></p>
+      <p class="hero-alt">
+        <span>Gratuit, sans inscription</span>
+        <a href="/demo/" data-video="/video/loyna-presentation-720p.mp4"><Icon name="circle-play" size={16} /> Voir la démo</a>
+        <a href="/tarifs/">Les tarifs</a>
+        <a href="#rappel">Être rappelé</a>
+      </p>
+      <p class="hero-essai">
+        <a class="btn btn--gold" href={APPEL.href}>{APPEL.label} <Icon name="arrow-right" size={18} /></a>
+        {TRIAL.open && <span>Sans carte bancaire</span>}
+      </p>
       <ul class="hero-points">
-        <li><Icon name="smartphone" size={18} /> Sans application</li>
-        <li><Icon name="map-pin" size={18} /> Notification de proximité</li>
-        <li><Icon name="zap" size={18} /> Prête sous 24&nbsp;h</li>
-        <li><Icon name="credit-card" size={18} /> Dès {euro(Math.min(...PLANS.map((p) => p.monthly)))} par mois, sans TVA</li>
+        <li><Icon name="smartphone" size={17} /> Sans application</li>
+        <li><Icon name="map-pin" size={17} /> Notification de proximité</li>
+        <li><Icon name="zap" size={17} /> {TRIAL.open ? 'Carte créée tout de suite' : <>Prête sous 24&nbsp;h</>}</li>
+        <li><Icon name="credit-card" size={17} /> Dès {euro(Math.min(...PLANS.map((p) => p.monthly)))} par mois, sans TVA</li>
       </ul>
     </div>
   </div>
 </section>
 
 <script>
-  import {appliquerCarte, brancherCouleurs, initiales, ouvrirConfigurateur, type CarteDemo} from '../lib/carte-live';
+  import {appliquerCarte, initiales, ouvrirConfigurateur, type CarteDemo} from '../lib/carte-live';
 
   const hero = document.getElementById('hero');
   if (hero) {
@@ -115,7 +117,6 @@ const offer = offerActive();
       cards.forEach((card) => appliquerCarte(card, d, animate));
       hero!.querySelectorAll('[data-name]').forEach((el) => (el.textContent = d.name));
       hero!.querySelectorAll('[data-initials]').forEach((el) => (el.textContent = initiales(d.name)));
-      hero!.querySelectorAll('[data-reward]').forEach((el) => (el.textContent = d.reward));
     }
 
     // Défilé automatique des cartes métiers, arrêté dès que le visiteur essaie avec son commerce.
@@ -132,12 +133,7 @@ const offer = offerActive();
       stop();
       show({...current, name: input.value.trim() || 'Votre commerce'}, false);
     });
-    // Ronds de couleur (identiques au configurateur) : fond de la carte et tampons
-    brancherCouleurs(hero, (cible, couleur) => {
-      stop();
-      show({...current, name: input.value.trim() || current.name, [cible]: couleur}, false);
-    });
-    // « Voir ma carte » : le configurateur reprend le nom, les couleurs et la récompense.
+    // « Créer ma carte » : le configurateur reprend le nom, les couleurs et la récompense.
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       ouvrirConfigurateur({...current, name: input.value.trim() || current.name});
@@ -149,185 +145,258 @@ const offer = offerActive();
   .hero {
     position: relative;
     overflow: hidden;
-    padding: clamp(28px, 5vw, 72px) 0 clamp(36px, 5vw, 72px);
-    color: #e9e5dc;
-    background:
-      radial-gradient(55% 75% at 78% 40%, rgba(230, 194, 122, 0.24), transparent 70%),
-      radial-gradient(40% 60% at 0% 100%, rgba(201, 150, 63, 0.14), transparent 70%),
-      linear-gradient(180deg, #121216 0%, #17151a 100%);
+    padding: clamp(20px, 5vw, 64px) 0 calc(var(--j-h) + 26px);
+    background: var(--bg);
   }
   .hero-grid {
+    position: relative;
     display: grid;
-    grid-template-columns: 1.05fr 0.95fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      'copy visual'
-      'try visual';
-    column-gap: clamp(30px, 5vw, 70px);
-    align-items: center;
+      'copy'
+      'visual'
+      'try';
   }
   .h-copy {
     grid-area: copy;
-    align-self: end;
   }
   .h-visual {
     grid-area: visual;
     position: relative;
+    min-width: 0;
   }
   .h-try {
     grid-area: try;
-    align-self: start;
-  }
-  .offer-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 18px;
-    padding: 7px 14px;
-    border-radius: 999px;
-    background: rgba(230, 194, 122, 0.12);
-    border: 1px solid rgba(230, 194, 122, 0.35);
-    color: #f0d49a;
-    font-size: 0.86rem;
-    font-weight: 600;
-    text-decoration: none;
-  }
-  .offer-pill b {
-    letter-spacing: 0.05em;
-  }
-  .offer-pill:hover {
-    background: rgba(230, 194, 122, 0.2);
+    min-width: 0;
   }
   h1 {
-    color: #faf7f0;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
   }
   .lead {
-    color: #c9c2b4;
-    max-width: 560px;
-    margin: 0 0 26px;
+    max-width: 590px;
+    margin: 0;
+    color: #4f4a42;
+    font-size: clamp(1.03rem, 1.6vw, 1.26rem);
   }
 
-  /* Essai */
-  .try {
-    max-width: 560px;
-    padding: 18px;
-    border-radius: 22px;
-    background: rgba(250, 247, 240, 0.06);
-    border: 1px solid rgba(230, 194, 122, 0.22);
-    backdrop-filter: blur(6px);
-  }
+  /* Essai avec le nom du commerce */
   .try label {
     display: block;
     font-weight: 700;
-    color: #faf7f0;
+    color: var(--ink);
     margin-bottom: 10px;
   }
   .try-row {
-    display: flex;
+    display: grid;
     gap: 10px;
   }
   .try-row input {
-    flex: 1;
+    width: 100%;
     min-width: 0;
-    min-height: 52px;
-    padding: 12px 16px;
-    border-radius: 14px;
-    border: 1px solid rgba(250, 247, 240, 0.18);
-    background: rgba(18, 18, 22, 0.6);
-    color: #faf7f0;
-    font: inherit;
+    min-height: 54px;
+    padding: 12px 22px;
+    border-radius: 999px;
+    border: 1.5px solid var(--filet);
+    background: var(--card);
+    color: var(--ink);
+    font: 500 1rem var(--font);
   }
   .try-row input::placeholder {
-    color: #8f887c;
+    color: #8a8277;
   }
   .try-row input:focus {
-    outline: 3px solid rgba(230, 194, 122, 0.45);
-    border-color: #e6c27a;
+    outline: 3px solid rgba(201, 150, 63, 0.4);
+    outline-offset: 1px;
+    border-color: var(--gold);
   }
   .try-row .btn {
-    white-space: nowrap;
-  }
-  .try-colors {
-    margin-top: 12px;
+    width: 100%;
   }
   .hero-alt {
-    margin: 14px 0 0;
-    font-size: 0.95rem;
-    color: #a8a194;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 16px;
+    margin: 8px 0 0;
+    font-size: 0.93rem;
+    color: var(--muted);
   }
   .hero-alt a {
-    color: #e6c27a;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 40px;
+    color: var(--ink);
     font-weight: 700;
+    text-underline-offset: 3px;
+  }
+  .hero-essai {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    margin: 6px 0 0;
+    font-size: 0.93rem;
+    font-weight: 650;
+    color: var(--muted);
   }
   .hero-points {
     list-style: none;
     padding: 0;
-    margin: 20px 0 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 24px;
-    color: #c9c2b4;
-    font-weight: 600;
-    font-size: 0.95rem;
+    margin: 8px 0 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 14px;
+    color: var(--ink);
+    font-weight: 650;
+    font-size: 0.9rem;
+    line-height: 1.3;
   }
   .hero-points li {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 8px;
   }
   .hero-points :global(svg) {
+    flex: none;
+    color: var(--gold-strong);
+  }
+
+  /* Pastilles flottantes */
+  .pill {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 16px 9px 9px;
+    border-radius: 999px;
+    background: rgba(255, 253, 248, 0.92);
+    border: 1px solid var(--filet);
+    box-shadow: 0 14px 34px rgba(18, 18, 22, 0.16);
+    font-weight: 700;
+    font-size: 0.88rem;
+    line-height: 1.2;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .pill small {
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .ok,
+  .pk {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+  }
+  .ok {
+    background: var(--green);
+    color: #fff;
+  }
+  .pk {
+    background: var(--ink);
     color: #e6c27a;
   }
 
-  /* Téléphone (ordinateur) */
+  /* Téléphone : éventail de cartes */
   .phone-wrap {
-    position: relative;
+    display: none;
+  }
+  .card-fan {
     display: grid;
     place-items: center;
-    padding: 30px 40px;
-  }
-  .phone-wrap::before {
-    content: '';
-    position: absolute;
-    inset: 6% 0;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(230, 194, 122, 0.4), rgba(230, 194, 122, 0) 68%);
-    filter: blur(12px);
-  }
-  .phone-wrap :global(.phone) {
     position: relative;
-    box-shadow:
-      0 0 0 1px rgba(230, 194, 122, 0.28),
-      0 40px 90px rgba(0, 0, 0, 0.55);
-    animation: floaty 8s ease-in-out infinite;
+    max-width: 340px;
+    margin-inline: auto;
+    padding: 22px 0 30px;
   }
+  .card-fan :global(.wcard) {
+    position: relative;
+    z-index: 2;
+    width: min(300px, 100%);
+  }
+  .fan-back {
+    position: absolute;
+    width: min(270px, 84%);
+    height: 130px;
+    border-radius: 16px;
+    top: 36px;
+  }
+  .fan-b1 {
+    background: linear-gradient(135deg, #1e4d3a, #2f7a5c);
+    transform: rotate(-8deg) translateX(-26px);
+  }
+  .fan-b2 {
+    background: linear-gradient(135deg, #b3261e, #e05a3a);
+    transform: rotate(7deg) translateX(28px);
+  }
+  .pill-fan {
+    right: 2%;
+    bottom: 8px;
+    z-index: 3;
+    font-size: 0.8rem;
+    padding: 6px 13px 6px 6px;
+    animation: h-flotte 6s ease-in-out infinite;
+  }
+  .pill-fan .ok {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Éléments du Wallet (ordinateur) */
   .wallet-ui {
     position: absolute;
     inset: 0;
-    padding: 14px 12px;
-    color: #fff;
+    padding: 14px 18px;
+    color: #17140f;
   }
   .status {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 2px 14px;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 2px 10px;
+  }
+  .bars {
+    display: inline-flex;
+    gap: 2px;
+    align-items: flex-end;
+  }
+  .bars i {
+    width: 3px;
+    border-radius: 1px;
+    background: currentColor;
+  }
+  .bars i:nth-child(1) {
+    height: 5px;
+  }
+  .bars i:nth-child(2) {
+    height: 8px;
+  }
+  .bars i:nth-child(3) {
+    height: 11px;
   }
   .wallet-title {
-    font-size: 26px;
-    font-weight: 750;
-    margin: 18px 4px 10px;
+    font-size: 28px;
+    font-weight: 800;
+    margin: 18px 2px 12px;
     letter-spacing: -0.02em;
-    color: #fff;
+    color: #17140f;
   }
   .stack {
-    height: 40px;
-    border-radius: 12px 12px 0 0;
-    padding: 8px 14px;
-    font-size: 11px;
-    font-weight: 600;
-    margin-bottom: -6px;
+    height: 42px;
+    border-radius: 13px 13px 0 0;
+    padding: 9px 15px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: -7px;
   }
   .s1 {
     background: linear-gradient(135deg, #1d3557, #457b9d);
@@ -349,12 +418,12 @@ const offer = offerActive();
     align-items: flex-start;
     padding: 10px 12px;
     border-radius: 18px;
-    background: rgba(248, 244, 236, 0.95);
+    background: rgba(255, 253, 248, 0.97);
     color: #16161a;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 12px 30px rgba(18, 18, 22, 0.24);
     font-size: 11.5px;
     line-height: 1.3;
-    animation: toast 6.8s cubic-bezier(0.16, 1, 0.3, 1) 2s infinite both;
+    animation: h-toast 8s cubic-bezier(0.16, 1, 0.3, 1) 2.5s infinite both;
   }
   .t-icon {
     width: 30px;
@@ -370,6 +439,20 @@ const offer = offerActive();
   }
   .t-text {
     display: grid;
+    min-width: 0;
+  }
+  .t-text > span:last-child {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+  .t-head b {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .t-head {
     display: flex;
@@ -386,56 +469,17 @@ const offer = offerActive();
     color: #7a5418;
     white-space: nowrap;
   }
-  .pill {
-    position: absolute;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    border-radius: 999px;
-    background: #fff;
-    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: #121216;
-    white-space: nowrap;
-  }
-  .pill-scan {
-    left: -2%;
-    top: 24%;
-    animation: pop 6.8s ease-out 1.4s infinite both;
-  }
-  .pill-reward {
-    right: -2%;
-    bottom: 16%;
-    animation: pop 6.8s ease-out 3.6s infinite both;
-  }
-  .ok {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: var(--green);
-    color: #fff;
-    display: grid;
-    place-items: center;
-    font-size: 13px;
-  }
 
-  /* Mobile : éventail de cartes */
-  .card-fan {
-    display: none;
-  }
-
-  @keyframes floaty {
+  @keyframes h-flotte {
     0%,
     100% {
       translate: 0 0;
     }
     50% {
-      translate: 0 -10px;
+      translate: 0 -8px;
     }
   }
-  @keyframes toast {
+  @keyframes h-toast {
     0% {
       transform: translateY(-140%);
       opacity: 0;
@@ -451,83 +495,164 @@ const offer = offerActive();
       opacity: 0;
     }
   }
-  @keyframes pop {
-    0% {
-      transform: scale(0.6);
-      opacity: 0;
+
+  @media (min-width: 521px) {
+    .try-row {
+      display: flex;
+      gap: 0;
+      max-width: 580px;
+      padding: 6px;
+      border-radius: 999px;
+      border: 1.5px solid var(--filet);
+      background: var(--card);
+      box-shadow: var(--shadow);
     }
-    8%,
-    60% {
-      transform: scale(1);
-      opacity: 1;
+    .try-row:focus-within {
+      border-color: var(--gold);
+      box-shadow: var(--shadow), 0 0 0 3px rgba(201, 150, 63, 0.3);
     }
-    70%,
-    100% {
-      transform: scale(0.9);
-      opacity: 0;
+    .try-row input {
+      flex: 1;
+      min-height: 52px;
+      padding: 8px 8px 8px 22px;
+      border: 0;
+      background: transparent;
+    }
+    .try-row input:focus {
+      outline: none;
+    }
+    .try-row .btn {
+      flex: none;
+      width: auto;
+    }
+    .hero-points {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 22px;
     }
   }
 
-  @media (max-width: 900px) {
-    .hero-grid {
-      grid-template-columns: 1fr;
-      grid-template-areas:
-        'copy'
-        'visual'
-        'try';
+  /* Ordinateur : le téléphone à droite, qui plonge derrière la jonction */
+  @media (min-width: 980px) {
+    .hero {
+      padding-bottom: calc(var(--j-h) * 0.55);
     }
-    .phone-wrap {
-      display: none;
+    .hero-grid {
+      grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+      grid-template-areas:
+        'copy visual'
+        'try visual';
+      grid-template-rows: auto 1fr;
+      column-gap: clamp(24px, 4vw, 64px);
+    }
+    .h-copy {
+      align-self: end;
+    }
+    .h-try {
+      align-self: start;
+      margin-top: 26px;
+      padding-bottom: clamp(70px, 7vw, 110px);
+    }
+    /* le bas du téléphone, vide, disparaît derrière la courbe */
+    .h-visual {
+      height: 590px;
+      align-self: start;
     }
     .card-fan {
+      display: none;
+    }
+    .phone-wrap {
+      --k: 1; /* échelle du téléphone */
+      position: relative;
       display: grid;
-      place-items: center;
-      position: relative;
-      padding: 18px 0 30px;
-      margin-bottom: 8px;
+      justify-items: center;
     }
-    .card-fan :global(.wcard) {
-      position: relative;
-      z-index: 2;
-      width: min(300px, 100%);
-    }
-    .fan-back {
+    /* halo doré centré sur le téléphone */
+    .phone-wrap::before {
+      content: '';
       position: absolute;
-      width: min(280px, 88%);
-      height: 150px;
-      border-radius: 16px;
-      top: 22px;
+      left: 50%;
+      top: 2%;
+      width: min(760px, 150%);
+      aspect-ratio: 1;
+      translate: -50% 0;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(230, 194, 122, 0.55), rgba(230, 194, 122, 0.16) 60%, transparent);
+      pointer-events: none;
     }
-    .fan-b1 {
-      background: linear-gradient(135deg, #1e4d3a, #2f7a5c);
-      transform: rotate(-8deg) translateX(-28px);
+    .phone-wrap :global(.phone) {
+      position: relative;
+      isolation: isolate;
+      transform-origin: top center;
+      box-shadow:
+        0 0 0 1px rgba(18, 18, 22, 0.12),
+        0 44px 90px rgba(18, 18, 22, 0.32);
     }
-    .fan-b2 {
-      background: linear-gradient(135deg, #b3261e, #e05a3a);
-      transform: rotate(7deg) translateX(30px);
+    .pill-scan {
+      left: -7%;
+      top: 58%;
+      animation: h-flotte 6s ease-in-out infinite;
     }
-    .pill-fan {
-      right: 2%;
-      bottom: 4px;
-      z-index: 3;
-      font-size: 0.82rem;
-      padding: 8px 13px;
-      animation: pop 6.8s ease-out 1.4s infinite both;
+    /* sous la notification, au-dessus de la carte : la bande libre du téléphone, à toute échelle */
+    .pill-reward {
+      right: -3%;
+      top: calc(146px * var(--k));
+      animation: h-flotte 7s ease-in-out -2.4s infinite;
     }
-    .lead {
-      margin-bottom: 8px;
+    .pill-prox {
+      right: -1%;
+      top: 69%;
+      animation: h-flotte 8s ease-in-out -4.2s infinite;
     }
-    /* le bandeau du haut annonce déjà l’offre */
-    .offer-pill {
+  }
+  /* colonne étroite : « Passage validé » seul, pour ne pas mordre sur le QR code */
+  @media (min-width: 980px) and (max-width: 1099px) {
+    .pill-scan small {
       display: none;
     }
   }
-  @media (max-width: 520px) {
-    .try-row {
-      flex-direction: column;
+  @media (min-width: 1240px) {
+    .pill-scan {
+      left: 0;
     }
-    .try-row .btn {
-      width: 100%;
+    .pill-reward {
+      right: 1%;
+    }
+    .pill-prox {
+      right: 2%;
+    }
+  }
+  /* grands écrans : le texte prend plus de hauteur, le téléphone grandit pour toujours plonger derrière la courbe */
+  @media (min-width: 1360px) {
+    .phone-wrap {
+      --k: 1.07;
+    }
+    .phone-wrap :global(.phone) {
+      transform: scale(var(--k));
+    }
+    .pill-prox {
+      top: 72%;
+    }
+  }
+  @media (min-width: 1560px) {
+    .phone-wrap {
+      --k: 1.16;
+    }
+    .pill-scan {
+      left: -6%;
+      top: 57%;
+    }
+    .pill-prox {
+      right: -5%;
+      top: 74%;
+    }
+    .pill-reward {
+      right: -5%;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pill {
+      animation: none !important;
     }
   }
 </style>

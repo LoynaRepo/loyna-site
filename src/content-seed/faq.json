@@ -7,7 +7,7 @@
   },
   {
     "q": "Qu’est-ce que la notification de proximité ?",
-    "a": "Quand un client passe près de votre boutique, sa carte de fidélité s’affiche sur l’écran de verrouillage de son téléphone, avec un court message. Par exemple, un habitué passe devant votre boulangerie et lit « Votre récompense vous attend chez Le Fournil d’Albane ! ». Le message suit l’état de sa carte : récompense qui l’attend, passages restants avant la récompense, ou votre propre message. Sur iPhone, la carte apparaît sur l’écran de verrouillage ; sur Android, une notification s’affiche quand le client s’attarde près de la boutique, et disparaît quand il s’éloigne. La notification de proximité est incluse dans toutes les formules et ne compte jamais dans vos campagnes. Elle fonctionne si le client a activé la localisation et laissé Wallet s’afficher sur l’écran verrouillé : c’est son téléphone qui décide de l’affichage.",
+    "a": "Quand un client passe près de votre boutique, sa carte de fidélité s’affiche sur l’écran de verrouillage de son téléphone, avec un court message. Par exemple, un habitué passe devant votre boulangerie et lit « Votre récompense vous attend chez Le Fournil d’Albane ! ». Le message suit l’état de sa carte : récompense qui l’attend, passages restants avant la récompense, ou votre propre message. Sur iPhone, la carte apparaît sur l’écran de verrouillage ; sur Android, une notification s’affiche quand le client s’attarde près de la boutique, et disparaît quand il s’éloigne. La notification de proximité est incluse dans toutes les offres (1 adresse avec Starter, jusqu’à 3 avec Pro) et ne compte jamais dans vos campagnes. Elle fonctionne si le client a activé la localisation et laissé Wallet s’afficher sur l’écran verrouillé : c’est son téléphone qui décide de l’affichage.",
     "categorie": "Fonctionnement",
     "ordre": 2
   },
@@ -19,13 +19,13 @@
   },
   {
     "q": "Qu’est-ce qu’une notification Wallet, et combien coûte-t-elle ?",
-    "a": "C’est un message qui s’affiche sur le téléphone de votre client grâce à sa carte rangée dans Apple Wallet ou Google Wallet. LOYNA l’utilise pour prévenir le client à chaque passage et quand sa récompense est débloquée, pour vos campagnes (offre, nouveauté) et, avec Premium et Pro, pour les automatisations : anniversaire, relance des inactifs, « Plus qu’un passage ! », demande d’avis Google. Une notification Wallet n’a aucun coût par message. Vos campagnes sont comptées par semaine, quel que soit le nombre de clients qui les reçoivent : 2 campagnes par semaine avec Starter, 5 avec Premium, illimitées avec Pro. Les messages automatiques et les notifications de proximité ne sont jamais décomptés.",
+    "a": "C’est un message qui s’affiche sur le téléphone de votre client grâce à sa carte rangée dans Apple Wallet ou Google Wallet. LOYNA l’utilise pour prévenir le client à chaque passage et quand sa récompense est débloquée, pour vos campagnes (offre, nouveauté) et pour les automatisations, dans toutes les offres : anniversaire, relance des clients qui ne reviennent plus, « Plus qu’un passage ! », demande d’avis Google. Une notification Wallet n’a aucun coût par message. Vos campagnes sont comptées par semaine, quel que soit le nombre de clients qui les reçoivent : 5 campagnes par semaine avec Starter, illimitées avec Pro. Les messages automatiques et les notifications de proximité ne sont jamais décomptés.",
     "categorie": "Fonctionnement",
     "ordre": 4
   },
   {
     "q": "Mes clients risquent-ils de recevoir trop de messages ?",
-    "a": "Non. Quelle que soit la formule, un client reçoit au plus un message commercial toutes les 24 heures, et vous pouvez régler ce délai. LOYNA respecte aussi les limites d’Apple et de Google : Google accepte au plus 3 notifications par carte et par 24 heures. Les offres ne sont envoyées qu’aux clients qui ont accepté de les recevoir, et chacun peut désactiver les notifications de sa carte.",
+    "a": "Non. Quelle que soit l’offre, un même client reçoit au plus un message commercial par 24 h, réglable. LOYNA respecte aussi les limites d’Apple et de Google : Google accepte au plus 3 notifications par carte et par 24 heures. Les offres ne sont envoyées qu’aux clients qui ont accepté de les recevoir, et chacun peut désactiver les notifications de sa carte.",
     "categorie": "Fonctionnement",
     "ordre": 5
   },
@@ -55,7 +55,7 @@
   },
   {
     "q": "En combien de temps ma carte de fidélité est-elle prête ?",
-    "a": "Votre carte est prête sous 24 h, hors personnalisation exceptionnelle. Logo, couleurs, nom du programme et récompense se règlent sans code. Dès que la carte est prête, vous affichez votre QR code d’inscription au comptoir, en vitrine ou sur vos réseaux sociaux, et vous pouvez scanner vos premiers clients.",
+    "a": "Après une commande, votre carte est prête sous 24 h, hors personnalisation exceptionnelle. Logo, couleurs, nom du programme et récompense se règlent sans code. Dès que la carte est prête, vous affichez votre QR code d’inscription au comptoir, en vitrine ou sur vos réseaux sociaux, et vous pouvez scanner vos premiers clients.",
     "categorie": "Commerçant",
     "ordre": 10
   },
@@ -79,110 +79,123 @@
   },
   {
     "q": "Combien coûte LOYNA ?",
-    "a": "Trois formules, prix par mois sans TVA (TVA non applicable : le prix affiché est le prix payé). Starter, 29 € : la carte de fidélité complète, avec 500 cartes et 2 campagnes par semaine, la notification de proximité, l’inscription par QR code, les passages ou points, les récompenses automatiques, le scanner, le tableau de bord et les campagnes de notifications. Premium, 39,99 € : tout Starter avec 2 000 cartes et 5 campagnes par semaine, plus les automatisations (anniversaire, relance des inactifs, « Plus qu’un passage ! », demande d’avis Google, campagnes programmées, groupes de clients), le rapport mensuel avec 3 conseils et les niveaux VIP bronze, argent et or, avec une carte qui change de couleur à chaque niveau. Pro, 89 € : tout Premium avec cartes et campagnes illimitées, plus un point mensuel avec LOYNA, des campagnes clés en main, jusqu’à 3 boutiques, le parrainage entre vos clients, le kit comptoir imprimé et le support prioritaire. Avec Starter et Premium, vous pouvez ajouter 500 cartes pour 4,99 € par mois (50,90 € par an en paiement annuel).",
+    "a": "Deux offres, sans TVA (TVA non applicable : le prix affiché est le prix payé). Starter : 29 € par mois, sans TVA, sans engagement : vous arrêtez à la fin de n’importe quel mois. Ou 24,65 € par mois avec 12 mois d’engagement, réglés chaque mois. La carte complète, sans limite de clients, avec les messages qui partent tout seuls. Elle comprend Apple Wallet et Google Wallet, QR code d’inscription et affiche du comptoir, passages, points ou montant dépensé, récompenses automatiques, scanner et comptes équipe, notification de proximité (1 adresse), anniversaire, relance des clients qui ne reviennent plus, « Plus qu’un passage ! », demande d’avis Google, 5 campagnes de notifications par semaine, tableau de bord, rapport du mois, export de vos clients. Pro : 49 € par mois, sans TVA, sans engagement : vous arrêtez à la fin de n’importe quel mois. Ou 41,65 € par mois avec 12 mois d’engagement, réglés chaque mois. Vos clients invitent leurs amis, LOYNA écrit vos messages. Tout Starter, plus le parrainage entre vos clients, les messages écrits par LOYNA, les niveaux VIP, les campagnes illimitées, jusqu’à 3 adresses, votre carte sans la mention LOYNA et finie à la main, une vidéo et des visuels, le kit comptoir, un point de 30 minutes par mois à votre demande et le support prioritaire.",
     "categorie": "Tarifs et abonnement",
     "ordre": 14
   },
   {
-    "q": "Quelles automatisations sont incluses avec Premium ?",
-    "a": "Avec Premium, et avec Pro, les messages qui font revenir vos clients partent tout seuls : un message d’anniversaire le jour J, avec la surprise de votre choix ; la relance des clients qui ne reviennent plus, après 60 jours par défaut ; « Plus qu’un passage ! », un rappel aux clients tout proches de leur récompense ; la demande d’avis Google après la 3e visite  ; les campagnes programmées et les groupes de clients (fidèles, inactifs depuis 30, 60 ou 90 jours, anniversaires du mois, récompense disponible). Le 1er de chaque mois, un rapport résume votre activité avec 3 conseils concrets, dans votre espace et par e-mail. Vous pouvez aussi activer les niveaux VIP bronze, argent et or : vos clients montent de niveau avec leurs passages et leur carte change de couleur à chaque niveau (vos couleurs, puis argent, puis or) ; le niveau s’affiche sur la carte avec l’avantage de votre choix, et un message part à chaque nouveau niveau. Les délais se règlent, et ces messages automatiques ne comptent jamais dans vos campagnes.",
+    "q": "Y a-t-il un essai gratuit ?",
+    "a": "Oui. 1 mois gratuit, sans carte bancaire. Votre carte est créée tout de suite à partir de vos réglages et du modèle de votre métier. 1 essai par commerce. L’essai donne l’offre Starter complète et commence quand vous confirmez votre adresse e-mail ; il vous faut votre numéro de SIRET. À la fin, aucun prélèvement : votre carte se met en pause tant que vous n’avez pas choisi votre offre. Vous pouvez souscrire à tout moment depuis votre espace client : le premier paiement a lieu le jour de la souscription, et les jours d’essai restants ne sont pas reportés. Un code de parrainage se saisit aussi à l’essai : le mois offert commence le jour de la souscription.",
     "categorie": "Tarifs et abonnement",
-    "ordre": 15
+    "ordre": 15,
+    "essai": true
   },
   {
-    "q": "Que comprend l’offre Pro ?",
-    "a": "Avec Pro, LOYNA travaille avec vous. Chaque mois, un point de 30 minutes fait le tour de vos chiffres, de vos objectifs et des réglages de votre récompense, avec un plan d’action. LOYNA prépare le calendrier de vos temps forts (fêtes, saisons, soldes, événements), rédige et programme vos campagnes : vous les validez en un clic, et aucune ne part sans votre accord. Pro comprend aussi jusqu’à 3 boutiques, chacune avec sa notification de proximité, le parrainage entre vos clients, un kit comptoir imprimé (chevalet QR code et vitrophanie) envoyé à votre commerce, des cartes et des campagnes illimitées, et le support prioritaire.",
+    "q": "Quelles automatisations sont incluses ?",
+    "a": "Dans toutes les offres, les messages qui font revenir vos clients partent tout seuls une fois en place. La relance et « Plus qu’un passage ! » sont actifs dès le départ ; l’anniversaire et l’avis Google s’activent en un réglage, avec votre surprise et votre lien d’avis. Le détail : un message d’anniversaire le jour J, avec la surprise de votre choix ; la relance des clients qui ne reviennent plus, après 60 jours par défaut ; « Plus qu’un passage ! », un rappel aux clients tout proches de leur récompense ; la demande d’avis Google après la 3e visite, réglable ; les campagnes programmées et les groupes de clients (fidèles, inactifs depuis 30, 60 ou 90 jours, anniversaires du mois, récompense disponible). Le 1er de chaque mois, un rapport résume votre activité avec jusqu’à 3 conseils, dans votre espace et par e-mail. Les délais se règlent, et ces messages automatiques ne comptent jamais dans vos campagnes. Les niveaux VIP bronze, argent et or, où la carte de vos meilleurs clients change de couleur, sont dans l’offre Pro, comme le parrainage entre vos clients : tous deux s’activent en un réglage.",
     "categorie": "Tarifs et abonnement",
     "ordre": 16
   },
   {
-    "q": "Que comptent les quotas de cartes et de campagnes ?",
-    "a": "Une carte correspond à un client inscrit à votre programme : 500 avec Starter, 2 000 avec Premium, sans limite avec Pro. Les clients supprimés ne comptent plus. Vous êtes prévenu dans votre espace à 80 % puis à 100 % ; une fois la limite atteinte, les nouvelles inscriptions sont refusées et le client voit un message d’attente. Avec Starter et Premium, vous pouvez alors ajouter des cartes (option +500 cartes) ou changer de formule. Une campagne, c’est un message envoyé à vos clients, à tous ou à un groupe : elle compte pour une, qu’elle parte vers 30 ou 300 clients. Vous avez 2 campagnes par semaine avec Starter, 5 avec Premium, sans limite avec Pro. Le compteur repart chaque lundi, et les campagnes non utilisées ne sont pas reportées. Une campagne programmée compte dans la semaine où elle part, dès que vous la programmez ; annulée avant l’envoi, elle ne compte plus. Au-delà de la limite, la campagne est refusée : vous l’enverrez la semaine suivante (avec Premium, vous pouvez déjà la programmer), ou vous passez à la formule supérieure. Les messages automatiques (passage, récompense, anniversaire, relance, parrainage…) et les notifications de proximité ne sont jamais décomptés.",
+    "q": "Que comprend l’offre Pro ?",
+    "a": "Vos clients invitent leurs amis, LOYNA écrit vos messages. Pro comprend tout Starter, plus : le parrainage entre vos clients (chacun invite ses amis avec son lien, bonus aux deux à la première visite) ; LOYNA écrit et programme vos messages, au moins un par mois (vous validez, rien ne part sans vous) ; les niveaux VIP bronze, argent et or (la carte de vos meilleurs clients change de couleur) ; votre carte finie à la main, logo retouché et, sur une carte à tampons, cachets à vos initiales ; votre carte sans la mention LOYNA ; une vidéo et des visuels de votre carte, prêts à poster ; le kit comptoir, 1 QR code sous verre par adresse, offert une fois ; les campagnes illimitées ; jusqu’à 3 adresses, une seule carte, un seul tableau de bord ; un point de 30 minutes par mois avec LOYNA, à votre demande ; le support prioritaire. Carte finie à la main, vidéo et visuels arrivent sous 15 jours à partir du 1er paiement. Le kit part après le 1er paiement avec engagement, après le 3e sans engagement, sous 15 jours ensuite. Pour 20 € de plus par mois, 17 € avec engagement, vos clients invitent leurs amis et LOYNA écrit vos messages à votre place : vous n’avez plus qu’à valider.",
     "categorie": "Tarifs et abonnement",
     "ordre": 17
   },
   {
-    "q": "Puis-je ajouter des cartes sans changer de formule ?",
-    "a": "Oui, avec Starter et Premium. L’option +500 cartes ajoute 500 cartes à votre formule, pour 4,99 € par mois et par pack, ou 50,90 € par an si votre abonnement est annuel, sans TVA. Les packs se cumulent : avec 2 packs, Starter passe à 1 500 cartes. Vous l’ajoutez depuis votre espace client, rubrique Abonnement, et les cartes sont disponibles tout de suite. En mensuel, le premier mois est calculé au prorata des jours restants et ajouté à votre facture suivante ; en annuel, le prorata de l’année en cours est facturé tout de suite. Vous pouvez retirer un pack au même endroit : il reste actif jusqu’à la fin du mois payé (en annuel, jusqu’à l’échéance), sans remboursement de la période en cours. Le retrait n’est possible que si vos clients inscrits tiennent dans la limite sans ce pack. L’option ajoute des cartes, pas de campagnes, et suit votre abonnement, sans engagement à part. Avec Pro, les cartes sont déjà illimitées.",
+    "q": "Que compte une campagne ?",
+    "a": "Une campagne, c’est un message envoyé à vos clients, à tous ou à un groupe : elle compte pour une, qu’elle parte vers 30 ou 300 clients. Vous avez 5 campagnes par semaine avec Starter, sans limite avec Pro. Le compteur repart chaque lundi, et les campagnes non utilisées ne sont pas reportées. Une campagne programmée compte dans la semaine où elle part, dès que vous la programmez ; annulée avant l’envoi, elle ne compte plus. Au-delà de la limite, la campagne est refusée : vous l’enverrez la semaine suivante (vous pouvez déjà la programmer), ou vous passez à Pro. Les messages automatiques (passage, récompense, anniversaire, relance, parrainage…) et les notifications de proximité ne sont jamais décomptés. Un même client reçoit au plus un message commercial par 24 h, réglable.",
     "categorie": "Tarifs et abonnement",
     "ordre": 18
   },
   {
-    "q": "Y a-t-il des frais de mise en service ?",
-    "a": "Oui, 49 €, facturés une seule fois au démarrage. Ils sont offerts en paiement annuel et, pendant l’offre de lancement annoncée en haut des pages, aussi en paiement mensuel. Aucun matériel n’est à acheter en plus : un smartphone suffit pour scanner les cartes de vos clients.",
+    "q": "Y a-t-il une limite de clients ou de cartes ?",
+    "a": "Non. Clients et cartes sont illimités, dans les deux offres : une carte correspond à un client inscrit à votre programme. Seules les campagnes sont comptées avec Starter, 5 par semaine.",
     "categorie": "Tarifs et abonnement",
     "ordre": 19
   },
   {
-    "q": "Le paiement annuel est-il plus avantageux ?",
-    "a": "Oui. En payant à l’année, vous bénéficiez de 15 % de réduction et la mise en service de 49 € est offerte. L’abonnement revient à 295,80 € par an pour Starter, 407,90 € pour Premium et 907,80 € pour Pro, au lieu de 348 €, 479,88 € et 1 068 € sur douze mois en paiement mensuel. L’abonnement annuel est conclu pour 12 mois.",
+    "q": "Y a-t-il des frais de mise en service ?",
+    "a": "Offerte jusqu’au 31 décembre 2026. Ensuite : offerte avec 12 mois d’engagement, 49 € une seule fois sans engagement. Elle n’est jamais refacturée à un client qui reprend un abonnement. Aucun matériel n’est à acheter en plus : un smartphone suffit pour scanner les cartes de vos clients.",
     "categorie": "Tarifs et abonnement",
     "ordre": 20
   },
   {
-    "q": "Suis-je engagé sur une durée ?",
-    "a": "Oui, pour 12 mois au départ. En paiement mensuel, l’abonnement comporte un engagement minimum de 12 mois, réglé mois par mois ; ensuite, vous pouvez résilier à la fin de n’importe quel mois, sans frais. Le paiement annuel couvre aussi 12 mois, réglés d’avance, avec 15 % de réduction et la mise en service offerte.",
+    "q": "Que change l’engagement de 12 mois ?",
+    "a": "Avec 12 mois d’engagement : 15 % de moins, réglé chaque mois, rien d’avance. Sortie possible si votre commerce ferme, sur justificatif de radiation. Après les 12 mois : même prix, résiliable à la fin de n’importe quel mois, sans nouvelle durée. Starter passe de 29 € à 24,65 € par mois et Pro de 49 € à 41,65 € par mois, sans TVA.",
     "categorie": "Tarifs et abonnement",
     "ordre": 21
   },
   {
-    "q": "Comment résilier ou changer de formule ?",
-    "a": "Tout se fait depuis votre espace client. Vous pouvez y changer de formule, par exemple passer de Starter à Premium pour profiter des automatisations, ou résilier votre abonnement. En paiement mensuel, une résiliation demandée pendant les 12 premiers mois prend effet à la fin de cette première année ; ensuite, elle prend effet à la fin du mois en cours. Pour toute question, écrivez-nous à contact@loyna.fr.",
+    "q": "Suis-je engagé sur une durée ?",
+    "a": "Non, sauf si vous le choisissez : l’engagement est seulement proposé. Starter : 29 € par mois, sans TVA, sans engagement : vous arrêtez à la fin de n’importe quel mois. Ou 24,65 € par mois avec 12 mois d’engagement, réglés chaque mois. Pro : 49 € par mois, sans TVA, sans engagement : vous arrêtez à la fin de n’importe quel mois. Ou 41,65 € par mois avec 12 mois d’engagement, réglés chaque mois.",
     "categorie": "Tarifs et abonnement",
     "ordre": 22
   },
   {
-    "q": "Comment se fait le paiement, et où trouver mes factures ?",
-    "a": "Le paiement se fait en ligne, par carte bancaire, de façon sécurisée via Stripe. Vos factures sont disponibles dans votre espace client, prêtes pour votre comptabilité. Pour rappel, la TVA n’est pas applicable : le montant facturé est exactement le prix affiché de votre formule.",
+    "q": "Comment résilier ou changer d’offre ?",
+    "a": "Tout se fait depuis votre espace client. Sans engagement, vous changez d’offre quand vous voulez, au prorata, et vous arrêtez à la fin de n’importe quel mois. Avec engagement, vous pouvez passer de Starter à Pro à tout moment ; une résiliation demandée pendant les 12 mois prend effet à leur terme, et le retour à Starter ou la sortie de l’engagement attendent ce terme. Si votre commerce ferme, l’engagement prend fin à la fin du mois en cours, sur justificatif de radiation envoyé à contact@loyna.fr. Aucune mise en service n’est facturée à un changement d’offre.",
     "categorie": "Tarifs et abonnement",
     "ordre": 23
   },
   {
-    "q": "Pourquoi la TVA n’apparaît-elle pas sur les prix ?",
-    "a": "LOYNA est une marque de KOVA Elec, entreprise qui relève de la franchise en base de TVA : « TVA non applicable, art. 293 B du CGI ». Concrètement, aucune TVA ne s’ajoute à nos prix : le prix affiché, sans TVA, est le prix que vous payez. Starter vous revient donc à 29 € par mois, Premium à 39,99 € et Pro à 89 €.",
+    "q": "Que se passe-t-il si mon abonnement s’arrête ?",
+    "a": "Si l’abonnement s’arrête ou si un paiement reste impayé 15 jours, la carte reste dans le téléphone de vos clients mais elle ne crédite plus, et les inscriptions et les messages s’arrêtent. Tout repart automatiquement dès que le paiement passe ou que l’abonnement est repris, avec vos clients et leurs soldes. Sans reprise, vos données sont supprimées 90 jours après l’arrêt. Vous gardez l’accès à votre espace client pour consulter et exporter vos clients, et pour reprendre votre abonnement.",
     "categorie": "Tarifs et abonnement",
     "ordre": 24
   },
   {
-    "q": "Comment fonctionne le Parrainage LOYNA ?",
-    "a": "Vous êtes client LOYNA en paiement mensuel ? Partagez votre code de parrainage (LOYNA-…) ou votre lien, depuis votre espace client, rubrique Abonnement. Le commerçant que vous parrainez saisit le code dans son panier sur loyna.fr : son premier mois est offert (sa carte bancaire est demandée, ce mois compte dans les 12 mois d’engagement, et un changement d’offre pendant ce mois est facturé au prorata du temps restant). Dès qu’il a payé sa première mensualité, en général son 2e mois, votre mois suivant est offert, et nous vous offrons un QR code personnalisé sous verre, à poser dans votre commerce, livré sous 15 jours. Le parrainage est ouvert dans les trois offres, Starter, Premium et Pro.",
-    "categorie": "Parrainage LOYNA",
+    "q": "Comment se fait le paiement, et où trouver mes factures ?",
+    "a": "Le paiement se fait en ligne, par carte bancaire, de façon sécurisée via Stripe. Vos factures sont disponibles dans votre espace client, prêtes pour votre comptabilité. Pour rappel, la TVA n’est pas applicable : le montant facturé est exactement le prix affiché de votre offre.",
+    "categorie": "Tarifs et abonnement",
     "ordre": 25
   },
   {
-    "q": "Les mois offerts du parrainage se cumulent-ils ?",
-    "a": "Oui, à raison d’un mois offert et d’un QR code sous verre offert par commerçant parrainé qui paie sa première mensualité. Les mois s’enchaînent : un mois offert par facture, jamais deux sur la même. Il porte sur le prix de votre offre (pas sur la mise en service, les QR codes sous verre ni l’option +500 cartes) et n’est pas convertible en argent. Il ne s’applique que sur un abonnement mensuel en cours : sans abonnement mensuel, il reste en attente, sans aucune contrepartie.",
-    "categorie": "Parrainage LOYNA",
+    "q": "Pourquoi la TVA n’apparaît-elle pas sur les prix ?",
+    "a": "LOYNA est une marque de KOVA Elec, entreprise qui relève de la franchise en base de TVA : « TVA non applicable, art. 293 B du CGI ». Concrètement, aucune TVA ne s’ajoute à nos prix : le prix affiché, sans TVA, est le prix que vous payez. Starter vous revient donc à 29 € par mois, Pro à 49 €, sans engagement.",
+    "categorie": "Tarifs et abonnement",
     "ordre": 26
   },
   {
-    "q": "Le parrainage fonctionne-t-il en paiement annuel ?",
-    "a": "Non : le Parrainage LOYNA est réservé aux abonnements mensuels, pour le parrain comme pour le filleul. Le filleul doit être un nouveau client LOYNA, n’a qu’un parrain, et personne ne peut utiliser son propre code. Toutes les conditions figurent à l’article 4.8 de nos conditions générales de vente.",
+    "q": "Comment fonctionne le Parrainage LOYNA ?",
+    "a": "Parrainez un commerçant : 1 mois offert à chacun. Vous êtes client LOYNA ? Partagez votre code de parrainage (LOYNA-…) ou votre lien, depuis votre espace client, rubrique Abonnement. Le commerçant que vous parrainez saisit le code dans son panier sur loyna.fr : son premier mois est offert (sa carte bancaire est demandée, et un changement d’offre pendant ce mois est facturé au prorata du temps restant ; avec un engagement, ce mois compte dans les 12 mois). Dès qu’il a payé sa première mensualité, en général son 2e mois, votre mois suivant est offert, et nous vous offrons un QR code personnalisé sous verre, à poser dans votre commerce, livré sous 15 jours. Le parrainage est ouvert dans toutes les offres, avec ou sans engagement.",
     "categorie": "Parrainage LOYNA",
     "ordre": 27
+  },
+  {
+    "q": "Les mois offerts du parrainage se cumulent-ils ?",
+    "a": "Oui, à raison d’un mois offert et d’un QR code sous verre offert par commerçant parrainé qui paie sa première mensualité. Les mois s’enchaînent : un mois offert par facture, jamais deux sur la même. Il porte sur le prix de votre offre (pas sur la mise en service ni sur les QR codes sous verre) et n’est pas convertible en argent. Il ne s’applique que sur un abonnement en cours : sans abonnement, il reste en attente, sans aucune contrepartie.",
+    "categorie": "Parrainage LOYNA",
+    "ordre": 28
+  },
+  {
+    "q": "Qui peut être parrainé ?",
+    "a": "Un nouveau client LOYNA, avec ou sans engagement. Le filleul n’a qu’un parrain, et personne ne peut utiliser son propre code. Toutes les conditions figurent à l’article 4.8 de nos conditions générales de vente.",
+    "categorie": "Parrainage LOYNA",
+    "ordre": 29
   },
   {
     "q": "Où sont hébergées les données ?",
     "a": "Les données de votre programme et de vos clients sont hébergées dans l’Union européenne. Elles sont protégées, chiffrées, et ne sont jamais utilisées à des fins commerciales. LOYNA applique aussi un principe de minimisation : on ne demande à vos clients que l’essentiel, à savoir leur prénom, leur téléphone s’ils le souhaitent, et leurs consentements.",
     "categorie": "Données et sécurité",
-    "ordre": 28
+    "ordre": 30
   },
   {
     "q": "Comment LOYNA m’aide-t-il à respecter le RGPD ?",
     "a": "À l’inscription, vos clients donnent des consentements séparés pour la fidélité et pour les offres par notification, jamais cochés d’avance. Chaque fiche client affiche ces consentements, et vos clients peuvent retirer leur accord ou supprimer leurs données depuis le lien « Mes préférences » au dos de leur carte. Sur demande d’un client, vous pouvez aussi exporter ou supprimer ses données. Seules les données utiles sont collectées, et elles sont hébergées dans l’Union européenne.",
     "categorie": "Données et sécurité",
-    "ordre": 29
+    "ordre": 31
   },
   {
     "q": "La notification de proximité transmet-elle la position de mes clients ?",
     "a": "Non. LOYNA ne reçoit jamais la position de vos clients, et vous non plus. L’adresse de votre boutique est enregistrée dans la carte de fidélité, et c’est le téléphone du client qui détecte qu’il est à proximité, puis affiche la carte. Le client garde la main : la fonction ne marche que s’il a activé la localisation, et il peut désactiver les notifications de sa carte à tout moment.",
     "categorie": "Données et sécurité",
-    "ordre": 30
+    "ordre": 32
   },
   {
     "q": "Le QR code de la carte contient-il des données personnelles ?",
     "a": "Non. Le QR code de la carte de fidélité ne contient aucune donnée personnelle : ni nom, ni numéro de téléphone. Il contient seulement un jeton opaque, qui ne révèle rien sur votre client et qui peut être révoqué. C’est au moment du scan, dans LOYNA Business, que la carte correspondante est retrouvée.",
     "categorie": "Données et sécurité",
-    "ordre": 31
+    "ordre": 33
   }
 ]

@@ -9,6 +9,7 @@ import {Action, BadgeCible, BadgeStatut, Recu} from './commun';
 import {MarqueNotes, NotesProspect} from './Notes';
 import {BoutonMailPerso, boutonVisible, EtatMailPerso, FenetreMailPerso} from './MailPerso';
 import {preparerPour} from '../cartes';
+import {TRIAL} from '../../data/site';
 import {useState} from 'preact/hooks';
 import {annulerRefus, ErreurNotes, noterRefus, notesEtat, refusDe} from '../notes';
 import {aller, toast} from '../store';
@@ -74,7 +75,7 @@ export function Fiche({id}: {id: string}) {
                 kind="ghost"
                 icon="palette"
                 class="cp-btn-clair"
-                title="Régler sa carte et son offre en direct, puis lui envoyer le lien de paiement"
+                title={TRIAL.open ? 'Régler sa carte et son offre en direct, puis lui envoyer le lien d’essai ou de paiement' : 'Régler sa carte et son offre en direct, puis lui envoyer le lien de paiement'}
                 onClick={() => {
                   preparerPour.value = {id: p.id, nom: p.nom, activite: p.secteur ?? ''};
                   aller('preparer');

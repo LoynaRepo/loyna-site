@@ -1,8 +1,10 @@
 // Scanner LOYNA Business : scan réussi = passage validé, sans bouton « Confirmer ».
 // Le serveur renvoie un bloc `display` prêt à afficher : aucune règle métier n'est calculée ici.
+// Carte en pause (essai terminé, impayé, abonnement terminé, suspension) : écran bloqué, caméra jamais ouverte ; le serveur
+// refuse de toute façon (MERCHANT_INACTIVE, rien n'est écrit).
 import {useEffect, useRef, useState} from 'preact/hooks';
 import {Icon} from '../icons';
-import {api, can, go, toastError} from '../state';
+import {api, can, go, loadService, readOnly, servicePaused, toastError} from '../state';
 import {Btn} from '../ui';
 import {uuid} from '../util';
 
@@ -37,8 +39,43 @@ type Cam = 'idle' | 'starting' | 'live' | 'denied' | 'unavailable' | 'insecure';
 const SOUND_KEY = 'loyna-scan-sound';
 const RESUME_MS = 6000;
 const SAME_QR_MS = 3000;
+const PAUSED_TITLE = 'Programme en pause';
+const PAUSED_TEXT = 'Ce passage n’est pas crédité : voir Abonnement.';
 
 export function Scanner() {
+  return servicePaused() ? <PausedScreen /> : <LiveScanner />;
+}
+
+/** Carte en pause : le bandeau du haut donne le motif et le bouton, ici rien ne peut être scanné. */
+function PausedScreen() {
+  const manage = can('settings.manage') && !readOnly();
+  return (
+    <div class="scan">
+      <div class="scan-head">
+        <div>
+          <p class="eyebrow">Scanner</p>
+          <h1>{PAUSED_TITLE}</h1>
+        </div>
+      </div>
+      <div class="scan-paused" role="status">
+        <span class="scan-paused-i">
+          <Icon name="camera-off" size={34} />
+        </span>
+        <strong>{PAUSED_TEXT}</strong>
+        <p>La carte reste dans le téléphone de vos clients, avec leur solde. Les passages reprendront dès que le programme repart.</p>
+        {manage ? (
+          <Btn kind="gold" icon="credit-card" href="#/abonnement">
+            Voir Abonnement
+          </Btn>
+        ) : (
+          <p>Prévenez le responsable du commerce.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LiveScanner() {
   const video = useRef<HTMLVideoElement>(null);
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const stream = useRef<MediaStream | null>(null);
@@ -212,6 +249,8 @@ export function Scanner() {
       });
       show({...res, qr, at: Date.now()});
       if (res.status === 'OK') setCount((n) => n + 1);
+      // Le commerce vient de passer en pause : l'écran bloqué remplacera le scanner dès que l'état est relu
+      if (res.status === 'MERCHANT_INACTIVE') loadService();
     } catch (e: any) {
       if (e?.code === 'NETWORK') {
         // Nouvel envoi possible avec la même clé : le serveur ne compte jamais deux fois le même scan.
@@ -227,6 +266,7 @@ export function Scanner() {
   }
 
   function show(r: ScanResult) {
+    if (!r.display) r = {...r, display: {tone: 'error', title: PAUSED_TITLE, subtitle: PAUSED_TEXT, lines: [], actions: []}}; // refus sans texte (MERCHANT_PAUSED)
     setResult(r);
     setAmount('');
     feedback(r.display);

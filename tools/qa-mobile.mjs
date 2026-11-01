@@ -30,7 +30,7 @@ for (const p of paths) {
     const visible = (el) => {
       const s = getComputedStyle(el);
       const r = el.getBoundingClientRect();
-      return s.visibility !== 'hidden' && s.display !== 'none' && r.width > 0 && r.height > 0 && !el.closest('[hidden],[aria-hidden="true"],.sr-only,.visually-hidden,.skip-link');
+      return s.visibility !== 'hidden' && s.display !== 'none' && r.width > 0 && r.height > 0 && !el.closest('[hidden],[aria-hidden="true"],.sr-only,.visually-hidden,.skip-link,.mq-lien');
     };
     const label = (el) => {
       const t = (el.getAttribute('aria-label') || el.textContent || el.getAttribute('placeholder') || el.name || '').trim().replace(/\s+/g, ' ').slice(0, 40);

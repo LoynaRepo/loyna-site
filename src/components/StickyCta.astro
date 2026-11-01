@@ -1,12 +1,14 @@
 ---
 // Barre d'action fixée en bas de l'écran, sur mobile uniquement. Elle apparaît une fois le haut de page
 // dépassé et s'efface quand un champ de saisie est actif (clavier ouvert) ou quand le bandeau cookies est affiché.
+// Par défaut, l'appel principal du site (APPEL : l'essai, ou le choix d'une offre si l'essai est fermé).
 import Icon from './Icon.astro';
+import {APPEL, TRIAL} from '../data/site';
 interface Props {
   primary?: {href: string; label: string};
   secondary?: {href: string; label: string};
 }
-const {primary = {href: '/creer-ma-carte/', label: 'Créer ma carte'}, secondary = {href: '/tarifs/', label: 'Tarifs'}} = Astro.props;
+const {primary = APPEL, secondary = TRIAL.open ? {href: '/tarifs/', label: 'Tarifs'} : {href: '/creer-ma-carte/', label: 'Créer ma carte'}} = Astro.props;
 ---
 
 <div class="sticky-cta" id="sticky-cta">
@@ -38,10 +40,10 @@ const {primary = {href: '/creer-ma-carte/', label: 'Créer ma carte'}, secondary
       grid-template-columns: 1fr auto;
       gap: 10px;
       padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-      background: rgba(251, 250, 248, 0.92);
+      background: rgba(247, 241, 230, 0.94);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border-top: 1px solid var(--line);
+      border-top: 1px solid var(--filet);
       box-shadow: 0 -8px 24px rgba(18, 18, 22, 0.08);
       transform: translateY(110%);
       visibility: hidden;
@@ -57,6 +59,21 @@ const {primary = {href: '/creer-ma-carte/', label: 'Créer ma carte'}, secondary
     .sticky-cta .btn {
       min-height: 48px;
       padding-inline: 18px;
+    }
+    /* « Essayer 1 mois gratuitement » : sur un petit écran, le texte passe sur deux lignes, sans la flèche */
+    .sticky-cta .btn--primary {
+      white-space: normal;
+      text-align: center;
+      line-height: 1.15;
+      padding-block: 7px;
+    }
+    @media (max-width: 480px) {
+      .sticky-cta .btn {
+        padding-inline: 14px;
+      }
+      .sticky-cta .btn--primary :global(svg) {
+        display: none;
+      }
     }
     /* place pour la barre fixe : ajoutée au pied de page (même fond sombre), pas sous la page */
     :global(body:has(.sticky-cta) .site-footer) {

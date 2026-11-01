@@ -91,11 +91,10 @@ export default function Password({logo}: {logo: string}) {
           <>
             <h1>{linkErr}</h1>
             <p class="muted">
-              Pour des raisons de sécurité, un lien de connexion ne sert qu’une fois et pendant une durée limitée. Demandez-en un nouveau à votre responsable (menu Équipe de LOYNA Business), ou écrivez à{' '}
-              <a href="mailto:contact@loyna.fr">contact@loyna.fr</a> si vous êtes le propriétaire du commerce.
+              Pour des raisons de sécurité, un lien de connexion ne sert qu’une fois et pendant une durée limitée. Demandez-en un nouveau depuis l’écran de connexion, ou à votre responsable (menu Équipe de LOYNA Business).
             </p>
-            <Btn kind="ghost" href="/espace-client/" icon="arrow-right">
-              Aller à la connexion
+            <Btn kind="ghost" href="/espace-client/?oubli=1" icon="arrow-right">
+              Recevoir un nouveau lien
             </Btn>
           </>
         )}

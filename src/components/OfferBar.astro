@@ -1,111 +1,279 @@
 ---
-// Bandeau fin au-dessus de l'en-tête : texte libre de Builder (site-settings « announcement ») ou, à défaut,
-// l'offre de lancement tant qu'elle est valable. Masqué automatiquement après la date de l'offre.
-// 29/10/2026 (Ewan) : l'offre de lancement revient ici ; le Parrainage LOYNA (bandeau du 28/10) part chez les
-// commerçants déjà clients : accueil de l'espace client, page /merci/ après une commande mensuelle, guide de démarrage.
+// Bandeau défilant sous l'en-tête : texte libre de Builder (site-settings « announcement ») ou, à défaut, les offres en cours.
+// 31/10/2026 (Ewan) : « le bandeau doit faire défiler l'offre de lancement et l'offre de parrainage également ». Les deux offres
+// passent l'une après l'autre, chacune avec son lien. Le Parrainage LOYNA, sorti du bandeau le 29/10, y revient ; il reste aussi
+// dans l'espace client, sur /merci/ et dans le guide de démarrage.
+// - Offre de lancement : retirée d'elle-même après sa date, à la construction et dans le navigateur (data-offer, lu par
+//   Base.astro). Le parrainage reste, et ses copies data-offer-off prennent la place libérée sur la piste.
+// - Défilement en CSS : deux groupes identiques, la piste glisse de la moitié de sa largeur, donc le raccord tombe pile sur le
+//   début du second groupe : aucun saut. Chaque groupe fait au moins la largeur de l'écran, même très grand.
+// - La piste est cachée aux lecteurs d'écran et ne prend pas le focus clavier : un vrai lien par offre, invisible jusqu'au focus,
+//   la remplace. Pause au survol et au focus ; messages fixes, une seule fois chacun, si le visiteur limite les animations.
 import Icon from './Icon.astro';
 import {LAUNCH_OFFER, SETUP_FEE, euro, offerActive} from '../data/site';
 interface Props {
   announcement?: string;
 }
 const {announcement = ''} = Astro.props;
-const offer = offerActive();
 const text = announcement.trim();
+
+interface Offre {
+  href: string;
+  icone: string;
+  titre: string;
+  texte: string;
+  code?: string;
+  action: string;
+  lancement?: boolean;
+}
+const lancement: Offre = {
+  href: '/tarifs/',
+  icone: 'gift',
+  titre: 'Offre de lancement',
+  texte: `mise en service offerte (au lieu de ${euro(SETUP_FEE)}) jusqu’au ${LAUNCH_OFFER.untilLabel}`,
+  code: LAUNCH_OFFER.code,
+  action: 'J’en profite',
+  lancement: true,
+};
+// CGV 4.8. La FAQ est la seule page publique qui explique le parrainage.
+const parrainage: Offre = {
+  href: '/faq/#parrainage-loyna',
+  icone: 'users',
+  titre: 'Parrainez un commerçant',
+  texte: '1 mois offert à chacun',
+  action: 'Comment ça marche',
+};
+const offres = offerActive() ? [lancement, parrainage] : [parrainage];
+const libelle = (o: Offre) => `${o.titre} : ${o.texte}${o.code ? `, code ${o.code}` : ''}. ${o.action}`;
+
+// Contenu d'un groupe : deux tours des deux offres, ou cinq fois le parrainage seul (largeurs voisines, donc même vitesse pour
+// une même durée). Tant que l'offre de lancement est valable, trois copies du parrainage attendent, masquées, la fin de l'offre
+// sur une page qui n'a pas été reconstruite.
+const COPIES_PARRAINAGE = 5;
+const piste: (Offre & {reserve?: boolean})[] =
+  offres.length > 1 ? [...offres, ...offres, ...Array(COPIES_PARRAINAGE - 2).fill({...parrainage, reserve: true})] : Array(COPIES_PARRAINAGE).fill(parrainage);
 ---
 
-{
-  (text || offer) && (
-    <div class="offer-bar" data-offer={text ? undefined : ''}>
-      <div class="container ob-row">
-        {text ? (
-          <p>{text}</p>
-        ) : (
-          <p>
-            <Icon name="gift" size={16} />
-            <span class="ob-long">
-              <strong>Offre de lancement</strong> : mise en service offerte (au lieu de {euro(SETUP_FEE)}) jusqu’au {LAUNCH_OFFER.untilLabel}, en mensuel comme en annuel · code <b class="code">{LAUNCH_OFFER.code}</b>
-            </span>
-            <span class="ob-short">
-              Mise en service offerte · code <b class="code">{LAUNCH_OFFER.code}</b>
-            </span>
-            <a href="/tarifs/"><span class="ob-long">J’en profite</span> →</a>
-          </p>
-        )}
-      </div>
+<div class="marquee" {...text ? {role: 'note', tabindex: 0, 'aria-label': text} : {role: 'group', 'aria-label': 'Offres en cours'}}>
+  {
+    !text &&
+      offres.map((o) => (
+        <a class="mq-lien" href={o.href} {...(o.lancement ? {'data-offer': ''} : {})}>
+          {libelle(o)}
+        </a>
+      ))
+  }
+  <div class="mq-fenetre" aria-hidden="true">
+    <div class="mq-piste">
+      {
+        [0, 1].map(() => (
+          <div class="mq-groupe">
+            {text
+              ? [0, 1, 2].map((i) => (
+                  <span class:list={['mq-msg', {'mq-copie': i > 0}]}>
+                    <span>{text}</span>
+                  </span>
+                ))
+              : piste.map((m, i) => (
+                  <a class:list={['mq-msg', {'mq-copie': i >= offres.length}]} href={m.href} tabindex="-1" hidden={m.reserve} {...(m.lancement ? {'data-offer': ''} : {})} {...(m.reserve ? {'data-offer-off': ''} : {})}>
+                    <span class="mq-ic">
+                      <Icon name={m.icone} size={14} />
+                    </span>
+                    <span>
+                      <strong>{m.titre}</strong> : {m.texte}
+                    </span>
+                    {m.code && (
+                      <>
+                        <span class="mq-sep" />
+                        <span>
+                          code <b class="mq-code">{m.code}</b>
+                        </span>
+                      </>
+                    )}
+                    <span class="mq-sep" />
+                    <span class="mq-cta">
+                      {m.action} <Icon name="arrow-right" size={15} />
+                    </span>
+                  </a>
+                ))}
+          </div>
+        ))
+      }
     </div>
-  )
-}
+  </div>
+</div>
 
 <style>
-  .offer-bar {
+  .marquee {
+    position: relative;
+    height: 44px;
     background: linear-gradient(90deg, #a87530, #e6c27a 50%, #a87530);
     color: #17140f;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+    line-height: 1.2;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(18, 18, 22, 0.08);
   }
-  .ob-row p {
-    margin: 0;
-    padding: 8px 0;
+  .marquee[tabindex]:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: -3px;
+    border-radius: 0;
+  }
+  /* Vrais liens : invisibles jusqu'au focus, puis posés sur le bandeau (ils peuvent en dépasser sur un écran étroit, sans rien décaler) */
+  .mq-lien {
+    position: absolute;
+    z-index: 40;
+    left: 0;
+    right: 0;
+    top: 0;
+    min-height: 100%;
     display: flex;
-    /* sur une ligne : entre 700 et 1 200 px, le texte passe sur deux lignes entre l'icône et le lien */
-    flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
-    gap: 6px 10px;
+    padding: 10px 16px;
+    background: linear-gradient(90deg, #a87530, #e6c27a 50%, #a87530);
+    color: #17140f;
+    font-weight: 700;
     text-align: center;
-    line-height: 1.35;
+    text-decoration: none;
   }
-  .ob-row :global(svg) {
+  .mq-lien:not(:focus) {
+    width: 1px;
+    height: 1px;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .mq-lien:hover {
+    color: #17140f;
+  }
+  .mq-lien:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: -3px;
+    border-radius: 0;
+  }
+  .mq-fenetre {
+    height: 100%;
+    overflow: hidden;
+    overflow: clip;
+  }
+  .mq-piste {
+    display: flex;
+    width: max-content;
+    height: 100%;
+    animation: mq-defile 68s linear infinite; /* messages raccourcis : même vitesse qu'avant, environ 48 px par seconde */
+    will-change: transform;
+  }
+  .marquee:hover .mq-piste,
+  .marquee[tabindex]:focus .mq-piste,
+  .mq-lien:focus ~ .mq-fenetre .mq-piste {
+    animation-play-state: paused;
+  }
+  .mq-groupe {
+    display: flex;
     flex: none;
+    justify-content: space-around;
+    min-width: 100vw;
   }
-  .code {
-    padding: 1px 8px;
+  .mq-msg {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 12px;
+    padding-inline: 30px;
+    color: #17140f;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .mq-msg[hidden] {
+    display: none;
+  }
+  a.mq-msg:hover {
+    color: #17140f;
+  }
+  a.mq-msg:hover .mq-cta {
+    text-decoration: underline;
+  }
+  .mq-ic {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(18, 18, 22, 0.88);
+    color: #f0d49a;
+  }
+  .mq-sep {
+    flex: none;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(18, 18, 22, 0.55);
+  }
+  .mq-code {
+    padding: 2px 8px;
     border-radius: 6px;
     background: rgba(18, 18, 22, 0.88);
     color: #f0d49a;
     letter-spacing: 0.06em;
     font-weight: 800;
-    white-space: nowrap;
   }
-  .ob-short {
-    display: none;
-  }
-  @media (max-width: 700px) {
-    .ob-long {
-      display: none;
-    }
-    .ob-short {
-      display: inline;
-      white-space: nowrap;
-    }
-    .ob-row p {
-      font-size: 0.84rem;
-      padding: 10px 0;
-    }
-    .offer-bar {
-      position: relative;
-    }
-    .ob-row a::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-    }
-    .ob-row :global(svg) {
-      display: none;
-    }
-  }
-  @media (max-width: 400px) {
-    .ob-row p {
-      font-size: 0.76rem;
-      gap: 6px;
-    }
-    .code {
-      padding: 1px 5px;
-      letter-spacing: 0.02em;
-    }
-  }
-  .ob-row a {
-    color: #17140f;
+  .mq-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     font-weight: 800;
-    white-space: nowrap;
+  }
+  @keyframes mq-defile {
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+  /* Animations limitées : chaque message une seule fois, immobile et centré */
+  @media (prefers-reduced-motion: reduce) {
+    .marquee {
+      height: auto;
+      min-height: 44px;
+    }
+    .mq-fenetre {
+      height: auto;
+      overflow: visible;
+    }
+    .mq-piste {
+      display: block;
+      width: auto;
+      height: auto;
+      animation: none !important;
+      will-change: auto;
+    }
+    .mq-groupe {
+      min-width: 0;
+      flex-wrap: wrap;
+      justify-content: center;
+      column-gap: 28px;
+    }
+    .mq-groupe + .mq-groupe,
+    .mq-copie {
+      display: none;
+    }
+    .mq-msg {
+      flex: 0 1 auto;
+      flex-wrap: wrap;
+      justify-content: center;
+      min-height: 44px;
+      padding: 8px 16px;
+      white-space: normal;
+      text-align: center;
+      row-gap: 4px;
+    }
+  }
+  /* et sur un écran étroit, où ces messages passent à la ligne : ni pastille seule sur sa ligne, ni point en début de ligne */
+  @media (prefers-reduced-motion: reduce) and (max-width: 1240px) {
+    .mq-ic,
+    .mq-sep {
+      display: none;
+    }
   }
 </style>

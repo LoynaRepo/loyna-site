@@ -4,6 +4,7 @@
 //
 //   npx astro build && npx astro preview        puis, dans un autre terminal :
 //   node tools/guide-pdf.mjs http://127.0.0.1:4321
+// (le serveur de développement convient aussi : guide.astro pose déjà la typographie française de ses textes)
 //
 // À refaire après chaque modification du texte ou des captures du guide (le PDF est versionné avec le site).
 // Les captures WebP de la page sont remplacées, pour le PDF seulement, par leur version JPEG : le navigateur

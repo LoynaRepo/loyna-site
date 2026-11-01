@@ -1,22 +1,23 @@
 ---
-import {Picture} from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Hero from '../components/Hero.astro';
 import Icon from '../components/Icon.astro';
+import Jonction from '../components/Jonction.astro';
 import PricingCards from '../components/PricingCards.astro';
-import VideoFacade from '../components/VideoFacade.astro';
+import VideoModale from '../components/VideoModale.astro';
 import WalletCard from '../components/WalletCard.astro';
+import QrCode from '../components/QrCode.astro';
 import CtaBand from '../components/CtaBand.astro';
 import RoiCalculator from '../components/RoiCalculator.astro';
 import CallbackForm from '../components/CallbackForm.astro';
 import Proximite from '../components/Proximite.astro';
+import MockNotifications from '../components/MockNotifications.astro';
+import MockTableau from '../components/MockTableau.astro';
+import MiniConfigurateur from '../components/MiniConfigurateur.astro';
+import Confiance from '../components/Confiance.astro';
 import {getFaq, getSectors, getSettings} from '../lib/builder';
-import {LAUNCH_OFFER, MARKETING_INTERVAL_HOURS, PLANS, SITE, offerActive} from '../data/site';
-import scanQr from '../assets/shots/scan-qr.png';
-import inscription from '../assets/shots/inscription.png';
-import ajoutWallet from '../assets/shots/ajout-wallet.png';
-import passageValide from '../assets/shots/passage-valide.png';
-import notifications from '../assets/shots/notifications.png';
+import {APPEL, MARKETING_INTERVAL_HOURS, MISE_EN_SERVICE_APRES, PHRASES, PLANS, SITE, TRIAL, offerActive} from '../data/site';
+import mark from '../assets/logo-mark.svg?raw';
 
 const settings = await getSettings();
 const sectors = await getSectors();
@@ -24,23 +25,51 @@ const faq = (await getFaq()).slice(0, 6);
 // Titre d'accueil : les mots entre *astérisques* (réglage Builder) sont mis en valeur en doré.
 const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const heroTitleHtml = esc(settings.heroTitle).replace(/\*(.+?)\*/g, '<span class="gold-text">$1</span>');
+// Symbole LOYNA en filigrane des sections sombres (couleur donnée par .filigrane)
+const filigrane = mark.replace(/<defs>.*<\/defs>/s, '').replace(/fill="url\(#g\)"/, '').replace('<svg', '<svg aria-hidden="true"');
 
-const steps = [
-  {img: scanQr, title: 'Il scanne votre QR code', text: 'Sur votre comptoir, en vitrine ou sur vos réseaux : un QR code suffit pour rejoindre votre programme.'},
-  {img: inscription, title: "Il s'inscrit en quelques secondes", text: 'Un formulaire très court, des consentements clairs et séparés. Aucune application à télécharger.'},
-  {img: ajoutWallet, title: 'Sa carte arrive dans son Wallet', text: 'Un geste et la carte est dans Apple Wallet ou Google Wallet, toujours dans sa poche.'},
+const chiffres = [
+  {n: '0', unite: 'application', texte: 'à télécharger pour vos clients : la carte s’ajoute à Apple Wallet ou Google Wallet en un geste.'},
+  {n: '1', unite: 'scan', texte: 'pour valider un passage. Pas de recherche du client, pas de bouton +1.'},
+  TRIAL.open
+    ? {n: '1', unite: 'mois gratuit', texte: 'sans carte bancaire : votre carte et son QR code sont créés tout de suite à partir de vos réglages.'}
+    : {n: '24', unite: 'heures', texte: 'pour que votre carte soit prête, avec son QR code, hors personnalisation exceptionnelle.'},
+  {n: '0 €', unite: 'par message', texte: 'Les notifications Wallet arrivent sur le téléphone de vos clients, sans coût par envoi.'},
 ];
-
+const garanties = [
+  {icon: 'smartphone', t: 'iPhone et Android'},
+  {icon: 'scan-line', t: 'Un simple smartphone suffit pour scanner'},
+  {icon: 'shield-check', t: 'Données hébergées dans l’UE'},
+  {icon: 'lock', t: 'Paiement sécurisé par Stripe'},
+];
+const constats = [
+  {avant: 'Carte papier perdue ou oubliée', titre: 'Toujours dans le téléphone', texte: 'La carte vit dans Apple Wallet ou Google Wallet, à côté de la carte bancaire. Impossible de la perdre.'},
+  {avant: 'Aucun contact avec vos clients', titre: 'Des notifications qui font revenir', texte: 'Récompense disponible, passage devant la boutique, anniversaire : le bon message arrive au bon moment.'},
+  {avant: 'Aucune idée de ce qui marche', titre: 'Un tableau de bord clair', texte: 'Clients actifs, passages, récompenses débloquées et utilisées : pilotez votre fidélité avec de vrais chiffres.'},
+];
 const features = [
   {icon: 'wallet', title: 'Carte Apple & Google Wallet', text: 'À vos couleurs, avec votre logo et votre récompense. Elle se met à jour toute seule.'},
-  {icon: 'map-pin', title: 'Notification de proximité', text: 'Votre client passe près de la boutique : sa carte s’affiche sur l’écran de verrouillage. Dans toutes les formules.'},
+  {icon: 'map-pin', title: 'Notification de proximité', text: 'Votre client passe près de la boutique : sa carte s’affiche sur l’écran de verrouillage. Dans toutes les offres.'},
   {icon: 'scan-line', title: 'Un scan, un passage', text: 'Pas de recherche, pas de bouton +1 : le passage est validé dès le scan, avec protection anti double scan.'},
   {icon: 'gift', title: 'Récompenses automatiques', text: 'Au seuil fixé, la récompense se débloque et le client est prévenu sur son téléphone.'},
   {icon: 'megaphone', title: 'Campagnes de notifications', text: 'Une offre, une nouveauté : le message arrive sur le téléphone de vos clients, sans coût par envoi.'},
-  {icon: 'workflow', title: 'Automatisations', text: 'Anniversaire, relance des inactifs, « Plus qu’un passage ! », avis Google : avec Premium, les messages partent tout seuls.'},
+  {icon: 'workflow', title: 'Automatisations', text: 'Anniversaire, relance des inactifs, « Plus qu’un passage ! », avis Google : dans toutes les offres, les messages partent tout seuls.'},
   {icon: 'users', title: 'Toute votre équipe', text: 'Un compte par personne, des rôles et des droits adaptés, sans limite d’employés.'},
   {icon: 'shield-check', title: 'Données protégées', text: 'Hébergées dans l’Union européenne, chiffrées, consentements séparés, export et suppression à la demande.'},
 ];
+// Exemples de cartes : huit métiers bien différents, les autres en pastilles (tous restent liés depuis l'accueil).
+const EXEMPLES: Record<string, {icon: string; label: string}> = {
+  'boulangerie-cafe': {icon: 'croissant', label: 'Boulangerie'},
+  'coiffeur-barbier': {icon: 'scissors', label: 'Coiffure'},
+  'restauration-rapide': {icon: 'hamburger', label: 'Snack'},
+  'institut-onglerie': {icon: 'gem', label: 'Institut'},
+  barbier: {icon: 'scissors', label: 'Barbier'},
+  pizzeria: {icon: 'pizza', label: 'Pizzeria'},
+  fleuriste: {icon: 'flower-2', label: 'Fleuriste'},
+  sushi: {icon: 'fish', label: 'Sushi'},
+};
+const exemples = sectors.filter((s) => EXEMPLES[s.slug]).sort((a, b) => Object.keys(EXEMPLES).indexOf(a.slug) - Object.keys(EXEMPLES).indexOf(b.slug));
+const autresMetiers = sectors.filter((s) => !EXEMPLES[s.slug]);
 const offer = offerActive();
 
 const softwareLd = {
@@ -66,179 +95,314 @@ const softwareLd = {
   description={SITE.description}
   jsonLd={softwareLd}
 >
-  <Hero titleHtml={heroTitleHtml} subtitle={settings.heroSubtitle} sectors={sectors} />
+  <Hero titleHtml={heroTitleHtml} subtitle={settings.heroLead || settings.heroSubtitle} sectors={sectors} />
 
-  <section class="strip" aria-label="Compatibilité">
-    <div class="container strip-row">
-      <span><Icon name="wallet" size={18} /> Apple Wallet</span>
-      <span><Icon name="wallet" size={18} /> Google Wallet</span>
-      <span><Icon name="smartphone" size={18} /> iPhone et Android</span>
-      <span><Icon name="shield-check" size={18} /> Données hébergées dans l’UE</span>
-      <span><Icon name="lock" size={18} /> Paiement sécurisé Stripe</span>
-    </div>
-  </section>
+  <Jonction sur vers="nuit" forme={1} />
 
-  <section class="section section--warm" id="video">
-    <div class="container split">
-      <VideoFacade />
-      <div>
-        <p class="eyebrow">Présentation vidéo</p>
-        <h2>LOYNA en 80 secondes</h2>
-        <p class="lead">Du QR code d’inscription à la récompense débloquée, en passant par les notifications et le tableau de bord : voyez tout le parcours, côté client et côté commerçant.</p>
-        <div class="btn-row">
-          <a class="btn btn--primary" href="/creer-ma-carte/">Créer l’aperçu de ma carte</a>
-          <a class="btn btn--ghost" href="/demo/">Voir la démo complète</a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="container">
-      <div class="section-head">
-        <p class="eyebrow">Le constat</p>
-        <h2>La carte à tampons a fait son temps</h2>
-        <p>Perdue au fond d’un sac, oubliée à la maison, jetée au premier tri : la carte papier ne fait revenir personne. Et quand un client ne revient plus, vous n’avez aucun moyen de le relancer.</p>
-      </div>
-      <div class="grid grid-3">
-        <div class="card compare">
-          <p class="before">Carte papier perdue ou oubliée</p>
-          <h3>Toujours dans le téléphone</h3>
-          <p>La carte vit dans Apple Wallet ou Google Wallet, à côté de la carte bancaire. Impossible de la perdre.</p>
-        </div>
-        <div class="card compare">
-          <p class="before">Aucun contact avec vos clients</p>
-          <h3>Des notifications qui font revenir</h3>
-          <p>Récompense disponible, passage devant la boutique, anniversaire : le bon message arrive au bon moment.</p>
-        </div>
-        <div class="card compare">
-          <p class="before">Aucune idée de ce qui marche</p>
-          <h3>Un tableau de bord clair</h3>
-          <p>Clients actifs, passages, récompenses débloquées et utilisées : pilotez votre fidélité avec de vrais chiffres.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section section--warm" id="comment-ca-marche">
-    <div class="container">
-      <div class="section-head">
-        <p class="eyebrow">Comment ça marche</p>
-        <h2>Pour vos clients, trois gestes</h2>
-        <p>Aucune application à installer, aucun compte à créer : la carte s’ajoute au Wallet du téléphone, comme une carte d’embarquement.</p>
-      </div>
-      <ol class="steps" aria-label="Les trois étapes">
+  <!-- L'essentiel, en grands chiffres -->
+  <section class="section section--dark chiffres" aria-labelledby="chiffres-titre">
+    <span class="filigrane chiffres-filigrane" set:html={filigrane} />
+    <div class="container chiffres-corps">
+      <p class="eyebrow">L’essentiel</p>
+      <h2 class="titre" id="chiffres-titre">Simple pour vos clients, <span class="gold-text">simple pour vous.</span></h2>
+      <dl class="stats">
         {
-          steps.map((s, i) => (
-            <li class="step">
-              <div class="shot">
-                <Picture src={s.img} formats={['avif', 'webp']} fallbackFormat="webp" widths={[300, 460]} sizes="(max-width: 700px) 80vw, 300px" alt={s.title} loading="lazy" />
-              </div>
-              <span class="num">{i + 1}</span>
-              <h3>{s.title}</h3>
-              <p>{s.text}</p>
+          chiffres.map((c) => (
+            <div class="stat apparait">
+              <dt>
+                <b>{c.n}</b> <span>{c.unite}</span>
+              </dt>
+              <dd>{c.texte}</dd>
+            </div>
+          ))
+        }
+      </dl>
+      <ul class="garanties" aria-label="Compatibilité et sécurité">
+        {
+          garanties.map((g) => (
+            <li>
+              <Icon name={g.icon} size={16} /> {g.t}
             </li>
           ))
         }
-      </ol>
-      <p class="swipe-hint" aria-hidden="true">Faites glisser pour voir les 3 étapes →</p>
-      <div class="mid-cta">
-        <a class="btn btn--primary" href="/creer-ma-carte/">Voir ma carte en 1 minute <Icon name="arrow-right" size={18} /></a>
-        <span>Aperçu gratuit, à vos couleurs, avant tout paiement</span>
-      </div>
+      </ul>
     </div>
   </section>
 
-  <section class="section section--dark" id="proximite">
-    <div class="container split">
-      <div>
-        <p class="eyebrow">Notification de proximité</p>
-        <h2>Votre client passe devant la boutique&nbsp;: sa carte s’affiche</h2>
-        <p class="lead">Un habitué passe devant votre boulangerie. Sur l’écran de verrouillage de son téléphone, sa carte de fidélité s’affiche avec un court message&nbsp;: « Votre récompense vous attend chez Le Fournil d’Albane&nbsp;! ». Le bon rappel, au bon endroit.</p>
-        <ul class="checks prox-checks">
-          <li>Incluse dans toutes les formules, et jamais comptée comme une campagne</li>
-          <li>Sur iPhone, la carte s’affiche sur l’écran de verrouillage&nbsp;; sur Android, une notification apparaît quand le client s’attarde près de la boutique</li>
-          <li>Le message suit la carte&nbsp;: récompense qui attend, passages restants, ou votre propre message</li>
-          <li>LOYNA ne reçoit jamais la position de vos clients&nbsp;: c’est leur téléphone qui détecte la proximité</li>
-        </ul>
-        <p class="prox-note">Fonctionne quand le client a activé la localisation et laissé Wallet s’afficher sur l’écran verrouillé. Avec Pro, jusqu’à 3 boutiques.</p>
-      </div>
-      <div class="prox-visual">
-        <Proximite width={290} />
-      </div>
-    </div>
-  </section>
+  <Jonction de="nuit" vers="creme" forme={2} />
 
-  <section class="section">
-    <div class="container split">
-      <div class="shot narrow-shot">
-        <Picture src={passageValide} formats={['avif', 'webp']} fallbackFormat="webp" widths={[320, 480]} sizes="(max-width: 700px) 80vw, 340px" alt="Écran LOYNA Business : passage validé, 8 sur 10" loading="lazy" />
-      </div>
-      <div>
-        <p class="eyebrow">Au comptoir</p>
-        <h2>Un scan, c’est validé</h2>
-        <p class="lead">Avec LOYNA Business sur votre téléphone, vous scannez la carte du client : le passage est enregistré, la carte se met à jour, la récompense se débloque toute seule au bon moment.</p>
-        <ul class="checks">
-          <li>Pas de tampon, pas de recherche du client, pas de bouton +1</li>
-          <li>Protection anti double scan et bouton « Annuler » pendant quelques secondes</li>
-          <li>Un simple smartphone suffit : aucun matériel à acheter</li>
-          <li>Chaque action est tracée dans un journal d’activité</li>
-        </ul>
-        <a class="btn btn--ghost" href="/fonctionnalites/">Toutes les fonctionnalités</a>
-      </div>
-    </div>
-  </section>
-
-  <section class="section section--alt">
+  <!-- Le problème, puis le parcours en trois étapes -->
+  <section class="section parcours" id="comment-ca-marche">
     <div class="container">
-      <div class="section-head">
+      <Confiance />
+      <div class="constat-tete">
+        <div>
+          <p class="eyebrow">Le constat</p>
+          <h2 class="titre">La carte à tampons a fait son temps</h2>
+        </div>
+        <p>Perdue au fond d’un sac, oubliée à la maison, jetée au premier tri : la carte papier ne fait revenir personne. Et quand un client ne revient plus, vous n’avez aucun moyen de le relancer.</p>
+      </div>
+      <div class="constats">
+        {
+          constats.map((c) => (
+            <div class="card constat apparait">
+              <p class="avant">{c.avant}</p>
+              <h3>{c.titre}</h3>
+              <p>{c.texte}</p>
+            </div>
+          ))
+        }
+      </div>
+
+      <div class="section-head etapes-tete" data-fantome="scan">
+        <p class="eyebrow">Comment ça marche</p>
+        <h2>De la création au premier scan, <span class="gold-text">sans complexité.</span></h2>
+        <p>Aucune application à installer, aucun compte à créer pour vos clients : la carte s’ajoute au Wallet du téléphone, comme une carte d’embarquement.</p>
+      </div>
+      <ol class="etapes" aria-label="Les trois étapes">
+        <li class="etape apparait">
+          <div class="ill ill-1" aria-hidden="true">
+            <WalletCard name="Le Fournil d’Albane" activity="Boulangerie" bg="#7a3d1c" accent="#f2c879" filled={3} total={10} reward="Viennoiserie offerte" qr={false} width={250} />
+            <span class="ill-pts"><i style="--c:#7a3d1c"></i><i style="--c:#14532d"></i><i style="--c:#1e3a5f"></i><i style="--c:#121216"></i></span>
+          </div>
+          <span class="etape-n" data-n="01" aria-hidden="true"></span>
+          <h3>Vous créez votre carte</h3>
+          <p>Votre nom, vos couleurs, votre logo, votre récompense : l’aperçu se met à jour en direct. {TRIAL.open ? 'Lancez l’essai : votre carte et son QR code sont créés tout de suite.' : <>Choisissez votre offre, votre carte et son QR code sont prêts sous 24&nbsp;h.</>}</p>
+        </li>
+        <li class="etape apparait">
+          <div class="ill ill-2" aria-hidden="true">
+            <div class="ill-qr">
+              <QrCode text="https://loyna.fr/creer-ma-carte/" size={104} label="" />
+              <small>Scannez-moi</small>
+            </div>
+            <div class="ill-ajout">
+              <span><Icon name="wallet" size={15} /> Ajouter à Apple Wallet</span>
+              <span><Icon name="wallet" size={15} /> Enregistrer dans Google Wallet</span>
+            </div>
+          </div>
+          <span class="etape-n" data-n="02" aria-hidden="true"></span>
+          <h3>Votre client l’ajoute à son Wallet</h3>
+          <p>Il scanne votre QR code au comptoir, en vitrine ou sur vos réseaux, remplit un formulaire très court, et sa carte rejoint son téléphone en un geste.</p>
+        </li>
+        <li class="etape apparait">
+          <div class="ill ill-3" aria-hidden="true">
+            <span class="ill-ok"><Icon name="check" size={22} /></span>
+            <b>Passage validé</b>
+            <span class="ill-compte">8 <i>/ 10</i></span>
+            <span class="ill-tampons">{Array.from({length: 10}).map((_, i) => <i class={i < 8 ? 'on' : ''} />)}</span>
+          </div>
+          <span class="etape-n" data-n="03" aria-hidden="true"></span>
+          <h3>Un scan, c’est validé</h3>
+          <p>À chaque visite, vous scannez sa carte avec votre téléphone. Elle se met à jour toute seule et la récompense se débloque au bon moment.</p>
+        </li>
+      </ol>
+
+      <div class="mid-cta mid-cta--double" id="video">
+        <div class="btn-row">
+          <a class="btn btn--primary" href={APPEL.href}>{APPEL.label} <Icon name="arrow-right" size={18} /></a>
+          <a class="btn btn--ghost" href="/demo/" data-video="/video/loyna-presentation-720p.mp4"><Icon name="circle-play" size={18} /> LOYNA en 1 minute</a>
+        </div>
+        <span>{TRIAL.open ? `${TRIAL.label.charAt(0).toUpperCase()}${TRIAL.label.slice(1)}.` : 'Aperçu gratuit, à vos couleurs, avant tout paiement.'} La vidéo montre tout le parcours, côté client et côté commerçant.</span>
+      </div>
+    </div>
+  </section>
+  <VideoModale />
+
+  <Jonction de="creme" vers="sable" forme={3} retourne />
+
+  <!-- Ce que le commerçant y gagne -->
+  <section class="section section--alt atouts" aria-labelledby="atouts-titre">
+    <div class="container">
+      <div class="section-head" data-fantome="wallet">
+        <p class="eyebrow">Ce que vous y gagnez</p>
+        <h2 id="atouts-titre">Faites revenir vos clients, <span class="gold-text">sans y penser.</span></h2>
+        <p>La notification de proximité, des messages qui partent tout seuls et un tableau de bord clair : de quoi donner envie de revenir, et voir ce qui marche.</p>
+      </div>
+
+      <div class="atout" id="proximite">
+        <div>
+          <p class="eyebrow">Proximité · Toutes les offres</p>
+          <h3 class="atout-titre">Votre client passe devant la boutique&nbsp;: sa carte s’affiche</h3>
+          <p class="atout-texte">Un habitué passe devant votre boulangerie. Sur l’écran de verrouillage de son téléphone, sa carte de fidélité s’affiche avec un court message&nbsp;: « Votre récompense vous attend chez Le Fournil d’Albane&nbsp;! ». Le bon rappel, au bon endroit.</p>
+          <ul class="checks">
+            <li>Incluse dans toutes les offres, et jamais comptée comme une campagne</li>
+            <li>Sur iPhone, la carte s’affiche sur l’écran de verrouillage&nbsp;; sur Android, une notification apparaît quand le client s’attarde près de la boutique</li>
+            <li>LOYNA ne reçoit jamais la position de vos clients&nbsp;: c’est leur téléphone qui détecte la proximité</li>
+          </ul>
+          <p class="atout-note">Fonctionne quand le client a activé la localisation et laissé Wallet s’afficher sur l’écran verrouillé. Avec Pro, jusqu’à 3 adresses&nbsp;: une seule carte, un seul tableau de bord.</p>
+        </div>
+        <div class="atout-visuel apparait">
+          <div class="visuel-coupe">
+            <Proximite width={300} pill={false} />
+          </div>
+          <div class="pastille-prox"><span><Icon name="map-pin" size={15} /></span> Près de la boutique</div>
+          <p class="atout-legende">Exemple : commerce fictif</p>
+        </div>
+      </div>
+
+      <div class="atout atout--inverse">
+        <div>
+          <p class="eyebrow">Automatisations · Toutes les offres</p>
+          <h3 class="atout-titre">Les messages qui font revenir, envoyés tout seuls</h3>
+          <p class="atout-texte">Dans toutes les offres, LOYNA envoie le bon message au bon moment. Vous choisissez le texte et la surprise&nbsp;; ces messages automatiques ne comptent jamais dans vos campagnes. La relance et «&nbsp;Plus qu’un passage&nbsp;!&nbsp;» sont actifs d’office, l’anniversaire et l’avis Google s’activent en un réglage.</p>
+          <ul class="checks">
+            <li><strong>Anniversaire</strong><span class="det">&nbsp;: un message le jour J, avec la surprise de votre choix</span></li>
+            <li><strong>Relance des inactifs</strong><span class="det">&nbsp;: un rappel aux clients qui ne reviennent plus (après 60 jours par défaut, réglable)</span></li>
+            <li><strong>« Plus qu’un passage&nbsp;! »</strong><span class="det">&nbsp;: un rappel aux clients tout proches de leur récompense</span></li>
+            <li><strong>Avis Google</strong><span class="det">&nbsp;: une demande d’avis après la 3e visite</span></li>
+            <li><strong>Campagnes programmées et groupes de clients</strong><span class="det">, et un rapport du mois par e-mail, avec jusqu’à 3 conseils</span></li>
+          </ul>
+          <p class="atout-note atout-note--large">Toutes les offres préviennent le client à chaque passage et quand sa récompense est débloquée. Un même client reçoit au plus un message commercial par {MARKETING_INTERVAL_HOURS}&nbsp;h, réglable.</p>
+        </div>
+        <div class="atout-visuel apparait">
+          <div class="visuel-coupe">
+            <MockNotifications width={300} />
+          </div>
+          <p class="atout-legende">Exemple : commerce et prénom fictifs</p>
+        </div>
+      </div>
+
+      <div class="atout">
+        <div>
+          <p class="eyebrow">Au comptoir et au bureau</p>
+          <h3 class="atout-titre">Un scan au comptoir, des chiffres clairs ensuite</h3>
+          <p class="atout-texte">Avec LOYNA Business sur votre téléphone, vous scannez la carte du client et tout le reste suit&nbsp;: le passage, la récompense et des statistiques calculées à partir de vos vrais passages.</p>
+          <ul class="checks">
+            <li>Pas de tampon, pas de recherche du client, pas de bouton +1</li>
+            <li>Protection anti double scan et bouton « Annuler » pendant quelques secondes</li>
+            <li>Un simple smartphone suffit : aucun matériel à acheter</li>
+            <li>Chaque action est tracée dans un journal d’activité</li>
+          </ul>
+          <div class="btn-row atout-boutons">
+            <a class="btn btn--ghost" href="/espace-client/demo/" rel="nofollow">Essayer l’espace client en démo</a>
+            <a class="lien-fort" href="/fonctionnalites/">Toutes les fonctionnalités <Icon name="arrow-right" size={16} /></a>
+          </div>
+        </div>
+        <div class="atout-visuel apparait">
+          <MockTableau />
+          <div class="tableau-pastille"><span><Icon name="check" size={14} /></span> Passage validé : 8 / 10</div>
+        </div>
+      </div>
+
+      <div class="carte-action apparait">
+        <div>
+          <p class="carte-action-sur">Aperçu gratuit</p>
+          <p class="carte-action-titre">Voyez votre carte avant de décider.</p>
+          <p class="carte-action-texte">À votre nom et à vos couleurs, avant tout paiement.</p>
+        </div>
+        <a class="btn btn--primary" href="/creer-ma-carte/">Créer l’aperçu de ma carte <Icon name="arrow-right" size={18} /></a>
+      </div>
+    </div>
+  </section>
+
+  <Jonction de="sable" vers="blanc" forme={4} />
+
+  <!-- Exemples par métier -->
+  <section class="section section--blanc exemples" aria-labelledby="exemples-titre">
+    <div class="container">
+      <div class="exemples-tete">
+        <div>
+          <p class="eyebrow">Exemples</p>
+          <h2 class="titre" id="exemples-titre">Votre métier, votre carte, <span class="gold-text">vos couleurs.</span></h2>
+          <p class="exemples-lead">Coiffure, beauté, restauration, boulangerie, café, fleuriste ou boutique : la carte s’adapte à votre rythme de visites et à vos récompenses.</p>
+        </div>
+        <p class="exemples-note">La récompense et les couleurs sont proposées pour votre métier. Vous changez ensuite tout ce que vous voulez, sans code.</p>
+      </div>
+      <ul class="ex-grille">
+        {
+          exemples.map((s) => (
+            <li>
+              <a class="ex" href={`/secteurs/${s.slug}/`}>
+                <span class="ex-etiquette">
+                  <Icon name={EXEMPLES[s.slug].icon} size={14} /> {EXEMPLES[s.slug].label}
+                </span>
+                <span class="sr-only">Carte de fidélité : {s.nom}</span>
+                <div class="ex-carte" aria-hidden="true">
+                  <WalletCard
+                    name={s.carte.nom}
+                    activity={s.carte.activite}
+                    bg={s.carte.couleurFond}
+                    accent={s.carte.couleurAccent}
+                    text={s.carte.couleurTexte}
+                    filled={Math.max(2, s.carte.total - 3)}
+                    total={s.carte.total}
+                    reward={s.carte.recompense}
+                    qr={false}
+                    width={252}
+                  />
+                </div>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="glisser" aria-hidden="true">Faites glisser pour voir tous les exemples →</p>
+      <div class="autres-metiers">
+        <p>Votre métier n’y est pas ? Choisissez « Autre » dans le configurateur et écrivez le vôtre. Voyez aussi&nbsp;:</p>
+        <ul class="pastilles">
+          {
+            autresMetiers.map((s) => (
+              <li>
+                <a href={`/secteurs/${s.slug}/`}>{s.nom}</a>
+              </li>
+            ))
+          }
+          <li><a href="/secteurs/">Tous les métiers <Icon name="arrow-right" size={15} /></a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <Jonction de="blanc" vers="sable" forme={6} retourne />
+
+  <!-- Essai du configurateur -->
+  <section class="section section--alt" id="essayer" aria-labelledby="essayer-titre">
+    <div class="container">
+      <div class="section-head" data-fantome="en direct">
+        <p class="eyebrow">À vous</p>
+        <h2 id="essayer-titre">Composez votre carte, <span class="gold-text">ici même.</span></h2>
+        <p>Le nom, l’activité, les couleurs : la carte change sous vos yeux, telle que vos clients la verront dans leur Wallet.</p>
+      </div>
+      <MiniConfigurateur />
+    </div>
+  </section>
+
+  <Jonction de="sable" vers="nuit" forme={2} retourne />
+
+  <!-- Fonctionnalités -->
+  <section class="section section--dark fonctions" aria-labelledby="fonctions-titre">
+    <span class="filigrane fonctions-filigrane" set:html={filigrane} />
+    <div class="container fonctions-corps">
+      <div class="section-head section-head--g">
         <p class="eyebrow">Fonctionnalités</p>
-        <h2>Tout ce qu’il faut pour fidéliser, rien de compliqué</h2>
+        <h2 id="fonctions-titre">Tout ce qu’il faut pour fidéliser, <span class="gold-text">rien de compliqué.</span></h2>
         <p>Une carte, un scanner et des automatisations qui travaillent pour vous pendant que vous servez vos clients.</p>
       </div>
-      <div class="grid grid-4 feat-list">
+      <ul class="f-grille">
         {
-          features.map((f) => (
-            <div class="card">
+          features.map((f, i) => (
+            <li>
+              <span class="f-n" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
               <span class="icon">
                 <Icon name={f.icon} />
               </span>
               <h3>{f.title}</h3>
               <p>{f.text}</p>
-            </div>
+            </li>
           ))
         }
-      </div>
+      </ul>
       <div class="mid-cta">
-        <a class="btn btn--primary" href="/tarifs/">Voir les formules <Icon name="arrow-right" size={18} /></a>
+        <a class="btn btn--gold" href={APPEL.href}>{APPEL.label} <Icon name="arrow-right" size={18} /></a>
         <a href="/fonctionnalites/">Le détail des fonctionnalités</a>
       </div>
     </div>
   </section>
 
-  <section class="section">
-    <div class="container split reverse">
-      <div>
-        <p class="eyebrow">Automatisations · Premium</p>
-        <h2>Les messages qui font revenir, envoyés tout seuls</h2>
-        <p class="lead">Avec Premium, LOYNA envoie le bon message au bon moment, sur l’écran de verrouillage de vos clients. Vous choisissez le texte et la surprise&nbsp;; ces messages automatiques ne comptent jamais dans vos campagnes.</p>
-        <ul class="checks">
-          <li><strong>Anniversaire</strong>&nbsp;: un message le jour J, avec la surprise de votre choix</li>
-          <li><strong>Relance des inactifs</strong>&nbsp;: un rappel aux clients qui ne reviennent plus (après 60 jours par défaut, réglable)</li>
-          <li><strong>« Plus qu’un passage&nbsp;! »</strong>&nbsp;: un rappel aux clients tout proches de leur récompense</li>
-          <li><strong>Avis Google</strong>&nbsp;: une demande d’avis après la 3e visite</li>
-          <li><strong>Campagnes programmées et groupes de clients</strong>, et un rapport mensuel avec 3 conseils concrets</li>
-        </ul>
-        <p class="auto-note">Toutes les formules préviennent le client à chaque passage et quand sa récompense est débloquée. Un client reçoit au plus un message commercial toutes les {MARKETING_INTERVAL_HOURS}&nbsp;h, délai réglable.</p>
-        <a class="btn btn--ghost" href="/tarifs/">Voir l’offre Premium</a>
-      </div>
-      <div class="shot narrow-shot">
-        <Picture src={notifications} formats={['avif', 'webp']} fallbackFormat="webp" widths={[320, 480]} sizes="(max-width: 700px) 80vw, 340px" alt="Notifications Wallet sur l’écran de verrouillage d’un iPhone" loading="lazy" />
-      </div>
-    </div>
-  </section>
+  <Jonction de="nuit" vers="sable" forme={5} />
 
-  <section class="section section--dark" id="rentabilite">
+  <!-- Rentabilité -->
+  <section class="section section--alt" id="rentabilite">
     <div class="container">
       <div class="section-head">
         <p class="eyebrow">Rentabilité</p>
@@ -249,49 +413,45 @@ const softwareLd = {
     </div>
   </section>
 
+  <Jonction de="sable" vers="creme" forme={1} retourne />
 
-  <section class="section section--warm" id="tarifs">
+  <!-- Tarifs -->
+  <section class="section" id="tarifs">
     <div class="container">
-      <div class="section-head">
+      <div class="section-head" data-fantome="prix">
         <p class="eyebrow">Tarifs</p>
-        <h2>Des formules simples, sans surprise sur le prix</h2>
+        <h2>Deux offres simples, <span class="gold-text">sans surprise sur le prix.</span></h2>
         <p>
-          Starter, Premium ou Pro&nbsp;: la notification de proximité est incluse partout. Payez en ligne en toute sécurité. Mise en service {
+          Starter ou Pro&nbsp;: la notification de proximité est incluse partout, et l’engagement n’est que proposé. Mise en service&nbsp;: {
             offer ? (
               <>
-                <span data-offer>offerte jusqu’au {LAUNCH_OFFER.untilLabel}, en mensuel comme en annuel.</span>
-                <span data-offer-off hidden>offerte en paiement annuel.</span>
+                <span data-offer>{PHRASES.miseEnService}</span>
+                <span data-offer-off hidden>{MISE_EN_SERVICE_APRES}</span>
               </>
             ) : (
-              'offerte en paiement annuel.'
+              MISE_EN_SERVICE_APRES
             )
           }
         </p>
       </div>
-      <PricingCards idPrefix="home" />
+      <PricingCards idPrefix="home" repli />
       <ul class="reassure">
-        <li><Icon name="zap" size={18} /> Carte prête sous 24&nbsp;h</li>
-        <li>
-          <Icon name="gift" size={18} />
-          <span>
-            Mise en service {
-              offer ? (
-                <>
-                  <span data-offer>offerte jusqu’au {LAUNCH_OFFER.untilLabel}</span>
-                  <span data-offer-off hidden>offerte en paiement annuel</span>
-                </>
-              ) : (
-                'offerte en paiement annuel'
-              )
-            }
-          </span>
-        </li>
+        {
+          TRIAL.open ? (
+            <li><Icon name="gift" size={18} /> {TRIAL.label.charAt(0).toUpperCase() + TRIAL.label.slice(1)}</li>
+          ) : (
+            <li><Icon name="zap" size={18} /> Carte prête sous 24&nbsp;h</li>
+          )
+        }
+        <li><Icon name="calendar-check" size={18} /> Sans engagement, ou −15&nbsp;% avec 12 mois</li>
         <li><Icon name="lock" size={18} /> Paiement sécurisé par Stripe</li>
         <li><Icon name="phone" size={18} /> Une question ? <a href="#rappel">On vous rappelle</a></li>
       </ul>
-      <p class="center"><a href="/tarifs/">Comparer les formules en détail</a></p>
+      <p class="center lien-centre"><a href="/tarifs/">Comparer les offres en détail</a></p>
     </div>
   </section>
+
+  <Jonction de="creme" vers="nuit" forme={3} />
 
   <section class="section section--dark">
     <div class="container">
@@ -299,96 +459,19 @@ const softwareLd = {
     </div>
   </section>
 
-  <section class="section">
-    <div class="container">
-      <div class="section-head">
-        <p class="eyebrow">Secteurs</p>
-        <h2>Pensé pour les commerces de proximité</h2>
-        <p>Coiffure, beauté, restauration, boulangerie, café, fleuriste ou boutique : la carte s’adapte à votre rythme de visites et à vos récompenses.</p>
-      </div>
-      <div class="sectors">
-        {
-          sectors.slice(0, 5).map((s) => (
-            <a class="sector" href={`/secteurs/${s.slug}/`}>
-              <WalletCard
-                name={s.carte.nom}
-                activity={s.carte.activite}
-                bg={s.carte.couleurFond}
-                accent={s.carte.couleurAccent}
-                text={s.carte.couleurTexte}
-                filled={Math.max(2, s.carte.total - 3)}
-                total={s.carte.total}
-                reward={s.carte.recompense}
-                qr={false}
-                width={240}
-              />
-              <span class="sector-name">
-                {s.nom} <Icon name="arrow-right" size={16} />
-              </span>
-            </a>
-          ))
-        }
-      </div>
-      {
-        sectors.length > 5 && (
-          <p class="more-sectors">
-            <span>Aussi :</span>
-            {sectors.slice(5).map((s) => (
-              <a href={`/secteurs/${s.slug}/`}>{s.nom}</a>
-            ))}
-            <a href="/secteurs/">Tous les métiers →</a>
-          </p>
-        )
-      }
-    </div>
-  </section>
+  <Jonction de="nuit" vers="sable" forme={4} retourne />
 
-  <section class="section">
-    <div class="container seo-text">
-      <div class="section-head">
-        <p class="eyebrow">Repères</p>
-        <h2>La carte de fidélité digitale, en bref</h2>
-      </div>
-      <div class="seo-cols">
-        <div>
-          <h3>Qu’est-ce qu’une carte de fidélité digitale ?</h3>
-          <p>
-            C’est la version dématérialisée de la carte à tampons, qu’on appelle aussi carte de fidélisation : au lieu d’un carton, la carte de fidélité vit dans le téléphone du client, dans Apple Wallet ou Google Wallet. Pas d’application à télécharger : le client scanne votre QR code et ajoute sa carte en un geste.
-            Pour comprendre le fonctionnement en détail, lisez notre <a href="/blog/carte-de-fidelite-digitale-guide/">guide de la carte de fidélité digitale</a>.
-          </p>
-        </div>
-        <div>
-          <h3>Pourquoi remplacer la carte papier ?</h3>
-          <p>
-            Une carte numérique ne se perd pas, ne s’imite pas et se met à jour toute seule. Surtout, elle vous permet de garder le contact : récompense disponible, anniversaire, client qui ne revient plus. Le <a href="/blog/carte-fidelite-papier-ou-digitale/">comparatif papier ou digitale</a> détaille les avantages et les limites de chaque solution.
-          </p>
-        </div>
-        <div>
-          <h3>Comment créer la carte de fidélité de votre commerce ?</h3>
-          <p>
-            Choisissez la mécanique (passages, points ou montant), une récompense qui donne envie et un seuil atteignable. Notre guide du <a href="/blog/programme-de-fidelite-commerce/">programme de fidélité</a> compare les formules, la méthode pour <a href="/blog/creer-carte-de-fidelite/">créer une carte de fidélité</a> vous guide pas à pas, et le <a href="/creer-ma-carte/">configurateur</a> en montre l’aperçu à votre nom.
-          </p>
-        </div>
-        <div>
-          <h3>Quelle application de carte de fidélité choisir ?</h3>
-          <p>
-            LOYNA réunit la carte, le scanner sur smartphone, les récompenses automatiques, les notifications et le tableau de bord, avec des consentements séparés et des données hébergées dans l’Union européenne. Les critères pour comparer les solutions sont dans notre guide pour <a href="/blog/application-carte-de-fidelite/">choisir une application de carte de fidélité</a>, et les règles à connaître dans notre article <a href="/blog/carte-de-fidelite-rgpd/">carte de fidélité et RGPD</a>.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section section--alt">
+  <!-- Questions, puis repères pour comprendre -->
+  <section class="section section--alt" aria-labelledby="faq-titre">
     <div class="container narrow">
-      <div class="section-head">
+      <div class="section-head" data-fantome="?">
         <p class="eyebrow">Questions fréquentes</p>
-        <h2>Vous vous demandez peut-être…</h2>
+        <h2 id="faq-titre">Vous vous demandez peut-être…</h2>
       </div>
       <div class="faq">
         {
-          faq.map((f) => (
-            <details>
+          faq.map((f, i) => (
+            <details open={i === 0}>
               <summary>{f.q}</summary>
               <div class="answer">
                 <p set:html={f.a} />
@@ -397,38 +480,355 @@ const softwareLd = {
           ))
         }
       </div>
-      <p class="center"><a href="/faq/">Toutes les questions</a></p>
+      <p class="center lien-centre"><a href="/faq/">Toutes les questions</a></p>
+    </div>
+    <div class="container reperes">
+      <div class="section-head">
+        <p class="eyebrow">Repères</p>
+        <h2>La carte de fidélité digitale, en bref</h2>
+      </div>
+      <div class="seo-cols">
+        <div class="repere">
+          <input class="rep-cb sr-only" type="checkbox" id="rep-1" />
+          <h3><label for="rep-1">Qu’est-ce qu’une carte de fidélité digitale ? <Icon name="chevron-down" size={18} /></label></h3>
+          <p>
+            C’est la version dématérialisée de la carte à tampons, qu’on appelle aussi carte de fidélisation : au lieu d’un carton, la carte de fidélité vit dans le téléphone du client, dans Apple Wallet ou Google Wallet. Pas d’application à télécharger : le client scanne votre QR code et ajoute sa carte en un geste.
+            Pour comprendre le fonctionnement en détail, lisez notre <a href="/blog/carte-de-fidelite-digitale-guide/">guide de la carte de fidélité digitale</a>.
+          </p>
+        </div>
+        <div class="repere">
+          <input class="rep-cb sr-only" type="checkbox" id="rep-2" />
+          <h3><label for="rep-2">Pourquoi remplacer la carte papier ? <Icon name="chevron-down" size={18} /></label></h3>
+          <p>
+            Une carte numérique ne se perd pas, ne s’imite pas et se met à jour toute seule. Surtout, elle vous permet de garder le contact : récompense disponible, anniversaire, client qui ne revient plus. Le <a href="/blog/carte-fidelite-papier-ou-digitale/">comparatif papier ou digitale</a> détaille les avantages et les limites de chaque solution.
+          </p>
+        </div>
+        <div class="repere">
+          <input class="rep-cb sr-only" type="checkbox" id="rep-3" />
+          <h3><label for="rep-3">Comment créer la carte de fidélité de votre commerce ? <Icon name="chevron-down" size={18} /></label></h3>
+          <p>
+            Choisissez la mécanique (passages, points ou montant), une récompense qui donne envie et un seuil atteignable. Notre guide du <a href="/blog/programme-de-fidelite-commerce/">programme de fidélité</a> compare les formules, la méthode pour <a href="/blog/creer-carte-de-fidelite/">créer une carte de fidélité</a> vous guide pas à pas, et le <a href="/creer-ma-carte/">configurateur</a> en montre l’aperçu à votre nom.
+          </p>
+        </div>
+        <div class="repere">
+          <input class="rep-cb sr-only" type="checkbox" id="rep-4" />
+          <h3><label for="rep-4">Quelle application de carte de fidélité choisir ? <Icon name="chevron-down" size={18} /></label></h3>
+          <p>
+            LOYNA réunit la carte, le scanner sur smartphone, les récompenses automatiques, les notifications et le tableau de bord, avec des consentements séparés et des données hébergées dans l’Union européenne. Les critères pour comparer les solutions sont dans notre guide pour <a href="/blog/application-carte-de-fidelite/">choisir une application de carte de fidélité</a>, et les règles à connaître dans notre article <a href="/blog/carte-de-fidelite-rgpd/">carte de fidélité et RGPD</a>.
+          </p>
+        </div>
+      </div>
     </div>
   </section>
+
+  <Jonction de="sable" vers="creme" forme={6} />
 
   <CtaBand callbackHref="#rappel" />
 </Base>
 
 <style>
-  .strip {
-    border-block: 1px solid rgba(230, 194, 122, 0.18);
-    background: #1a181c;
+  /* --- Grands chiffres ------------------------------------------------------------------------- */
+  .chiffres {
+    overflow: hidden;
+    overflow: clip;
+    padding-top: clamp(30px, 5vw, 76px);
+    padding-bottom: clamp(44px, 6vw, 84px);
   }
-  .strip-row {
+  .chiffres-corps,
+  .fonctions-corps {
+    position: relative;
+    z-index: 1;
+  }
+  .chiffres-filigrane {
+    right: -4%;
+    bottom: 0;
+    width: min(62vw, 560px);
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 26px 18px;
+    margin: clamp(26px, 4vw, 52px) 0 0;
+  }
+  .stat {
+    margin: 0;
+    padding-left: 14px;
+    border-left: 1px solid rgba(230, 194, 122, 0.3);
+  }
+  .stat dt {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: #faf7f0;
+  }
+  .stat dt b {
+    font-size: clamp(3rem, 7vw, 5.2rem);
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    background: linear-gradient(100deg, #f0d49a, #c9963f);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .stat dt span {
+    font-size: clamp(1rem, 1.8vw, 1.35rem);
+    font-weight: 750;
+    letter-spacing: -0.02em;
+  }
+  .stat dd {
+    margin: 10px 0 0;
+    color: #c9c2b4;
+    font-size: clamp(0.92rem, 1.3vw, 1.02rem);
+    line-height: 1.5;
+  }
+  .garanties {
+    list-style: none;
+    margin: clamp(26px, 4vw, 46px) 0 0;
+    padding: 0;
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 14px 28px;
-    padding: 22px 0;
-    color: #d9d2c4;
-    font-weight: 600;
-    font-size: 0.95rem;
+    gap: 8px 10px;
   }
-  .strip-row :global(svg) {
+  .garanties li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(230, 194, 122, 0.24);
+    color: #d9d2c4;
+    font-size: 0.87rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .garanties :global(svg) {
+    flex: none;
     color: #e6c27a;
+  }
+
+  /* --- Constat ---------------------------------------------------------------------------------- */
+  .parcours {
+    padding-top: clamp(30px, 5vw, 72px);
+  }
+  .constat-tete {
+    display: grid;
+    gap: 12px;
+    margin-bottom: clamp(24px, 3.4vw, 44px);
+  }
+  .constat-tete h2 {
+    margin-bottom: 0;
+  }
+  .constat-tete > p {
+    margin: 0;
+    color: var(--muted);
+    font-size: clamp(1.02rem, 1.5vw, 1.15rem);
+    line-height: 1.55;
+  }
+  .constats {
+    display: grid;
+    gap: 14px;
+  }
+  .constat {
+    padding: clamp(20px, 2.6vw, 30px);
+  }
+  .constat .avant {
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #a8473f;
+    text-decoration: line-through;
+    text-decoration-color: rgba(168, 71, 63, 0.5);
+    margin: 0;
+  }
+  .constat h3 {
+    margin: 8px 0 0;
+  }
+  /* téléphone : le contraste avant / après suffit */
+  .constat p:not(.avant) {
+    display: none;
+  }
+
+  /* --- Étapes ----------------------------------------------------------------------------------- */
+  .etapes-tete {
+    margin-top: clamp(48px, 7vw, 100px);
+  }
+  .etapes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+  }
+  .etape {
+    position: relative;
+    padding: 12px 12px clamp(20px, 2.4vw, 28px);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--filet);
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+  .etape h3,
+  .etape p {
+    margin-inline: 12px;
+  }
+  .etape h3 {
+    margin-top: 18px;
+    margin-bottom: 8px;
+    padding-right: 44px;
+  }
+  .etape p {
+    margin-bottom: 0;
+    color: var(--muted);
+  }
+  .etape-n::after {
+    content: attr(data-n);
+  }
+  .etape-n {
+    position: absolute;
+    right: 22px;
+    margin-top: 12px;
+    font-size: 2.1rem;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    color: var(--gold-soft);
+  }
+  .ill {
+    container-type: inline-size;
+    position: relative;
+    height: 160px;
+    border-radius: 20px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: var(--bg-alt);
+  }
+  /* la carte suit la largeur de son cadre, avec la place des pastilles de couleur à droite */
+  .ill-1 :global(.wcard) {
+    --w: min(250px, 72cqw) !important;
+    translate: -12px 0;
+    box-shadow: 0 16px 30px rgba(18, 18, 22, 0.26);
+  }
+  .ill-pts {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    translate: 0 -50%;
+    display: grid;
+    gap: 6px;
+    padding: 7px;
+    border-radius: 999px;
+    background: var(--card);
+    box-shadow: 0 8px 18px rgba(18, 18, 22, 0.14);
+  }
+  .ill-pts i {
+    display: block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--c);
+  }
+  .ill-2 {
+    grid-template-columns: auto auto;
+    justify-content: center;
+    gap: 12px;
+  }
+  .ill-qr {
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    padding: 9px 9px 7px;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 12px 26px rgba(18, 18, 22, 0.16);
+  }
+  .ill-qr small {
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .ill-ajout {
+    display: grid;
+    gap: 7px;
+    max-width: 158px;
+  }
+  .ill-ajout span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 11px;
+    border-radius: 12px;
+    background: var(--ink);
+    color: #faf7f0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .ill-ajout span + span {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--filet);
+  }
+  .ill-ajout :global(svg) {
+    flex: none;
+    color: #c9963f;
+  }
+  .ill-3 {
+    align-content: center;
+    gap: 4px;
+    color: #fff;
+    background: linear-gradient(160deg, #27ae6c, #1f9d5c);
+  }
+  .ill-ok {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.24);
+  }
+  .ill-3 b {
+    font-size: 1.1rem;
+    font-weight: 800;
+  }
+  .ill-compte {
+    font-size: 1.55rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+  .ill-compte i {
+    font-style: normal;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    opacity: 0.8;
+  }
+  .ill-tampons {
+    display: flex;
+    gap: 5px;
+    margin-top: 5px;
+  }
+  .ill-tampons i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.7);
+  }
+  .ill-tampons i.on {
+    background: #fff;
+    box-shadow: none;
   }
   .mid-cta {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 14px 22px;
-    margin-top: clamp(36px, 5vw, 56px);
+    gap: 12px 22px;
+    margin-top: clamp(28px, 4vw, 48px);
     text-align: center;
   }
   .mid-cta span {
@@ -440,17 +840,356 @@ const softwareLd = {
     font-weight: 700;
     padding: 10px 4px;
   }
-  .swipe-hint {
+  .mid-cta--double {
+    flex-direction: column;
+  }
+  .mid-cta--double .btn-row {
+    justify-content: center;
+  }
+  .mid-cta--double span {
+    max-width: 620px;
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  /* --- Atouts ----------------------------------------------------------------------------------- */
+  .atouts {
+    padding-top: clamp(30px, 5vw, 72px);
+    overflow-x: clip; /* marges transparentes des téléphones, sur les écrans très étroits */
+  }
+  .atout {
+    display: grid;
+    gap: 22px;
+    align-items: center;
+  }
+  .atout + .atout {
+    margin-top: clamp(44px, 6vw, 88px);
+  }
+  .atout-titre {
+    font-size: clamp(1.6rem, 3vw, 2.45rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.08;
+    margin: 0 0 12px;
+  }
+  .atout-texte {
+    color: #4f4a42;
+    font-size: clamp(1.02rem, 1.4vw, 1.12rem);
+    line-height: 1.55;
+    margin: 0 0 16px;
+  }
+  .atout-note {
+    margin: 14px 0 0;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .atout-note--large {
     display: none;
+  }
+  .atout-boutons {
+    align-items: center;
+    margin-top: 22px;
+  }
+  .lien-fort {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .atout-visuel {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    min-width: 0;
+  }
+  /* téléphone coupé : seul le haut, utile, reste à l'écran */
+  .visuel-coupe {
+    height: calc(clamp(372px, 42vw, 500px) + 26px);
+    padding: 26px 40px 0;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(#000 82%, transparent);
+    mask-image: linear-gradient(#000 82%, transparent);
+  }
+  .visuel-coupe :global(.phone) {
+    box-shadow:
+      0 0 0 1px rgba(18, 18, 22, 0.08),
+      0 12px 30px rgba(18, 18, 22, 0.2);
+  }
+  .atout-legende {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-align: center;
+  }
+  /* téléphone : le mot-clé seul, le détail est sur /fonctionnalites/ */
+  .det {
+    display: none;
+  }
+  .pastille-prox,
+  .tableau-pastille {
+    position: absolute;
+    left: -6px;
+    bottom: -14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px 7px 7px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--filet);
+    box-shadow: 0 14px 30px rgba(18, 18, 22, 0.18);
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--ink);
+    animation: i-flotte 7s ease-in-out infinite;
+  }
+  .pastille-prox {
+    left: auto;
+    right: 5%;
+    bottom: 30px;
+    animation-delay: -3s;
+  }
+  .tableau-pastille span,
+  .pastille-prox span {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--green);
+    color: #fff;
+  }
+  .pastille-prox span {
+    background: var(--ink);
+    color: #e6c27a;
+  }
+  .carte-action {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px 32px;
+    margin-top: clamp(44px, 6vw, 88px);
+    padding: clamp(22px, 3.4vw, 40px) clamp(22px, 4vw, 48px);
+    border-radius: var(--radius-lg);
+    border: 1px solid #dccfb8;
+    background: var(--card);
+    box-shadow: var(--shadow-lg);
+  }
+  .carte-action p {
+    margin: 0;
+  }
+  .carte-action-sur {
+    color: var(--gold-strong);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .carte-action-titre {
+    margin: 6px 0 4px !important;
+    color: var(--ink);
+    font-size: clamp(1.4rem, 2.6vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+  }
+  .carte-action-texte {
+    color: var(--muted);
+  }
+
+  /* --- Exemples --------------------------------------------------------------------------------- */
+  .exemples {
+    padding-top: clamp(30px, 5vw, 72px);
+  }
+  .exemples-tete {
+    display: grid;
+    gap: 16px;
+    margin-bottom: clamp(24px, 3.4vw, 44px);
+  }
+  .exemples-tete h2 {
+    margin-bottom: 12px;
+  }
+  .exemples-lead {
+    margin: 0;
+    color: var(--muted);
+    font-size: clamp(1.02rem, 1.5vw, 1.15rem);
+    line-height: 1.55;
+  }
+  .exemples-note {
+    margin: 0;
+    padding: 16px 20px;
+    border-radius: 22px;
+    border: 1px solid var(--filet);
+    background: var(--bg);
+    color: #4f4a42;
+    font-weight: 600;
+    font-size: 0.97rem;
+    line-height: 1.5;
+    box-shadow: var(--shadow);
+  }
+  /* téléphone : défilement horizontal */
+  .ex-grille {
+    list-style: none;
+    display: flex;
+    gap: 12px;
+    margin: 0 -20px;
+    padding: 6px 20px 14px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 20px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ex-grille::-webkit-scrollbar {
+    display: none;
+  }
+  .ex-grille li {
+    flex: 0 0 min(78vw, 292px);
+    scroll-snap-align: start;
+    display: grid;
+  }
+  .ex {
+    position: relative;
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 26px;
+    border: 1px solid var(--filet);
+    background: var(--bg);
+    box-shadow: var(--shadow);
+    color: var(--ink);
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .ex:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: #c9b896;
+    color: var(--ink);
+  }
+  .ex-etiquette {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px 5px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--filet);
+    background: var(--card);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    line-height: 1.3;
+    color: var(--gold-strong);
+  }
+  .ex-carte {
+    width: 100%;
+  }
+  .ex :global(.wcard) {
+    width: 100%;
+  }
+  .glisser {
+    margin: 2px 0 0;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .autres-metiers {
+    margin-top: clamp(26px, 4vw, 48px);
+    text-align: center;
+  }
+  .autres-metiers p {
+    margin: 0 auto 14px;
+    max-width: 640px;
+    color: var(--muted);
+  }
+
+  /* --- Fonctionnalités : grande grille à filets ------------------------------------------------- */
+  .fonctions {
+    overflow: hidden;
+    overflow: clip;
+    padding-top: clamp(30px, 5vw, 72px);
+  }
+  .fonctions-filigrane {
+    left: -6%;
+    top: 34%;
+    width: min(60vw, 640px);
+    opacity: 0.04;
+  }
+  .f-grille {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    border: 1px solid rgba(250, 247, 240, 0.12);
+    border-radius: 28px;
+    overflow: hidden;
+    background: rgba(250, 247, 240, 0.12);
+    gap: 1px;
+  }
+  .f-grille li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr);
+    column-gap: 14px;
+    align-items: start;
+    padding: 18px;
+    background: #17161b;
+  }
+  .f-grille :global(.icon) {
+    grid-row: span 2;
+    width: 44px;
+    height: 44px;
+  }
+  .f-grille :global(.icon svg) {
+    width: 22px;
+    height: 22px;
+  }
+  .f-grille h3 {
+    margin: 2px 26px 4px 0;
+    font-size: 1.08rem;
+    color: #faf7f0;
+  }
+  .f-grille p {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #b9b3a7;
+  }
+  .f-n {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.74rem;
+    letter-spacing: 0.04em;
+    color: #8f887c;
+  }
+  .fonctions .mid-cta {
+    color: #e6c27a;
+  }
+
+  /* --- Tarifs ------------------------------------------------------------------------------------ */
+  #tarifs {
+    padding-top: clamp(30px, 5vw, 72px);
   }
   .reassure {
     list-style: none;
     padding: 0;
-    margin: 34px auto 0;
+    margin: 30px auto 0;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 12px 28px;
+    gap: 10px 26px;
     font-weight: 600;
     color: var(--ink);
   }
@@ -460,210 +1199,27 @@ const softwareLd = {
     gap: 8px;
   }
   .reassure :global(svg) {
+    flex: none;
     color: var(--gold-strong);
   }
-  .strip-row span {
-    display: inline-flex;
-    gap: 8px;
-    align-items: center;
+  .lien-centre {
+    margin-top: 22px;
+    font-weight: 700;
   }
-  .compare .before {
+  .lien-centre a {
     display: inline-block;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #a8473f;
-    text-decoration: line-through;
-    text-decoration-color: rgba(168, 71, 63, 0.5);
-    margin: 0;
+    padding-block: 10px;
   }
-  .steps {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-    gap: clamp(24px, 3vw, 40px);
+
+  /* --- Repères ----------------------------------------------------------------------------------- */
+  .reperes {
+    margin-top: clamp(44px, 6vw, 88px);
   }
-  .step {
-    position: relative;
+  .reperes .section-head {
+    margin-bottom: clamp(22px, 3vw, 36px);
   }
-  .step .shot {
-    max-width: 300px;
-    margin: 0 auto 26px;
-  }
-  .num {
-    display: inline-grid;
-    place-items: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: var(--ink);
-    color: #faf7f0;
-    font-weight: 800;
-    margin-bottom: 12px;
-  }
-  .step p {
-    color: var(--muted);
-  }
-  .split {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: clamp(32px, 6vw, 90px);
-    align-items: center;
-  }
-  .split .checks {
-    margin: 26px 0 30px;
-  }
-  .narrow-shot {
-    max-width: 360px;
-    justify-self: center;
-    width: 100%;
-  }
-  /* Notification de proximité */
-  .prox-checks {
-    margin: 26px 0 18px;
-  }
-  .prox-checks li {
-    color: #e9e5dc;
-  }
-  .prox-checks li::before {
-    background-color: rgba(230, 194, 122, 0.2);
-  }
-  .prox-note,
-  .auto-note {
-    font-size: 0.92rem;
-    margin: 0 0 24px;
-  }
-  .prox-note {
-    color: #a8a194 !important;
-  }
-  .auto-note {
-    color: var(--muted);
-  }
-  .prox-visual {
-    display: grid;
-    place-items: center;
-    padding: 10px 30px;
-  }
-  .center {
-    text-align: center;
-    margin-top: 26px;
-    font-weight: 600;
-  }
-  .sectors {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
-    gap: 22px;
-  }
-  .sector {
-    display: grid;
-    justify-items: center;
-    gap: 16px;
-    padding: 26px 16px 22px;
-    border-radius: var(--radius-lg);
-    background: var(--card);
-    border: 1px solid var(--line);
-    text-decoration: none;
-    transition:
-      transform 0.2s,
-      box-shadow 0.2s;
-  }
-  .sector:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-  }
-  .sector :global(.wcard) {
-    width: 100%;
-    max-width: 240px;
-    font-size: 11px;
-  }
-  .sector-name {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 700;
-    color: var(--ink);
-  }
-  @media (max-width: 920px) {
-    .split {
-      grid-template-columns: 1fr;
-    }
-    .split.reverse > :first-child {
-      order: 2;
-    }
-  }
-  /* Téléphone : les 3 étapes défilent à l'horizontale, les fonctionnalités en liste compacte */
-  @media (max-width: 700px) {
-    .steps {
-      display: flex;
-      gap: 14px;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      margin-inline: -20px;
-      padding: 4px 20px 6px;
-      scroll-padding-inline: 20px;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-    }
-    .steps::-webkit-scrollbar {
-      display: none;
-    }
-    .step {
-      flex: 0 0 82%;
-      scroll-snap-align: start;
-    }
-    .step .shot {
-      max-width: 240px;
-      margin-bottom: 18px;
-    }
-    /* sans marge latérale : le téléphone de 290 px ne déborde plus de l'écran (page qui glissait sur 360 px) */
-    .prox-visual {
-      padding-inline: 0;
-    }
-    .swipe-hint {
-      display: block;
-      margin: 10px 0 0;
-      text-align: center;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--muted);
-    }
-    .feat-list {
-      gap: 10px;
-    }
-    .feat-list .card {
-      display: grid;
-      grid-template-columns: 44px 1fr;
-      column-gap: 14px;
-      align-items: start;
-      padding: 18px;
-      border-radius: 20px;
-    }
-    .feat-list .card :global(.icon) {
-      grid-row: span 2;
-      width: 44px;
-      height: 44px;
-    }
-    .feat-list .card h3 {
-      margin: 2px 0 4px;
-      font-size: 1.08rem;
-    }
-    .feat-list .card p {
-      font-size: 0.95rem;
-    }
-  }
-  .more-sectors {
-    margin: 26px 0 0;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 6px 18px;
-    color: var(--muted);
-  }
-  .more-sectors a {
-    font-weight: 700;
-    padding-block: 8px;
+  .reperes h2 {
+    font-size: clamp(1.7rem, 3vw, 2.4rem);
   }
   .seo-cols {
     display: grid;
@@ -673,11 +1229,232 @@ const softwareLd = {
     margin: 0 auto;
   }
   .seo-cols h3 {
-    font-size: 1.15rem;
+    font-size: 1.12rem;
     margin-bottom: 8px;
   }
   .seo-cols p {
-    color: var(--muted);
+    color: #55504a;
     margin: 0;
+    font-size: 0.97rem;
+  }
+  /* téléphone : questions repliables, sans JavaScript (le texte reste dans la page) */
+  .seo-cols {
+    gap: 10px;
+  }
+  .repere {
+    padding: 0 18px;
+    border-radius: 20px;
+    border: 1px solid #dccfb8;
+    background: var(--card);
+  }
+  .repere h3 {
+    margin: 0;
+  }
+  .repere label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 56px;
+    padding-block: 12px;
+    cursor: pointer;
+  }
+  .repere label :global(svg) {
+    flex: none;
+    color: var(--gold-strong);
+    transition: transform 0.2s;
+  }
+  .rep-cb:focus-visible + h3 label {
+    outline: 3px solid var(--gold);
+    outline-offset: -3px;
+    border-radius: 12px;
+  }
+  .repere p {
+    display: none;
+    padding-bottom: 16px;
+  }
+  .rep-cb:checked ~ p {
+    display: block;
+  }
+  .rep-cb:checked + h3 label :global(svg) {
+    transform: rotate(180deg);
+  }
+
+  @keyframes i-flotte {
+    0%,
+    100% {
+      translate: 0 0;
+    }
+    50% {
+      translate: 0 -6px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tableau-pastille,
+    .pastille-prox {
+      animation: none !important;
+    }
+  }
+
+  /* --- Tablette et ordinateur ---------------------------------------------------------------------- */
+  @media (min-width: 720px) {
+    .det {
+      display: inline;
+    }
+    .atout-note--large {
+      display: block;
+    }
+    .constat p:not(.avant) {
+      display: block;
+      margin-top: 8px;
+    }
+    .seo-cols {
+      gap: clamp(20px, 3vw, 40px);
+    }
+    .rep-cb {
+      display: none;
+    }
+    .repere {
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+    .repere label {
+      display: block;
+      min-height: 0;
+      padding: 0;
+      cursor: text;
+    }
+    .repere label :global(svg) {
+      display: none;
+    }
+    .repere p {
+      display: block;
+      padding: 8px 0 0;
+    }
+    .stats {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .stat {
+      padding-left: clamp(14px, 2vw, 26px);
+    }
+    .constat-tete {
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 40px;
+      align-items: end;
+    }
+    .constats {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(14px, 2vw, 24px);
+    }
+    /* tablette : l'illustration à gauche, le texte à droite */
+    .etape {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr);
+      grid-template-rows: auto auto 1fr;
+      column-gap: 8px;
+      padding-right: 22px;
+    }
+    .etape .ill {
+      grid-row: 1 / 4;
+      height: 100%;
+      min-height: 200px;
+    }
+    .etape h3 {
+      grid-column: 2;
+      margin-top: 12px;
+    }
+    .etape p {
+      grid-column: 2;
+    }
+    .etape-n {
+      top: 12px;
+    }
+    .exemples-tete {
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 40px;
+      align-items: center;
+    }
+    .ex-grille {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin: 0;
+      padding: 0;
+      overflow: visible;
+    }
+    .glisser {
+      display: none;
+    }
+    .f-grille {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .f-grille li {
+      display: block;
+      padding: clamp(20px, 2.6vw, 30px);
+    }
+    .f-grille :global(.icon) {
+      margin-bottom: 18px;
+    }
+    .f-grille h3 {
+      font-size: 1.15rem;
+      margin: 0 0 8px;
+    }
+    .f-n {
+      right: 20px;
+      top: 22px;
+    }
+  }
+  @media (min-width: 980px) {
+    .pastille-prox {
+      right: 2%;
+      bottom: 7%;
+    }
+    .etapes {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(14px, 2vw, 24px);
+    }
+    .etape {
+      display: block;
+      padding-right: 12px;
+    }
+    .etape .ill {
+      height: clamp(180px, 19vw, 230px);
+      min-height: 0;
+    }
+    .etape h3 {
+      margin-top: 18px;
+    }
+    .etape-n {
+      top: auto;
+    }
+    .ill-2 {
+      grid-template-columns: auto auto;
+      gap: 10px;
+    }
+    .ill-ajout {
+      display: grid;
+      max-width: 128px;
+    }
+    .atout {
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      gap: clamp(30px, 6vw, 90px);
+    }
+    .stat dt {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 8px;
+    }
+    .atout--inverse > :first-child {
+      order: 2;
+    }
+    .ex-grille {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .f-grille {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
   }
 </style>

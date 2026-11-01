@@ -1,6 +1,11 @@
 <?php
 // Cartes préparées avec un commerçant depuis le panel commercial (« Préparer une carte », Ewan, 2026-10-30) : réglages
-// de la carte, logo et offre, repris par le lien envoyé au commerçant (loyna.fr/panier/?carte=<id>).
+// de la carte, logo et offre, repris par les liens envoyés au commerçant (loyna.fr/panier/?carte=<id> pour payer,
+// loyna.fr/essai/?carte=<id> pour essayer).
+//
+// Grille du 2026-10-31 : à l'écriture, offre Starter ou Pro, avec ou sans engagement. Les fiches écrites avant (offre
+// « premium », champ « periode » à la place d'« engagement ») ne sont jamais réécrites d'ici : elles restent servies telles
+// quelles, et le site les lit par normalizeOffer() (src/data/site.ts). Une mise à jour depuis le panel les passe au format neuf.
 //
 //   GET  ?id=<id>                 → public : 200 {"carte": {…}} · 404 inconnue (l'identifiant est aléatoire, sans liste)
 //   GET  + en-tête X-Panel-Jeton  → 200 {"cartes": [{…, "id", "cree_le", "modifie_le", "a_logo"}]}, sans les logos
@@ -24,8 +29,8 @@ const TAILLE_LOGO_MAX = 1400000;     // longueur du base64
 const ESSAIS_MAX = 20;
 const FENETRE_ESSAIS = 3600;
 const CARTES_MAX = 300;
-const OFFRES = ['starter', 'premium', 'pro'];
-const PERIODES = ['mensuel', 'annuel'];
+const OFFRES = ['starter', 'pro'];
+const ENGAGEMENTS = ['sans', 'engage'];
 const PREFIXE_LOGO = 'data:image/png;base64,';
 
 function repondre(int $code, array $corps): void
@@ -196,7 +201,7 @@ function carte_propre(array $c): ?array
         || !is_string($c['fond'] ?? null) || preg_match('/^#[0-9a-f]{6}$/D', $c['fond']) !== 1
         || !is_string($c['tampons'] ?? null) || preg_match('/^#[0-9a-f]{6}$/D', $c['tampons']) !== 1
         || !entier_valide($c['passages'] ?? null, 1, 100)
-        || !in_array($c['offre'] ?? null, OFFRES, true) || !in_array($c['periode'] ?? null, PERIODES, true)
+        || !in_array($c['offre'] ?? null, OFFRES, true) || !in_array($c['engagement'] ?? null, ENGAGEMENTS, true)
         || !is_array($qr) || !entier_valide($qr['unit'] ?? null, 0, 20) || !entier_valide($qr['pack5'] ?? null, 0, 4) || !entier_valide($qr['pack10'] ?? null, 0, 4)
         || !texte_valide($c['prospect'] ?? '', 0, 64)
     ) {
@@ -210,7 +215,7 @@ function carte_propre(array $c): ?array
         'tampons' => $c['tampons'],
         'passages' => $c['passages'],
         'offre' => $c['offre'],
-        'periode' => $c['periode'],
+        'engagement' => $c['engagement'],
         'qr' => ['unit' => $qr['unit'], 'pack5' => $qr['pack5'], 'pack10' => $qr['pack10']],
         'prospect' => trim($c['prospect'] ?? ''),
     ];

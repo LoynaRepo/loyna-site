@@ -8,9 +8,10 @@
 // Les captures du 2026-10-28 viennent du site local (même démo que loyna.fr, avec le lien « Guide de démarrage » du
 // menu, pas encore en ligne ce jour-là). Ensuite, refaire le PDF : node tools/guide-pdf.mjs <adresse>.
 //
-// Toujours le même commerce fictif (graine 268380 : « Boulangerie du Moulin Doré », noir et or) et l'offre Premium,
-// pour que les images restent cohérentes d'une fois sur l'autre. Le bandeau « Démonstration » et les barres fixes
-// du téléphone sont masqués (sauf sur la capture du menu « Plus »). Navigateur : Microsoft Edge, sans fenêtre.
+// Toujours le même commerce fictif (graine 268380 : « Boulangerie du Moulin Doré », noir et or) et l'offre Starter (grille
+// du 2026-10-31), pour que les images restent cohérentes d'une fois sur l'autre. Le bandeau « Démonstration » et les barres
+// fixes du téléphone sont masqués (sauf sur la capture du menu « Plus »). `query` : mode de la démonstration (essai, arrêt).
+// Navigateur : Microsoft Edge, sans fenêtre.
 import puppeteer from 'puppeteer-core';
 import sharp from 'sharp';
 import fs from 'node:fs';
@@ -18,7 +19,7 @@ import path from 'node:path';
 
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const BASE = (process.argv[2] ?? 'https://loyna.fr').replace(/\/$/, '');
-const DEMO = `${BASE}/espace-client/demo/?seed=268380&offre=premium`;
+const DEMO = `${BASE}/espace-client/demo/?seed=268380&offre=starter`;
 const OUT = path.resolve('public/espace-client/guide');
 const W = 390; // largeur d'un téléphone courant (CSS px)
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -80,7 +81,25 @@ const SHOTS = [
   },
   {name: '08-clients', route: 'clients', top: pick('.ph'), bottom: pick('.clist li', '', 2), pad: 12},
   {name: '09-equipe', route: 'equipe', top: pick('.ph'), bottom: pick('.team li', '', 0), pad: 12},
-  {name: '10-rapport', route: 'rapport', top: pick('.ph'), bottom: pick('.kpi', '', 1), pad: 12},
+  {
+    name: '10-rapport',
+    route: 'rapport',
+    // le mois écoulé, complet : au début d'un mois, le mois en cours n'a encore rien à montrer
+    prepare: async (p) => {
+      await p.evaluate(() => {
+        const s = document.querySelector('.ph .sel-sm');
+        s.value = s.options[1].value;
+        s.dispatchEvent(new Event('change', {bubbles: true}));
+      });
+      await wait(900);
+    },
+    top: pick('.ph'),
+    bottom: pick('.kpi', '', 1),
+    pad: 12,
+  },
+  {name: '12-abonnement', route: 'abonnement', query: '&essai=1', top: pick('.trial-line'), bottom: pick('.plan-card .b--gold'), pad: 12},
+  {name: '12-abonnement-offre', route: 'abonnement', top: pick('.plan-card'), bottom: pick('.plan-card .b--gold'), pad: 12}, // si TRIAL.open vaut false
+  {name: '13-pause', route: 'abonnement', query: '&arret=essai', top: pick('.banner'), bottom: pick('.plan-card .b--gold'), pad: 12},
   {
     name: '11-aide',
     route: 'accueil',
@@ -140,7 +159,7 @@ page.on('pageerror', (e) => errors.push(String(e)));
 for (const s of SHOTS) {
   if (process.argv[3] && !s.name.includes(process.argv[3])) continue;
   // session de la démonstration : « out » = écran de connexion
-  await page.goto(`${DEMO}#/${s.route}`, {waitUntil: 'networkidle0'});
+  await page.goto(`${DEMO}${s.query ?? ''}#/${s.route}`, {waitUntil: 'networkidle0'});
   await page.evaluate((v) => sessionStorage.setItem('demo-session', v), s.session ?? '1');
   await page.reload({waitUntil: 'networkidle0'});
   await page.addStyleTag({content: CSS + (s.skip ? `${s.skip.join(', ')} { display: none !important; }` : '')});
@@ -160,9 +179,11 @@ for (const s of SHOTS) {
     s.viewport ? {clip: {...clip, y: clip.y - (await page.evaluate(() => scrollY))}, captureBeyondViewport: false} : {clip, captureBeyondViewport: true},
   );
   const file = path.join(OUT, `${s.name}.webp`);
-  await sharp(shot).webp({quality: 78, effort: 6}).toFile(file);
-  const meta = await sharp(file).metadata();
-  console.log(`${s.name}.webp  ${meta.width} × ${meta.height}  ${Math.round(fs.statSync(file).size / 1024)} Ko`);
+  // En mémoire d'abord : sharp refuse d'écrire sur un fichier déjà lu par un autre processus (serveur de développement du guide)
+  const webp = await sharp(shot).webp({quality: 78, effort: 6}).toBuffer();
+  fs.writeFileSync(file, webp);
+  const meta = await sharp(webp).metadata();
+  console.log(`${s.name}.webp  ${meta.width} × ${meta.height}  ${Math.round(webp.length / 1024)} Ko`);
 }
 if (errors.length) console.log('Erreurs de la page :\n' + errors.join('\n'));
 await browser.close();
