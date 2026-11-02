@@ -4,6 +4,7 @@
 //   - le panel l'affiche dans une iframe mise à l'échelle (aperçu en direct : postMessage du panel, même origine) ;
 //   - le coffre (_systeme/mail_perso.py) la capture en PNG avec Edge sans fenêtre, à 1200 × 630 px exactement.
 // Paramètres : ?nom=&activite=&recompense=&fond=&tampons=&ambiance=&ville= (couleurs en hexadécimal, avec ou sans #) ;
+// &offert=1 (mails de prospection, Ewan 02/11) : « 1 mois offert » en très grand et la personnalisation à la place des puces ;
 // ce qui manque vient de l'ambiance de l'activité (CARD_AMBIANCES dans src/data/site.ts). Page publique mais sans
 // intérêt pour les moteurs : noindex, hors du plan du site, aucune mesure d'audience (page « bare »).
 import Base from '../layouts/Base.astro';
@@ -29,11 +30,20 @@ const wordSvg = word.replace('<svg', '<svg role="img" aria-label="LOYNA"');
         <p class="vc-pre">La carte de fidélité de</p>
         <h1 class="vc-nom" id="vc-nom">Votre commerce</h1>
         <p class="vc-sous">Dans Apple Wallet et Google Wallet, sans application à télécharger.</p>
+        <div class="vc-offert">
+          <p class="vc-offert-g">1 mois offert</p>
+          <p class="vc-offert-p">Sans carte bancaire</p>
+        </div>
       </div>
       <ul class="vc-puces">
         <li>Tampons</li>
         <li id="vc-reco">{d.recompense}</li>
         <li>Notifications</li>
+      </ul>
+      <ul class="vc-puces vc-perso">
+        <li>Votre logo</li>
+        <li>Vos couleurs</li>
+        <li>Votre récompense</li>
       </ul>
     </div>
     <div class="vc-d">
@@ -54,7 +64,7 @@ const wordSvg = word.replace('<svg', '<svg role="img" aria-label="LOYNA"');
   import {appliquerCarte, initiales, luminance} from '../lib/carte-live';
   import {visuelActivite} from '../data/site';
 
-  type Reglages = {nom: string; activite: string; recompense: string; fond: string; tampons: string; ambiance: string; ville: string};
+  type Reglages = {nom: string; activite: string; recompense: string; fond: string; tampons: string; ambiance: string; ville: string; offert: boolean};
   const $ = <T extends HTMLElement>(s: string) => document.querySelector<T>(s)!;
   const racine = $<HTMLElement>('#vc');
   const carte = document.querySelector<HTMLElement>('#vc-carte .wcard')!;
@@ -71,6 +81,7 @@ const wordSvg = word.replace('<svg', '<svg role="img" aria-label="LOYNA"');
     tampons: hexa(p.get('tampons')),
     ambiance: hexa(p.get('ambiance')),
     ville: texte(p.get('ville'), 40),
+    offert: p.get('offert') === '1',
   });
   const contraste = (a: string, b: string) => {
     const [x, y] = [luminance(a), luminance(b)];
@@ -81,7 +92,7 @@ const wordSvg = word.replace('<svg', '<svg role="img" aria-label="LOYNA"');
   /** Nom du commerce le plus grand possible sur 2 lignes au plus (polices chargées ou non). */
   function ajusterNom() {
     const h = $<HTMLElement>('#vc-nom');
-    let taille = 78;
+    let taille = racine.classList.contains('vc--offert') ? 58 : 78;
     h.style.fontSize = `${taille}px`;
     const deuxLignes = () => h.scrollHeight <= taille * 1.06 * 2 + 4 && h.scrollWidth <= h.clientWidth + 1;
     while (taille > 38 && !deuxLignes()) {
@@ -100,6 +111,7 @@ const wordSvg = word.replace('<svg', '<svg role="img" aria-label="LOYNA"');
     const fond = r.fond || a.fond;
     const tampons = r.tampons || a.tampons;
     racine.style.setProperty('--acc', tampons);
+    racine.classList.toggle('vc--offert', r.offert);
     const nom = r.nom || 'Votre commerce';
     const activite = r.activite || a.nom;
     const recompense = r.recompense || a.recompense;
@@ -222,6 +234,49 @@ const wordSvg = word.replace('<svg', '<svg role="img" aria-label="LOYNA"');
     max-width: 520px;
     line-height: 1.35;
     margin-top: 6px !important;
+  }
+  .vc-offert,
+  .vc-perso,
+  .vc--offert .vc-sous,
+  .vc--offert .vc-puces:not(.vc-perso) {
+    display: none;
+  }
+  .vc--offert .vc-perso {
+    display: flex;
+  }
+  .vc--offert .vc-titre {
+    gap: 6px;
+  }
+  .vc--offert .vc-pre {
+    font-size: 24px;
+    margin-top: 0 !important;
+  }
+  .vc--offert .vc-offert {
+    display: grid;
+    justify-items: center;
+    margin-top: 16px;
+    padding: 16px 20px 18px;
+    max-width: 570px;
+    border-radius: 22px;
+    color: var(--amb);
+    background: var(--t);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+    transform: rotate(-1.5deg);
+  }
+  .vc-offert p {
+    margin: 0;
+  }
+  .vc-offert .vc-offert-g {
+    font-size: 66px;
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .vc-offert .vc-offert-p {
+    font-size: 25px;
+    font-weight: 700;
   }
   .vc-puces {
     display: flex;
