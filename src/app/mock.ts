@@ -969,6 +969,12 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
           d.plan = want.id.toUpperCase() as Plan;
           return {status: 'OK', price_cents: Math.round((b.engagement ? want.engaged : want.monthly) * 100), commitment_end: commitmentEnd};
         }
+        case 'qr-order': {
+          // Fonction qr-order du dépôt LOYNA : la démonstration n'ouvre jamais Stripe
+          const n = (b.qr?.unit ?? 0) + (b.qr?.pack5 ?? 0) * 5 + (b.qr?.pack10 ?? 0) * 10;
+          if (!n) throw new ApiError('EMPTY_ORDER', 'Choisissez au moins un QR code.', 400);
+          return {status: 'OK', url: '/tarifs/'};
+        }
         case 'validate-visit': {
           if (paused()) return {status: 'MERCHANT_INACTIVE', display: PAUSED_DISPLAY};
           if (b.action === 'undo') {
