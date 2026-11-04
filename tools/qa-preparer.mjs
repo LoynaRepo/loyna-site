@@ -112,7 +112,7 @@ try {
     await page.evaluate(() => [...document.querySelectorAll('.pc-pas button')][1].click());
     await dormir(300);
     const recap = await page.$eval('.pc-total dd', (e) => e.textContent);
-    verifie(`récapitulatif : 29 € + 1 QR à 17,99 € (${recap})`, /46,99/.test(recap));
+    verifie(`récapitulatif : 29 € + 1 QR à 24,99 € (${recap})`, /53,99/.test(recap));
     verifie('aperçu : carte au nom du commerce', (await page.$eval('.cw-a-n', (e) => e.textContent)) === 'La Fusion');
     verifie('panel : pas de débordement horizontal', !(await debordement(page)));
     await page.screenshot({path: `${SORTIE}/panel-${largeur}.png`, fullPage: true});
@@ -177,7 +177,7 @@ try {
     verifie('/merci/ : carte déjà préparée, formulaire masqué', await p2.$eval('#elements-form', (f) => f.hidden));
     await p2.screenshot({path: `${SORTIE}/merci-${largeur}.png`});
 
-    // Même lien, carte passée en Pro avec engagement : 41,65 € + 1 QR à 17,99 €, sans mise en service
+    // Même lien, carte passée en Pro avec engagement : 41,65 € + 1 QR à 24,99 €, sans mise en service
     await page.evaluate(() => [...document.querySelectorAll('.pc-periode button')][1].click());
     await page.evaluate(() => [...document.querySelectorAll('.pc-offre')].find((b) => b.textContent.includes('Pro')).click());
     await dormir(200);
@@ -186,7 +186,7 @@ try {
     await p2.goto(lien.replace(/^https?:\/\/[^/]+/, BASE), {waitUntil: 'networkidle2'});
     await p2.waitForSelector('.pn-prep', {timeout: 20000});
     const texteEngage = await p2.$eval('.pn-sum', (e) => e.textContent);
-    verifie('panier : Pro avec engagement repris de la carte', /Pro/.test(texteEngage) && /59,64/.test(texteEngage));
+    verifie('panier : Pro avec engagement repris de la carte', /Pro/.test(texteEngage) && /66,64/.test(texteEngage));
     // Puis retour à l'état de départ, pour la suite
     await page.evaluate(() => [...document.querySelectorAll('.pc-periode button')][0].click());
     await page.evaluate(() => [...document.querySelectorAll('.pc-offre')].find((b) => b.textContent.includes('Starter')).click());

@@ -202,14 +202,14 @@ export const CGV_VERSION = '2026-11-04';
 // Prospection ») donne au chat qui rédige tout ce qui se trouve entre les deux, 9 000 caractères au plus.
 export const SETUP_FEE = 49;
 
-// QR code d'inscription personnalisé sous verre (option du 2026-10-26, dépôt LOYNA docs/OFFRES.md ; 17,99 € l'unité depuis
+// QR code d'inscription personnalisé sous verre (option du 2026-10-26, dépôt LOYNA docs/OFFRES.md ; 24,99 € l'unité depuis
 // le 2026-11-04) : achat unique, à l'unité ou en pack, sans TVA, livré sous 15 jours maximum à l'adresse de facturation.
 // Proposé dans le panier (/panier/) et dans la Boutique de l'espace client ; produits Stripe loyna_qr_verre, loyna_qr_verre_5
 // et loyna_qr_verre_10. Packs : -15 % par 5, -25 % par 10, arrondis au prix en 9 centimes au-dessus (packCents du dépôt LOYNA).
 export const QR_VERRE = {
-  unit: 17.99,
-  pack5: 76.49, // -15 %
-  pack10: 134.99, // -25 %
+  unit: 24.99,
+  pack5: 106.29, // -15 %
+  pack10: 187.49, // -25 %
   maxUnit: 20,
   maxPack: 4,
   deliveryDays: 15,
@@ -218,9 +218,9 @@ export const QR_VERRE = {
 // QR code avis Google sous verre (décision d'Ewan du 2026-11-04) : il ouvre la page d'avis Google du commerce. Vendu
 // seulement dans la Boutique de l'espace client (fonction qr-order) ; produits Stripe loyna_qr_avis, _5 et _10.
 export const QR_AVIS = {
-  unit: 9.99,
-  pack5: 42.49, // -15 %
-  pack10: 74.99, // -25 %
+  unit: 19.99,
+  pack5: 84.99, // -15 %
+  pack10: 149.99, // -25 %
   maxUnit: 20,
   maxPack: 4,
   deliveryDays: 15,
