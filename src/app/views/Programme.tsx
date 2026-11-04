@@ -128,6 +128,14 @@ function ProgramForm({program, rewards, onSaved}: {program: Program; rewards: Re
           <Field label="Nom du programme">
             <input type="text" maxLength={60} required value={f.name} onInput={(e) => set('name', (e.target as HTMLInputElement).value)} />
           </Field>
+          {feature('loyalty.spend') && !(f.type === 'SPEND' && f.reset_behavior === 'DEDUCT_ON_REDEEM') && (
+            <p class="note">
+              <b>Menu à points</b>, comme les grandes enseignes de restauration rapide : le client cumule des points à chaque achat et les dépense dans votre menu, chaque article ayant son prix en points.{' '}
+              <button type="button" class="linkish" onClick={() => setF((x) => ({...x, type: 'SPEND', spend_points_per_unit: 10, spend_rounding: 'FLOOR', reset_behavior: 'DEDUCT_ON_REDEEM', reward_threshold: Math.max(x.reward_threshold, 1000), unit_label_singular: 'point', unit_label_plural: 'points'}))}>
+                Utiliser ce modèle (1 € = 10 points)
+              </button>
+            </p>
+          )}
           <fieldset class="fs">
             <legend>Type de programme</legend>
             <div class="opt-grid">
@@ -238,6 +246,7 @@ function ProgramForm({program, rewards, onSaved}: {program: Program; rewards: Re
 }
 
 function Rewards({program, list, error, reload}: {program: Program; list: Reward[] | null; error: string | null; reload: () => void}) {
+  const menu = program.reset_behavior === 'DEDUCT_ON_REDEEM'; // cagnotte : les récompenses forment un menu à points
   const [edit, setEdit] = useState<Partial<Reward> | null>(null);
   const [busy, run] = useBusy();
   const unit = program.unit_label_plural;
@@ -255,11 +264,17 @@ function Rewards({program, list, error, reload}: {program: Program; list: Reward
 
   return (
     <Panel
-      title="Récompenses"
-      sub={program.reset_behavior === 'RESET_ON_REWARD' ? `Seuil maximum : ${num(program.reward_threshold)} ${unit} (longueur de la carte).` : 'Une récompense par seuil.'}
+      title={menu ? 'Votre menu à points' : 'Récompenses'}
+      sub={
+        menu
+          ? 'Chaque article a son prix en points. Au comptoir, le scanner propose les articles que le client peut s’offrir : touchez-en un, ses points sont déduits.'
+          : program.reset_behavior === 'RESET_ON_REWARD'
+            ? `Seuil maximum : ${num(program.reward_threshold)} ${unit} (longueur de la carte).`
+            : 'Une récompense par seuil.'
+      }
       actions={
         <Btn kind="primary" small icon="plus" onClick={() => setEdit({reward_type: 'FREE_ITEM', threshold: program.reward_threshold, status: 'ACTIVE'})}>
-          Ajouter
+          {menu ? 'Ajouter un article' : 'Ajouter'}
         </Btn>
       }
     >
@@ -344,7 +359,7 @@ function RewardModal({program, reward, onClose, onSaved}: {program: Program; rew
     <Modal
       open
       onClose={onClose}
-      title={r.id ? 'Modifier la récompense' : 'Nouvelle récompense'}
+      title={program.reset_behavior === 'DEDUCT_ON_REDEEM' ? (r.id ? 'Modifier l’article' : 'Nouvel article du menu') : r.id ? 'Modifier la récompense' : 'Nouvelle récompense'}
       footer={
         <>
           <Btn kind="ghost" onClick={onClose}>
@@ -361,7 +376,7 @@ function RewardModal({program, reward, onClose, onSaved}: {program: Program; rew
           <input type="text" maxLength={80} value={r.name ?? ''} onInput={(e) => set('name', (e.target as HTMLInputElement).value)} autoFocus />
         </Field>
         <div class="row2">
-          <Field label={`Seuil (en ${program.unit_label_plural})`} hint={program.reset_behavior === 'RESET_ON_REWARD' ? `Maximum ${program.reward_threshold}` : undefined}>
+          <Field label={program.reset_behavior === 'DEDUCT_ON_REDEEM' ? `Prix (en ${program.unit_label_plural})` : `Seuil (en ${program.unit_label_plural})`} hint={program.reset_behavior === 'RESET_ON_REWARD' ? `Maximum ${program.reward_threshold}` : undefined}>
             <input
               type="number"
               min={1}

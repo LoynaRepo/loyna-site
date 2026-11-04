@@ -1125,7 +1125,7 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
     },
     async insert(table: string, row: any): Promise<any> {
       await wait(180);
-      if (table === 'rewards' && (row.status ?? 'ACTIVE') === 'ACTIVE' && db.rewards.some((x) => x.status === 'ACTIVE' && x.threshold === row.threshold)) throw new ApiError('23505', 'Cet élément existe déjà (doublon).');
+      if (table === 'rewards' && (row.status ?? 'ACTIVE') === 'ACTIVE' && db.loyalty_programs[0]?.reset_behavior !== 'DEDUCT_ON_REDEEM' && db.rewards.some((x) => x.status === 'ACTIVE' && x.threshold === row.threshold)) throw new ApiError('23505', 'Cet élément existe déjà (doublon).');
       if (table === 'merchant_locations') {
         const lim = limit('locations.max');
         if (lim !== null && db.merchant_locations.length >= lim) throw new ApiError('LOCATIONS_LIMIT', `Votre offre inclut ${lim} boutique(s).`);
