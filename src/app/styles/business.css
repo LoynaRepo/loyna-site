@@ -4264,3 +4264,165 @@ a.top-merchant {
   font-weight: 600;
   font-size: 0.95rem;
 }
+
+/* Boutique (views/Boutique.tsx, 2026-11-04) : les produits, puis la commande (à droite sur ordinateur, en bas sur téléphone) */
+.bq-intro {
+  margin: -4px 0 18px;
+  max-width: 72ch;
+  color: var(--muted);
+}
+.bq-ok {
+  margin-bottom: 18px;
+}
+.bq-grid,
+.bq-prods {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.bq-prod {
+  display: grid;
+  gap: 14px;
+}
+.bq-prod.on {
+  border-color: rgba(201, 150, 63, 0.6);
+}
+.bq-top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.bq-desc h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.25;
+}
+.bq-from {
+  margin: 4px 0 0;
+  font-size: 0.92rem;
+  color: var(--gold-strong);
+}
+.bq-text {
+  margin: 8px 0 0;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+.bq-plaque {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 6px;
+  width: 104px;
+  aspect-ratio: 2 / 3;
+  padding: 10px 8px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow:
+    0 12px 22px -14px rgba(18, 18, 22, 0.55),
+    inset 0 0 0 4px rgba(255, 255, 255, 0.18);
+}
+.bq-plaque--qr {
+  background: var(--ink);
+  color: var(--gold-soft);
+}
+.bq-plaque--avis {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+/* reflet du verre */
+.bq-plaque::after {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -70%;
+  width: 55%;
+  height: 160%;
+  transform: rotate(24deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  pointer-events: none;
+}
+.bq-plaque svg {
+  width: 46px;
+  height: 46px;
+}
+.bq-plaque-t {
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.bq-plaque-s {
+  font-size: 0.6rem;
+  opacity: 0.8;
+}
+.bq-etoiles {
+  font-size: 0.78rem;
+  letter-spacing: 1px;
+  color: #e9a514;
+}
+.bq-cart {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.bq-cart > .pnl-h {
+  margin-bottom: 0;
+}
+.bq-m0,
+.bq-empty {
+  margin: 0;
+}
+.bq-lines {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bq-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.92rem;
+}
+.bq-lines b {
+  white-space: nowrap;
+}
+.bq-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-weight: 700;
+}
+.bq-total b {
+  font-size: 1.35rem;
+  white-space: nowrap;
+}
+@media (max-width: 420px) {
+  .bq-plaque {
+    width: 84px;
+  }
+  .bq-plaque svg {
+    width: 38px;
+    height: 38px;
+  }
+}
+@media (min-width: 1000px) {
+  .bq-grid {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    align-items: start;
+  }
+  .bq-cart {
+    position: sticky;
+    top: 20px;
+  }
+}

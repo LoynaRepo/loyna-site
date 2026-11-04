@@ -152,7 +152,7 @@ if (pile) {
     account: {email: x.email, password: x.mdp, first_name: x.prenom, last_name: x.nom, phone: x.tel},
     business: {name: x.commerce, activity: 'Boulangerie', siret: s},
     card: {bg: '#7a3d1c', accent: '#f2c879', total: 10, reward: 'Viennoiserie offerte'},
-    cgv_version: '2026-11-01',
+    cgv_version: '2026-11-04',
     website: '',
     ...plus,
   });
@@ -397,7 +397,7 @@ for (const [nom, ouverture, titre] of [
   const c = appels.posts[0];
   verifier('corps : action, compte', [c.action, c.account], ['start', {email: v.email, password: v.mdp, first_name: v.prenom, last_name: v.nom, phone: v.tel}]);
   verifier('corps : commerce, carte', [c.business, c.card], [{name: v.commerce, activity: 'Boulangerie', siret}, {bg: '#7a3d1c', accent: '#f2c879', total: 10, reward: 'Viennoiserie offerte'}]);
-  verifier('corps : parrainage normalisé, CGV, champ piège, pas de logo', [c.referral_code, c.cgv_version, c.website, 'logo_png' in c], ['LOYNA-ABC234', '2026-11-01', '', false]);
+  verifier('corps : parrainage normalisé, CGV, champ piège, pas de logo', [c.referral_code, c.cgv_version, c.website, 'logo_png' in c], ['LOYNA-ABC234', '2026-11-04', '', false]);
   const t = nbsp(await page.$eval('.es-fin', (e) => e.textContent));
   verifier('écran « Vérifiez votre boîte mail »', [/^Vérifiez votre boîte mail/.test(t), t.includes(v.email), t.includes(v.commerce)], [true, true, true]);
   verifier('mesure trial_start', await page.evaluate(() => window.__mesures.map((m) => m[0])), ['trial_start']);

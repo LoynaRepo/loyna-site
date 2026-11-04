@@ -22,6 +22,7 @@ const LOADERS: Record<string, () => Promise<ViewComp>> = {
   equipe: () => import('./views/Equipe').then((m) => m.Equipe),
   reglages: () => import('./views/Reglages').then((m) => m.Reglages),
   abonnement: () => import('./views/Abonnement').then((m) => m.Abonnement),
+  boutique: () => import('./views/Boutique').then((m) => m.Boutique),
   operateur: () => import('./views/Operateur').then((m) => m.Operateur),
 };
 const loaded: Record<string, ViewComp> = {};
@@ -53,6 +54,8 @@ const NAV: NavItem[] = [
   {view: 'equipe', label: 'Équipe', icon: 'users-round', show: () => canSee('team.manage')},
   {view: 'reglages', label: 'Réglages', icon: 'settings', show: () => canSee('settings.manage')},
   {view: 'abonnement', label: 'Abonnement', icon: 'credit-card', show: () => canSee('settings.manage')},
+  // Boutique (2026-11-04) : QR codes sous verre payés seuls (fonction qr-order) ; la commande reste au propriétaire
+  {view: 'boutique', label: 'Boutique', icon: 'shopping-bag', show: () => canSee('settings.manage')},
   // Opérateur LOYNA (platform_admins, vérifié par le serveur) : commandes à traiter et création des commerces ;
   // pendant une consultation, retour par « Quitter » dans le bandeau
   {view: 'operateur', label: 'Opérateur', icon: 'shield-check', show: () => isOperator() && !readOnly()},

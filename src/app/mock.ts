@@ -970,9 +970,10 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
           return {status: 'OK', price_cents: Math.round((b.engagement ? want.engaged : want.monthly) * 100), commitment_end: commitmentEnd};
         }
         case 'qr-order': {
-          // Fonction qr-order du dépôt LOYNA : la démonstration n'ouvre jamais Stripe
-          const n = (b.qr?.unit ?? 0) + (b.qr?.pack5 ?? 0) * 5 + (b.qr?.pack10 ?? 0) * 10;
-          if (!n) throw new ApiError('EMPTY_ORDER', 'Choisissez au moins un QR code.', 400);
+          // Fonction qr-order du dépôt LOYNA (Boutique) : QR codes d'inscription et avis Google ; la démonstration n'ouvre jamais Stripe
+          const nb = (q: any) => (q?.unit ?? 0) + (q?.pack5 ?? 0) * 5 + (q?.pack10 ?? 0) * 10;
+          if (!nb(b.qr) && !nb(b.avis)) throw new ApiError('EMPTY_ORDER', 'Choisissez au moins un QR code.', 400);
+          if (b.review_url && !/^https:\/\/\S+$/.test(b.review_url)) throw new ApiError('INVALID_REQUEST', 'Le lien d’avis doit commencer par https://', 400);
           return {status: 'OK', url: '/tarifs/'};
         }
         case 'validate-visit': {

@@ -4,8 +4,7 @@
 // PLANS de src/data/site.ts). Le changement d'offre passe par la fonction subscription-change, qui applique le tableau de la
 // section 2.4 du cahier des charges : il est fermé dans le portail Stripe, qui garde factures, carte bancaire et résiliation.
 // Premium : offre historique, sans grille ni changement (section 2.7), plus aucun commerce depuis le 2026-11-01.
-// QR codes sous verre (demande d'Ewan du 2026-11-04) : mêmes articles et mêmes prix que le panier (QR_VERRE), payés seuls
-// par la fonction qr-order (Stripe Checkout, paiement unique) ; la commande part par e-mail à LOYNA, qui les livre.
+// QR codes sous verre : commandés dans la page Boutique (views/Boutique.tsx, 2026-11-04), un lien y mène d'ici.
 import {useEffect, useState} from 'preact/hooks';
 import {ENGAGEMENT, LEGACY_PLANS, PHRASES, PLANS, QR_VERRE, SITE, TRIAL, euro, quotas, type Plan} from '../../data/site';
 import {Icon} from '../icons';
@@ -230,19 +229,8 @@ function ChangeDialog({choice, cur, s, onClose, onDone}: {choice: Choice | null;
   );
 }
 
-// --- QR codes sous verre (fonction qr-order) ----------------------------------------------------------------
-type QrKey = 'unit' | 'pack5' | 'pack10';
-const QR_ROWS: {key: QrKey; label: string; name: string; detail: string; price: number; max: number; size: number}[] = [
-  {key: 'unit', label: 'À l’unité', name: 'un QR code à l’unité', detail: `${euro(QR_VERRE.unit)} le QR code`, price: QR_VERRE.unit, max: QR_VERRE.maxUnit, size: 1},
-  {key: 'pack5', label: 'Pack de 5', name: 'un pack de 5 QR codes', detail: `${euro(QR_VERRE.pack5)} le pack (−15 %)`, price: QR_VERRE.pack5, max: QR_VERRE.maxPack, size: 5},
-  {key: 'pack10', label: 'Pack de 10', name: 'un pack de 10 QR codes', detail: `${euro(QR_VERRE.pack10)} le pack (−25 %)`, price: QR_VERRE.pack10, max: QR_VERRE.maxPack, size: 10},
-];
-const QR_REFUSED: Record<string, string> = {
-  MERCHANT_STOPPED: 'Votre carte est arrêtée : reprenez votre abonnement avant de commander des QR codes.',
-  FORBIDDEN: 'Seul le propriétaire du commerce peut commander des QR codes.',
-  EMPTY_ORDER: 'Choisissez au moins un QR code.',
-};
-// Retour de la page de paiement Stripe (success_url de qr-order) : lu une fois, puis retiré de l'adresse.
+// --- Boutique (QR codes sous verre, page Boutique depuis le 2026-11-04) ------------------------------------------------
+// Ancien retour de paiement des QR codes (?qr=merci, sessions ouvertes avant la Boutique) : lu une fois, puis retiré.
 function qrPaid(): boolean {
   try {
     const q = new URLSearchParams(location.search);
@@ -255,34 +243,12 @@ function qrPaid(): boolean {
   }
 }
 
-function QrVerre({owner}: {owner: boolean}) {
-  const m = merchant.value!;
-  const [qr, setQr] = useState<Record<QrKey, number>>({unit: 0, pack5: 0, pack10: 0});
+function BoutiqueLink() {
   const [paid] = useState(qrPaid);
-  const [error, setError] = useState('');
-  const [busy, run] = useBusy();
-  const cents = QR_ROWS.reduce((s, r) => s + qr[r.key] * Math.round(r.price * 100), 0);
-  const count = QR_ROWS.reduce((s, r) => s + qr[r.key] * r.size, 0);
-  const set = (k: QrKey, v: number, max: number) => setQr((x) => ({...x, [k]: Math.max(0, Math.min(max, Math.floor(Number.isFinite(v) ? v : 0)))}));
-  const order = () =>
-    run(async () => {
-      setError('');
-      try {
-        const r = await api.edge<{status: string; url?: string}>('qr-order', {merchant_id: m.merchant_id, qr});
-        if (r.status === 'OK' && r.url) {
-          if (api.demo) return toast('Démonstration : la commande ouvrirait ici la page de paiement sécurisée Stripe.', 'info');
-          location.href = r.url;
-          return;
-        }
-        setError(QR_REFUSED[r.status] ?? 'Commande impossible. Réessayez dans un instant.');
-      } catch (e: any) {
-        setError(QR_REFUSED[e?.code] ?? e?.message ?? 'Commande impossible. Réessayez dans un instant.');
-      }
-    });
   return (
     <Panel
-      title="QR codes sous verre"
-      sub={`Le QR code d’inscription à votre carte, personnalisé à vos couleurs et présenté sous verre, à poser sur le comptoir ou à l’entrée. Achat unique, sans TVA, livré sous ${QR_VERRE.deliveryDays} jours à votre adresse de facturation.`}
+      title="Boutique"
+      sub={`QR codes sous verre pour votre commerce : l’inscription à votre carte, à vos couleurs, et vos avis Google. Achat unique, sans TVA, livrés sous ${QR_VERRE.deliveryDays} jours.`}
       class="qrv-card"
     >
       {paid && (
@@ -290,56 +256,9 @@ function QrVerre({owner}: {owner: boolean}) {
           <Icon name="circle-check" size={18} /> Merci, votre commande est enregistrée. Vos QR codes arrivent sous {QR_VERRE.deliveryDays} jours.
         </p>
       )}
-      <div class="qrv-rows">
-        {QR_ROWS.map((r) => {
-          const v = qr[r.key];
-          const id = `qrv-${r.key}`;
-          return (
-            <div class={`qrv-row ${v > 0 ? 'on' : ''}`}>
-              <div class="qrv-t">
-                <label for={id}>{r.label}</label>
-                <span>{r.detail}</span>
-              </div>
-              <div class="qrv-stepper">
-                <button type="button" onClick={() => set(r.key, v - 1, r.max)} disabled={!owner || v <= 0} aria-label={`Retirer ${r.name}`}>
-                  −
-                </button>
-                <input
-                  id={id}
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  max={r.max}
-                  step={1}
-                  value={String(v)}
-                  disabled={!owner}
-                  onInput={(e) => set(r.key, Number((e.target as HTMLInputElement).value), r.max)}
-                  onFocus={(e) => (e.target as HTMLInputElement).select()}
-                />
-                <button type="button" onClick={() => set(r.key, v + 1, r.max)} disabled={!owner || v >= r.max} aria-label={`Ajouter ${r.name}`}>
-                  +
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <p class="qrv-total" aria-live="polite">
-        {count === 0 ? 'Aucun QR code choisi.' : `${count} QR code${count > 1 ? 's' : ''} sous verre : ${euro(cents / 100)}, sans TVA.`}
-      </p>
-      {error && (
-        <p class="form-err" role="alert">
-          {error}
-        </p>
-      )}
-      {owner ? (
-        <Btn kind="gold" icon="credit-card" block busy={busy} disabled={count === 0} onClick={order}>
-          {count === 0 ? 'Commander' : `Commander et payer · ${euro(cents / 100)}`}
-        </Btn>
-      ) : (
-        <p class="muted small">Seul le propriétaire du commerce peut commander des QR codes.</p>
-      )}
-      <p class="muted small">Paiement sécurisé par Stripe. Votre adresse de livraison vous est demandée sur la page de paiement.</p>
+      <Btn kind="ghost" icon="shopping-bag" block href="#/boutique">
+        Ouvrir la Boutique
+      </Btn>
     </Panel>
   );
 }
@@ -650,7 +569,7 @@ export function Abonnement() {
 
               {!ro && <Parrainage />}
 
-              {!ro && <QrVerre owner={owner} />}
+              {!ro && <BoutiqueLink />}
             </div>
           </div>
 

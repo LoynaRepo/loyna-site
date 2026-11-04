@@ -20,6 +20,7 @@ import pencil from 'lucide-static/icons/pencil.svg?raw';
 import archive from 'lucide-static/icons/archive.svg?raw';
 import copy from 'lucide-static/icons/copy.svg?raw';
 import qrCode from 'lucide-static/icons/qr-code.svg?raw';
+import shoppingBag from 'lucide-static/icons/shopping-bag.svg?raw';
 import download from 'lucide-static/icons/download.svg?raw';
 import externalLink from 'lucide-static/icons/external-link.svg?raw';
 import flashlight from 'lucide-static/icons/flashlight.svg?raw';
@@ -162,6 +163,7 @@ const RAW: Record<string, string> = {
   'share-2': share2,
   'lightbulb': lightbulb,
   'badge-check': badgeCheck,
+  'shopping-bag': shoppingBag,
 };
 
 export type IconName = keyof typeof RAW;
