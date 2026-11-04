@@ -13,7 +13,7 @@ import {CARD_ACCENTS, CARD_ACTIVITES, CARD_BGS, normalizeOffer} from '../../data
 import {STATUS} from '../Commande';
 import {Icon} from '../icons';
 import {LOGO_ACCEPT, LOGO_MIN_SIDE, logoToFiles, type LogoFiles} from '../logo-png';
-import {idDuLien, lireCartePreparee} from '../../lib/carte-preparee';
+import {idDuLien, lireCartePreparee, MONTANT} from '../../lib/carte-preparee';
 import {api, go, merchant, openConsultation, PLAN_ORDER, planLabel, rememberMerchant, staffCtx, toast, toastError, type PlanCode} from '../state';
 import {campaignName, sendAt, tempsForts} from '../temps-forts';
 import {Badge, Btn, CardPreview, Empty, ErrorBox, Field, LinkBox, Modal, PageHead, Panel, Segmented, Spinner, Toggle, useBusy, useLoad} from '../ui';
@@ -800,6 +800,8 @@ interface Form {
   owner_name: string;
   plan: PlanCode;
   threshold: number;
+  /** Carte au montant dépensé reprise d'une carte préparée (2026-11-04) : euros à dépenser ; null : passages. */
+  montant: number | null;
   reward: string;
   bg: string;
   accent: string;
@@ -825,6 +827,7 @@ function initialForm(order: OpOrder | null, taken: Set<string>): Form {
       .find((x) => x && x.toLowerCase() !== name.toLowerCase()) ?? '',
     plan: order && PLAN_ORDER.includes(order.plan) ? order.plan : 'STARTER',
     threshold: 10,
+    montant: null,
     reward: '',
     bg: '#121216',
     accent: '#d9b27a',
@@ -837,7 +840,9 @@ function validate(f: Form): string | null {
   if (!SLUG_RE.test(f.slug)) return 'Adresse d’inscription invalide : lettres minuscules, chiffres et tirets seulement.';
   if (!EMAIL_RE.test(f.owner_email.trim())) return 'Adresse e-mail du propriétaire invalide.';
   if (f.siret.trim() && !/^\d{14}$/.test(f.siret.replace(/\s/g, ''))) return 'SIRET : 14 chiffres, ou laissez le champ vide.';
-  if (!Number.isInteger(f.threshold) || f.threshold < 1 || f.threshold > MAX_STAMPS) return `Nombre de passages : de 1 à ${MAX_STAMPS}.`;
+  if (f.montant != null) {
+    if (!Number.isInteger(f.montant) || f.montant < MONTANT.min || f.montant > MONTANT.max) return `Montant à dépenser : de ${MONTANT.min} à ${MONTANT.max} €.`;
+  } else if (!Number.isInteger(f.threshold) || f.threshold < 1 || f.threshold > MAX_STAMPS) return `Nombre de passages : de 1 à ${MAX_STAMPS}.`;
   if (!f.reward.trim()) return 'Indiquez la récompense (exemple : -10 €, Café offert).';
   if (!HEX_RE.test(f.bg) || !HEX_RE.test(f.accent)) return 'Couleurs attendues au format #RRGGBB.';
   return null;
@@ -904,6 +909,7 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
         slug: x.name || touched.slug ? x.slug : freeSlug(slugify(c.nom), taken.current),
         business_type: c.activite || x.business_type,
         threshold: c.passages,
+        montant: c.montant ?? null,
         reward: c.recompense,
         bg: c.fond,
         accent: c.tampons,
@@ -968,8 +974,12 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
             icon_url,
           },
           owner: {email, display_name: f.owner_name.trim() || 'Propriétaire'},
-          program: {reward_threshold: f.threshold},
-          rewards: [{name: f.reward.trim(), threshold: f.threshold, ...rewardKind(f.reward)}],
+          // Montant dépensé : 1 point par euro, unités « euro » / « euros », comme l'essai (migration 20261104160929 du dépôt LOYNA)
+          program:
+            f.montant != null
+              ? {type: 'SPEND', spend_points_per_unit: 1, reward_threshold: f.montant, unit_label_singular: 'euro', unit_label_plural: 'euros'}
+              : {reward_threshold: f.threshold},
+          rewards: [{name: f.reward.trim(), threshold: f.montant ?? f.threshold, ...rewardKind(f.reward)}],
         });
         taken.current.add(r.slug);
         setResult({...r, name: f.name.trim(), email, exempt: f.exempt});
@@ -1102,17 +1112,41 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
           <Panel title="Programme et carte">
             <div class="form">
               <div class="row2">
-                <Field label="Passages pour la récompense" hint="Au-delà de 20, la carte affiche une jauge.">
-                  <input
-                    type="number"
-                    min={1}
-                    max={MAX_STAMPS}
-                    step={1}
-                    inputMode="numeric"
-                    value={f.threshold}
-                    onInput={(e) => set('threshold', Math.round(Number((e.target as HTMLInputElement).value) || 0))}
-                  />
-                </Field>
+                {f.montant != null ? (
+                  <Field
+                    label="Montant dépensé pour la récompense (€)"
+                    hint={
+                      <>
+                        Carte au montant dépensé : 1 € = 1 point.{' '}
+                        <button type="button" class="linkish" onClick={() => set('montant', null)}>
+                          Passer aux passages
+                        </button>
+                      </>
+                    }
+                  >
+                    <input
+                      type="number"
+                      min={MONTANT.min}
+                      max={MONTANT.max}
+                      step={5}
+                      inputMode="numeric"
+                      value={f.montant}
+                      onInput={(e) => set('montant', Math.round(Number((e.target as HTMLInputElement).value) || 0))}
+                    />
+                  </Field>
+                ) : (
+                  <Field label="Passages pour la récompense" hint="Au-delà de 20, la carte affiche une jauge.">
+                    <input
+                      type="number"
+                      min={1}
+                      max={MAX_STAMPS}
+                      step={1}
+                      inputMode="numeric"
+                      value={f.threshold}
+                      onInput={(e) => set('threshold', Math.round(Number((e.target as HTMLInputElement).value) || 0))}
+                    />
+                  </Field>
+                )}
                 <Field
                   label="Récompense"
                   hint={
@@ -1216,7 +1250,7 @@ function CreateMerchant({order, merchants, onClose}: {order: OpOrder | null; mer
         </div>
         <div class="prog-preview">
           <span class="eyebrow">Aperçu de la carte</span>
-          <CardPreview name={f.name} program={f.business_type || 'Carte de fidélité'} logo={logo?.url} bg={HEX_RE.test(f.bg) ? f.bg : '#121216'} fg={HEX_RE.test(f.accent) ? f.accent : '#d9b27a'} total={Math.max(1, f.threshold || 1)} reward={f.reward} />
+          <CardPreview name={f.name} program={f.business_type || 'Carte de fidélité'} logo={logo?.url} bg={HEX_RE.test(f.bg) ? f.bg : '#121216'} fg={HEX_RE.test(f.accent) ? f.accent : '#d9b27a'} total={Math.max(1, (f.montant ?? f.threshold) || 1)} stamps={f.montant == null} label={f.montant == null ? undefined : 'euros'} reward={f.reward} />
           <p class="muted small">Inscription des clients : loyna.fr/join/{f.slug || '…'}</p>
         </div>
       </form>

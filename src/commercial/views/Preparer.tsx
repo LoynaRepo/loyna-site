@@ -2,12 +2,13 @@
 // (nom, logo, couleurs, passages, récompense), avec l'offre et les QR codes sous verre, puis 2 liens reprennent exactement ce
 // qui vient d'être fait : /essai/?carte=<id> (1 mois gratuit, sans carte bancaire, donne Starter) et /panier/?carte=<id> (le
 // panier habituel : compte, puis Stripe). Une ancienne fiche (Premium, « periode ») se lit par normalizeOffer().
+// La carte compte les passages, ou le montant dépensé (`montant`, en euros, 2026-11-04) : l'essai crée alors un programme SPEND.
 import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import {logoToPng, LOGO_ACCEPT} from '../../app/logo-png';
 import {qrSvg} from '../../app/util';
 import {CARD_ACCENTS, CARD_ACTIVITES, CARD_BGS, ENGAGEMENT, euro, normalizeOffer, PHRASES, PLANS, QR_VERRE, quotas, SETUP_FEE, TRIAL, type Engagement} from '../../data/site';
 import {TelephoneWallet} from '../../lib/CarteWallet';
-import {lienCarte, lienEssaiCarte, lireCartePreparee} from '../../lib/carte-preparee';
+import {lienCarte, lienEssaiCarte, lireCartePreparee, MONTANT} from '../../lib/carte-preparee';
 import {cartesPreparees, chargerCartes, couleursDuLogo, enregistrerCarte, montants, preparerPour, supprimerCarte, type Reglages} from '../cartes';
 import {phraseMiseEnService} from '../contenu';
 import {dateHeure} from '../format';
@@ -19,7 +20,7 @@ const HEX = /^#[0-9a-f]{6}$/i;
 const normal = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
 const vide = (): Reglages => {
   const plan = PLANS.find((p) => p.highlight) ?? PLANS[0];
-  return {nom: '', activite: '', recompense: '', fond: '#121216', tampons: '#d9b27a', passages: 10, logo: null, offre: plan.id, engagement: 'sans', qr: {unit: 0, pack5: 0, pack10: 0}, prospect: ''};
+  return {nom: '', activite: '', recompense: '', fond: '#121216', tampons: '#d9b27a', passages: 10, montant: null, logo: null, offre: plan.id, engagement: 'sans', qr: {unit: 0, pack5: 0, pack10: 0}, prospect: ''};
 };
 const LIGNES_QR = [
   {cle: 'unit', label: 'À l’unité', prix: QR_VERRE.unit, max: QR_VERRE.maxUnit},
@@ -90,7 +91,7 @@ export function Preparer({id}: {id?: string}) {
         setAncienne(avantGrille ? (o.legacy ? 'premium' : 'periode') : '');
         setEnregistree(avantGrille ? '' : empreinte(d));
         setTouche({recompense: true, fond: true, tampons: true});
-        setObtenus(Math.min(3, d.passages));
+        setObtenus(d.montant ? Math.round(d.montant * 0.35) : Math.min(3, d.passages));
         if (d.logo) couleursDuLogo(d.logo).then(setCouleursLogo);
       })
       .catch(() => actif && setErreur('Chargement de la carte impossible.'))
@@ -132,19 +133,22 @@ export function Preparer({id}: {id?: string}) {
   };
 
   const m = montants(c);
+  const enEuros = c.montant != null;
   const total = Math.max(1, Math.trunc(c.passages) || 1);
-  const faits = Math.min(obtenus, total);
+  const montant = Math.max(0, Math.trunc(c.montant ?? 0));
+  const objectif = enEuros ? Math.max(1, montant) : total;
+  const faits = Math.min(obtenus, objectif);
   const modifiee = enregistree !== null && enregistree !== empreinte(c);
   const origine = location.origin.includes('loyna.fr') ? 'https://loyna.fr' : location.origin;
   const liens = TRIAL.open ? 'les liens' : 'le lien de paiement';
-  const probleme = !c.nom.trim() ? 'Indiquez le nom du commerce.' : !c.recompense.trim() ? 'Indiquez la récompense.' : !HEX.test(c.fond) || !HEX.test(c.tampons) ? 'Couleurs attendues au format #RRGGBB.' : total > 100 ? 'Nombre de passages : 100 au plus.' : '';
+  const probleme = !c.nom.trim() ? 'Indiquez le nom du commerce.' : !c.recompense.trim() ? 'Indiquez la récompense.' : !HEX.test(c.fond) || !HEX.test(c.tampons) ? 'Couleurs attendues au format #RRGGBB.' : !enEuros && total > 100 ? 'Nombre de passages : 100 au plus.' : enEuros && (montant < MONTANT.min || montant > MONTANT.max) ? `Montant à dépenser : de ${MONTANT.min} à ${MONTANT.max} €.` : '';
 
   const enregistrer = async () => {
     if (probleme) return setErreur(probleme);
     setErreur('');
     setBusy(true);
     try {
-      const propre: Reglages = {...c, passages: total, fond: c.fond.toLowerCase(), tampons: c.tampons.toLowerCase(), nom: c.nom.trim(), activite: c.activite.trim(), recompense: c.recompense.trim()};
+      const propre: Reglages = {...c, passages: total, montant: enEuros ? montant : null, fond: c.fond.toLowerCase(), tampons: c.tampons.toLowerCase(), nom: c.nom.trim(), activite: c.activite.trim(), recompense: c.recompense.trim()};
       const nouvelId = await enregistrerCarte(id ?? null, propre);
       setC(propre);
       setEnregistree(empreinte(propre));
@@ -242,17 +246,51 @@ export function Preparer({id}: {id?: string}) {
                     }}
                   />
                 </Field>
-                <Field label="Passages pour la récompense" hint="Au-delà de 20, la carte affiche une jauge.">
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    step={1}
-                    inputMode="numeric"
-                    value={c.passages}
-                    onInput={(e) => champ('passages', Math.round(Number((e.target as HTMLInputElement).value) || 0))}
-                  />
-                </Field>
+                {enEuros ? (
+                  <Field label="Montant dépensé pour la récompense (€)" hint={`De ${MONTANT.min} à ${MONTANT.max} €. 1 € dépensé = 1 point : le montant de l’achat se tape au scanner.`}>
+                    <input
+                      type="number"
+                      min={MONTANT.min}
+                      max={MONTANT.max}
+                      step={5}
+                      inputMode="numeric"
+                      value={c.montant ?? ''}
+                      onInput={(e) => champ('montant', Math.round(Number((e.target as HTMLInputElement).value) || 0))}
+                    />
+                  </Field>
+                ) : (
+                  <Field label="Passages pour la récompense" hint="Au-delà de 20, la carte affiche une jauge.">
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      step={1}
+                      inputMode="numeric"
+                      value={c.passages}
+                      onInput={(e) => champ('passages', Math.round(Number((e.target as HTMLInputElement).value) || 0))}
+                    />
+                  </Field>
+                )}
+              </div>
+              <div class="fld">
+                <span class="fld-l">La carte compte</span>
+                <div class="pc-periode" role="radiogroup" aria-label="Ce que la carte compte">
+                  <button type="button" role="radio" aria-checked={!enEuros} class={!enEuros ? 'on' : ''} onClick={() => champ('montant', null)}>
+                    Les passages
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={enEuros}
+                    class={enEuros ? 'on' : ''}
+                    onClick={() => {
+                      if (!enEuros) setObtenus(Math.round(MONTANT.defaut * 0.35));
+                      champ('montant', c.montant ?? MONTANT.defaut);
+                    }}
+                  >
+                    Le montant dépensé
+                  </button>
+                </div>
               </div>
               <Couleurs
                 label="Fond de la carte"
@@ -368,7 +406,7 @@ export function Preparer({id}: {id?: string}) {
             {id && modifiee && <p class="pc-note warn">Modifications pas encore enregistrées : {TRIAL.open ? 'les liens montrent' : 'le lien montre'} encore l’ancienne version.</p>}
           </Panel>
 
-          {id && !modifiee && <Partage paiement={lienCarte(id, origine)} essai={TRIAL.open ? lienEssaiCarte(id, origine) : null} nom={c.nom.trim()} passages={total} recompense={c.recompense.trim()} />}
+          {id && !modifiee && <Partage paiement={lienCarte(id, origine)} essai={TRIAL.open ? lienEssaiCarte(id, origine) : null} nom={c.nom.trim()} passages={total} montant={enEuros ? montant : null} recompense={c.recompense.trim()} />}
         </div>
 
         <aside class="pc-droite">
@@ -381,12 +419,10 @@ export function Preparer({id}: {id?: string}) {
                 Android
               </button>
             </div>
-            <TelephoneWallet nom={c.nom.trim()} recompense={c.recompense.trim()} activite={c.activite.trim()} fond={HEX.test(c.fond) ? c.fond : '#121216'} tampons={HEX.test(c.tampons) ? c.tampons : '#d9b27a'} passages={total} obtenus={faits} logo={c.logo} systeme={systeme} />
+            <TelephoneWallet nom={c.nom.trim()} recompense={c.recompense.trim()} activite={c.activite.trim()} fond={HEX.test(c.fond) ? c.fond : '#121216'} tampons={HEX.test(c.tampons) ? c.tampons : '#d9b27a'} passages={total} montant={enEuros ? montant : null} obtenus={faits} logo={c.logo} systeme={systeme} />
             <label class="pc-faits">
-              <span>
-                Exemple : {faits} passage{faits > 1 ? 's' : ''} sur {total}
-              </span>
-              <input type="range" min={0} max={total} value={faits} onInput={(e) => setObtenus(Number((e.target as HTMLInputElement).value))} />
+              <span>{enEuros ? `Exemple : ${faits} € dépensés sur ${objectif} €` : `Exemple : ${faits} passage${faits > 1 ? 's' : ''} sur ${total}`}</span>
+              <input type="range" min={0} max={objectif} value={faits} onInput={(e) => setObtenus(Number((e.target as HTMLInputElement).value))} />
             </label>
           </div>
         </aside>
@@ -449,7 +485,7 @@ function LienAEnvoyer({genre, lien, copier, message}: {genre: 'essai' | 'paiemen
 
 /** Les liens à envoyer pendant le rendez-vous : l'essai et le paiement. Règle provisoire du plan : pendant une visite, le QR
  *  code à l'écran mène à l'essai, pas au paiement. Essai fermé (TRIAL.open) : seul le paiement reste, QR code compris. */
-function Partage({paiement, essai, nom, passages, recompense}: {paiement: string; essai: string | null; nom: string; passages: number; recompense: string}) {
+function Partage({paiement, essai, nom, passages, montant, recompense}: {paiement: string; essai: string | null; nom: string; passages: number; montant: number | null; recompense: string}) {
   const cible = essai ?? paiement;
   const qr = useMemo(() => qrSvg(cible, '#121216', 2), [cible]);
   const qrCode = (
@@ -473,7 +509,7 @@ function Partage({paiement, essai, nom, passages, recompense}: {paiement: string
               Récompense de {recompense.length} caractères : l’essai en garde {ESSAI_RECOMPENSE_MAX}. Raccourcissez-la si le texte coupé ne convient pas.
             </p>
           )}
-          {(passages < ESSAI_PASSAGES.min || passages > ESSAI_PASSAGES.max) && (
+          {montant == null && (passages < ESSAI_PASSAGES.min || passages > ESSAI_PASSAGES.max) && (
             <p class="pc-note warn">
               Cette carte a {passages} passage{passages > 1 ? 's' : ''} : l’essai en accepte de {ESSAI_PASSAGES.min} à {ESSAI_PASSAGES.max}, sa page la reprendra avec {Math.min(ESSAI_PASSAGES.max, Math.max(ESSAI_PASSAGES.min, passages))}.
             </p>
@@ -522,7 +558,7 @@ function ListeCartes({active}: {active?: string}) {
             <a href={`#/preparer/${x.id}`}>
               <strong>{x.nom}</strong>
               <small>
-                {offreDe(x)} · {x.passages} passages · {x.recompense} · {dateHeure(x.modifie_le)}
+                {offreDe(x)} · {x.montant ? `${x.montant} € dépensés` : `${x.passages} passages`} · {x.recompense} · {dateHeure(x.modifie_le)}
               </small>
             </a>
             <span class="pc-liste-a">

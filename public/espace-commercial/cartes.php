@@ -192,6 +192,10 @@ function entier_valide($v, int $min, int $max): bool
     return is_int($v) && $v >= $min && $v <= $max;
 }
 
+/** Carte au montant dépensé (2026-11-04) : euros à dépenser pour la récompense, mêmes bornes que l'essai (TRIAL_GOAL du dépôt LOYNA). */
+const MONTANT_MIN = 20;
+const MONTANT_MAX = 1000;
+
 /** Réglages acceptés (liste fermée de champs) ; le logo est vérifié à part. Null si un champ est invalide. */
 function carte_propre(array $c): ?array
 {
@@ -201,6 +205,7 @@ function carte_propre(array $c): ?array
         || !is_string($c['fond'] ?? null) || preg_match('/^#[0-9a-f]{6}$/D', $c['fond']) !== 1
         || !is_string($c['tampons'] ?? null) || preg_match('/^#[0-9a-f]{6}$/D', $c['tampons']) !== 1
         || !entier_valide($c['passages'] ?? null, 1, 100)
+        || (($c['montant'] ?? null) !== null && !entier_valide($c['montant'], MONTANT_MIN, MONTANT_MAX))
         || !in_array($c['offre'] ?? null, OFFRES, true) || !in_array($c['engagement'] ?? null, ENGAGEMENTS, true)
         || !is_array($qr) || !entier_valide($qr['unit'] ?? null, 0, 20) || !entier_valide($qr['pack5'] ?? null, 0, 4) || !entier_valide($qr['pack10'] ?? null, 0, 4)
         || !texte_valide($c['prospect'] ?? '', 0, 64)
@@ -214,6 +219,7 @@ function carte_propre(array $c): ?array
         'fond' => $c['fond'],
         'tampons' => $c['tampons'],
         'passages' => $c['passages'],
+        'montant' => $c['montant'] ?? null,
         'offre' => $c['offre'],
         'engagement' => $c['engagement'],
         'qr' => ['unit' => $qr['unit'], 'pack5' => $qr['pack5'], 'pack10' => $qr['pack10']],

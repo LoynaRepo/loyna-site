@@ -11,7 +11,7 @@ import {frenchTypography} from './typo';
 import {couleurVisible, LOGO_ACCEPT, LOGO_MIN_SIDE, logoToFiles, partLogoConfondue} from './logo-png';
 import {contrast} from './util';
 import {CarteWallet, TelephoneWallet} from '../lib/CarteWallet';
-import {lireCartePreparee, RE_ID_CARTE} from '../lib/carte-preparee';
+import {lireCartePreparee, MONTANT, RE_ID_CARTE} from '../lib/carte-preparee';
 import {CLE_LOGO, EMAIL_RE, REFERRAL_ERRORS, RULES, TELEPHONE_RE, chercherEtablissements, lireLogoGarde, normalizeReferral, siretValide, store, track, urlLogo, type Etablissement, type LogoGarde} from '../lib/compte-regles';
 
 type Etat = 'attente' | 'ouvert' | 'ferme' | 'confirmer' | 'active';
@@ -32,6 +32,7 @@ const dateFr = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', {day: 
 const simplifier = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
 const modele = (nom: string) => CARD_ACTIVITES.find((a) => simplifier(a.nom) === simplifier(nom));
 const borner = (n: number) => Math.min(PASSAGES.max, Math.max(PASSAGES.min, Math.round(n) || 10));
+const bornerMontant = (n: number) => Math.min(MONTANT.max, Math.max(MONTANT.min, Math.round(n) || MONTANT.defaut));
 
 // Réponses du serveur : texte d'ici pour les cas prévus, le champ concerné quand il y en a un.
 const MESSAGES: Record<string, string> = {
@@ -51,13 +52,15 @@ interface Carte {
   bg: string;
   accent: string;
   total: number;
+  /** Carte au montant dépensé (2026-11-04) : euros à dépenser pour la récompense ; null : carte aux passages (`total`). */
+  montant: number | null;
   reward: string;
 }
 type Touche = {reward: boolean; bg: boolean; accent: boolean};
 
 /** Carte de départ : brouillon du configurateur, puis réglages du lien (mêmes noms que /creer-ma-carte/). */
 function carteDeDepart(): {carte: Carte; touche: Touche} {
-  const carte: Carte = {name: '', activity: '', other: '', bg: '#1f1c17', accent: '#d9b27a', total: 10, reward: ''};
+  const carte: Carte = {name: '', activity: '', other: '', bg: '#1f1c17', accent: '#d9b27a', total: 10, montant: null, reward: ''};
   const touche: Touche = {reward: false, bg: false, accent: false};
   const reprendre = (activite: string) => {
     if (!activite || activite === 'Votre activité') return;
@@ -109,6 +112,8 @@ function carteDeDepart(): {carte: Carte; touche: Touche} {
   }
   const passages = Number(q.get('passages'));
   if (passages) carte.total = borner(passages);
+  const montant = Number(q.get('montant'));
+  if (montant) carte.montant = bornerMontant(montant);
   return {carte, touche};
 }
 
@@ -218,6 +223,7 @@ export default function Essai() {
           bg: RE_COULEUR.test(c.fond) ? c.fond : '#1f1c17',
           accent: RE_COULEUR.test(c.tampons) ? c.tampons : '#d9b27a',
           total: borner(c.passages),
+          montant: c.montant ? bornerMontant(c.montant) : null,
           reward: c.recompense.slice(0, 40),
         });
         setPreparee(true);
@@ -357,7 +363,9 @@ export default function Essai() {
       action: 'start',
       account: {email: f.email.trim().toLowerCase(), password: pw, first_name: f.first_name.trim(), last_name: f.last_name.trim(), phone: f.phone.trim()},
       business: {name: carte.name.trim(), activity: activiteCarte(carte), siret: siret.replace(/\s/g, '')},
-      card: {bg: carte.bg, accent: carte.accent, total: carte.total, reward: carte.reward.trim()},
+      card: carte.montant
+        ? {bg: carte.bg, accent: carte.accent, mode: 'SPEND', total: carte.montant, reward: carte.reward.trim()}
+        : {bg: carte.bg, accent: carte.accent, total: carte.total, reward: carte.reward.trim()},
       ...(logo ? {logo_png: logo.logo_png, icon_png: logo.icon_png} : {}),
       ...(code ? {referral_code: code} : {}),
       cgv_version: CGV_VERSION,
@@ -419,7 +427,8 @@ export default function Essai() {
     fond: carte.bg,
     tampons: carte.accent,
     passages: carte.total,
-    obtenus: Math.min(3, carte.total),
+    montant: carte.montant,
+    obtenus: carte.montant ? Math.round(carte.montant * 0.35) : Math.min(3, carte.total),
     logo: urlLogo(logo),
     systeme,
   };
@@ -577,11 +586,37 @@ export default function Essai() {
                   />
                 </div>
               </div>
+              <div class="pn-period es-mode" role="radiogroup" aria-label="Ce que compte la carte">
+                {([false, true] as const).map((euros) => (
+                  <label class={!!carte.montant === euros ? 'on' : ''}>
+                    <input type="radio" name="es-mode" checked={!!carte.montant === euros} onChange={() => changer({montant: euros ? (carte.montant ?? MONTANT.defaut) : null})} />
+                    {euros ? 'Au montant dépensé' : 'Au passage'}
+                  </label>
+                ))}
+              </div>
               <div class="pn-row">
-                <div class="field">
-                  <label for="es-total">Passages pour la récompense : {carte.total}</label>
-                  <input id="es-total" class="es-curseur" style={`--p:${((carte.total - PASSAGES.min) / (PASSAGES.max - PASSAGES.min)) * 100}%`} type="range" min={PASSAGES.min} max={PASSAGES.max} value={carte.total} onInput={(e) => changer({total: Number((e.target as HTMLInputElement).value)})} />
-                </div>
+                {carte.montant ? (
+                  <div class="field">
+                    <label for="es-montant">Montant dépensé pour la récompense : {carte.montant} €</label>
+                    <input
+                      id="es-montant"
+                      class="es-curseur"
+                      style={`--p:${((carte.montant - MONTANT.min) / (MONTANT.max - MONTANT.min)) * 100}%`}
+                      type="range"
+                      min={MONTANT.min}
+                      max={MONTANT.max}
+                      step={10}
+                      value={carte.montant}
+                      onInput={(e) => changer({montant: bornerMontant(Number((e.target as HTMLInputElement).value))})}
+                    />
+                    <small class="es-aide">1 € dépensé = 1 point : vous tapez le montant de l’achat au moment de scanner la carte.</small>
+                  </div>
+                ) : (
+                  <div class="field">
+                    <label for="es-total">Passages pour la récompense : {carte.total}</label>
+                    <input id="es-total" class="es-curseur" style={`--p:${((carte.total - PASSAGES.min) / (PASSAGES.max - PASSAGES.min)) * 100}%`} type="range" min={PASSAGES.min} max={PASSAGES.max} value={carte.total} onInput={(e) => changer({total: Number((e.target as HTMLInputElement).value)})} />
+                  </div>
+                )}
                 <div class="field">
                   <label for="es-reward">Récompense *</label>
                   <input

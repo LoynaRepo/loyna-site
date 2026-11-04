@@ -224,12 +224,13 @@ def carte_propre(c):
             and isinstance(c.get("fond"), str) and RE_COULEUR.fullmatch(c["fond"])
             and isinstance(c.get("tampons"), str) and RE_COULEUR.fullmatch(c["tampons"])
             and entier(c.get("passages"), 1, 100)
+            and (c.get("montant") is None or entier(c.get("montant"), 20, 1000))
             and c.get("offre") in OFFRES and c.get("engagement") in ENGAGEMENTS
             and isinstance(qr, dict) and entier(qr.get("unit"), 0, 20) and entier(qr.get("pack5"), 0, 4) and entier(qr.get("pack10"), 0, 4)
             and texte(c.get("prospect", ""), 0, 64)):
         return None
     return {"nom": c["nom"].strip(), "activite": c.get("activite", "").strip(), "recompense": c["recompense"].strip(),
-            "fond": c["fond"], "tampons": c["tampons"], "passages": c["passages"], "offre": c["offre"], "engagement": c["engagement"],
+            "fond": c["fond"], "tampons": c["tampons"], "passages": c["passages"], "montant": c.get("montant"), "offre": c["offre"], "engagement": c["engagement"],
             "qr": {"unit": qr["unit"], "pack5": qr["pack5"], "pack10": qr["pack10"]}, "prospect": c.get("prospect", "").strip()}
 
 

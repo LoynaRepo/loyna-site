@@ -1,7 +1,8 @@
 // Aperçu d'une carte de fidélité telle qu'elle s'affiche dans Apple Wallet ou Google Wallet, dans un téléphone :
 // section « Préparer une carte » du panel commercial et panier du commerçant (Ewan, 2026-10-30). Même disposition que
 // les maquettes des prospects : logo et nom, tampons (dernier tampon = cadeau), récompense, QR code.
-// Au-delà de 20 passages, une jauge remplace les tampons, comme sur la vraie carte.
+// Au-delà de 20 passages, une jauge remplace les tampons, comme sur la vraie carte. Carte au montant dépensé (`montant`, 2026-11-04) :
+// la jauge en euros, « EUROS 35 / 100 » et « ENCORE 65 euros », comme le programme SPEND de l'essai (unités « euro » / « euros »).
 import type {JSX} from 'preact';
 import {contrast, initials, qrSvg} from '../app/util';
 import './carte-wallet.css';
@@ -54,13 +55,17 @@ export interface PropsCarte {
   tampons: string;
   passages: number;
   obtenus: number;
+  /** Carte au montant dépensé : euros à dépenser pour la récompense ; `obtenus` est alors en euros. */
+  montant?: number | null;
   logo?: string | null;
   systeme?: 'apple' | 'google';
   prenom?: string;
 }
 
-export function CarteWallet({nom, activite, recompense, fond, tampons, passages, obtenus, logo, systeme = 'apple', prenom = 'Camille'}: PropsCarte) {
-  const total = Math.max(1, passages || 1);
+export function CarteWallet({nom, activite, recompense, fond, tampons, passages, obtenus, montant, logo, systeme = 'apple', prenom = 'Camille'}: PropsCarte) {
+  const enEuros = Boolean(montant && montant > 0);
+  const total = Math.max(1, (enEuros ? montant : passages) || 1);
+  const unite = enEuros ? 'euros' : 'passages';
   const faits = Math.min(Math.max(0, obtenus), total);
   // Couleurs de la vraie carte (buildPassContent et stripStyle, dépôt LOYNA) : texte Apple dans la couleur des tampons si elle se lit (contraste de 3),
   // sinon blanc ou noir ; tampons peu visibles (moins de 1,6) dans cette même couleur. Sur Android, Google choisit seul le texte, clair ou sombre.
@@ -72,7 +77,7 @@ export function CarteWallet({nom, activite, recompense, fond, tampons, passages,
   // Même grille que l'image de la carte : stampGrid pour les salons, stampStripPng pour les autres.
   const colonnes = salon ? (total <= 6 ? total : Math.ceil(total / 2)) : Math.min(total, 10);
   const restants = total - faits;
-  const reste = faits >= total ? 'À retirer !' : `${restants} passage${restants > 1 ? 's' : ''}`;
+  const reste = faits >= total ? 'À retirer !' : enEuros ? `${restants} euro${restants > 1 ? 's' : ''}` : `${restants} passage${restants > 1 ? 's' : ''}`;
   const qr = (
     <div class="cw-qr">
       <span dangerouslySetInnerHTML={{__html: QR_EXEMPLE}} />
@@ -103,7 +108,7 @@ export function CarteWallet({nom, activite, recompense, fond, tampons, passages,
     <span class="cw-logo">{initiale(nom)}</span>
   ) : null;
   const lesTampons =
-    total > 20 ? (
+    total > 20 || enEuros ? (
       <div class="cw-jauge" aria-hidden="true">
         <span style={{width: `${Math.round((faits / total) * 100)}%`}} />
       </div>
@@ -117,7 +122,7 @@ export function CarteWallet({nom, activite, recompense, fond, tampons, passages,
 
   if (systeme === 'google')
     return (
-      <div class="cw cw--google" style={style} role="img" aria-label={`Carte Google Wallet de ${nom}, ${faits} passages sur ${total}, récompense : ${recompense}`}>
+      <div class="cw cw--google" style={style} role="img" aria-label={`Carte Google Wallet de ${nom}, ${faits} ${unite} sur ${total}, récompense : ${recompense}`}>
         <div class="cw-g-h">
           {dessineGoogle ? (
             nomDessine(16, 5)
@@ -132,7 +137,7 @@ export function CarteWallet({nom, activite, recompense, fond, tampons, passages,
         {activite && <p class="cw-g-a">{activite}</p>}
         <div class="cw-champs">
           <div>
-            <small>Passages</small>
+            <small>{enEuros ? 'Euros' : 'Passages'}</small>
             <b>
               {faits} / {total}
             </b>
@@ -148,7 +153,7 @@ export function CarteWallet({nom, activite, recompense, fond, tampons, passages,
     );
 
   return (
-    <div class="cw cw--apple" style={style} role="img" aria-label={`Carte Apple Wallet de ${nom}, ${faits} passages sur ${total}, récompense : ${recompense}`}>
+    <div class="cw cw--apple" style={style} role="img" aria-label={`Carte Apple Wallet de ${nom}, ${faits} ${unite} sur ${total}, récompense : ${recompense}`}>
       <div class="cw-a-h">
         {dessineApple ? (
           nomDessine(10.2, 3.2)
@@ -159,7 +164,7 @@ export function CarteWallet({nom, activite, recompense, fond, tampons, passages,
           </>
         )}
         <span class="cw-a-c">
-          <small>PASSAGES</small>
+          <small>{enEuros ? 'EUROS' : 'PASSAGES'}</small>
           <b>
             {faits}/{total}
           </b>

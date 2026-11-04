@@ -76,8 +76,13 @@ with tempfile.TemporaryDirectory() as tmp:
     verifie("mise à jour : même identifiant", code == 200 and r["id"] == cid)
     code, r = appel(B, f"?id={cid}", jeton="")
     verifie("mise à jour relue, logo retiré", r["carte"]["passages"] == 10 and r["carte"]["logo"] is None and r["carte"]["offre"] == "pro" and r["carte"]["engagement"] == "engage")
+    verifie("carte aux passages : pas de montant", r["carte"].get("montant") is None)
+    appel(B, corps={"id": cid, "carte": {**CARTE, "montant": 150}})
+    code, r = appel(B, f"?id={cid}", jeton="")
+    verifie("carte au montant dépensé relue", code == 200 and r["carte"]["montant"] == 150)
     for nom, champ in (("couleur", {"fond": "red"}), ("offre", {"offre": "gratuit"}), ("offre plus vendue", {"offre": "premium"}), ("engagement", {"engagement": "annuel"}),
-                       ("nom vide", {"nom": "  "}), ("passages", {"passages": 500}), ("QR", {"qr": {"unit": 99, "pack5": 0, "pack10": 0}})):
+                       ("nom vide", {"nom": "  "}), ("passages", {"passages": 500}), ("montant trop bas", {"montant": 10}),
+                       ("montant trop haut", {"montant": 5000}), ("montant à virgule", {"montant": 99.5}), ("QR", {"qr": {"unit": 99, "pack5": 0, "pack10": 0}})):
         verifie(f"refus : {nom}", appel(B, corps={"carte": {**CARTE, **champ}})[0] == 400)
     sans_engagement = {k: v for k, v in CARTE.items() if k != "engagement"}
     verifie("refus : ancien format, periode sans engagement", appel(B, corps={"carte": {**sans_engagement, "periode": "mensuel"}})[0] == 400)

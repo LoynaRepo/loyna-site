@@ -457,12 +457,12 @@ export default function Panier() {
         )}
         {prep && (
           <section class="pn-prep" aria-labelledby="pn-prep-t">
-            <TelephoneWallet nom={prep.nom} activite={prep.activite} recompense={prep.recompense} fond={prep.fond} tampons={prep.tampons} passages={prep.passages} obtenus={Math.min(3, prep.passages)} logo={prep.logo} systeme={systeme} />
+            <TelephoneWallet nom={prep.nom} activite={prep.activite} recompense={prep.recompense} fond={prep.fond} tampons={prep.tampons} passages={prep.passages} montant={prep.montant} obtenus={prep.montant ? Math.round(prep.montant * 0.35) : Math.min(3, prep.passages)} logo={prep.logo} systeme={systeme} />
             <div class="pn-prep-d">
               <p class="eyebrow">Préparée pour vous</p>
               <h2 id="pn-prep-t">La carte de {prep.nom}</h2>
               <p>
-                {prep.passages} passages · {prep.recompense}
+                {prep.montant ? `${prep.montant} € dépensés` : `${prep.passages} passages`} · {prep.recompense}
               </p>
               <p class="pn-muted">Votre carte sera créée avec ces réglages après votre commande, en principe sous 24 h. Aperçu sur un exemple de client.</p>
               <div class="pn-prep-sys" role="radiogroup" aria-label="Téléphone de l’aperçu">

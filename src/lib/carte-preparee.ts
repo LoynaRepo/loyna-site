@@ -4,6 +4,8 @@
 import type {Engagement} from '../data/site';
 
 export const ADRESSE_CARTES = '/espace-commercial/cartes.php';
+/** Bornes du montant à dépenser pour la récompense : celles de l'essai (TRIAL_GOAL.SPEND du dépôt LOYNA) et de cartes.php. */
+export const MONTANT = {min: 20, max: 1000, defaut: 100};
 export const RE_ID_CARTE = /^[a-z0-9]{16}$/;
 
 export interface CartePreparee {
@@ -13,6 +15,8 @@ export interface CartePreparee {
   fond: string; // #rrggbb
   tampons: string; // #rrggbb
   passages: number;
+  /** Carte au montant dépensé (2026-11-04) : euros à dépenser pour la récompense (MONTANT) ; absent ou null : carte aux passages. */
+  montant?: number | null;
   logo: string | null; // data:image/png;base64,…
   /** starter ou pro ; les anciennes fiches peuvent valoir premium : toujours lire par normalizeOffer(c.offre, c.periode, c.engagement). */
   offre: string;
