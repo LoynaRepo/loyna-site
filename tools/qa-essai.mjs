@@ -1,8 +1,10 @@
 // Essai gratuit, de bout en bout, sur /essai/ :
 //   node tools/qa-essai.mjs <base> [dossier de captures]
 //     Sans réseau vers le produit : les réponses de la fonction trial, de cartes.php et de l'API des entreprises sont simulées. Vérifie le
-//     formulaire, le corps envoyé (contrat du cahier des charges 4.1), chaque code d'erreur, les écrans de fin, essai fermé ou complet.
-//     Toute autre requête vers Supabase est bloquée : rien ne peut partir vers la production.
+//     formulaire, le corps envoyé (contrat du cahier des charges 4.1, sans SIRET depuis le 2026-11-05), chaque code d'erreur, les écrans
+//     de fin, essai fermé ou complet, et les deux parcours : /essai/ (1. Votre carte, 2. Votre compte LOYNA) et /essai/?carte=<id>
+//     (carte préparée : 1. Votre compte LOYNA, aperçu « 2. Votre carte », « Démarrer mon essai gratuit »).
+//     Toute autre requête vers Supabase est bloquée : rien ne peut partir vers la production. L'API des entreprises ne doit plus être appelée.
 //   ESSAI_URL=https://<projet d'essai>.supabase.co ESSAI_ANON=… ESSAI_SERVICE=… node tools/qa-essai.mjs --pile <base du site> [dossier]
 //     Scénarios S1 et S2 du cahier des charges contre la pile d'essai (2e projet Supabase, site lancé avec PUBLIC_LOYNA_SUPABASE_URL et
 //     PUBLIC_LOYNA_SUPABASE_KEY dans .env.local), valeurs générées, adresses @example.com. Refuse de tourner sur le projet de production.
@@ -18,7 +20,9 @@ const pile = args[0] === '--pile';
 if (pile) args.shift();
 const [BASE = 'http://127.0.0.1:4329', DOSSIER] = args;
 if (DOSSIER) fs.mkdirSync(DOSSIER, {recursive: true});
-const OUVERT = /export const TRIAL = \{open: true/.test(fs.readFileSync(new URL('../src/data/site.ts', import.meta.url), 'utf8'));
+const SITE = fs.readFileSync(new URL('../src/data/site.ts', import.meta.url), 'utf8');
+const OUVERT = /export const TRIAL = \{open: true/.test(SITE);
+const CGV = /export const CGV_VERSION = '([^']+)'/.exec(SITE)[1];
 
 const b = await puppeteer.launch({executablePath: CH, headless: 'shell', args: ['--disable-gpu', '--hide-scrollbars']});
 let echecs = 0;
@@ -33,27 +37,13 @@ const CORS = {'access-control-allow-origin': '*', 'access-control-allow-headers'
 const json = (r, status, corps) => r.respond({status, contentType: 'application/json', headers: CORS, body: JSON.stringify(corps)});
 const erreur = (code, message) => ({error: {code, message}});
 
-// SIRET valide pour la clé de Luhn : 14 chiffres générés
-function siretGenere() {
-  const c = Array.from({length: 13}, () => Math.floor(Math.random() * 10));
-  const somme = (cle) =>
-    [...c, cle].reduce((s, v, i) => {
-      if (i % 2 === 0) {
-        const d = v * 2;
-        return s + (d > 9 ? d - 9 : d);
-      }
-      return s + v;
-    }, 0);
-  for (let k = 0; k < 10; k++) if (somme(k) % 10 === 0) return c.join('') + k;
-  return c.join('') + '0';
-}
-
 const VISITEUR = () => {
   const n = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
   return {prenom: 'Camille', nom: 'Essai', email: `essai-${n}@example.com`, tel: `06 39 98 ${n.slice(-2)} ${n.slice(-4, -2)}`, mdp: `Essai-${n.slice(-6)}Aa1`, commerce: `Le Fournil ${n.slice(-5)}`};
 };
 
-async function remplir(page, v, siret) {
+// carte = false : carte préparée, seul le compte est à remplir
+async function remplir(page, v, {carte = true} = {}) {
   const champ = async (sel, val) => {
     await page.$eval(sel, (e) => {
       e.focus();
@@ -61,12 +51,11 @@ async function remplir(page, v, siret) {
     });
     await page.type(sel, val);
   };
-  await champ('#es-name', v.commerce);
-  await page.select('#es-activity', 'Boulangerie');
-  await pause(50);
-  await page.$eval('#es-siret', (e) => e.focus());
-  await page.evaluate(() => (document.querySelector('#es-siret').value = ''));
-  await page.type('#es-siret', siret);
+  if (carte) {
+    await champ('#es-name', v.commerce);
+    await page.select('#es-activity', 'Boulangerie');
+    await pause(50);
+  }
   await champ('#es-first_name', v.prenom);
   await champ('#es-last_name', v.nom);
   await champ('#es-email', v.email);
@@ -76,6 +65,16 @@ async function remplir(page, v, siret) {
   if (!(await page.$eval('#es-cgv', (e) => e.checked))) await page.click('#es-cgv');
 }
 const envoyer = (page) => page.evaluate(() => document.querySelector('.es-sum button[type=submit]').click());
+// Ce que voit le visiteur : titres des étapes dans l'ordre, titre de l'aperçu, bouton, champs présents
+const parcours = (page) =>
+  page.evaluate(() => ({
+    etapes: [...document.querySelectorAll('.pn-step > legend')].map((l) => l.textContent.replace(/\s+/g, ' ').trim()),
+    apercu: document.querySelector('.es-sum h2')?.textContent.trim(),
+    bouton: document.querySelector('.es-sum button[type=submit]')?.textContent.trim(),
+    reglages: ['#es-name', '#es-activity', '#es-reward', '#es-total', 'input[type=file]'].filter((s) => document.querySelector(s)),
+    parrainage: !!document.querySelector('#es-referral'),
+    siret: /siret/i.test(document.querySelector('form.pn')?.innerHTML ?? ''),
+  }));
 
 // --- Pile d'essai ----------------------------------------------------------------------------------------------------------
 if (pile) {
@@ -83,13 +82,6 @@ if (pile) {
   if (!ESSAI_URL || !ESSAI_ANON || !ESSAI_SERVICE) throw new Error('ESSAI_URL, ESSAI_ANON et ESSAI_SERVICE sont obligatoires.');
   if (ESSAI_URL.includes(PROD)) throw new Error('Projet de production : jamais de compte de test ici.');
   const rest = (chemin) => fetch(`${ESSAI_URL}/rest/v1/${chemin}`, {headers: {apikey: ESSAI_SERVICE, authorization: `Bearer ${ESSAI_SERVICE}`}}).then((r) => r.json());
-  // Un vrai établissement ouvert et un fermé, lus dans l'API publique : la fonction trial les y vérifie
-  const etablissements = async (etat) => {
-    const r = await fetch('https://recherche-entreprises.api.gouv.fr/search?q=boulangerie%20montpellier&per_page=25').then((x) => x.json());
-    const pris = new Set((await rest('trial_claims?select=siret')).map((x) => x.siret)); // un essai par SIRET : la pile garde ceux des passages précédents
-    const liste = r.results.flatMap((e) => e.matching_etablissements ?? []).filter((l) => l.etat_administratif === etat && !pris.has(l.siret));
-    return liste[Math.floor(Math.random() * liste.length)]?.siret;
-  };
   const ctx = await b.createBrowserContext();
   const page = await ctx.newPage();
   await page.setViewport({width: 1280, height: 900});
@@ -98,12 +90,11 @@ if (pile) {
 
   // S1 : configurateur, /essai/, confirmation par lien, activation
   const v = VISITEUR();
-  const siret = await etablissements('A');
   await page.goto(`${BASE}/creer-ma-carte/?nom=${encodeURIComponent(v.commerce)}&activite=Boulangerie`, {waitUntil: 'networkidle0', timeout: 90000});
   await Promise.all([page.waitForNavigation({waitUntil: 'networkidle0'}), page.evaluate(() => document.querySelector('#go-essai').click())]);
   await page.waitForSelector('#es-name', {timeout: 20000});
   verifier('S1 : le configurateur remplit la carte', await page.$eval('#es-name', (e) => e.value), v.commerce);
-  await remplir(page, v, siret);
+  await remplir(page, v);
   await envoyer(page);
   await page.waitForSelector('.es-fin', {timeout: 30000});
   verifier('S1 : écran « Vérifiez votre boîte mail »', nbsp(await page.$eval('.es-fin h2', (e) => e.textContent)), 'Vérifiez votre boîte mail');
@@ -117,8 +108,8 @@ if (pile) {
   await page.goto(`${BASE}/espace-client/confirmer/?token_hash=${jeton}&type=signup`, {waitUntil: 'networkidle0', timeout: 90000});
   // Dashboard retire ?bienvenue=1 de l'adresse dès qu'il l'a lu : on attend la page, pas le paramètre.
   await page.waitForFunction(() => location.pathname === '/espace-client/', {timeout: 30000});
-  const [m] = await rest(`merchants?select=id,slug,status,subscription_plan,trial_started_at,trial_ends_at,siret&name=eq.${encodeURIComponent(v.commerce)}`);
-  verifier('S1 : commerce STARTER actif, avec le SIRET', [m?.subscription_plan, m?.status, m?.siret], ['STARTER', 'ACTIVE', siret]);
+  const [m] = await rest(`merchants?select=id,slug,status,subscription_plan,trial_started_at,trial_ends_at&name=eq.${encodeURIComponent(v.commerce)}`);
+  verifier('S1 : commerce STARTER actif', [m?.subscription_plan, m?.status], ['STARTER', 'ACTIVE']);
   const duree = (Date.parse(m.trial_ends_at) - Date.parse(m.trial_started_at)) / 86400000;
   verifier('S1 : essai d’un mois calendaire', duree >= 28 && duree <= 31, true);
   // Inscription d'un client, comme la page /join/, puis scan par le propriétaire. Le QR de la carte n'est gardé qu'en empreinte : la pile
@@ -147,30 +138,26 @@ if (pile) {
     const d = await r.json().catch(() => null);
     verifier(`S2 : ${nom}`, d?.error?.code ?? d?.status, codeAttendu);
   };
-  const demande = (x, s, plus = {}) => ({
+  const demande = (x, plus = {}) => ({
     action: 'start',
     account: {email: x.email, password: x.mdp, first_name: x.prenom, last_name: x.nom, phone: x.tel},
-    business: {name: x.commerce, activity: 'Boulangerie', siret: s},
+    business: {name: x.commerce, activity: 'Boulangerie'},
     card: {bg: '#7a3d1c', accent: '#f2c879', total: 10, reward: 'Viennoiserie offerte'},
-    cgv_version: '2026-11-04',
+    cgv_version: CGV,
     website: '',
     ...plus,
   });
   const autre = () => VISITEUR();
-  await refus('même SIRET', demande(autre(), siret), 'TRIAL_ALREADY_USED');
-  // E-mail et téléphone ne se comparent qu'après le mot de passe : sans lui, seul le compte se voit, comme au panier.
-  await refus('même e-mail, autre mot de passe', demande({...autre(), email: v.email}, await etablissements('A')), 'ACCOUNT_EXISTS');
-  await refus('même e-mail, bon mot de passe', demande({...autre(), email: v.email, mdp: v.mdp}, await etablissements('A')), 'TRIAL_ALREADY_USED');
+  // 1 essai par personne (e-mail et téléphone, CGV 4.9) ; ils ne se comparent qu'après le mot de passe : sans lui, seul le compte se voit, comme au panier.
+  await refus('même e-mail, autre mot de passe', demande({...autre(), email: v.email}), 'ACCOUNT_EXISTS');
+  await refus('même e-mail, bon mot de passe', demande({...autre(), email: v.email, mdp: v.mdp}), 'TRIAL_ALREADY_USED');
   // Ces refus vont jusqu'au compte : ils comptent dans la limite de 3 par heure.
   const videLimites = await fetch(`${ESSAI_URL}/rest/v1/rpc/essai_exec`, {method: 'POST', headers: {apikey: ESSAI_SERVICE, authorization: `Bearer ${ESSAI_SERVICE}`, 'content-type': 'application/json'}, body: JSON.stringify({q: 'delete from private.rate_limits where true'})});
   await videLimites.arrayBuffer();
-  await refus('même téléphone', demande({...autre(), tel: v.tel}, await etablissements('A')), 'TRIAL_ALREADY_USED');
-  await refus('SIRET mal formé', demande(autre(), '12345678901234'), 'SIRET_INVALID');
-  const ferme = await etablissements('F');
-  if (ferme) await refus('établissement fermé', demande(autre(), ferme), 'SIRET_CLOSED');
+  await refus('même téléphone', demande({...autre(), tel: v.tel}), 'TRIAL_ALREADY_USED');
   const avantRobot = (await rest('trial_requests?select=id')).length;
   const robot = autre();
-  const r = await fetch(`${ESSAI_URL}/functions/v1/trial`, {method: 'POST', headers: {apikey: ESSAI_ANON, 'content-type': 'application/json'}, body: JSON.stringify(demande(robot, await etablissements('A'), {website: 'https://robot.example'}))});
+  const r = await fetch(`${ESSAI_URL}/functions/v1/trial`, {method: 'POST', headers: {apikey: ESSAI_ANON, 'content-type': 'application/json'}, body: JSON.stringify(demande(robot, {website: 'https://robot.example'}))});
   await r.arrayBuffer();
   verifier('S2 : champ piège, rien de créé', (await rest('trial_requests?select=id')).length, avantRobot);
   console.log('À FAIRE À LA MAIN (secrets du projet d’essai) : LOYNA_TRIAL_OPEN=false → TRIAL_CLOSED ; LOYNA_TRIAL_MAX_ACTIVE atteint → TRIAL_FULL.');
@@ -269,6 +256,8 @@ async function ouvrir({w = 1280, h = 900, chemin = '/essai/', ouverture = {open:
   return {page, ctx, appels, erreurs};
 }
 const attendreForm = (page) => page.waitForSelector('#es-name', {timeout: 20000});
+// Carte préparée lue dans cartes.php : le formulaire ne garde que le compte
+const attendrePreparee = (page) => page.waitForFunction(() => document.querySelector('.es-sum h2')?.textContent.trim() === '2. Votre carte' && !document.querySelector('#es-name'), {timeout: 20000});
 
 if (!OUVERT) {
   // TRIAL.open = false : la page dit que l'essai n'est pas ouvert, sans appeler le serveur
@@ -344,46 +333,30 @@ for (const [nom, ouverture, titre] of [
   await envoyer(page);
   await pause(120);
   const champs = await page.$$eval('.pn-err', (l) => l.map((e) => e.id.replace(/^es-|-err$/g, '')));
-  verifier('tout est signalé, rien ne part', [champs, appels.posts.length], [['name', 'activity', 'reward', 'siret', 'first_name', 'last_name', 'email', 'phone', 'password', 'cgv'], 0]);
+  verifier('tout est signalé, rien ne part', [champs, appels.posts.length], [['name', 'activity', 'reward', 'first_name', 'last_name', 'email', 'phone', 'password', 'cgv'], 0]);
   verifier('le premier champ en erreur prend le focus', await page.evaluate(() => document.activeElement?.id), 'es-name');
-  await page.type('#es-siret', '12345678901234');
-  await envoyer(page);
-  await pause(120);
-  verifier('SIRET : clé de Luhn contrôlée', await page.$eval('#es-siret-err', (e) => /14 chiffres/.test(e.textContent)), true);
   await ctx.close();
 }
 
-// 5. Recherche du SIRET
+// 5. Parcours sans carte préparée : 1. Votre carte (tous les réglages), 2. Votre compte LOYNA, parrainage ; plus de SIRET
 {
-  const reponse = {
-    results: [
-      {nom_complet: 'LE FOURNIL D’ALBANE', siege: {siret: '53101237500022', adresse: '3 PLACE DU 8 MAI 34690 FABREGUES', etat_administratif: 'A'}, matching_etablissements: [{siret: '53101237500022', adresse: '3 PLACE DU 8 MAI 34690 FABREGUES', etat_administratif: 'A'}, {siret: '53101237500014', adresse: '11 RUE FERMEE 34690 FABREGUES', etat_administratif: 'F'}]},
-    ],
-  };
-  const {page, ctx, appels} = await ouvrir({recherche: reponse});
+  const {page, ctx} = await ouvrir();
   await attendreForm(page);
-  await page.type('#es-cherche', 'fournil fabregues');
-  await page.keyboard.press('Enter');
-  await page.waitForSelector('.es-resultats button', {timeout: 10000});
-  verifier('recherche : API publique, nom et ville', appels.recherche[0].startsWith('https://recherche-entreprises.api.gouv.fr/search?q=fournil%20fabregues'), true);
-  verifier('recherche : établissements ouverts seulement', await page.$$eval('.es-resultats button', (l) => l.length), 1);
-  await page.evaluate(() => document.querySelector('.es-resultats button').click());
-  await pause(80);
-  verifier('recherche : le SIRET est repris', await page.$eval('#es-siret', (e) => e.value), '53101237500022');
+  verifier('/essai/ : carte puis compte, réglages et parrainage, sans SIRET', await parcours(page), {
+    etapes: ['1 Votre carte', '2 Votre compte LOYNA'],
+    apercu: 'Votre carte',
+    bouton: 'Essayer 1 mois gratuitement',
+    reglages: ['#es-name', '#es-activity', '#es-reward', '#es-total', 'input[type=file]'],
+    parrainage: true,
+    siret: false,
+  });
+  verifier('/essai/ : 1 essai par personne annoncé (CGV 4.9)', nbsp(await page.$eval('.pn-cgv', (e) => e.textContent)).includes('1 essai par personne'), true);
   await ctx.close();
-  const {page: p2, ctx: c2} = await ouvrir({recherche: 'panne'});
-  await attendreForm(p2);
-  await p2.type('#es-cherche', 'fournil fabregues');
-  await p2.keyboard.press('Enter');
-  await pause(300);
-  verifier('recherche en panne : message, le formulaire reste utilisable', await p2.$eval('.es-cherche', (e) => /ne répond pas/.test(e.textContent)), true);
-  await c2.close();
 }
 
 // 6. Envoi : corps du contrat, écran de confirmation, mesure
 {
   const v = VISITEUR();
-  const siret = siretGenere();
   const {page, ctx, appels} = await ouvrir({chemin: '/essai/?parrain=loyna-abc234'});
   await attendreForm(page);
   // Consent.astro définit loynaTrack au chargement : la mesure est remplacée une fois la page prête
@@ -391,13 +364,14 @@ for (const [nom, ouverture, titre] of [
     window.__mesures = [];
     window.loynaTrack = (n, p) => window.__mesures.push([n, p]);
   });
-  await remplir(page, v, siret);
+  await remplir(page, v);
   await envoyer(page);
   await page.waitForSelector('.es-fin', {timeout: 20000});
   const c = appels.posts[0];
   verifier('corps : action, compte', [c.action, c.account], ['start', {email: v.email, password: v.mdp, first_name: v.prenom, last_name: v.nom, phone: v.tel}]);
-  verifier('corps : commerce, carte', [c.business, c.card], [{name: v.commerce, activity: 'Boulangerie', siret}, {bg: '#7a3d1c', accent: '#f2c879', total: 10, reward: 'Viennoiserie offerte'}]);
-  verifier('corps : parrainage normalisé, CGV, champ piège, pas de logo', [c.referral_code, c.cgv_version, c.website, 'logo_png' in c], ['LOYNA-ABC234', '2026-11-04', '', false]);
+  verifier('corps : commerce sans SIRET, carte', [c.business, c.card], [{name: v.commerce, activity: 'Boulangerie'}, {bg: '#7a3d1c', accent: '#f2c879', total: 10, reward: 'Viennoiserie offerte'}]);
+  verifier('aucun appel à l’API des entreprises', appels.recherche, []);
+  verifier('corps : parrainage normalisé, CGV, champ piège, pas de logo', [c.referral_code, c.cgv_version, c.website, 'logo_png' in c], ['LOYNA-ABC234', CGV, '', false]);
   const t = nbsp(await page.$eval('.es-fin', (e) => e.textContent));
   verifier('écran « Vérifiez votre boîte mail »', [/^Vérifiez votre boîte mail/.test(t), t.includes(v.email), t.includes(v.commerce)], [true, true, true]);
   verifier('mesure trial_start', await page.evaluate(() => window.__mesures.map((m) => m[0])), ['trial_start']);
@@ -416,7 +390,7 @@ for (const [nom, ouverture, titre] of [
   const v = VISITEUR();
   const {page, ctx} = await ouvrir({trial: () => ({status: 200, corps: {status: 'CONFIRM_EMAIL', confirmation_sent: false}})});
   await attendreForm(page);
-  await remplir(page, v, siretGenere());
+  await remplir(page, v);
   await envoyer(page);
   await page.waitForSelector('.es-fin', {timeout: 20000});
   verifier('e-mail non parti : on le dit, avec le contact', nbsp(await page.$eval('.es-fin', (e) => e.textContent)).includes('n’a pas pu partir'), true);
@@ -426,7 +400,7 @@ for (const [nom, ouverture, titre] of [
   const v = VISITEUR();
   const {page, ctx} = await ouvrir({trial: () => ({status: 200, corps: {status: 'ACTIVATED', merchant_id: 'm1', slug: 'le-fournil', join_url: 'https://loyna.fr/join/le-fournil', trial_ends_at: '2026-12-01T10:00:00Z'}})});
   await attendreForm(page);
-  await remplir(page, v, siretGenere());
+  await remplir(page, v);
   await envoyer(page);
   await page.waitForSelector('.es-fin', {timeout: 20000});
   const t = nbsp(await page.$eval('.es-fin', (e) => e.textContent));
@@ -437,13 +411,11 @@ for (const [nom, ouverture, titre] of [
 
 // 8. Chaque code d'erreur du contrat
 for (const [code, attendu] of [
-  ['TRIAL_ALREADY_USED', {zone: 'alerte', texte: '1 essai par commerce', lien: '/tarifs/'}],
+  ['TRIAL_ALREADY_USED', {zone: 'alerte', texte: '1 essai par personne', lien: '/tarifs/'}],
   ['ACCOUNT_EXISTS', {zone: 'alerte', texte: 'indiquez son mot de passe', lien: '/espace-client/?oubli=1'}],
   ['ACCOUNT_HAS_MERCHANT', {zone: 'alerte', texte: 'a déjà un commerce', lien: '/espace-client/'}],
   ['RATE_LIMITED', {zone: 'alerte', texte: 'réessayez dans une heure', lien: null}],
   ['INVALID_REQUEST', {zone: 'alerte', texte: 'Demande refusée', lien: null}],
-  ['SIRET_INVALID', {zone: 'siret', texte: 'n’existe pas'}],
-  ['SIRET_CLOSED', {zone: 'siret', texte: 'fermé'}],
   ['REFERRAL_INVALID', {zone: 'referral', texte: 'Code inconnu'}],
   ['WEAK_PASSWORD', {zone: 'password', texte: 'trop faible'}],
   ['INVALID_PHONE', {zone: 'phone', texte: 'numéro de téléphone valide'}],
@@ -455,7 +427,7 @@ for (const [code, attendu] of [
   const messages = {INVALID_REQUEST: 'Demande refusée.', REFERRAL_INVALID: 'Code inconnu.', WEAK_PASSWORD: 'Mot de passe trop faible.', INVALID_PHONE: 'Numéro refusé.', INVALID_EMAIL: 'Adresse refusée.'};
   const {page, ctx} = await ouvrir({trial: () => ({status: 400, corps: erreur(code, messages[code] ?? `Message du serveur pour ${code}`)})});
   await attendreForm(page);
-  await remplir(page, v, siretGenere());
+  await remplir(page, v);
   await envoyer(page);
   await pause(350);
   if (attendu.zone === 'alerte') {
@@ -470,14 +442,52 @@ for (const [code, attendu] of [
   await ctx.close();
 }
 
-// 9. Carte préparée dans le panel (/essai/?carte=<id>), ancienne fiche en premium comprise : nombre de passages ramené à 15
+// 9. Carte préparée dans le panel (/essai/?carte=<id>) : 1. Votre compte LOYNA, aperçu « 2. Votre carte », « Démarrer mon essai gratuit ».
+//    Ni réglage de la carte ni parrainage ; ancienne fiche en premium comprise : nombre de passages ramené à 15 dans le corps envoyé.
 {
   const carte = {nom: 'La Fusion', activite: 'Restaurant', recompense: 'Dessert offert', fond: '#14532d', tampons: '#d9b27a', passages: 20, logo: null, offre: 'premium', periode: 'mensuel', qr: {unit: 1, pack5: 0, pack10: 0}};
-  const {page, ctx} = await ouvrir({chemin: '/essai/?carte=19k93n5985n294gn', carte});
+  const v = VISITEUR();
+  const {page, ctx, appels, erreurs} = await ouvrir({chemin: '/essai/?carte=19k93n5985n294gn', carte});
+  await attendrePreparee(page);
+  verifier('carte préparée : compte seul, puis aperçu et Démarrer, sans SIRET', await parcours(page), {
+    etapes: ['1 Votre compte LOYNA'],
+    apercu: '2. Votre carte',
+    bouton: 'Démarrer mon essai gratuit',
+    reglages: [],
+    parrainage: false,
+    siret: false,
+  });
+  verifier('carte préparée : l’aperçu montre la carte', [await page.$eval('.es-apercu .cw-a-n', (e) => e.textContent), /Votre carte est prête/.test(await page.$eval('.pn-intro', (e) => e.textContent))], ['La Fusion', true]);
+  if (DOSSIER) await page.screenshot({path: `${DOSSIER}/essai-carte-preparee.png`, fullPage: true});
+  await envoyer(page);
+  await pause(120);
+  verifier('carte préparée : contrôles du compte seulement, rien ne part', [await page.$$eval('.pn-err', (l) => l.map((e) => e.id.replace(/^es-|-err$/g, ''))), appels.posts.length], [['first_name', 'last_name', 'email', 'phone', 'password', 'cgv'], 0]);
+  await remplir(page, v, {carte: false});
+  await envoyer(page);
+  await page.waitForSelector('.es-fin', {timeout: 20000});
+  const c = appels.posts[0];
+  verifier('carte préparée : corps envoyé', [c.account.email, c.business, c.card, 'referral_code' in c, 'logo_png' in c], [v.email, {name: 'La Fusion', activity: 'Restaurant'}, {bg: '#14532d', accent: '#d9b27a', total: 15, reward: 'Dessert offert'}, false, false]);
+  verifier('carte préparée : écran « Vérifiez votre boîte mail »', nbsp(await page.$eval('.es-fin', (e) => e.textContent)).includes('La Fusion'), true);
+  verifier('carte préparée : aucun appel à l’API des entreprises, sans erreur', [appels.recherche, erreurs], [[], []]);
+  await ctx.close();
+}
+{
+  const carte = {nom: 'La Fusion', activite: 'Restaurant', recompense: 'Dessert offert', fond: '#14532d', tampons: '#d9b27a', passages: 10, logo: null, offre: 'starter', qr: {unit: 0, pack5: 0, pack10: 0}};
+  const {page, ctx} = await ouvrir({chemin: '/essai/?carte=19k93n5985n294gn', carte, trial: () => ({status: 409, corps: erreur('TRIAL_ALREADY_USED', 'Déjà utilisé.')})});
+  await attendrePreparee(page);
+  await remplir(page, VISITEUR(), {carte: false});
+  await envoyer(page);
+  await pause(350);
+  const r = await page.evaluate(() => ({t: document.querySelector('.pn-alert')?.textContent ?? '', l: document.querySelector('.pn-alert a')?.getAttribute('href') ?? null}));
+  verifier('carte préparée, essai déjà pris : 1 essai par personne, choisir son offre', [nbsp(r.t).includes('1 essai par personne'), r.l], [true, '/tarifs/']);
+  await ctx.close();
+}
+{
+  // Carte introuvable (lien périmé) : le parcours complet reste disponible
+  const {page, ctx} = await ouvrir({chemin: '/essai/?carte=19k93n5985n294gn'});
   await attendreForm(page);
   await pause(300);
-  const v = await page.evaluate(() => ({nom: document.querySelector('#es-name').value, act: document.querySelector('#es-activity').value, rec: document.querySelector('#es-reward').value, passages: document.querySelector('#es-total').value, note: /préparée/.test(document.querySelector('.pn-step').textContent)}));
-  verifier('carte préparée : réglages repris, 4 à 15 passages', v, {nom: 'La Fusion', act: 'Restaurant', rec: 'Dessert offert', passages: '15', note: true});
+  verifier('carte introuvable : parcours complet', (await parcours(page)).etapes, ['1 Votre carte', '2 Votre compte LOYNA']);
   await ctx.close();
 }
 
@@ -486,12 +496,12 @@ for (const [code, attendu] of [
   const pixel = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
   const carte = {nom: 'Avec Logo', activite: 'Fleuriste', recompense: 'Bouquet offert', fond: '#14532d', tampons: '#d9b27a', passages: 8, logo: `data:image/png;base64,${pixel}`, offre: 'starter', qr: {unit: 0, pack5: 0, pack10: 0}};
   const {page, ctx} = await ouvrir({chemin: '/essai/?carte=19k93n5985n294gn', carte, avant: () => sessionStorage.setItem('loyna-config-logo', JSON.stringify({logo_png: 'AAAA', icon_png: 'AAAA', nom: 'ancien.png'}))});
-  await attendreForm(page);
+  await attendrePreparee(page);
   await pause(400);
   verifier('carte préparée avec logo : le sien', await page.evaluate(() => JSON.parse(sessionStorage.getItem('loyna-config-logo')).nom), 'Logo préparé avec vous');
   await ctx.close();
   const {page: p2, ctx: c2} = await ouvrir({chemin: '/essai/?carte=19k93n5985n294gn', carte: {...carte, logo: null}, avant: () => sessionStorage.setItem('loyna-config-logo', JSON.stringify({logo_png: 'AAAA', icon_png: 'AAAA', nom: 'ancien.png'}))});
-  await attendreForm(p2);
+  await attendrePreparee(p2);
   await pause(400);
   verifier('carte préparée sans logo : l’ancien est retiré', await p2.evaluate(() => sessionStorage.getItem('loyna-config-logo')), null);
   await c2.close();
@@ -596,7 +606,7 @@ for (const [code, attendu] of [
   await ctx.close();
 }
 
-// 10. Téléphone : pas de débordement, aperçu visible, recherche utilisable
+// 10. Téléphone : pas de débordement, aperçu visible
 for (const w of [360, 390]) {
   const {page, ctx} = await ouvrir({w, h: 800});
   await attendreForm(page);
