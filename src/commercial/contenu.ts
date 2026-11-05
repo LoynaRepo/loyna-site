@@ -202,7 +202,7 @@ export function objections(): Reponse[] {
           ]
         : ['Il n’y a pas d’essai gratuit. En revanche, sans rien payer, vous pouvez voir l’aperçu de votre carte à votre nom et à vos couleurs (gratuit, sans inscription), la démonstration de LOYNA Business avec des données fictives, et la vidéo de présentation.'],
       attention: TRIAL.open
-        ? 'Lien à envoyer : loyna.fr/essai/, ou le lien d’essai de « Préparer une carte », qui reprend sa carte. Sont demandés : SIRET, e-mail, téléphone et mot de passe ; 1 essai par SIRET, par e-mail et par téléphone. Aucun service de Pro pendant l’essai, ni document. Si la page annonce que les essais sont complets, proposez l’abonnement ou l’aperçu gratuit.'
+        ? 'Lien à envoyer : loyna.fr/essai/, ou le lien d’essai de « Préparer une carte », qui reprend sa carte. Sont demandés : e-mail, téléphone et mot de passe, plus de SIRET ; 1 essai par e-mail et par téléphone (les CGV disent qu’un essai en doublon échoue). Avec le lien d’une carte préparée, le commerçant crée seulement son compte, voit sa carte et démarre. Aucun service de Pro pendant l’essai, ni document. Si la page annonce que les essais sont complets, proposez l’abonnement ou l’aperçu gratuit.'
         : undefined,
       liens: TRIAL.open ? [LIENS.essai, LIENS.apercu, LIENS.demo] : [LIENS.apercu, LIENS.demo, LIENS.video],
       sources: TRIAL.open ? [S.offres, S.cgv] : [S.brief, S.configurateur, S.demo, S.video],

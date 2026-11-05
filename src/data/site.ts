@@ -196,7 +196,7 @@ export function visuelActivite(nom: string): {nom: string; recompense: string} &
 
 // Version des CGV acceptée à l'essai (`cgv_version`) : même valeur dans supabase/functions/_shared/offer-terms.ts du
 // dépôt LOYNA.
-export const CGV_VERSION = '2026-11-04';
+export const CGV_VERSION = '2026-11-05';
 
 // SETUP_FEE et PARTENAIRES gardent leur nom et leur ordre : routes_ecrire.py (application locale du coffre « Loyna
 // Prospection ») donne au chat qui rédige tout ce qui se trouve entre les deux, 9 000 caractères au plus.
@@ -265,7 +265,7 @@ export const PHRASES = {
   pourquoiPro: 'Pour 20 € de plus par mois, 17 € avec engagement, vos clients invitent leurs amis et LOYNA écrit vos messages à votre place : vous n’avez plus qu’à valider.',
   prix: (p: Plan) => `${euro(p.monthly)} par mois, sans TVA, sans engagement : vous arrêtez à la fin de n’importe quel mois. Ou ${euro(p.engaged)} par mois avec ${ENGAGEMENT.months} mois d’engagement, réglés chaque mois.`,
   engagement: 'Avec 12 mois d’engagement : 15 % de moins, réglé chaque mois, rien d’avance. Sortie possible si votre commerce ferme, sur justificatif de radiation. Après les 12 mois : même prix, résiliable à la fin de n’importe quel mois, sans nouvelle durée.',
-  essai: '1 mois gratuit, sans carte bancaire. Votre carte est créée tout de suite à partir de vos réglages et du modèle de votre métier. 1 essai par commerce.',
+  essai: '1 mois gratuit, sans carte bancaire. Votre carte est créée tout de suite à partir de vos réglages et du modèle de votre métier. 1 essai par personne.',
   arret: 'Si l’abonnement s’arrête ou si un paiement reste impayé 15 jours, la carte reste dans le téléphone de vos clients mais elle ne crédite plus, et les inscriptions et les messages s’arrêtent. Tout repart automatiquement dès que le paiement passe ou que l’abonnement est repris, avec vos clients et leurs soldes. Sans reprise, vos données sont supprimées 90 jours après l’arrêt.',
   miseEnService: 'Offerte jusqu’au 31 décembre 2026. Ensuite : offerte avec 12 mois d’engagement, 49 € une seule fois sans engagement.',
   parrainage: 'Parrainez un commerçant : 1 mois offert à chacun.',

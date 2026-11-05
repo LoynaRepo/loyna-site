@@ -455,45 +455,6 @@ export default function Panier() {
             </span>
           </div>
         )}
-        {prep && (
-          <section class="pn-prep" aria-labelledby="pn-prep-t">
-            <TelephoneWallet nom={prep.nom} activite={prep.activite} recompense={prep.recompense} fond={prep.fond} tampons={prep.tampons} passages={prep.passages} montant={prep.montant} obtenus={prep.montant ? Math.round(prep.montant * 0.35) : Math.min(3, prep.passages)} logo={prep.logo} systeme={systeme} />
-            <div class="pn-prep-d">
-              <p class="eyebrow">Préparée pour vous</p>
-              <h2 id="pn-prep-t">La carte de {prep.nom}</h2>
-              <p>
-                {prep.montant ? `${prep.montant} € dépensés` : `${prep.passages} passages`} · {prep.recompense}
-              </p>
-              <p class="pn-muted">Votre carte sera créée avec ces réglages après votre commande, en principe sous 24 h. Aperçu sur un exemple de client.</p>
-              <div class="pn-prep-sys" role="radiogroup" aria-label="Téléphone de l’aperçu">
-                <button type="button" role="radio" aria-checked={systeme === 'apple'} class={systeme === 'apple' ? 'on' : ''} onClick={() => setSysteme('apple')}>
-                  iPhone
-                </button>
-                <button type="button" role="radio" aria-checked={systeme === 'google'} class={systeme === 'google' ? 'on' : ''} onClick={() => setSysteme('google')}>
-                  Android
-                </button>
-              </div>
-              {replie && (
-                <p>
-                  <button type="button" class="pn-link" onClick={() => setChangerOffre(true)}>
-                    Changer d’offre ou de QR codes
-                  </button>
-                  {' · '}
-                  <button
-                    type="button"
-                    class="pn-link"
-                    onClick={() => {
-                      setChangerOffre(true);
-                      setTimeout(() => document.getElementById('pn-referral')?.focus());
-                    }}
-                  >
-                    J’ai un code de parrainage
-                  </button>
-                </p>
-              )}
-            </div>
-          </section>
-        )}
         {/* --- 1. Offre ------------------------------------------------------------------------- */}
         {!replie && (
         <fieldset class="pn-step">
@@ -621,7 +582,7 @@ export default function Panier() {
           <legend>
             <span class="pn-num">{replie ? 1 : 3}</span> Votre compte LOYNA
           </legend>
-          <p class="pn-intro">{commerce ? (session ? 'Cet abonnement sera rattaché à votre commerce.' : 'Connectez-vous : cet abonnement sera rattaché à votre commerce.') : 'Ce compte reçoit votre commande et vous donne accès à votre espace client.'}</p>
+          <p class="pn-intro">{commerce ? (session ? 'Cet abonnement sera rattaché à votre commerce.' : 'Connectez-vous : cet abonnement sera rattaché à votre commerce.') : prep ? 'Votre carte est prête. Créez votre compte : vous voyez ensuite votre carte, puis vous payez sur la page sécurisée de Stripe.' : 'Ce compte reçoit votre commande et vous donne accès à votre espace client.'}</p>
           {session === undefined && <p class="pn-muted">Vérification de votre connexion…</p>}
           {session && (
             <div class="pn-session">
@@ -647,11 +608,13 @@ export default function Panier() {
                   {err('last_name')}
                 </div>
               </div>
+              {!prep && (
               <div class="field">
                 <label for="pn-business_name">Nom du commerce *</label>
                 <input type="text" autocomplete="organization" maxLength={120} required {...fieldProps('business_name')} />
                 {err('business_name')}
               </div>
+              )}
               <div class="pn-row">
                 <div class="field">
                   <label for="pn-email">E-mail *</label>
@@ -816,6 +779,27 @@ export default function Panier() {
             <input id="pn-website" name="website" type="text" tabIndex={-1} autocomplete="off" value={website} onInput={(e) => setWebsite((e.target as HTMLInputElement).value)} />
           </div>
         </fieldset>
+        {prep && (
+          <section class="pn-prep" aria-labelledby="pn-prep-t">
+            <TelephoneWallet nom={prep.nom} activite={prep.activite} recompense={prep.recompense} fond={prep.fond} tampons={prep.tampons} passages={prep.passages} montant={prep.montant} obtenus={prep.montant ? Math.round(prep.montant * 0.35) : Math.min(3, prep.passages)} logo={prep.logo} systeme={systeme} />
+            <div class="pn-prep-d">
+              <p class="eyebrow">2. Votre carte, préparée pour vous</p>
+              <h2 id="pn-prep-t">La carte de {prep.nom}</h2>
+              <p>
+                {prep.montant ? `${prep.montant} € dépensés` : `${prep.passages} passages`} · {prep.recompense}
+              </p>
+              <p class="pn-muted">Votre carte sera créée avec ces réglages après votre commande, en principe sous 24 h. Aperçu sur un exemple de client.</p>
+              <div class="pn-prep-sys" role="radiogroup" aria-label="Téléphone de l’aperçu">
+                <button type="button" role="radio" aria-checked={systeme === 'apple'} class={systeme === 'apple' ? 'on' : ''} onClick={() => setSysteme('apple')}>
+                  iPhone
+                </button>
+                <button type="button" role="radio" aria-checked={systeme === 'google'} class={systeme === 'google' ? 'on' : ''} onClick={() => setSysteme('google')}>
+                  Android
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
       </div>
 
       {/* --- Récapitulatif ------------------------------------------------------------------------- */}

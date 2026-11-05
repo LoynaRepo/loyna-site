@@ -85,7 +85,7 @@
   },
   {
     "q": "Y a-t-il un essai gratuit ?",
-    "a": "Oui. 1 mois gratuit, sans carte bancaire. Votre carte est créée tout de suite à partir de vos réglages et du modèle de votre métier. 1 essai par commerce. L’essai donne l’offre Starter complète et commence quand vous confirmez votre adresse e-mail ; il vous faut votre numéro de SIRET. À la fin, aucun prélèvement : votre carte se met en pause tant que vous n’avez pas choisi votre offre. Vous pouvez souscrire à tout moment depuis votre espace client : le premier paiement a lieu le jour de la souscription, et les jours d’essai restants ne sont pas reportés. Un code de parrainage se saisit aussi à l’essai : le mois offert commence le jour de la souscription.",
+    "a": "Oui. 1 mois gratuit, sans carte bancaire. Votre carte est créée tout de suite à partir de vos réglages et du modèle de votre métier. 1 essai par personne. L’essai donne l’offre Starter complète et commence quand vous confirmez votre adresse e-mail. À la fin, aucun prélèvement : votre carte se met en pause tant que vous n’avez pas choisi votre offre. Vous pouvez souscrire à tout moment depuis votre espace client : le premier paiement a lieu le jour de la souscription, et les jours d’essai restants ne sont pas reportés. Un code de parrainage se saisit aussi à l’essai : le mois offert commence le jour de la souscription.",
     "categorie": "Tarifs et abonnement",
     "ordre": 15,
     "essai": true

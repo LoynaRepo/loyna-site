@@ -1,7 +1,7 @@
-// Essai gratuit depuis le site (/essai/, décision d'Ewan du 2026-10-31) : 1 mois de Starter, sans carte bancaire, 1 par commerce.
+// Essai gratuit depuis le site (/essai/, décision d'Ewan du 2026-10-31) : 1 mois de Starter, sans carte bancaire, 1 par personne.
 // La carte reprend le configurateur (brouillon « loyna-config », logo gardé dans l'onglet), une carte préparée dans le panel
-// (?carte=<id>) ou les réglages du lien ; le SIRET se retrouve par une recherche sur l'API publique des entreprises, appelée d'ici.
-// Le serveur (Edge Function trial, dépôt LOYNA) contrôle tout : champ piège, limites, SIRET, 1 essai par SIRET, e-mail et téléphone,
+// (?carte=<id>) ou les réglages du lien. Carte préparée : seulement le compte, puis l'aperçu et « Démarrer » (Ewan, 2026-11-05).
+// Plus de SIRET (Ewan, 2026-11-05). Le serveur (Edge Function trial, dépôt LOYNA) contrôle tout : champ piège, limites, 1 essai par e-mail et téléphone,
 // plafond d'essais. Rien n'est créé avant la confirmation de l'adresse e-mail.
 // `TRIAL.open` faux (site construit sans l'essai) ou `GET trial` fermé ou complet : l'abonnement et « Recevoir un aperçu ».
 import {useEffect, useRef, useState} from 'preact/hooks';
@@ -12,7 +12,7 @@ import {couleurVisible, LOGO_ACCEPT, LOGO_MIN_SIDE, logoToFiles, partLogoConfond
 import {contrast} from './util';
 import {CarteWallet, TelephoneWallet} from '../lib/CarteWallet';
 import {lireCartePreparee, MONTANT, RE_ID_CARTE} from '../lib/carte-preparee';
-import {CLE_LOGO, EMAIL_RE, REFERRAL_ERRORS, RULES, TELEPHONE_RE, chercherEtablissements, lireLogoGarde, normalizeReferral, siretValide, store, track, urlLogo, type Etablissement, type LogoGarde} from '../lib/compte-regles';
+import {CLE_LOGO, EMAIL_RE, REFERRAL_ERRORS, RULES, TELEPHONE_RE, lireLogoGarde, normalizeReferral, store, track, urlLogo, type LogoGarde} from '../lib/compte-regles';
 
 type Etat = 'attente' | 'ouvert' | 'ferme' | 'confirmer' | 'active';
 type Raison = 'CLOSED' | 'FULL' | 'RESEAU';
@@ -37,9 +37,7 @@ const bornerMontant = (n: number) => Math.min(MONTANT.max, Math.max(MONTANT.min,
 // Réponses du serveur : texte d'ici pour les cas prévus, le champ concerné quand il y en a un.
 const MESSAGES: Record<string, string> = {
   INVALID_PHONE: 'Indiquez un numéro de téléphone valide.',
-  TRIAL_ALREADY_USED: 'Un essai a déjà eu lieu ou attend sa confirmation pour ce commerce, cette adresse e-mail ou ce numéro de téléphone : c’est 1 essai par commerce. Vous pouvez choisir votre offre. Ce n’est pas vous ? Écrivez à contact@loyna.fr.',
-  SIRET_INVALID: 'Ce numéro de SIRET n’existe pas. Vérifiez-le, ou retrouvez-le avec la recherche ci-dessous.',
-  SIRET_CLOSED: 'Cet établissement est indiqué comme fermé au répertoire des entreprises. Vérifiez le numéro, ou écrivez à contact@loyna.fr.',
+  TRIAL_ALREADY_USED: 'Un essai a déjà eu lieu ou attend sa confirmation pour cette adresse e-mail ou ce numéro de téléphone : c’est 1 essai par personne. Vous pouvez choisir votre offre. Ce n’est pas vous ? Écrivez à contact@loyna.fr.',
   ACCOUNT_EXISTS: 'Un compte LOYNA existe déjà avec cette adresse : indiquez son mot de passe, ou demandez-en un nouveau.',
   ACCOUNT_HAS_MERCHANT: 'Ce compte a déjà un commerce ou un abonnement. Ouvrez votre espace client pour choisir votre offre.',
   RATE_LIMITED: 'Trop de demandes en peu de temps : réessayez dans une heure.',
@@ -143,10 +141,6 @@ export default function Essai() {
   const [logoFichier, setLogoFichier] = useState<{fichier: File; fondRetire: boolean; fondGarde: boolean} | null>(null);
   const [systeme, setSysteme] = useState<'apple' | 'google'>('apple');
   const [preparee, setPreparee] = useState(false);
-  const [siret, setSiret] = useState('');
-  const [cherche, setCherche] = useState('');
-  const [resultats, setResultats] = useState<Etablissement[] | null>(null);
-  const [recherche, setRecherche] = useState<'' | 'encours' | 'panne'>('');
   const [f, setF] = useState({first_name: '', last_name: '', email: '', phone: ''});
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
@@ -306,34 +300,12 @@ export default function Essai() {
     if (errors[k]) setErrors((e) => ({...e, [k]: ''}));
   };
 
-  // Recherche du SIRET : nom et ville, ou numéro de SIREN ; seuls les établissements ouverts sont proposés
-  const lancerRecherche = async () => {
-    const texte = (cherche || carte.name).trim();
-    if (texte.length < 3) return setRecherche('');
-    setCherche(texte);
-    setRecherche('encours');
-    setResultats(null);
-    try {
-      setResultats(await chercherEtablissements(texte));
-      setRecherche('');
-    } catch {
-      setRecherche('panne');
-    }
-  };
-  const choisirEtablissement = (e: Etablissement) => {
-    setSiret(e.siret);
-    setResultats(null);
-    if (errors.siret) setErrors((x) => ({...x, siret: ''}));
-    setTimeout(() => document.getElementById('es-siret')?.focus(), 0);
-  };
-
   const validate = (): Record<string, string> => {
     const e: Record<string, string> = {};
     if (!carte.name.trim()) e.name = 'Indiquez le nom de votre commerce.';
     else if (!RE_NOM_LISIBLE.test(carte.name)) e.name = 'Indiquez un nom avec au moins une lettre de notre alphabet ou un chiffre : il s’affiche sur la carte.';
     if (!activiteCarte(carte)) e.activity = 'Indiquez votre activité.';
     if (!carte.reward.trim()) e.reward = 'Indiquez la récompense de vos clients.';
-    if (!siretValide(siret)) e.siret = 'Indiquez les 14 chiffres de votre SIRET : la recherche ci-dessous peut vous aider.';
     if (!f.first_name.trim()) e.first_name = 'Indiquez votre prénom.';
     if (!f.last_name.trim()) e.last_name = 'Indiquez votre nom.';
     if (!EMAIL_RE.test(f.email.trim())) e.email = 'Indiquez une adresse e-mail valide.';
@@ -345,7 +317,7 @@ export default function Essai() {
     return e;
   };
   const focusFirstError = (e: Record<string, string>) => {
-    const first = ['name', 'activity', 'reward', 'siret', 'first_name', 'last_name', 'email', 'phone', 'password', 'password2', 'referral', 'cgv'].find((k) => e[k]);
+    const first = ['name', 'activity', 'reward', 'first_name', 'last_name', 'email', 'phone', 'password', 'password2', 'referral', 'cgv'].find((k) => e[k]);
     if (first) setTimeout(() => (document.getElementById(`es-${first}`) as HTMLElement | null)?.focus(), 0);
   };
 
@@ -362,7 +334,7 @@ export default function Essai() {
     const body = {
       action: 'start',
       account: {email: f.email.trim().toLowerCase(), password: pw, first_name: f.first_name.trim(), last_name: f.last_name.trim(), phone: f.phone.trim()},
-      business: {name: carte.name.trim(), activity: activiteCarte(carte), siret: siret.replace(/\s/g, '')},
+      business: {name: carte.name.trim(), activity: activiteCarte(carte)},
       card: carte.montant
         ? {bg: carte.bg, accent: carte.accent, mode: 'SPEND', total: carte.montant, reward: carte.reward.trim()}
         : {bg: carte.bg, accent: carte.accent, total: carte.total, reward: carte.reward.trim()},
@@ -384,9 +356,6 @@ export default function Essai() {
       if (c === 'TRIAL_CLOSED' || c === 'TRIAL_FULL') {
         setRaison(c === 'TRIAL_FULL' ? 'FULL' : 'CLOSED');
         setEtat('ferme');
-      } else if (c === 'SIRET_INVALID' || c === 'SIRET_CLOSED') {
-        setErrors({siret: message});
-        focusFirstError({siret: message});
       } else if (REFERRAL_ERRORS.has(c)) {
         setErrors({referral: message});
         focusFirstError({referral: message});
@@ -498,13 +467,13 @@ export default function Essai() {
     <div ref={racine}>
       <form class="pn" onSubmit={submit} noValidate>
         <div class="pn-steps">
-          {/* --- 1. La carte --------------------------------------------------------------------------- */}
+          {/* --- 1. La carte (pas sur une carte préparée : elle est déjà réglée, son aperçu suit le compte) ---- */}
+          {!preparee && (
           <fieldset class="pn-step">
             <legend>
               <span class="pn-num">1</span> Votre carte
             </legend>
             <div class="pn-fields">
-              {preparee && <p class="pn-intro">Votre carte est préparée : vérifiez ses réglages, il reste à créer votre compte.</p>}
               <div class="es-mini" aria-hidden="true">
                 <CarteWallet {...propsCarte} />
               </div>
@@ -672,89 +641,14 @@ export default function Essai() {
               </div>
             </div>
           </fieldset>
+          )}
 
-          {/* --- 2. Le commerce ------------------------------------------------------------------------ */}
+          {/* --- 2. Le compte -------------------------------------------------------------------------- */}
           <fieldset class="pn-step">
             <legend>
-              <span class="pn-num">2</span> Votre SIRET
+              <span class="pn-num">{preparee ? 1 : 2}</span> Votre compte LOYNA
             </legend>
-            <p class="pn-intro">1 essai par commerce : le numéro de SIRET de votre établissement sert à le vérifier.</p>
-            <div class="field">
-              <label for="es-siret">Numéro de SIRET *</label>
-              <input
-                id="es-siret"
-                type="text"
-                inputMode="numeric"
-                autocomplete="off"
-                maxLength={20}
-                required
-                value={siret}
-                onInput={(e) => {
-                  setSiret((e.target as HTMLInputElement).value);
-                  if (errors.siret) setErrors((x) => ({...x, siret: ''}));
-                }}
-                aria-invalid={errors.siret ? true : undefined}
-                aria-describedby={errors.siret ? 'es-siret-err' : undefined}
-              />
-              {err('siret')}
-            </div>
-            <div class="es-cherche">
-              <label for="es-cherche">Vous ne l’avez pas sous la main ? Cherchez votre commerce par son nom et sa ville</label>
-              <div class="es-cherche-l">
-                <input
-                  id="es-cherche"
-                  type="search"
-                  autocomplete="off"
-                  maxLength={100}
-                  placeholder="Ex. : Le Fournil d’Albane Montpellier"
-                  value={cherche}
-                  onInput={(e) => setCherche((e.target as HTMLInputElement).value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      lancerRecherche();
-                    }
-                  }}
-                />
-                <button type="button" class="btn btn--ghost" onClick={lancerRecherche} disabled={recherche === 'encours'}>
-                  Chercher
-                </button>
-              </div>
-              <div aria-live="polite">
-                {recherche === 'encours' && <p class="pn-muted pn-small">Recherche en cours…</p>}
-                {recherche === 'panne' && (
-                  <p class="pn-muted pn-small">
-                    La recherche ne répond pas. Votre SIRET figure sur vos factures et sur{' '}
-                    <a href="https://annuaire-entreprises.data.gouv.fr/" target="_blank" rel="noopener">
-                      annuaire-entreprises.data.gouv.fr
-                    </a>
-                    .
-                  </p>
-                )}
-                {resultats?.length === 0 && <p class="pn-muted pn-small">Aucun établissement ouvert ne correspond. Essayez avec le nom officiel de votre entreprise, ou le nom du dirigeant.</p>}
-                {!!resultats?.length && (
-                  <ul class="es-resultats">
-                    {resultats.map((r) => (
-                      <li>
-                        <button type="button" onClick={() => choisirEtablissement(r)}>
-                          <strong>{r.nom}</strong>
-                          <span>{r.adresse}</span>
-                          <small>SIRET {r.siret}</small>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </fieldset>
-
-          {/* --- 3. Le compte -------------------------------------------------------------------------- */}
-          <fieldset class="pn-step">
-            <legend>
-              <span class="pn-num">3</span> Votre compte LOYNA
-            </legend>
-            <p class="pn-intro">Ce compte vous donne accès à votre espace client. Vous recevez un e-mail pour confirmer votre adresse : votre carte est créée à ce moment-là.</p>
+            <p class="pn-intro">{preparee ? 'Votre carte est prête. Créez votre compte : vous voyez ensuite votre carte et démarrez votre essai. ' : ''}Ce compte vous donne accès à votre espace client. Vous recevez un e-mail pour confirmer votre adresse : votre carte est créée à ce moment-là.</p>
             <div class="pn-fields">
               <div class="pn-row">
                 <div class="field">
@@ -837,6 +731,7 @@ export default function Essai() {
                   Recevoir un lien
                 </a>
               </p>
+              {!preparee && (
               <div class="pn-ref">
                 <label for="es-referral">
                   Code de parrainage <span class="pn-opt">(facultatif)</span>
@@ -862,6 +757,7 @@ export default function Essai() {
                 </p>
                 {err('referral')}
               </div>
+              )}
               <div class="pn-cgv">
                 <label class="pn-check">
                   <input
@@ -885,6 +781,7 @@ export default function Essai() {
                   </span>
                 </label>
                 {err('cgv')}
+                <p class="pn-muted pn-small">1 essai par personne : un nouvel essai demandé par la même personne échoue (article 4.9 des conditions).</p>
                 <p class="pn-muted pn-small">
                   Vos coordonnées servent à créer votre compte et à vous contacter au sujet de votre essai ; elles ne sont jamais vendues ni louées. Voir notre{' '}
                   <a href="/confidentialite/" target="_blank" rel="noopener">
@@ -903,7 +800,7 @@ export default function Essai() {
 
         {/* --- Aperçu et envoi --------------------------------------------------------------------------- */}
         <aside class="pn-sum es-sum" aria-labelledby="es-sum-t">
-          <h2 id="es-sum-t">Votre carte</h2>
+          <h2 id="es-sum-t">{preparee ? '2. Votre carte' : 'Votre carte'}</h2>
           <div class="es-apercu">
             <TelephoneWallet {...propsCarte} />
             <div class="pn-prep-sys" role="radiogroup" aria-label="Téléphone de l’aperçu">
@@ -940,7 +837,7 @@ export default function Essai() {
             </div>
           )}
           <button type="submit" class={`btn btn--gold btn--block ${busy ? 'is-loading' : ''}`} disabled={busy} aria-busy={busy || undefined}>
-            {busy ? 'Envoi en cours…' : 'Essayer 1 mois gratuitement'}
+            {busy ? 'Envoi en cours…' : preparee ? 'Démarrer mon essai gratuit' : 'Essayer 1 mois gratuitement'}
           </button>
           <p class="pn-muted pn-small">Vous pourrez choisir votre offre à tout moment depuis votre espace client.</p>
         </aside>
