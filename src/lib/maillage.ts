@@ -10,7 +10,7 @@ export const GUIDES_PAR_METIER: Record<string, string[]> = {
   'coiffeur-barbier': ['fideliser-clients-salon-coiffure', 'carte-de-fidelite-papier-modele', 'idees-recompenses-carte-fidelite'],
   barbier: ['fideliser-clients-salon-coiffure', 'idees-recompenses-carte-fidelite', 'relancer-clients-inactifs'],
   // « 30 idées de récompenses » a une section « Instituts de beauté et ongleries »
-  // « Programme de fidélité » présente les niveaux VIP, conseillés aux instituts dans son tableau par métier
+  // « Programme de fidélité » présente les programmes à niveaux en général (LOYNA ne les propose pas), conseillés aux instituts
   'institut-onglerie': ['idees-recompenses-carte-fidelite', 'programme-de-fidelite-commerce', 'relancer-clients-inactifs'],
   onglerie: ['idees-recompenses-carte-fidelite', 'relancer-clients-inactifs', 'creer-carte-de-fidelite'],
   // section « Snacks, pizzerias et restauration rapide » ; le comparatif papier / digitale parle du rush au comptoir

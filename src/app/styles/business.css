@@ -1562,34 +1562,12 @@ body {
 .consents li > span:not(.ic) {
   flex: 1;
 }
-/* Niveau VIP et parrainage (offre Pro) */
+/* Fiche client et parrainage (offre Pro) */
 .cd-id {
   flex-wrap: wrap;
 }
 .cd-id > div {
   flex: 1 1 180px;
-}
-.vip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border-radius: 99px;
-  font-size: 0.82rem;
-  font-weight: 750;
-  white-space: nowrap;
-}
-.vip--1 {
-  background: rgba(205, 127, 50, 0.24);
-  color: #f2c39a;
-}
-.vip--2 {
-  background: rgba(220, 222, 232, 0.2);
-  color: #eef0f5;
-}
-.vip--3 {
-  background: var(--grad-gold);
-  color: var(--ink);
 }
 .code {
   font: 700 0.9rem/1.2 ui-monospace, 'Cascadia Mono', Consolas, monospace;
@@ -2598,75 +2576,6 @@ label.b {
   white-space: pre-line;
   overflow-wrap: anywhere;
   color: var(--ink);
-}
-.tiers {
-  display: grid;
-  gap: 10px;
-}
-.tier {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 12px;
-  align-items: center;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: #fff;
-  border: 1px solid var(--line);
-}
-.tier-th {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-.tier-th input {
-  width: 78px;
-  min-height: 42px;
-  padding: 8px 10px;
-  border: 1.5px solid var(--line);
-  border-radius: 12px;
-  background: #fff;
-  font: 600 1rem/1.3 var(--font);
-  color: var(--text);
-}
-.tier-th input:focus {
-  outline: none;
-  border-color: var(--gold);
-  box-shadow: 0 0 0 4px rgba(201, 150, 63, 0.18);
-}
-.tier-perk {
-  flex: 1 1 100%;
-}
-.tier-n {
-  flex: 1 1 auto;
-  min-width: 80px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 750;
-  color: var(--ink);
-}
-.tier--bronze .tier-n .ic {
-  color: #b26b2b;
-}
-.tier--silver .tier-n .ic {
-  color: #8b93a1;
-}
-.tier--gold .tier-n .ic {
-  color: var(--gold);
-}
-/* Couleur de la carte Wallet à ce niveau : vos couleurs (bronze), argent, or */
-.tier-card {
-  flex: none;
-  width: 30px;
-  height: 20px;
-  margin-left: 2px;
-  border-radius: 5px;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
-}
-.tier-card--metal {
-  background-image: linear-gradient(115deg, transparent 28%, rgba(255, 255, 255, 0.5) 50%, transparent 72%);
 }
 
 /* --- Rapport mensuel ------------------------------------------------------------------------------- */

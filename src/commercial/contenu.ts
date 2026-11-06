@@ -107,7 +107,7 @@ export function objections(): Reponse[] {
       r: [
         `${PHRASES.pro} ${PHRASES.prix(pro)}`,
         'LOYNA écrit et programme vos messages, au moins un par mois : vous validez, rien ne part sans vous. Et un point de 30 minutes par mois avec LOYNA, à votre demande.',
-        'Parrainage entre vos clients : chacun invite ses amis avec son lien, bonus aux deux à la première visite. Niveaux VIP bronze, argent et or : la carte de vos meilleurs clients change de couleur.',
+        'Parrainage entre vos clients : chacun invite ses amis avec son lien, bonus aux deux à la première visite.',
         `Campagnes illimitées, jusqu’à ${pro.shops} adresses avec la notification de proximité (une seule carte, un seul tableau de bord), votre carte sans la mention LOYNA et support prioritaire.`,
         'Une fois, sous 15 jours : votre carte finie à la main (logo retouché et, sur une carte à tampons, cachets à vos initiales), une vidéo et des visuels de votre carte, prêts à poster. Et le kit comptoir : 1 QR code sous verre par adresse, offert une fois.',
       ],

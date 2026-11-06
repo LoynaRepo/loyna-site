@@ -216,7 +216,7 @@ function ChangeDialog({choice, cur, s, onClose, onDone}: {choice: Choice | null;
           )}
           {!samePlan && <li>Le changement est immédiat : la différence est calculée au prorata, sur votre prochaine facture.</li>}
           {samePlan && <li>Le nouveau prix s’applique tout de suite, au prorata, sur votre prochaine facture.</li>}
-          {down && <li>Avec Starter : plus de parrainage entre vos clients, de niveaux VIP ni de messages écrits par LOYNA, 5 campagnes par semaine et 1 adresse pour la notification de proximité.</li>}
+          {down && <li>Avec Starter : plus de parrainage entre vos clients ni de messages écrits par LOYNA, 5 campagnes par semaine et 1 adresse pour la notification de proximité.</li>}
           <li>Aucune mise en service n’est facturée à un changement d’offre.</li>
         </ul>
         {error && (

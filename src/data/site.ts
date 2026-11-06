@@ -196,7 +196,7 @@ export function visuelActivite(nom: string): {nom: string; recompense: string} &
 
 // Version des CGV acceptée à l'essai (`cgv_version`) : même valeur dans supabase/functions/_shared/offer-terms.ts du
 // dépôt LOYNA.
-export const CGV_VERSION = '2026-11-05';
+export const CGV_VERSION = '2026-11-06';
 
 // SETUP_FEE et PARTENAIRES gardent leur nom et leur ordre : routes_ecrire.py (application locale du coffre « Loyna
 // Prospection ») donne au chat qui rédige tout ce qui se trouve entre les deux, 9 000 caractères au plus.
@@ -332,7 +332,6 @@ export const PLANS: Plan[] = [
       items: [
         'Parrainage entre vos clients : chacun invite ses amis avec son lien, bonus aux deux à la première visite',
         'LOYNA écrit et programme vos messages, au moins un par mois : vous validez, rien ne part sans vous',
-        'Niveaux VIP bronze, argent et or : la carte de vos meilleurs clients change de couleur',
         'Votre carte finie à la main : logo retouché et, sur une carte à tampons, cachets à vos initiales (une fois, sous 15 jours)',
         'Votre carte sans la mention LOYNA',
         'Une vidéo et des visuels de votre carte, prêts à poster (une fois, sous 15 jours)',
@@ -445,7 +444,6 @@ export const COMPARISON: ComparisonRow[] = [
   {label: 'Support par e-mail et guide de démarrage', values: [true, 'Prioritaire'], note: 'Support prioritaire : traité avant les autres.'},
   {group: 'Vos clients invitent, LOYNA écrit', label: 'Parrainage entre vos clients : chacun invite ses amis avec son lien, bonus aux deux à la première visite', values: [false, true]},
   {label: 'LOYNA écrit et programme vos messages, au moins un par mois : vous validez, rien ne part sans vous', values: [false, true]},
-  {label: 'Niveaux VIP bronze, argent et or : la carte de vos meilleurs clients change de couleur', values: [false, true], note: 'À activer en un réglage, comme le parrainage entre vos clients.'},
   {
     label: 'Votre carte finie à la main : logo retouché et, sur une carte à tampons, cachets à vos initiales',
     values: [false, 'Une fois, sous 15 jours'],

@@ -144,13 +144,14 @@ for (const mode of process.env.QA_RAPIDE ? [] : MODES_A_VOIR) {
   console.log(`${mode.nom} : contrôlé`);
 }
 
-// Verrous de Starter : jamais « Inclus dans Premium », VIP et parrainage réservés à Pro, calendrier pour tous
+// Verrous de Starter : jamais « Inclus dans Premium », parrainage réservé à Pro (niveaux VIP retirés le 2026-11-06), calendrier pour tous
 await open(`${APP}${SEED}&offre=starter#/automatisations`);
 let t = await lire();
 verifie('Starter : sections de l’écran Automatisations', /incluses dans votre offre/i.test(t) && /avec pro/i.test(t) && t.includes('Inclus dans Pro')); // titres en capitales (CSS)
-verifie('Starter : VIP et parrainage verrouillés', (await page.$$('.auto.is-locked')).length === 2);
+verifie('Starter : parrainage verrouillé', (await page.$$('.auto.is-locked')).length === 1);
 await open(`${APP}${SEED}&offre=pro#/automatisations`);
 verifie('Pro : rien de verrouillé', (await page.$$('.auto.is-locked')).length === 0);
+verifie('Pro : aucun niveau VIP', !/vip|bronze|argent et or/i.test(await lire()));
 await open(`${APP}${SEED}&offre=starter#/campagnes`);
 t = await lire();
 verifie('Starter : calendrier visible', t.includes('Vos temps forts des 60 prochains jours'));

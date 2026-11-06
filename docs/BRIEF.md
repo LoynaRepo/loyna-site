@@ -61,7 +61,7 @@ de `src/data/site.ts`. Premium n'est plus vendue : seul Barber Kong la garde, à
   passage ! », demande d'avis Google, 5 campagnes par semaine, tableau de bord, rapport du mois, export CSV, support par e-mail.
 - PRO, « LOYNA s'en occupe » : 49 € par mois, sans TVA, sans engagement : vous arrêtez à la fin de n'importe quel mois. Ou 41,65 € par
   mois avec 12 mois d'engagement, réglés chaque mois. Vos clients invitent leurs amis, LOYNA écrit vos messages : tout Starter, plus le
-  parrainage entre clients, les messages écrits et programmés par LOYNA (rien ne part sans validation), les niveaux VIP en couleur, les
+  parrainage entre clients, les messages écrits et programmés par LOYNA (rien ne part sans validation), les
   campagnes illimitées, 3 adresses (une seule carte, un seul tableau de bord), la carte sans la mention LOYNA, la carte finie à la main,
   une vidéo et des visuels, le kit comptoir (1 QR code sous verre par adresse, offert une fois), un point de 30 minutes par mois à la
   demande, le support prioritaire (sans délai chiffré ni téléphone).

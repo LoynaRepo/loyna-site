@@ -1,4 +1,4 @@
-// Fiche client : solde, récompenses, niveau VIP et parrainage (Pro), historique, carte Wallet, consentements et RGPD. Les
+// Fiche client : solde, récompenses, parrainage (Pro), historique, carte Wallet, consentements et RGPD. Les
 // boutons suivent les droits renvoyés par le serveur (permissions de la fiche). Carte en pause : solde et récompense ne bougent
 // plus (MERCHANT_PAUSED), la fiche et le RGPD restent ouverts.
 import {useState} from 'preact/hooks';
@@ -20,7 +20,6 @@ interface Detail {
     next_reward: null | {name: string; remaining: number};
     available_rewards: {customer_reward_id: string; name: string; expires_at: string | null}[];
   };
-  tier?: null | {level: 1 | 2 | 3; name: string; reached_at: string | null};
   referral?: null | {code: string | null; referred_by: {id: string; first_name: string} | null; referrals: number; rewarded_at: string | null};
   transactions: {id: string; type: string; source: string; points_delta: number; balance_after: number; amount: number | null; note: string | null; created_at: string; staff_name: string | null; reversed: boolean}[];
   rewards: {id: string; name: string; status: string; earned_at: string; redeemed_at: string | null; expires_at: string | null}[];
@@ -100,12 +99,6 @@ export function ClientDetail({id}: {id: string}) {
                 Inscrit le {date(c.created_at)} · dernière visite {ago(c.last_activity_at)}
               </small>
             </div>
-            {d.data.tier && feature('loyalty.tiers') && (
-              <span class={`vip vip--${d.data.tier.level}`} title={d.data.tier.reached_at ? `Niveau atteint le ${date(d.data.tier.reached_at)}` : undefined}>
-                <Icon name="crown" size={15} />
-                Niveau {d.data.tier.name}
-              </span>
-            )}
             {c.status !== 'ACTIVE' && <Badge tone="red">{c.status === 'BLOCKED' ? 'Bloqué' : 'Supprimé'}</Badge>}
           </div>
           {a ? (

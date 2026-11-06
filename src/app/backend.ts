@@ -63,10 +63,9 @@ const SQL_MESSAGES: Record<string, string> = {
   MERCHANT_PAUSED: 'Votre carte est en pause : cette action reprendra avec votre abonnement. Voir Abonnement.',
   FEATURE_NOT_AVAILABLE: 'Cette fonction n’est pas incluse dans votre offre.',
   LOCATIONS_LIMIT: 'Votre offre ne permet pas d’ajouter une autre boutique.',
-  TIER_PERKS_INVALID: 'Avantages des niveaux VIP non valides (80 caractères au plus).',
 };
 // Erreurs dont le serveur donne l'explication en français dans `hint`
-const HINTED = new Set(['LOCATIONS_LIMIT', 'TIER_PERKS_INVALID']);
+const HINTED = new Set(['LOCATIONS_LIMIT']);
 
 function pgError(e: {code?: string; message?: string; details?: string | null; hint?: string | null}): ApiError {
   const msg = e.message ?? '';

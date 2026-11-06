@@ -1,7 +1,7 @@
 // Automatisations : les messages et avantages qui partent tout seuls (table merchant_settings, droit
 // settings.manage). Toutes les offres (grille du 2026-10-31) : notification après chaque passage, proximité, délai entre
-// deux messages commerciaux, anniversaire, relance des inactifs, « Plus qu'un passage ! », avis Google. Pro : niveaux VIP et
-// parrainage entre clients. Sans la fonction (carte features), la carte est verrouillée.
+// deux messages commerciaux, anniversaire, relance des inactifs, « Plus qu'un passage ! », avis Google. Pro : parrainage entre
+// clients. Sans la fonction (carte features), la carte est verrouillée.
 // Le double tampon aux heures creuses est retiré des offres depuis le 2026-10-27 (décision d'Ewan).
 // Chaque carte s'enregistre seule ; les aperçus reprennent les textes du serveur (scheduled-customer-engagement).
 import type {ComponentChildren} from 'preact';
@@ -32,9 +32,6 @@ interface Settings {
   review_url: string | null;
   review_after_visits: number;
   review_message: string;
-  tiers_enabled: boolean;
-  tier_thresholds: number[];
-  tier_perks: {BRONZE?: string; SILVER?: string; GOLD?: string};
   referral_enabled: boolean;
   referral_bonus: number;
 }
@@ -55,14 +52,6 @@ interface Ctx {
 type Set = <K extends keyof Settings>(k: K, v: Settings[K]) => void;
 
 const SAMPLE = 'Léa';
-const TIERS = [
-  {key: 'BRONZE', name: 'Bronze'},
-  {key: 'SILVER', name: 'Argent'},
-  {key: 'GOLD', name: 'Or'},
-] as const;
-// Couleur de la carte Wallet à chaque niveau (dépôt LOYNA, supabase/functions/_shared/tiers.ts) : bronze aux couleurs
-// du commerce, puis argent et or.
-const TIER_CARD: Record<string, string | null> = {BRONZE: null, SILVER: '#C9CED6', GOLD: '#D8B65E'};
 
 export function Automatisations() {
   const m = merchant.value!;
@@ -134,7 +123,6 @@ export function Automatisations() {
             {pro ? <Badge tone="green">Inclus dans votre offre</Badge> : <LockBadge feature="referral" />}
           </header>
           <div class="auto-grid">
-            <Tiers ctx={ctx} />
             <Referral ctx={ctx} />
           </div>
           <p class="auto-more">
@@ -336,7 +324,7 @@ function Pace({ctx}: {ctx: Ctx}) {
       }
       bodyAlways
       body={(s, set) => (
-        <Field label="Délai minimum entre deux messages commerciaux (heures)" hint="De 0 à 720 heures ; 24 h conseillées (valeur par défaut). Les messages de service (passage, récompense, niveau VIP, parrainage) ne sont pas concernés.">
+        <Field label="Délai minimum entre deux messages commerciaux (heures)" hint="De 0 à 720 heures ; 24 h conseillées (valeur par défaut). Les messages de service (passage, récompense, parrainage) ne sont pas concernés.">
           <input type="number" min={0} max={720} value={s.marketing_min_interval_hours} onInput={(e) => set('marketing_min_interval_hours', intOf(e, 0))} />
         </Field>
       )}
@@ -535,80 +523,6 @@ function Review({ctx}: {ctx: Ctx}) {
           <Example />
         </>
       )}
-    />
-  );
-}
-
-// --- Pro : niveaux VIP ---------------------------------------------------------------------------------------
-function Tiers({ctx}: {ctx: Ctx}) {
-  const m = merchant.value!;
-  return (
-    <Auto
-      ctx={ctx}
-      feature="loyalty.tiers"
-      keys={['tiers_enabled', 'tier_thresholds', 'tier_perks']}
-      toggle="tiers_enabled"
-      icon="crown"
-      title="Niveaux VIP bronze, argent et or"
-      text={() => 'Vos clients montent de niveau avec leurs passages et leur carte change de couleur à chaque niveau : vos couleurs en bronze, puis argent, puis or. Le niveau s’affiche sur la carte avec l’avantage choisi, et une notification part à chaque nouveau niveau.'}
-      body={(s, set) => (
-        <div class="tiers">
-          {TIERS.map((t, i) => (
-            <div class={`tier tier--${t.key.toLowerCase()}`}>
-              <span class="tier-n">
-                <Icon name="crown" size={16} />
-                {t.name}
-                <span
-                  class={`tier-card ${TIER_CARD[t.key] ? 'tier-card--metal' : ''}`}
-                  style={{backgroundColor: TIER_CARD[t.key] ?? m.primary_color}}
-                  title={TIER_CARD[t.key] ? `Carte ${t.name.toLowerCase()} à ce niveau` : 'Carte à vos couleurs à ce niveau'}
-                />
-              </span>
-              <label class="tier-th">
-                <span>À partir de</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={100000}
-                  aria-label={`Passages pour le niveau ${t.name}`}
-                  value={s.tier_thresholds[i]}
-                  onInput={(e) => set('tier_thresholds', s.tier_thresholds.map((v, k) => (k === i ? intOf(e, v) : v)))}
-                />
-                <span>passages</span>
-              </label>
-              <label class="fld tier-perk">
-                <span class="fld-l">Avantage (facultatif)</span>
-                <input
-                  type="text"
-                  maxLength={80}
-                  placeholder="Ex. : une boisson offerte"
-                  value={s.tier_perks[t.key] ?? ''}
-                  onInput={(e) => {
-                    const v = (e.target as HTMLInputElement).value;
-                    const next = {...s.tier_perks};
-                    if (v.trim()) next[t.key] = v;
-                    else delete next[t.key];
-                    set('tier_perks', next);
-                  }}
-                />
-              </label>
-            </div>
-          ))}
-        </div>
-      )}
-      validate={(s) => {
-        const [a, b, c] = s.tier_thresholds;
-        return a >= 1 && a < b && b < c && c <= 100000 ? null : 'Les seuils doivent augmenter : bronze, puis argent, puis or (par exemple 5, 15 et 30 passages).';
-      }}
-      preview={(s) => {
-        const perk = s.tier_perks.SILVER?.trim();
-        return (
-          <>
-            <NotifPreview title="Niveau Argent" body={sample(`Félicitations {prenom} ! Vous passez au niveau Argent chez {commerce}.${perk ? ` Votre avantage : ${perk}.` : ''}`)} when={`au ${s.tier_thresholds[1]}e passage`} />
-            <Example />
-          </>
-        );
-      }}
     />
   );
 }

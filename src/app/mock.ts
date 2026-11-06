@@ -98,7 +98,7 @@ function mulberry32(a: number) {
 // --- Référentiels : même matrice que le serveur (plan_entitlements, section 1.4 du cahier des charges de la grille) ---
 // PREMIUM : droits de Pro, sauf la carte sans mention LOYNA (Barber Kong, sa carte validée ne change pas).
 const STARTER_FEATURES = ['wallet.apple', 'wallet.google', 'wallet.notifications', 'wallet.proximity', 'enrollment.qr', 'loyalty.visits', 'loyalty.points', 'loyalty.spend', 'rewards', 'scanner', 'dashboard', 'campaigns.wallet', 'segmentation', 'campaigns.scheduled', 'automation.birthday', 'automation.inactive', 'automation.near_reward', 'automation.review', 'analytics.advanced', 'reports.monthly', 'cards.max', 'campaigns.weekly_quota', 'locations.max'];
-const PRO_FEATURES = ['loyalty.tiers', 'referral', 'campaigns.prepared', 'support.followup', 'support.priority'];
+const PRO_FEATURES = ['referral', 'campaigns.prepared', 'support.followup', 'support.priority'];
 const PLAN_FEATURES: Record<Plan, string[]> = {
   STARTER: STARTER_FEATURES,
   PREMIUM: [...STARTER_FEATURES, ...PRO_FEATURES],
@@ -119,7 +119,7 @@ const FEATURES_CATALOG: [string, string][] = [
   ['locations.max', 'Boutiques (adresses de la notification de proximité)'], ['segmentation', 'Segmentation des campagnes'],
   ['automation.birthday', 'Automatisation anniversaires'], ['automation.inactive', 'Relance des clients inactifs'], ['automation.near_reward', 'Rappel « Plus qu’un passage ! »'], ['automation.review', 'Demande d’avis Google après la Ne visite'],
   ['campaigns.scheduled', 'Campagnes programmées'], ['analytics.advanced', 'Statistiques avancées'], ['reports.monthly', 'Rapport mensuel de statistiques avec conseils'],
-  ['loyalty.tiers', 'Niveaux VIP (bronze, argent, or)'], ['referral', 'Parrainage entre clients'], ['campaigns.prepared', 'Campagnes clés en main préparées par LOYNA'], ['support.followup', 'Suivi personnalisé mensuel'],
+  ['referral', 'Parrainage entre clients'], ['campaigns.prepared', 'Campagnes clés en main préparées par LOYNA'], ['support.followup', 'Suivi personnalisé mensuel'],
   ['support.priority', 'Support prioritaire'], ['card.no_loyna_mention', 'Carte sans la mention LOYNA'],
 ];
 const PERMS: [string, string][] = [
@@ -142,17 +142,16 @@ interface Template {
   closed: number[]; // jours de fermeture (0 = dimanche)
   pace: number; // passages par mois d'un client régulier
   messages: string[];
-  perks: [string, string, string]; // avantages Bronze, Argent, Or
   proximity: string; // message de proximité (90 caractères au plus)
 }
 const TEMPLATES: Template[] = [
-  {type: 'Coiffure', names: ['Maison Lumière', 'Salon Céleste', 'L’Atelier des Mèches'], threshold: 10, rewards: [[10, 'Brushing offert', 'FREE_ITEM'], [5, '-10 % sur les soins', 'DISCOUNT_PERCENT', 10]], closed: [0, 1], pace: 1, messages: ['{prenom}, nos soins d’automne arrivent : -15 % toute la semaine chez {commerce}.', 'Envie de changement, {prenom} ? Nouvelles couleurs disponibles chez {commerce}.'], perks: ['-5 % sur les produits', '-10 % sur les produits', 'Un soin offert une fois par mois'], proximity: 'Envie d’un brushing ? Votre carte est prête.'},
-  {type: 'Boulangerie', names: ['Boulangerie du Moulin Doré', 'Le Fournil Ambré'], threshold: 10, rewards: [[10, 'Viennoiserie offerte', 'FREE_ITEM']], closed: [1], pace: 6, messages: ['{prenom}, la galette maison est de retour chez {commerce} !', 'Nouveau : pain aux noix tous les vendredis chez {commerce}.'], perks: ['Une chouquette offerte le samedi', 'Une baguette offerte par semaine', 'Un gâteau offert pour votre anniversaire'], proximity: 'Le pain sort du four : votre carte est prête !'},
-  {type: 'Café', names: ['Café Comptoir Ambre', 'Le Petit Torréfacteur'], threshold: 8, rewards: [[8, 'Café offert', 'FREE_ITEM']], closed: [0], pace: 5, messages: ['{prenom}, notre nouveau café de saison vous attend chez {commerce}.', 'Happy hour : -20 % sur les boissons de 15 h à 17 h chez {commerce}.'], perks: ['Un cookie offert avec votre café', 'La boisson du mois à moitié prix', 'Un café offert chaque semaine'], proximity: 'Une pause café ? Votre carte est prête.'},
-  {type: 'Pizzeria', names: ['Pizzeria Nonna Luce', 'La Pizza du Four Doré'], threshold: 10, rewards: [[10, 'Pizza offerte', 'FREE_ITEM'], [5, 'Boisson offerte', 'FREE_ITEM']], closed: [1], pace: 2, messages: ['{prenom}, la pizza du mois est arrivée chez {commerce} !', 'Ce soir, dessert offert pour toute pizza achetée chez {commerce}.'], perks: ['Une boisson offerte', 'Un dessert offert', 'Une pizza offerte par mois'], proximity: 'Une petite faim ? Votre carte est prête.'},
-  {type: 'Institut de beauté', names: ['Institut Sérénité', 'L’Instant Ambre'], threshold: 8, rewards: [[8, 'Soin visage offert', 'FREE_ITEM'], [4, '-15 % sur un soin', 'DISCOUNT_PERCENT', 15]], closed: [0, 1], pace: 1, messages: ['{prenom}, offrez-vous une pause : -15 % sur les soins du corps chez {commerce}.'], perks: ['-5 % sur les produits', '-10 % sur les produits', 'Un soin offert chaque trimestre'], proximity: 'Un moment pour vous ? Votre carte est prête.'},
-  {type: 'Fleuriste', names: ['Atelier Pétales', 'Fleurs de Saison'], threshold: 10, rewards: [[10, 'Bouquet offert', 'FREE_ITEM']], closed: [1], pace: 1.5, messages: ['{prenom}, les premières pivoines sont arrivées chez {commerce}.'], perks: ['Un emballage cadeau offert', '-10 % sur les bouquets', 'Un bouquet offert par mois'], proximity: 'Un bouquet pour égayer la journée ? Votre carte est prête.'},
-  {type: 'Barbier', names: ['Le Rasoir d’Or', 'Le Comptoir du Barbier'], threshold: 8, rewards: [[8, 'Coupe offerte', 'FREE_ITEM']], closed: [0, 1], pace: 1.2, messages: ['{prenom}, un créneau vous attend cette semaine chez {commerce}.'], perks: ['Un soin de barbe offert', '-10 % sur les produits', 'Une coupe offerte par trimestre'], proximity: 'Un coup de frais ? Votre carte est prête.'},
+  {type: 'Coiffure', names: ['Maison Lumière', 'Salon Céleste', 'L’Atelier des Mèches'], threshold: 10, rewards: [[10, 'Brushing offert', 'FREE_ITEM'], [5, '-10 % sur les soins', 'DISCOUNT_PERCENT', 10]], closed: [0, 1], pace: 1, messages: ['{prenom}, nos soins d’automne arrivent : -15 % toute la semaine chez {commerce}.', 'Envie de changement, {prenom} ? Nouvelles couleurs disponibles chez {commerce}.'], proximity: 'Envie d’un brushing ? Votre carte est prête.'},
+  {type: 'Boulangerie', names: ['Boulangerie du Moulin Doré', 'Le Fournil Ambré'], threshold: 10, rewards: [[10, 'Viennoiserie offerte', 'FREE_ITEM']], closed: [1], pace: 6, messages: ['{prenom}, la galette maison est de retour chez {commerce} !', 'Nouveau : pain aux noix tous les vendredis chez {commerce}.'], proximity: 'Le pain sort du four : votre carte est prête !'},
+  {type: 'Café', names: ['Café Comptoir Ambre', 'Le Petit Torréfacteur'], threshold: 8, rewards: [[8, 'Café offert', 'FREE_ITEM']], closed: [0], pace: 5, messages: ['{prenom}, notre nouveau café de saison vous attend chez {commerce}.', 'Happy hour : -20 % sur les boissons de 15 h à 17 h chez {commerce}.'], proximity: 'Une pause café ? Votre carte est prête.'},
+  {type: 'Pizzeria', names: ['Pizzeria Nonna Luce', 'La Pizza du Four Doré'], threshold: 10, rewards: [[10, 'Pizza offerte', 'FREE_ITEM'], [5, 'Boisson offerte', 'FREE_ITEM']], closed: [1], pace: 2, messages: ['{prenom}, la pizza du mois est arrivée chez {commerce} !', 'Ce soir, dessert offert pour toute pizza achetée chez {commerce}.'], proximity: 'Une petite faim ? Votre carte est prête.'},
+  {type: 'Institut de beauté', names: ['Institut Sérénité', 'L’Instant Ambre'], threshold: 8, rewards: [[8, 'Soin visage offert', 'FREE_ITEM'], [4, '-15 % sur un soin', 'DISCOUNT_PERCENT', 15]], closed: [0, 1], pace: 1, messages: ['{prenom}, offrez-vous une pause : -15 % sur les soins du corps chez {commerce}.'], proximity: 'Un moment pour vous ? Votre carte est prête.'},
+  {type: 'Fleuriste', names: ['Atelier Pétales', 'Fleurs de Saison'], threshold: 10, rewards: [[10, 'Bouquet offert', 'FREE_ITEM']], closed: [1], pace: 1.5, messages: ['{prenom}, les premières pivoines sont arrivées chez {commerce}.'], proximity: 'Un bouquet pour égayer la journée ? Votre carte est prête.'},
+  {type: 'Barbier', names: ['Le Rasoir d’Or', 'Le Comptoir du Barbier'], threshold: 8, rewards: [[8, 'Coupe offerte', 'FREE_ITEM']], closed: [0, 1], pace: 1.2, messages: ['{prenom}, un créneau vous attend cette semaine chez {commerce}.'], proximity: 'Un coup de frais ? Votre carte est prête.'},
 ];
 const COLORS: [string, string][] = [
   ['#1f1c17', '#f8f4ec'], ['#121216', '#e6c27a'], ['#7a3d1c', '#f8f4ec'], ['#9b1c1c', '#f8f4ec'], ['#14532d', '#f8f4ec'], ['#1e3a5f', '#f8f4ec'], ['#5b2a86', '#f8f4ec'], ['#f5efe4', '#1f1c17'],
@@ -163,7 +162,6 @@ const STAFF_NAMES = ['Yanis', 'Sofia', 'Mehdi', 'Clémence', 'Lou', 'Karim', 'Oc
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // comme le serveur : sans 0/O ni 1/I
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const DAY_NAMES = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
-const TIER_NAMES = ['', 'Bronze', 'Argent', 'Or'];
 // Centre de Montpellier : les boutiques fictives sont placées autour
 const CENTER = {lat: 43.6108, lon: 3.8767};
 
@@ -506,7 +504,6 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
         review_enabled: has('automation.review'), review_url: has('automation.review') ? 'https://example.com/avis-google-demo' : null, review_after_visits: 3,
         review_message: 'Merci pour votre fidélité, {prenom} ! Votre avis compte beaucoup pour {commerce} : le lien pour laisser un avis Google est au dos de votre carte.',
         happy_hours_enabled: false, happy_hours: [], // double tampon : retiré des offres (2026-10-27), colonnes en sommeil
-        tiers_enabled: has('loyalty.tiers'), tier_thresholds: [5, 15, 30], tier_perks: {BRONZE: d.tpl.perks[0], SILVER: d.tpl.perks[1], GOLD: d.tpl.perks[2]},
         referral_enabled: has('referral'), referral_bonus: 1,
       },
     ],
@@ -542,17 +539,6 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
       next_reward: next ? {name: next.name, remaining: next.threshold - c.balance} : null,
       available_rewards: c.rewards.filter((x) => x.status === 'AVAILABLE').map((x) => ({customer_reward_id: x.id, name: x.name, expires_at: null})),
     };
-  }
-
-  // Niveau VIP (Pro) : passages cumulés comparés aux seuils réglés
-  function tier(c: Cust) {
-    const s = settings();
-    if (!has('loyalty.tiers') || !s.tiers_enabled) return null;
-    const th: number[] = s.tier_thresholds;
-    const level = c.visits >= th[2] ? 3 : c.visits >= th[1] ? 2 : c.visits >= th[0] ? 1 : 0;
-    if (!level) return null;
-    const earns = c.tx.filter((x) => x.type === 'EARN' && !x.reversed);
-    return {level, name: TIER_NAMES[level], reached_at: earns[Math.min(earns.length, th[level - 1]) - 1]?.created_at ?? null};
   }
 
   const alive = () => customers.filter((c) => !c.deleted);
@@ -822,7 +808,6 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
             status: 'OK',
             customer: {id: c.id, first_name: c.first_name, last_name: c.last_name, phone: c.phone, email: c.email, birthday: c.birthday, status: 'ACTIVE', source: 'JOIN_PAGE', created_at: c.created_at, last_activity_at: c.last},
             account: summary(c),
-            tier: tier(c),
             referral: {code: c.referral_code, referred_by: sponsor ? {id: sponsor.id, first_name: sponsor.first_name} : null, referrals: alive().filter((x) => x.referred_by === c.id).length, rewarded_at: c.referral_rewarded_at},
             transactions: [...c.tx].reverse().slice(0, 50),
             rewards: [...c.rewards].reverse(),
@@ -1140,7 +1125,6 @@ export function createMockBackend(seed: number, plan: Plan = demoPlan(), as?: Id
       await wait(180);
       const x = db[table].find((y) => Object.entries(match).every(([k, v]) => y[k] === v));
       if (!x) throw new ApiError('PGRST116', 'Élément introuvable.');
-      if (table === 'merchant_settings') checkSettings({...x, ...changes});
       Object.assign(x, changes);
       return JSON.parse(JSON.stringify(x));
     },
@@ -1165,15 +1149,6 @@ export function consultationBackend(m: {merchant_id: string; merchant_name: stri
   for (const ch of m.merchant_id) h = (h * 31 + ch.charCodeAt(0)) % 899999;
   const plan: Plan = PLANS.find((p) => p === m.subscription_plan) ?? 'STARTER';
   return createMockBackend(100000 + h, plan, {id: m.merchant_id, name: m.merchant_name, slug: m.merchant_slug, logo_url: m.logo_url, primary_color: m.primary_color, secondary_color: m.secondary_color}, m.demo_mode ?? 'ACTIVE');
-}
-
-/** Mêmes contrôles que le serveur (private.validate_merchant_settings et contraintes de la table). */
-function checkSettings(s: any) {
-  for (const [k, v] of Object.entries(s.tier_perks ?? {})) {
-    if (!['BRONZE', 'SILVER', 'GOLD'].includes(k) || typeof v !== 'string' || v.length > 80) throw new ApiError('TIER_PERKS_INVALID', 'Avantages attendus : BRONZE, SILVER, GOLD (80 caractères au plus).');
-  }
-  const t = s.tier_thresholds ?? [5, 15, 30];
-  if (t.length !== 3 || !(t[0] >= 1 && t[0] < t[1] && t[1] < t[2] && t[2] <= 100000)) throw new ApiError('23514', 'Une valeur saisie n’est pas acceptée : vérifiez le formulaire.');
 }
 
 /** Page d'inscription de démonstration (loyna.fr/join/demo-<graine>), cohérente avec le commerce fictif ; `paused` : programme en pause. */

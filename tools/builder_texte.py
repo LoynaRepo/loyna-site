@@ -74,6 +74,8 @@ RETIRES = [
     ("option +500", re.compile(rf"\+{E}?500\b|option{E}\+?500|4,99{E}€|50,90{E}€")),
     ("paiement annuel", re.compile(r"paiement annuel|en annuel|abonnement annuel", re.I)),
     ("en un clic", re.compile(r"en un clic", re.I)),
+    # niveaux VIP de LOYNA : retirés le 2026-11-06 (décision d'Ewan) ; le concept général reste dans le guide des programmes
+    ("niveaux VIP de LOYNA", re.compile(r"argent et or|niveaux VIP en couleur|change de couleur à chaque niveau|les niveaux VIP,", re.I)),
 ]
 
 
