@@ -125,6 +125,10 @@ sur l'API publique `recherche-entreprises.api.gouv.fr`, appelée depuis le navig
 **`TRIAL.open = false`** dans `site.ts` : `APPEL` (tous les boutons) retombe sur « Choisir mon offre », les textes sur l'essai et la question
 de la FAQ (`essai: true`, filtre de `getFaq`) sortent ; rien d'autre à changer, la grille part quand même. `LOYNA_TRIAL_OPEN=false` (secret) ferme
 l'essai sans rebâtir le site. Essai de bout en bout : `node tools/qa-essai.mjs <base>` (réponses simulées) ou `--pile` (pile d'essai, valeurs générées).
+**Funnel de l'essai (2026-11-07)** : une question par écran, barre de progression, retour, Entrée pour valider : métier (gros boutons, un clic
+passe à la suite et propose récompense et couleurs), nom, récompense (passages ou montant, couleurs repliées), coordonnées, mot de passe + CGV
+(parrainage replié, déplié si `?parrain=`). Carte préparée : coordonnées puis mot de passe. Pas d'étape logo (celui du configurateur ou d'une
+carte préparée part quand même). Une erreur du serveur ramène à l'écran de son champ. Captures de chaque écran : `node tools/qa-essai.mjs <base> <dossier>`.
 
 **Arrêt automatique** : `PHRASES.arret` sur `/tarifs/#arret` et dans la FAQ ; le détail vit dans le dépôt LOYNA (`merchant_service_decision`).
 

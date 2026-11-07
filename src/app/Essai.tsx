@@ -4,12 +4,13 @@
 // Plus de SIRET (Ewan, 2026-11-05). Le serveur (Edge Function trial, dépôt LOYNA) contrôle tout : champ piège, limites, 1 essai par e-mail et téléphone,
 // plafond d'essais. Rien n'est créé avant la confirmation de l'adresse e-mail.
 // `TRIAL.open` faux (site construit sans l'essai) ou `GET trial` fermé ou complet : l'abonnement et « Recevoir un aperçu ».
+// Funnel (Ewan, 2026-11-07) : une question simple par écran (métier, nom, récompense, coordonnées, mot de passe), pas d'étape logo
+// (le logo du configurateur ou d'une carte préparée part quand même ; sinon il se met plus tard dans l'espace client).
 import {useEffect, useRef, useState} from 'preact/hooks';
 import {ACTIVITES_EN_PLUS, CARD_ACCENTS, CARD_ACTIVITES, CARD_BGS, CGV_VERSION, PHRASES, TRIAL} from '../data/site';
 import {ApiError, publicEdge} from './http';
 import {frenchTypography} from './typo';
-import {couleurVisible, LOGO_ACCEPT, LOGO_MIN_SIDE, logoToFiles, partLogoConfondue} from './logo-png';
-import {contrast} from './util';
+import {logoToFiles} from './logo-png';
 import {CarteWallet, TelephoneWallet} from '../lib/CarteWallet';
 import {lireCartePreparee, MONTANT, RE_ID_CARTE} from '../lib/carte-preparee';
 import {CLE_LOGO, EMAIL_RE, REFERRAL_ERRORS, RULES, TELEPHONE_RE, lireLogoGarde, normalizeReferral, store, track, urlLogo, type LogoGarde} from '../lib/compte-regles';
@@ -127,6 +128,17 @@ function fichierDepuisDataUrl(dataUrl: string): File {
   return new File([octets], 'logo.png', {type: /image\/[a-z+]+/.exec(entete)?.[0] ?? 'image/png'});
 }
 
+// Écrans du funnel et champs qu'ils contrôlent : une erreur du serveur ramène à l'écran de son champ.
+type Ecran = 'activite' | 'nom' | 'recompense' | 'contact' | 'compte';
+const CHAMPS: Record<Ecran, string[]> = {
+  activite: ['activity'],
+  nom: ['name'],
+  recompense: ['reward'],
+  contact: ['first_name', 'last_name', 'email', 'phone'],
+  compte: ['password', 'password2', 'referral', 'cgv'],
+};
+const ORDRE_CHAMPS = Object.values(CHAMPS).flat();
+
 export default function Essai() {
   const racine = useRef<HTMLDivElement>(null);
   const [etat, setEtat] = useState<Etat>(TRIAL.open ? 'attente' : 'ferme');
@@ -135,12 +147,9 @@ export default function Essai() {
   const [carte, setCarte] = useState<Carte>(depart.current.carte);
   const touche = useRef<Touche>(depart.current.touche);
   const [logo, setLogo] = useState<LogoGarde | null>(lireLogoGarde);
-  const [logoMsg, setLogoMsg] = useState('');
-  const [logoPeuVisible, setLogoPeuVisible] = useState(false);
-  // Fichier choisi ici et son fond retiré ou non : permet de revenir au fond d'origine
-  const [logoFichier, setLogoFichier] = useState<{fichier: File; fondRetire: boolean; fondGarde: boolean} | null>(null);
   const [systeme, setSysteme] = useState<'apple' | 'google'>('apple');
   const [preparee, setPreparee] = useState(false);
+  const [etape, setEtape] = useState(0);
   const [f, setF] = useState({first_name: '', last_name: '', email: '', phone: ''});
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
@@ -148,33 +157,39 @@ export default function Essai() {
   const [cgv, setCgv] = useState(false);
   const [website, setWebsite] = useState(''); // champ piège
   const [referral, setReferral] = useState(() => (new URLSearchParams(location.search).get('parrain') ?? '').trim().slice(0, 20));
+  const [voirParrain, setVoirParrain] = useState(() => !!referral);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState<{code: string; message: string} | null>(null);
   const [busy, setBusy] = useState(false);
   const [reponse, setReponse] = useState<Reponse | null>(null);
   const envoye = useRef(false);
+  const aFocaliser = useRef<string | null>(null);
 
-  useEffect(() => (racine.current ? frenchTypography(racine.current) : undefined), [etat]);
+  // Carte préparée : déjà réglée, il ne reste que le compte
+  const ecrans: Ecran[] = preparee ? ['contact', 'compte'] : ['activite', 'nom', 'recompense', 'contact', 'compte'];
+  const ecran = ecrans[Math.min(etape, ecrans.length - 1)];
+
+  useEffect(() => (racine.current ? frenchTypography(racine.current) : undefined), [etat, ecran]);
   // Après l'envoi, le formulaire laisse place à un écran bien plus court : il vient sous les yeux, et le focus aussi
   useEffect(() => {
     if (!envoye.current || etat === 'ouvert') return;
     racine.current?.scrollIntoView({block: 'center'});
     racine.current?.focus({preventScroll: true});
   }, [etat]);
-
-  // Logo, ou une bonne partie de ses tracés (texte foncé d'un logo dont le fond a été retiré), de la même teinte que la carte : autant le dire
+  // Nouvel écran : le champ en erreur, sinon le premier champ, sinon la question (pas au premier affichage : la page reste en haut)
+  const premierAffichage = useRef(true);
   useEffect(() => {
-    const src = urlLogo(logo);
-    if (!src) return setLogoPeuVisible(false);
-    let actif = true;
-    Promise.all([couleurVisible(src), partLogoConfondue(src, carte.bg)]).then(
-      ([c, part]) => actif && setLogoPeuVisible(!c || contrast(c, carte.bg) < 1.35 || part > 0.15),
-      () => actif && setLogoPeuVisible(false),
-    );
-    return () => {
-      actif = false;
-    };
-  }, [logo, carte.bg]);
+    if (etat !== 'ouvert') return;
+    if (premierAffichage.current) {
+      premierAffichage.current = false;
+      return;
+    }
+    const cible = aFocaliser.current ? document.getElementById(`es-${aFocaliser.current}`) : racine.current?.querySelector<HTMLElement>('.es-q [data-premier]');
+    aFocaliser.current = null;
+    const question = racine.current?.querySelector<HTMLElement>('.es-q h2');
+    question?.scrollIntoView({block: 'nearest'});
+    (cible ?? question)?.focus({preventScroll: true});
+  }, [ecran, etat]);
 
   // L'essai est-il ouvert ? (interrupteur et plafond, côté serveur)
   useEffect(() => {
@@ -221,6 +236,7 @@ export default function Essai() {
           reward: c.recompense.slice(0, 40),
         });
         setPreparee(true);
+        setEtape(0);
         if (c.logo) {
           const fichier = fichierDepuisDataUrl(c.logo);
           garderLogo(await logoToFiles(fichier), 'Logo préparé avec vous');
@@ -259,8 +275,11 @@ export default function Essai() {
     const garde: LogoGarde = {logo_png: l.logo_png, icon_png: l.icon_png, nom};
     store('session', CLE_LOGO, JSON.stringify(garde));
     setLogo(garde);
-    setLogoMsg('');
   }
+  const retirerLogo = () => {
+    store('session', CLE_LOGO, null);
+    setLogo(null);
+  };
   const changer = (patch: Partial<Carte>, cle?: string) => {
     setCarte((c) => ({...c, ...patch}));
     if (cle && errors[cle]) setErrors((e) => ({...e, [cle]: ''}));
@@ -273,27 +292,6 @@ export default function Essai() {
     if (m && !touche.current.bg) patch.bg = m.fond;
     if (m && !touche.current.accent) patch.accent = m.tampons;
     changer(patch, 'activity');
-  };
-  const preparerLogo = async (fichier: File, garderFond: boolean) => {
-    setLogoMsg('Préparation du logo…');
-    try {
-      const fichiers = await logoToFiles(fichier, {garderFond});
-      garderLogo(fichiers, fichier.name);
-      setLogoFichier({fichier, fondRetire: fichiers.fond_retire, fondGarde: garderFond});
-      if (Math.max(fichiers.width, fichiers.height) < LOGO_MIN_SIDE / 2) setLogoMsg('Logo accepté, mais petit : il peut paraître flou sur la carte. Une image plus grande sera plus nette.');
-    } catch (err) {
-      setLogoMsg(err instanceof Error ? err.message : 'Cette image est illisible.');
-    }
-  };
-  const choisirLogo = (e: Event) => {
-    const fichier = (e.target as HTMLInputElement).files?.[0];
-    if (fichier) preparerLogo(fichier, false);
-  };
-  const retirerLogo = () => {
-    store('session', CLE_LOGO, null);
-    setLogo(null);
-    setLogoFichier(null);
-    setLogoMsg('');
   };
   const setField = (k: keyof typeof f, v: string) => {
     setF((x) => ({...x, [k]: v}));
@@ -316,18 +314,39 @@ export default function Essai() {
     if (!cgv) e.cgv = 'Acceptez les conditions générales de vente pour continuer.';
     return e;
   };
-  const focusFirstError = (e: Record<string, string>) => {
-    const first = ['name', 'activity', 'reward', 'first_name', 'last_name', 'email', 'phone', 'password', 'password2', 'referral', 'cgv'].find((k) => e[k]);
-    if (first) setTimeout(() => (document.getElementById(`es-${first}`) as HTMLElement | null)?.focus(), 0);
+  // Ramène à l'écran du premier champ en erreur et y met le focus
+  const montrerErreurs = (e: Record<string, string>) => {
+    const first = ORDRE_CHAMPS.find((k) => e[k]);
+    if (!first) return;
+    if (first === 'referral') setVoirParrain(true);
+    const i = ecrans.findIndex((x) => CHAMPS[x].includes(first));
+    if (i >= 0 && i !== etape) {
+      aFocaliser.current = first;
+      setEtape(i);
+    } else setTimeout(() => document.getElementById(`es-${first}`)?.focus(), 0);
   };
 
-  const submit = async (ev: Event) => {
-    ev.preventDefault();
+  const retour = () => {
+    setFormErr(null);
+    setEtape((n) => Math.max(0, n - 1));
+  };
+  // « Continuer » : seulement les champs de cet écran ; au dernier, tout est revu puis envoyé
+  const suivant = (ev?: Event) => {
+    ev?.preventDefault();
+    if (ecran === 'compte') return submit();
+    const tout = validate();
+    const e = Object.fromEntries(CHAMPS[ecran].filter((k) => tout[k]).map((k) => [k, tout[k]]));
+    setErrors((x) => ({...x, ...Object.fromEntries(CHAMPS[ecran].map((k) => [k, e[k] ?? '']))}));
+    if (Object.keys(e).length) return montrerErreurs(e);
+    setEtape((n) => Math.min(ecrans.length - 1, n + 1));
+  };
+
+  const submit = async () => {
     if (busy) return;
     setFormErr(null);
     const e = validate();
     setErrors(e);
-    if (Object.values(e).some(Boolean)) return focusFirstError(e);
+    if (Object.values(e).some(Boolean)) return montrerErreurs(e);
     setBusy(true);
     envoye.current = true;
     const code = referral.trim() ? normalizeReferral(referral) : null;
@@ -353,21 +372,13 @@ export default function Essai() {
     } catch (err) {
       const c = err instanceof ApiError ? err.code : '';
       const message = MESSAGES[c] ?? (err instanceof Error && err.message ? err.message : 'L’opération n’a pas abouti. Réessayez dans un instant.');
+      const zone = REFERRAL_ERRORS.has(c) ? 'referral' : {WEAK_PASSWORD: 'password', INVALID_PHONE: 'phone', INVALID_EMAIL: 'email'}[c];
       if (c === 'TRIAL_CLOSED' || c === 'TRIAL_FULL') {
         setRaison(c === 'TRIAL_FULL' ? 'FULL' : 'CLOSED');
         setEtat('ferme');
-      } else if (REFERRAL_ERRORS.has(c)) {
-        setErrors({referral: message});
-        focusFirstError({referral: message});
-      } else if (c === 'WEAK_PASSWORD') {
-        setErrors({password: message});
-        focusFirstError({password: message});
-      } else if (c === 'INVALID_PHONE') {
-        setErrors({phone: message});
-        focusFirstError({phone: message});
-      } else if (c === 'INVALID_EMAIL') {
-        setErrors({email: message});
-        focusFirstError({email: message});
+      } else if (zone) {
+        setErrors({[zone]: message});
+        montrerErreurs({[zone]: message});
       } else setFormErr({code: c, message});
     } finally {
       setBusy(false);
@@ -462,98 +473,128 @@ export default function Essai() {
       </div>
     );
 
-  // --- Formulaire ---------------------------------------------------------------------------------------------------------------
+  // --- Funnel : une question par écran -------------------------------------------------------------------------------------------
+  const dernier = ecran === 'compte';
+  const miniCarte = ecran === 'nom' || ecran === 'recompense' || (preparee && dernier);
   return (
-    <div ref={racine}>
-      <form class="pn" onSubmit={submit} noValidate>
-        <div class="pn-steps">
-          {/* --- 1. La carte (pas sur une carte préparée : elle est déjà réglée, son aperçu suit le compte) ---- */}
-          {!preparee && (
-          <fieldset class="pn-step">
-            <legend>
-              <span class="pn-num">1</span> Votre carte
-            </legend>
-            <div class="pn-fields">
-              <div class="es-mini" aria-hidden="true">
-                <CarteWallet {...propsCarte} />
-              </div>
-              <div class="pn-row">
-                <div class="field">
-                  <label for="es-name">Nom du commerce *</label>
-                  <input
-                    id="es-name"
-                    type="text"
-                    autocomplete="organization"
-                    maxLength={60}
-                    required
-                    value={carte.name}
-                    onInput={(e) => changer({name: (e.target as HTMLInputElement).value}, 'name')}
-                    aria-invalid={errors.name ? true : undefined}
-                    aria-describedby={errors.name ? 'es-name-err' : undefined}
-                  />
-                  {err('name')}
-                </div>
-                <div class="field">
-                  <label for="es-activity">Activité *</label>
-                  <select
-                    id="es-activity"
-                    required
-                    value={carte.activity}
-                    onChange={(e) => choisirActivite((e.target as HTMLSelectElement).value)}
-                    aria-invalid={errors.activity ? true : undefined}
-                    aria-describedby={errors.activity ? 'es-activity-err' : undefined}
+    <div ref={racine} class="es-funnel">
+      <div class="es-q">
+        <div class="es-prog">
+          <div class="es-prog-l">
+            {etape > 0 ? (
+              <button type="button" class="es-retour" onClick={retour}>
+                <span aria-hidden="true">←</span> Retour
+              </button>
+            ) : (
+              <span />
+            )}
+            <span class="es-prog-n">
+              Étape {etape + 1} sur {ecrans.length}
+            </span>
+          </div>
+          <div class="es-barre" role="progressbar" aria-label="Avancement" aria-valuemin={1} aria-valuemax={ecrans.length} aria-valuenow={etape + 1}>
+            <span style={{width: `${((etape + 1) / ecrans.length) * 100}%`}} />
+          </div>
+        </div>
+
+        <form class="pn es-form" onSubmit={suivant} noValidate>
+          {/* --- Métier : un clic choisit et passe à la suite ---- */}
+          {ecran === 'activite' && (
+            <>
+              <h2 tabIndex={-1}>Quel est votre commerce ?</h2>
+              <p class="es-sous">Un clic : on prépare votre carte avec la récompense et les couleurs de votre métier.</p>
+              <div class="es-choix" id="es-activity" role="group" aria-label="Votre activité" tabIndex={-1} aria-describedby={errors.activity ? 'es-activity-err' : undefined}>
+                {CARD_ACTIVITES.map((a, i) => (
+                  <button
+                    type="button"
+                    data-premier={i === 0 ? true : undefined}
+                    aria-pressed={carte.activity === a.nom}
+                    onClick={() => {
+                      choisirActivite(a.nom);
+                      if (a.nom !== AUTRE) setEtape((n) => n + 1);
+                      else setTimeout(() => document.getElementById('es-activity-autre')?.focus(), 0);
+                    }}
                   >
-                    <option value="">Choisissez…</option>
-                    {CARD_ACTIVITES.map((a) => (
-                      <option value={a.nom}>{a.nom}</option>
-                    ))}
-                  </select>
-                  {carte.activity === AUTRE && (
-                    <input
-                      id="es-activity-autre"
-                      class="es-autre"
-                      type="text"
-                      maxLength={40}
-                      placeholder={`Votre activité : ${ACTIVITES_EN_PLUS[0].nom.toLowerCase()}, tatoueur…`}
-                      aria-label="Votre activité"
-                      value={carte.other}
-                      onInput={(e) => changer({other: (e.target as HTMLInputElement).value}, 'activity')}
-                    />
-                  )}
-                  {err('activity')}
-                </div>
+                    {a.nom}
+                  </button>
+                ))}
               </div>
-              <div class="pn-row">
+              {carte.activity === AUTRE && (
                 <div class="field">
-                  <span class="es-label" id="es-lbl-bg">
-                    Couleur de la carte
-                  </span>
-                  <Couleurs
-                    etiquette="es-lbl-bg"
-                    liste={CARD_BGS}
-                    valeur={carte.bg}
-                    libre="Couleur de carte personnalisée"
-                    choisir={(c) => {
-                      touche.current.bg = true;
-                      changer({bg: c});
-                    }}
+                  <label for="es-activity-autre">Votre activité</label>
+                  <input
+                    id="es-activity-autre"
+                    type="text"
+                    maxLength={40}
+                    placeholder={`${ACTIVITES_EN_PLUS[0].nom}, tatoueur…`}
+                    value={carte.other}
+                    onInput={(e) => changer({other: (e.target as HTMLInputElement).value}, 'activity')}
                   />
                 </div>
-                <div class="field">
-                  <span class="es-label" id="es-lbl-accent">
-                    Couleur des tampons
-                  </span>
-                  <Couleurs
-                    etiquette="es-lbl-accent"
-                    liste={CARD_ACCENTS}
-                    valeur={carte.accent}
-                    libre="Couleur des tampons personnalisée"
-                    choisir={(c) => {
-                      touche.current.accent = true;
-                      changer({accent: c});
-                    }}
-                  />
-                </div>
+              )}
+              {err('activity')}
+              {carte.activity && (
+                <button type="submit" class="btn btn--gold es-go">
+                  Continuer
+                </button>
+              )}
+            </>
+          )}
+
+          {/* --- Nom ---- */}
+          {ecran === 'nom' && (
+            <>
+              <h2 tabIndex={-1}>Comment s’appelle votre commerce ?</h2>
+              <p class="es-sous">Il s’affiche en haut de votre carte.</p>
+              <div class="field">
+                <label for="es-name" class="sr-only">
+                  Nom du commerce
+                </label>
+                <input
+                  id="es-name"
+                  data-premier
+                  class="es-grand"
+                  type="text"
+                  autocomplete="organization"
+                  maxLength={60}
+                  required
+                  placeholder="Ex. : Le Fournil de Léa"
+                  value={carte.name}
+                  onInput={(e) => changer({name: (e.target as HTMLInputElement).value}, 'name')}
+                  aria-invalid={errors.name ? true : undefined}
+                  aria-describedby={errors.name ? 'es-name-err' : undefined}
+                />
+                {err('name')}
+              </div>
+              {miniCarte && <MiniCarte {...propsCarte} />}
+              <button type="submit" class="btn btn--gold es-go">
+                Continuer
+              </button>
+            </>
+          )}
+
+          {/* --- Récompense, passages, couleurs (déjà proposés selon le métier) ---- */}
+          {ecran === 'recompense' && (
+            <>
+              <h2 tabIndex={-1}>Que gagnent vos clients fidèles ?</h2>
+              <p class="es-sous">Nous avons mis ce qui marche le mieux pour votre métier : changez ce que vous voulez.</p>
+              <div class="field">
+                <label for="es-reward">Récompense</label>
+                <input
+                  id="es-reward"
+                  data-premier
+                  type="text"
+                  maxLength={40}
+                  required
+                  value={carte.reward}
+                  onInput={(e) => {
+                    touche.current.reward = true;
+                    changer({reward: (e.target as HTMLInputElement).value}, 'reward');
+                  }}
+                  aria-invalid={errors.reward ? true : undefined}
+                  aria-describedby={errors.reward ? 'es-reward-err' : undefined}
+                />
+                {err('reward')}
               </div>
               <div class="pn-period es-mode" role="radiogroup" aria-label="Ce que compte la carte">
                 {([false, true] as const).map((euros) => (
@@ -563,159 +604,132 @@ export default function Essai() {
                   </label>
                 ))}
               </div>
-              <div class="pn-row">
-                {carte.montant ? (
-                  <div class="field">
-                    <label for="es-montant">Montant dépensé pour la récompense : {carte.montant} €</label>
-                    <input
-                      id="es-montant"
-                      class="es-curseur"
-                      style={`--p:${((carte.montant - MONTANT.min) / (MONTANT.max - MONTANT.min)) * 100}%`}
-                      type="range"
-                      min={MONTANT.min}
-                      max={MONTANT.max}
-                      step={10}
-                      value={carte.montant}
-                      onInput={(e) => changer({montant: bornerMontant(Number((e.target as HTMLInputElement).value))})}
-                    />
-                    <small class="es-aide">1 € dépensé = 1 point : vous tapez le montant de l’achat au moment de scanner la carte.</small>
-                  </div>
-                ) : (
-                  <div class="field">
-                    <label for="es-total">Passages pour la récompense : {carte.total}</label>
-                    <input id="es-total" class="es-curseur" style={`--p:${((carte.total - PASSAGES.min) / (PASSAGES.max - PASSAGES.min)) * 100}%`} type="range" min={PASSAGES.min} max={PASSAGES.max} value={carte.total} onInput={(e) => changer({total: Number((e.target as HTMLInputElement).value)})} />
-                  </div>
-                )}
+              {carte.montant ? (
                 <div class="field">
-                  <label for="es-reward">Récompense *</label>
+                  <label for="es-montant">Offerte après {carte.montant} € dépensés</label>
                   <input
-                    id="es-reward"
-                    type="text"
-                    maxLength={40}
-                    required
-                    value={carte.reward}
-                    onInput={(e) => {
-                      touche.current.reward = true;
-                      changer({reward: (e.target as HTMLInputElement).value}, 'reward');
-                    }}
-                    aria-invalid={errors.reward ? true : undefined}
-                    aria-describedby={errors.reward ? 'es-reward-err' : undefined}
+                    id="es-montant"
+                    class="es-curseur"
+                    style={`--p:${((carte.montant - MONTANT.min) / (MONTANT.max - MONTANT.min)) * 100}%`}
+                    type="range"
+                    min={MONTANT.min}
+                    max={MONTANT.max}
+                    step={10}
+                    value={carte.montant}
+                    onInput={(e) => changer({montant: bornerMontant(Number((e.target as HTMLInputElement).value))})}
                   />
-                  {err('reward')}
+                  <small class="es-aide">1 € dépensé = 1 point : vous tapez le montant de l’achat au moment de scanner la carte.</small>
                 </div>
-              </div>
-              <div class="field">
-                <span class="es-label">
-                  Votre logo <span class="pn-opt">(facultatif ; sans logo, votre nom sur iPhone et son initiale sur Android)</span>
-                </span>
-                <div class="es-logo">
-                  <label class="btn btn--ghost es-logo-b">
-                    <input type="file" accept={LOGO_ACCEPT} onChange={choisirLogo} />
-                    Choisir une image
-                  </label>
-                  {logo ? (
-                    <span class="pn-small">
-                      {logo.nom}{' '}
-                      <button type="button" class="pn-link" onClick={retirerLogo}>
-                        Retirer
-                      </button>
+              ) : (
+                <div class="field">
+                  <label for="es-total">Offerte au {carte.total}e passage</label>
+                  <input id="es-total" class="es-curseur" style={`--p:${((carte.total - PASSAGES.min) / (PASSAGES.max - PASSAGES.min)) * 100}%`} type="range" min={PASSAGES.min} max={PASSAGES.max} value={carte.total} onInput={(e) => changer({total: Number((e.target as HTMLInputElement).value)})} />
+                </div>
+              )}
+              <details class="es-couleurs">
+                <summary>Changer les couleurs</summary>
+                <div class="pn-row">
+                  <div class="field">
+                    <span class="es-label" id="es-lbl-bg">
+                      Couleur de la carte
                     </span>
-                  ) : (
-                    <span class="pn-muted pn-small">{logoMsg || 'PNG, JPG, WEBP ou SVG'}</span>
-                  )}
+                    <Couleurs
+                      etiquette="es-lbl-bg"
+                      liste={CARD_BGS}
+                      valeur={carte.bg}
+                      libre="Couleur de carte personnalisée"
+                      choisir={(c) => {
+                        touche.current.bg = true;
+                        changer({bg: c});
+                      }}
+                    />
+                  </div>
+                  <div class="field">
+                    <span class="es-label" id="es-lbl-accent">
+                      Couleur des tampons
+                    </span>
+                    <Couleurs
+                      etiquette="es-lbl-accent"
+                      liste={CARD_ACCENTS}
+                      valeur={carte.accent}
+                      libre="Couleur des tampons personnalisée"
+                      choisir={(c) => {
+                        touche.current.accent = true;
+                        changer({accent: c});
+                      }}
+                    />
+                  </div>
                 </div>
-                {logo && logoMsg && <p class="pn-muted pn-small">{logoMsg}</p>}
-                {logo && logoFichier && (logoFichier.fondRetire || logoFichier.fondGarde) && (
-                  <p class="pn-muted pn-small es-logo-fond">
-                    {logoFichier.fondGarde ? 'Fond d’origine gardé. ' : 'Le fond de votre logo a été retiré : vérifiez le résultat sur l’aperçu. '}
-                    <button type="button" class="pn-link" onClick={() => preparerLogo(logoFichier.fichier, !logoFichier.fondGarde)}>
-                      {logoFichier.fondGarde ? 'Retirer le fond' : 'Garder le fond d’origine'}
-                    </button>
-                  </p>
-                )}
-                {logo && logoPeuVisible && (
-                  <p class="pn-small es-logo-alerte" role="status">
-                    Votre logo se voit peu sur cette couleur de carte : choisissez une autre couleur ou une version plus contrastée du logo.
-                  </p>
-                )}
-              </div>
-            </div>
-          </fieldset>
+              </details>
+              {miniCarte && <MiniCarte {...propsCarte} />}
+              <button type="submit" class="btn btn--gold es-go">
+                Continuer
+              </button>
+            </>
           )}
 
-          {/* --- 2. Le compte -------------------------------------------------------------------------- */}
-          <fieldset class="pn-step">
-            <legend>
-              <span class="pn-num">{preparee ? 1 : 2}</span> Votre compte LOYNA
-            </legend>
-            <p class="pn-intro">{preparee ? 'Votre carte est prête. Créez votre compte : vous voyez ensuite votre carte et démarrez votre essai. ' : ''}Ce compte vous donne accès à votre espace client. Vous recevez un e-mail pour confirmer votre adresse : votre carte est créée à ce moment-là.</p>
-            <div class="pn-fields">
+          {/* --- Coordonnées ---- */}
+          {ecran === 'contact' && (
+            <>
+              <h2 tabIndex={-1}>Votre carte est prête. À qui envoie-t-on l’accès ?</h2>
+              <p class="es-sous">Pour créer votre espace client et vous envoyer le lien de confirmation.</p>
               <div class="pn-row">
                 <div class="field">
-                  <label for="es-first_name">Prénom *</label>
-                  <input type="text" autocomplete="given-name" maxLength={60} required {...fieldProps('first_name')} />
+                  <label for="es-first_name">Prénom</label>
+                  <input type="text" data-premier autocomplete="given-name" maxLength={60} required {...fieldProps('first_name')} />
                   {err('first_name')}
                 </div>
                 <div class="field">
-                  <label for="es-last_name">Nom *</label>
+                  <label for="es-last_name">Nom</label>
                   <input type="text" autocomplete="family-name" maxLength={80} required {...fieldProps('last_name')} />
                   {err('last_name')}
                 </div>
               </div>
-              <div class="pn-row">
-                <div class="field">
-                  <label for="es-email">E-mail *</label>
-                  <input type="email" autocomplete="email" inputMode="email" maxLength={254} required {...fieldProps('email')} />
-                  {err('email')}
-                </div>
-                <div class="field">
-                  <label for="es-phone">Téléphone *</label>
-                  <input type="tel" autocomplete="tel" maxLength={30} required {...fieldProps('phone')} />
-                  {err('phone')}
-                </div>
+              <div class="field">
+                <label for="es-email">E-mail</label>
+                <input type="email" autocomplete="email" inputMode="email" maxLength={254} required {...fieldProps('email')} />
+                {err('email')}
               </div>
-              <div class="pn-row">
-                <div class="field">
-                  <label for="es-password">Mot de passe *</label>
-                  <span class="pn-pw">
-                    <input
-                      id="es-password"
-                      type={showPw ? 'text' : 'password'}
-                      autocomplete="new-password"
-                      maxLength={72}
-                      required
-                      value={pw}
-                      onInput={(e) => {
-                        setPw((e.target as HTMLInputElement).value);
-                        if (errors.password) setErrors((x) => ({...x, password: ''}));
-                      }}
-                      aria-invalid={errors.password ? true : undefined}
-                      aria-describedby={`es-pw-rules${errors.password ? ' es-password-err' : ''}`}
-                    />
-                    <button type="button" class="pn-eye" onClick={() => setShowPw(!showPw)} aria-pressed={showPw}>
-                      {showPw ? 'Masquer' : 'Afficher'}
-                    </button>
-                  </span>
-                  {err('password')}
-                </div>
-                <div class="field">
-                  <label for="es-password2">Confirmez le mot de passe *</label>
+              <div class="field">
+                <label for="es-phone">Téléphone</label>
+                <input type="tel" autocomplete="tel" inputMode="tel" maxLength={30} required {...fieldProps('phone')} />
+                {err('phone')}
+              </div>
+              <button type="submit" class="btn btn--gold es-go">
+                Continuer
+              </button>
+            </>
+          )}
+
+          {/* --- Mot de passe, conditions, envoi ---- */}
+          {dernier && (
+            <>
+              <h2 tabIndex={-1}>Dernière étape : votre mot de passe</h2>
+              <p class="es-sous">Il protège votre espace client. Vous recevez ensuite un e-mail pour confirmer votre adresse : votre carte est créée à ce moment-là.</p>
+              {miniCarte && <MiniCarte {...propsCarte} />}
+              <div class="field">
+                <label for="es-password">Mot de passe</label>
+                <span class="pn-pw">
                   <input
-                    id="es-password2"
+                    id="es-password"
+                    data-premier
                     type={showPw ? 'text' : 'password'}
                     autocomplete="new-password"
                     maxLength={72}
                     required
-                    value={pw2}
+                    value={pw}
                     onInput={(e) => {
-                      setPw2((e.target as HTMLInputElement).value);
-                      if (errors.password2) setErrors((x) => ({...x, password2: ''}));
+                      setPw((e.target as HTMLInputElement).value);
+                      if (errors.password) setErrors((x) => ({...x, password: ''}));
                     }}
-                    aria-invalid={errors.password2 ? true : undefined}
-                    aria-describedby={errors.password2 ? 'es-password2-err' : undefined}
+                    aria-invalid={errors.password ? true : undefined}
+                    aria-describedby={`es-pw-rules${errors.password ? ' es-password-err' : ''}`}
                   />
-                  {err('password2')}
-                </div>
+                  <button type="button" class="pn-eye" onClick={() => setShowPw(!showPw)} aria-pressed={showPw}>
+                    {showPw ? 'Masquer' : 'Afficher'}
+                  </button>
+                </span>
+                {err('password')}
               </div>
               <ul class="pn-rules" id="es-pw-rules" aria-label="Règles du mot de passe">
                 {RULES.map((r) => (
@@ -725,39 +739,62 @@ export default function Essai() {
                   </li>
                 ))}
               </ul>
-              <p class="pn-muted">
+              <div class="field">
+                <label for="es-password2">Confirmez le mot de passe</label>
+                <input
+                  id="es-password2"
+                  type={showPw ? 'text' : 'password'}
+                  autocomplete="new-password"
+                  maxLength={72}
+                  required
+                  value={pw2}
+                  onInput={(e) => {
+                    setPw2((e.target as HTMLInputElement).value);
+                    if (errors.password2) setErrors((x) => ({...x, password2: ''}));
+                  }}
+                  aria-invalid={errors.password2 ? true : undefined}
+                  aria-describedby={errors.password2 ? 'es-password2-err' : undefined}
+                />
+                {err('password2')}
+              </div>
+              <p class="pn-muted pn-small">
                 Déjà un compte, sans commerce ? Indiquez son adresse et son mot de passe. Mot de passe oublié ?{' '}
                 <a href="/espace-client/?oubli=1" target="_blank" rel="noopener">
                   Recevoir un lien
                 </a>
               </p>
-              {!preparee && (
-              <div class="pn-ref">
-                <label for="es-referral">
-                  Code de parrainage <span class="pn-opt">(facultatif)</span>
-                </label>
-                <input
-                  id="es-referral"
-                  type="text"
-                  autocomplete="off"
-                  autocapitalize="characters"
-                  spellcheck={false}
-                  maxLength={20}
-                  placeholder="LOYNA-XXXXXX"
-                  value={referral}
-                  onInput={(e) => {
-                    setReferral((e.target as HTMLInputElement).value);
-                    if (errors.referral) setErrors((x) => ({...x, referral: ''}));
-                  }}
-                  aria-invalid={errors.referral ? true : undefined}
-                  aria-describedby={`es-referral-help${errors.referral ? ' es-referral-err' : ''}`}
-                />
-                <p class="pn-muted pn-small" id="es-referral-help">
-                  Parrainé par un commerçant client de LOYNA ? Votre premier mois d’abonnement sera offert si vous souscrivez ensuite.
-                </p>
-                {err('referral')}
-              </div>
-              )}
+              {!preparee &&
+                (voirParrain ? (
+                  <div class="pn-ref">
+                    <label for="es-referral">
+                      Code de parrainage <span class="pn-opt">(facultatif)</span>
+                    </label>
+                    <input
+                      id="es-referral"
+                      type="text"
+                      autocomplete="off"
+                      autocapitalize="characters"
+                      spellcheck={false}
+                      maxLength={20}
+                      placeholder="LOYNA-XXXXXX"
+                      value={referral}
+                      onInput={(e) => {
+                        setReferral((e.target as HTMLInputElement).value);
+                        if (errors.referral) setErrors((x) => ({...x, referral: ''}));
+                      }}
+                      aria-invalid={errors.referral ? true : undefined}
+                      aria-describedby={`es-referral-help${errors.referral ? ' es-referral-err' : ''}`}
+                    />
+                    <p class="pn-muted pn-small" id="es-referral-help">
+                      Parrainé par un commerçant client de LOYNA ? Votre premier mois d’abonnement sera offert si vous souscrivez ensuite.
+                    </p>
+                    {err('referral')}
+                  </div>
+                ) : (
+                  <button type="button" class="pn-link es-parrain" onClick={() => setVoirParrain(true)}>
+                    J’ai un code de parrainage
+                  </button>
+                ))}
               <div class="pn-cgv">
                 <label class="pn-check">
                   <input
@@ -776,8 +813,7 @@ export default function Essai() {
                     J’accepte les{' '}
                     <a href="/cgv/" target="_blank" rel="noopener">
                       conditions générales de vente
-                    </a>{' '}
-                    *
+                    </a>
                   </span>
                 </label>
                 {err('cgv')}
@@ -790,58 +826,67 @@ export default function Essai() {
                   .
                 </p>
               </div>
-            </div>
-            <div class="pn-hp" aria-hidden="true">
-              <label for="es-website">Ne pas remplir</label>
-              <input id="es-website" name="website" type="text" tabIndex={-1} autocomplete="off" value={website} onInput={(e) => setWebsite((e.target as HTMLInputElement).value)} />
-            </div>
-          </fieldset>
-        </div>
-
-        {/* --- Aperçu et envoi --------------------------------------------------------------------------- */}
-        <aside class="pn-sum es-sum" aria-labelledby="es-sum-t">
-          <h2 id="es-sum-t">{preparee ? '2. Votre carte' : 'Votre carte'}</h2>
-          <div class="es-apercu">
-            <TelephoneWallet {...propsCarte} />
-            <div class="pn-prep-sys" role="radiogroup" aria-label="Téléphone de l’aperçu">
-              <button type="button" role="radio" aria-checked={systeme === 'apple'} class={systeme === 'apple' ? 'on' : ''} onClick={() => setSysteme('apple')}>
-                iPhone
+              <div class="pn-hp" aria-hidden="true">
+                <label for="es-website">Ne pas remplir</label>
+                <input id="es-website" name="website" type="text" tabIndex={-1} autocomplete="off" value={website} onInput={(e) => setWebsite((e.target as HTMLInputElement).value)} />
+              </div>
+              {formErr && (
+                <div class="pn-alert" role="alert">
+                  <p>{formErr.message}</p>
+                  {formErr.code === 'TRIAL_ALREADY_USED' && (
+                    <p>
+                      <a href="/tarifs/">Choisir mon offre</a>
+                    </p>
+                  )}
+                  {formErr.code === 'ACCOUNT_EXISTS' && (
+                    <p>
+                      <a href="/espace-client/?oubli=1" target="_blank" rel="noopener">
+                        Recevoir un nouveau mot de passe
+                      </a>
+                    </p>
+                  )}
+                  {formErr.code === 'ACCOUNT_HAS_MERCHANT' && (
+                    <p>
+                      <a href="/espace-client/">Mon espace client</a>
+                    </p>
+                  )}
+                </div>
+              )}
+              <button type="submit" class={`btn btn--gold es-go es-envoi ${busy ? 'is-loading' : ''}`} disabled={busy} aria-busy={busy || undefined}>
+                {busy ? 'Envoi en cours…' : preparee ? 'Démarrer mon essai gratuit' : 'Essayer 1 mois gratuitement'}
               </button>
-              <button type="button" role="radio" aria-checked={systeme === 'google'} class={systeme === 'google' ? 'on' : ''} onClick={() => setSysteme('google')}>
-                Android
-              </button>
-            </div>
-          </div>
-          <p class="pn-then">{PHRASES.essai}</p>
-          <p class="pn-then">L’essai donne l’offre Starter complète : la relance et « Plus qu’un passage ! » sont actifs, l’anniversaire et l’avis Google s’activent en un réglage. À la fin, aucun prélèvement : la carte se met en pause tant que vous n’avez pas choisi votre offre.</p>
-          {formErr && (
-            <div class="pn-alert" role="alert">
-              <p>{formErr.message}</p>
-              {formErr.code === 'TRIAL_ALREADY_USED' && (
-                <p>
-                  <a href="/tarifs/">Choisir mon offre</a>
-                </p>
-              )}
-              {formErr.code === 'ACCOUNT_EXISTS' && (
-                <p>
-                  <a href="/espace-client/?oubli=1" target="_blank" rel="noopener">
-                    Recevoir un nouveau mot de passe
-                  </a>
-                </p>
-              )}
-              {formErr.code === 'ACCOUNT_HAS_MERCHANT' && (
-                <p>
-                  <a href="/espace-client/">Mon espace client</a>
-                </p>
-              )}
-            </div>
+              <p class="pn-muted pn-small es-fin-note">Sans carte bancaire. À la fin du mois, aucun prélèvement : la carte se met en pause tant que vous n’avez pas choisi votre offre.</p>
+            </>
           )}
-          <button type="submit" class={`btn btn--gold btn--block ${busy ? 'is-loading' : ''}`} disabled={busy} aria-busy={busy || undefined}>
-            {busy ? 'Envoi en cours…' : preparee ? 'Démarrer mon essai gratuit' : 'Essayer 1 mois gratuitement'}
-          </button>
-          <p class="pn-muted pn-small">Vous pourrez choisir votre offre à tout moment depuis votre espace client.</p>
-        </aside>
-      </form>
+        </form>
+      </div>
+
+      {/* --- Aperçu (ordinateur) ---------------------------------------------------------------------- */}
+      <aside class="pn-sum es-sum" aria-labelledby="es-sum-t">
+        <h2 id="es-sum-t">Votre carte</h2>
+        <div class="es-apercu">
+          <TelephoneWallet {...propsCarte} />
+          <div class="pn-prep-sys" role="radiogroup" aria-label="Téléphone de l’aperçu">
+            <button type="button" role="radio" aria-checked={systeme === 'apple'} class={systeme === 'apple' ? 'on' : ''} onClick={() => setSysteme('apple')}>
+              iPhone
+            </button>
+            <button type="button" role="radio" aria-checked={systeme === 'google'} class={systeme === 'google' ? 'on' : ''} onClick={() => setSysteme('google')}>
+              Android
+            </button>
+          </div>
+        </div>
+        <p class="pn-then">{PHRASES.essai}</p>
+        <p class="pn-then">L’essai donne l’offre Starter complète : la relance et « Plus qu’un passage ! » sont actifs, l’anniversaire et l’avis Google s’activent en un réglage. À la fin, aucun prélèvement : la carte se met en pause tant que vous n’avez pas choisi votre offre.</p>
+      </aside>
+    </div>
+  );
+}
+
+/** Carte seule, dans l'écran : sur téléphone, où l'aperçu complet n'a pas la place. */
+function MiniCarte(props: Parameters<typeof CarteWallet>[0]) {
+  return (
+    <div class="es-mini" aria-hidden="true">
+      <CarteWallet {...props} />
     </div>
   );
 }

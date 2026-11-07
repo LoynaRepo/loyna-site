@@ -2,15 +2,15 @@
 //   node tools/qa-essai.mjs <base> [dossier de captures]
 //     Sans réseau vers le produit : les réponses de la fonction trial, de cartes.php et de l'API des entreprises sont simulées. Vérifie le
 //     formulaire, le corps envoyé (contrat du cahier des charges 4.1, sans SIRET depuis le 2026-11-05), chaque code d'erreur, les écrans
-//     de fin, essai fermé ou complet, et les deux parcours : /essai/ (1. Votre carte, 2. Votre compte LOYNA) et /essai/?carte=<id>
-//     (carte préparée : 1. Votre compte LOYNA, aperçu « 2. Votre carte », « Démarrer mon essai gratuit »).
+//     de fin, essai fermé ou complet, et les deux parcours du funnel (2026-11-07, une question par écran) : /essai/ (métier, nom,
+//     récompense, coordonnées, mot de passe) et /essai/?carte=<id> (carte préparée : coordonnées, mot de passe, « Démarrer mon essai gratuit »).
+//     Avec un dossier : une capture de chaque écran à 1366, 390 et 360 px (funnel-<largeur>-<écran>.png).
 //     Toute autre requête vers Supabase est bloquée : rien ne peut partir vers la production. L'API des entreprises ne doit plus être appelée.
 //   ESSAI_URL=https://<projet d'essai>.supabase.co ESSAI_ANON=… ESSAI_SERVICE=… node tools/qa-essai.mjs --pile <base du site> [dossier]
 //     Scénarios S1 et S2 du cahier des charges contre la pile d'essai (2e projet Supabase, site lancé avec PUBLIC_LOYNA_SUPABASE_URL et
 //     PUBLIC_LOYNA_SUPABASE_KEY dans .env.local), valeurs générées, adresses @example.com. Refuse de tourner sur le projet de production.
 import {createHash, randomBytes, randomUUID} from 'node:crypto';
 import fs from 'node:fs';
-import os from 'node:os';
 import puppeteer from 'puppeteer-core';
 
 const CH = 'C:/Users/vaiko/Documents/LOYNA-Motion/node_modules/.remotion/chrome-headless-shell/win64/chrome-headless-shell-win64/chrome-headless-shell.exe';
@@ -42,38 +42,49 @@ const VISITEUR = () => {
   return {prenom: 'Camille', nom: 'Essai', email: `essai-${n}@example.com`, tel: `06 39 98 ${n.slice(-2)} ${n.slice(-4, -2)}`, mdp: `Essai-${n.slice(-6)}Aa1`, commerce: `Le Fournil ${n.slice(-5)}`};
 };
 
-// carte = false : carte préparée, seul le compte est à remplir
-async function remplir(page, v, {carte = true} = {}) {
-  const champ = async (sel, val) => {
-    await page.$eval(sel, (e) => {
-      e.focus();
-      e.select?.();
-    });
-    await page.type(sel, val);
-  };
-  if (carte) {
-    await champ('#es-name', v.commerce);
-    await page.select('#es-activity', 'Boulangerie');
-    await pause(50);
+// Funnel (2026-11-07) : un écran par question. Clique sur un métier (qui passe à l'écran suivant), « Continuer », envoi au dernier écran.
+const choisirMetier = async (page, nom) => {
+  await page.evaluate((n) => [...document.querySelectorAll('.es-choix button')].find((x) => x.textContent.trim() === n).click(), nom);
+  await pause(120);
+};
+const continuer = async (page) => {
+  await page.evaluate(() => document.querySelector('.es-form button[type=submit]').click());
+  await pause(150);
+};
+const retour = async (page) => {
+  await page.evaluate(() => document.querySelector('.es-retour').click());
+  await pause(120);
+};
+const champ = async (page, sel, val) => {
+  await page.$eval(sel, (e) => {
+    e.focus();
+    e.select?.();
+  });
+  await page.type(sel, val);
+};
+// Remplit depuis l'écran affiché jusqu'au dernier, sans envoyer (carte préparée : il commence aux coordonnées)
+async function remplir(page, v) {
+  if (await page.$('.es-choix')) {
+    await choisirMetier(page, 'Boulangerie');
+    await champ(page, '#es-name', v.commerce);
+    await continuer(page);
+    await continuer(page); // récompense proposée pour le métier
   }
-  await champ('#es-first_name', v.prenom);
-  await champ('#es-last_name', v.nom);
-  await champ('#es-email', v.email);
-  await champ('#es-phone', v.tel);
-  await champ('#es-password', v.mdp);
-  await champ('#es-password2', v.mdp);
+  await champ(page, '#es-first_name', v.prenom);
+  await champ(page, '#es-last_name', v.nom);
+  await champ(page, '#es-email', v.email);
+  await champ(page, '#es-phone', v.tel);
+  await continuer(page);
+  await champ(page, '#es-password', v.mdp);
+  await champ(page, '#es-password2', v.mdp);
   if (!(await page.$eval('#es-cgv', (e) => e.checked))) await page.click('#es-cgv');
 }
-const envoyer = (page) => page.evaluate(() => document.querySelector('.es-sum button[type=submit]').click());
-// Ce que voit le visiteur : titres des étapes dans l'ordre, titre de l'aperçu, bouton, champs présents
-const parcours = (page) =>
+const envoyer = (page) => page.evaluate(() => document.querySelector('.es-envoi').click());
+// Écran affiché : question, « Étape n sur N », bouton principal
+const ecran = (page) =>
   page.evaluate(() => ({
-    etapes: [...document.querySelectorAll('.pn-step > legend')].map((l) => l.textContent.replace(/\s+/g, ' ').trim()),
-    apercu: document.querySelector('.es-sum h2')?.textContent.trim(),
-    bouton: document.querySelector('.es-sum button[type=submit]')?.textContent.trim(),
-    reglages: ['#es-name', '#es-activity', '#es-reward', '#es-total', 'input[type=file]'].filter((s) => document.querySelector(s)),
-    parrainage: !!document.querySelector('#es-referral'),
-    siret: /siret/i.test(document.querySelector('form.pn')?.innerHTML ?? ''),
+    etape: document.querySelector('.es-prog-n')?.textContent.replace(/\s+/g, ' ').trim(),
+    question: document.querySelector('.es-form h2')?.textContent.replace(/\s+/g, ' ').trim(),
   }));
 
 // --- Pile d'essai ----------------------------------------------------------------------------------------------------------
@@ -92,8 +103,10 @@ if (pile) {
   const v = VISITEUR();
   await page.goto(`${BASE}/creer-ma-carte/?nom=${encodeURIComponent(v.commerce)}&activite=Boulangerie`, {waitUntil: 'networkidle0', timeout: 90000});
   await Promise.all([page.waitForNavigation({waitUntil: 'networkidle0'}), page.evaluate(() => document.querySelector('#go-essai').click())]);
-  await page.waitForSelector('#es-name', {timeout: 20000});
+  await page.waitForSelector('.es-choix', {timeout: 20000});
+  await continuer(page);
   verifier('S1 : le configurateur remplit la carte', await page.$eval('#es-name', (e) => e.value), v.commerce);
+  await retour(page);
   await remplir(page, v);
   await envoyer(page);
   await page.waitForSelector('.es-fin', {timeout: 30000});
@@ -255,15 +268,15 @@ async function ouvrir({w = 1280, h = 900, chemin = '/essai/', ouverture = {open:
   await page.goto(BASE + chemin, {waitUntil: 'networkidle0', timeout: 120000});
   return {page, ctx, appels, erreurs};
 }
-const attendreForm = (page) => page.waitForSelector('#es-name', {timeout: 20000});
-// Carte préparée lue dans cartes.php : le formulaire ne garde que le compte
-const attendrePreparee = (page) => page.waitForFunction(() => document.querySelector('.es-sum h2')?.textContent.trim() === '2. Votre carte' && !document.querySelector('#es-name'), {timeout: 20000});
+const attendreForm = (page) => page.waitForSelector('.es-choix', {timeout: 20000});
+// Carte préparée lue dans cartes.php : le funnel ne garde que les coordonnées et le mot de passe
+const attendrePreparee = (page) => page.waitForFunction(() => document.querySelector('.es-prog-n')?.textContent.replace(/\s+/g, ' ').trim() === 'Étape 1 sur 2', {timeout: 20000});
 
 if (!OUVERT) {
   // TRIAL.open = false : la page dit que l'essai n'est pas ouvert, sans appeler le serveur
   const {page, ctx, appels, erreurs} = await ouvrir();
   await page.waitForSelector('.es-fin', {timeout: 20000});
-  verifier('essai fermé au build : aucun appel, pas de formulaire', [appels.get, !!(await page.$('#es-name'))], [0, false]);
+  verifier('essai fermé au build : aucun appel, pas de formulaire', [appels.get, !!(await page.$('.es-form'))], [0, false]);
   verifier('essai fermé au build : liens', await page.$$eval('.es-fin a', (l) => l.map((a) => a.getAttribute('href'))), ['/tarifs/?carte=1', '/creer-ma-carte/#send-preview']);
   verifier('essai fermé au build : sans erreur', erreurs, []);
   await ctx.close();
@@ -280,12 +293,12 @@ for (const [nom, ouverture, titre] of [
 ]) {
   const {page, ctx} = await ouvrir({ouverture});
   await page.waitForSelector('.es-fin', {timeout: 20000});
-  verifier(`GET trial ${nom} : titre, pas de formulaire`, [nbsp(await page.$eval('.es-fin h2', (e) => e.textContent)), !!(await page.$('#es-name'))], [titre, false]);
+  verifier(`GET trial ${nom} : titre, pas de formulaire`, [nbsp(await page.$eval('.es-fin h2', (e) => e.textContent)), !!(await page.$('.es-form'))], [titre, false]);
   verifier(`GET trial ${nom} : liens`, await page.$$eval('.es-fin a', (l) => l.map((a) => a.getAttribute('href'))), ['/tarifs/?carte=1', '/creer-ma-carte/#send-preview']);
   await ctx.close();
 }
 
-// 2. Le brouillon du configurateur et le logo passent à l'essai ; la carte de l'aperçu suit le formulaire
+// 2. Le brouillon du configurateur et le logo passent à l'essai ; la carte de l'aperçu suit les réponses
 {
   const {page, ctx, erreurs} = await ouvrir({
     avant: () => {
@@ -295,10 +308,14 @@ for (const [nom, ouverture, titre] of [
     },
   });
   await attendreForm(page);
-  const v = await page.evaluate(() => ({nom: document.querySelector('#es-name').value, act: document.querySelector('#es-activity').value, rec: document.querySelector('#es-reward').value, passages: document.querySelector('#es-total').value, apercu: document.querySelector('.es-apercu .cw-a-n').textContent, logo: !!document.querySelector('.es-apercu .cw-logo img')}));
-  verifier('brouillon du configurateur repris, logo compris', v, {nom: 'Chez Nina', act: 'Pizzeria', rec: 'Pizza offerte', passages: '8', apercu: 'Chez Nina', logo: true});
-  await page.$eval('#es-name', (e) => e.select());
-  await page.type('#es-name', 'Roma');
+  const metier = await page.$eval('.es-choix button[aria-pressed=true]', (e) => e.textContent.trim());
+  await continuer(page);
+  const nom = await page.$eval('#es-name', (e) => e.value);
+  await continuer(page);
+  const v = await page.evaluate(() => ({rec: document.querySelector('#es-reward').value, passages: document.querySelector('#es-total').value, apercu: document.querySelector('.es-apercu .cw-a-n').textContent, logo: !!document.querySelector('.es-apercu .cw-logo img')}));
+  verifier('brouillon du configurateur repris, logo compris', {metier, nom, ...v}, {metier: 'Pizzeria', nom: 'Chez Nina', rec: 'Pizza offerte', passages: '8', apercu: 'Chez Nina', logo: true});
+  await retour(page);
+  await champ(page, '#es-name', 'Roma');
   verifier('l’aperçu suit le nom', await page.$eval('.es-apercu .cw-a-n', (e) => e.textContent), 'Roma');
   await page.evaluate(() => document.querySelector('.es-sum .pn-prep-sys button:last-child').click());
   await pause(100);
@@ -307,49 +324,87 @@ for (const [nom, ouverture, titre] of [
   await ctx.close();
 }
 
-// 3. Un changement d'activité apporte le modèle du métier, sauf ce que le visiteur a modifié
+// 3. Un clic sur le métier passe à la suite et apporte son modèle, sauf ce que le visiteur a modifié ; retour arrière ; Entrée valide
 {
   const {page, ctx} = await ouvrir();
   await attendreForm(page);
-  await page.select('#es-activity', 'Boulangerie');
-  await pause(80);
-  const a = await page.evaluate(() => ({rec: document.querySelector('#es-reward').value, fond: getComputedStyle(document.querySelector('.es-apercu .cw')).getPropertyValue('--cw-fond')}));
-  verifier('activité : récompense et couleur du métier', a, {rec: 'Viennoiserie offerte', fond: '#7a3d1c'});
-  await page.$eval('#es-reward', (e) => e.select());
-  await page.type('#es-reward', 'Un pain offert');
-  await page.select('#es-activity', 'Fleuriste');
-  await pause(80);
+  await choisirMetier(page, 'Boulangerie');
+  verifier('métier : un clic passe au nom, focus dans le champ', [(await ecran(page)).question, await page.evaluate(() => document.activeElement?.id)], ['Comment s’appelle votre commerce ?', 'es-name']);
+  await page.type('#es-name', 'Le Fournil');
+  await page.keyboard.press('Enter');
+  await pause(150);
+  const a = await page.evaluate(() => ({rec: document.querySelector('#es-reward')?.value, fond: getComputedStyle(document.querySelector('.es-apercu .cw')).getPropertyValue('--cw-fond')}));
+  verifier('Entrée valide ; récompense et couleur du métier', a, {rec: 'Viennoiserie offerte', fond: '#7a3d1c'});
+  await champ(page, '#es-reward', 'Un pain offert');
+  await retour(page);
+  await retour(page);
+  await choisirMetier(page, 'Fleuriste');
+  await continuer(page);
   verifier('récompense modifiée : gardée', await page.$eval('#es-reward', (e) => e.value), 'Un pain offert');
-  await page.select('#es-activity', 'Autre');
-  await pause(80);
-  verifier('activité « Autre » : champ libre', !!(await page.$('#es-activity-autre')), true);
+  await retour(page);
+  await retour(page);
+  await choisirMetier(page, 'Autre');
+  verifier('métier « Autre » : champ libre, on reste sur l’écran', [!!(await page.$('#es-activity-autre')), (await ecran(page)).etape], [true, 'Étape 1 sur 5']);
   await ctx.close();
 }
 
-// 4. Contrôles du formulaire, sans appel au serveur
+// 4. Contrôles écran par écran, sans appel au serveur
 {
   const {page, ctx, appels} = await ouvrir();
   await attendreForm(page);
+  verifier('métier : pas de « Continuer » avant le choix', !!(await page.$('.es-form button[type=submit]')), false);
+  await choisirMetier(page, 'Autre');
+  await continuer(page);
+  verifier('métier « Autre » vide : refusé', !!(await page.$('#es-activity-err')), true);
+  await champ(page, '#es-activity-autre', 'Tatoueur');
+  await continuer(page);
+  await continuer(page);
+  verifier('nom vide : signalé, focus', [await page.$$eval('.pn-err', (l) => l.map((e) => e.id)), await page.evaluate(() => document.activeElement?.id)], [['es-name-err'], 'es-name']);
+  await page.keyboard.type('🍕🍕');
+  await continuer(page);
+  verifier('nom sans lettre : refusé', /lettre de notre alphabet/.test(await page.$eval('#es-name-err', (e) => e.textContent)), true);
+  await champ(page, '#es-name', 'Encre Noire');
+  await continuer(page);
+  await page.$eval('#es-reward', (e) => e.select());
+  await page.keyboard.press('Backspace');
+  await continuer(page);
+  verifier('récompense vide : refusée', !!(await page.$('#es-reward-err')), true);
+  await page.type('#es-reward', 'Retouche offerte');
+  await continuer(page);
+  await continuer(page);
+  verifier('coordonnées : tout est signalé, focus sur le prénom', [await page.$$eval('.pn-err', (l) => l.map((e) => e.id.replace(/^es-|-err$/g, ''))), await page.evaluate(() => document.activeElement?.id)], [['first_name', 'last_name', 'email', 'phone'], 'es-first_name']);
+  await remplir(page, VISITEUR());
+  await page.click('#es-cgv');
+  await page.$eval('#es-password2', (e) => e.select());
+  await page.keyboard.type('Autre-mot-2');
   await envoyer(page);
-  await pause(120);
-  const champs = await page.$$eval('.pn-err', (l) => l.map((e) => e.id.replace(/^es-|-err$/g, '')));
-  verifier('tout est signalé, rien ne part', [champs, appels.posts.length], [['name', 'activity', 'reward', 'first_name', 'last_name', 'email', 'phone', 'password', 'cgv'], 0]);
-  verifier('le premier champ en erreur prend le focus', await page.evaluate(() => document.activeElement?.id), 'es-name');
+  await pause(150);
+  verifier('dernier écran : mots de passe différents, CGV, rien ne part', [await page.$$eval('.pn-err', (l) => l.map((e) => e.id.replace(/^es-|-err$/g, ''))), appels.posts.length], [['password2', 'cgv'], 0]);
   await ctx.close();
 }
 
-// 5. Parcours sans carte préparée : 1. Votre carte (tous les réglages), 2. Votre compte LOYNA, parrainage ; plus de SIRET
+// 5. Parcours sans carte préparée : 5 écrans, une question chacun ; ni logo ni SIRET ; parrainage replié ; 1 essai par personne
 {
   const {page, ctx} = await ouvrir();
   await attendreForm(page);
-  verifier('/essai/ : carte puis compte, réglages et parrainage, sans SIRET', await parcours(page), {
-    etapes: ['1 Votre carte', '2 Votre compte LOYNA'],
-    apercu: 'Votre carte',
-    bouton: 'Essayer 1 mois gratuitement',
-    reglages: ['#es-name', '#es-activity', '#es-reward', '#es-total', 'input[type=file]'],
-    parrainage: true,
-    siret: false,
-  });
+  const vus = [await ecran(page)];
+  await choisirMetier(page, 'Boulangerie');
+  vus.push(await ecran(page));
+  await champ(page, '#es-name', 'Le Fournil');
+  await continuer(page);
+  vus.push(await ecran(page));
+  await continuer(page);
+  vus.push(await ecran(page));
+  await remplir(page, VISITEUR());
+  vus.push(await ecran(page));
+  verifier('/essai/ : les 5 écrans', vus, [
+    {etape: 'Étape 1 sur 5', question: 'Quel est votre commerce ?'},
+    {etape: 'Étape 2 sur 5', question: 'Comment s’appelle votre commerce ?'},
+    {etape: 'Étape 3 sur 5', question: 'Que gagnent vos clients fidèles ?'},
+    {etape: 'Étape 4 sur 5', question: 'Votre carte est prête. À qui envoie-t-on l’accès ?'},
+    {etape: 'Étape 5 sur 5', question: 'Dernière étape : votre mot de passe'},
+  ]);
+  verifier('dernier écran : bouton, parrainage replié, sans logo ni SIRET', await page.evaluate(() => ({bouton: document.querySelector('.es-envoi').textContent.trim(), parrain: !!document.querySelector('.es-parrain'), logo: !!document.querySelector('input[type=file]'), siret: /siret/i.test(document.querySelector('.es-funnel').innerHTML)})), {bouton: 'Essayer 1 mois gratuitement', parrain: true, logo: false, siret: false});
   verifier('/essai/ : 1 essai par personne annoncé (CGV 4.9)', nbsp(await page.$eval('.pn-cgv', (e) => e.textContent)).includes('1 essai par personne'), true);
   await ctx.close();
 }
@@ -365,6 +420,7 @@ for (const [nom, ouverture, titre] of [
     window.loynaTrack = (n, p) => window.__mesures.push([n, p]);
   });
   await remplir(page, v);
+  verifier('code de parrainage du lien : champ déplié et rempli', await page.$eval('#es-referral', (e) => e.value), 'loyna-abc234');
   await envoyer(page);
   await page.waitForSelector('.es-fin', {timeout: 20000});
   const c = appels.posts[0];
@@ -409,7 +465,7 @@ for (const [nom, ouverture, titre] of [
   await ctx.close();
 }
 
-// 8. Chaque code d'erreur du contrat
+// 8. Chaque code d'erreur du contrat ; une erreur de coordonnées ramène à leur écran
 for (const [code, attendu] of [
   ['TRIAL_ALREADY_USED', {zone: 'alerte', texte: '1 essai par personne', lien: '/tarifs/'}],
   ['ACCOUNT_EXISTS', {zone: 'alerte', texte: 'indiquez son mot de passe', lien: '/espace-client/?oubli=1'}],
@@ -442,27 +498,19 @@ for (const [code, attendu] of [
   await ctx.close();
 }
 
-// 9. Carte préparée dans le panel (/essai/?carte=<id>) : 1. Votre compte LOYNA, aperçu « 2. Votre carte », « Démarrer mon essai gratuit ».
+// 9. Carte préparée dans le panel (/essai/?carte=<id>) : coordonnées puis mot de passe, aperçu « Votre carte », « Démarrer mon essai gratuit ».
 //    Ni réglage de la carte ni parrainage ; ancienne fiche en premium comprise : nombre de passages ramené à 15 dans le corps envoyé.
 {
   const carte = {nom: 'La Fusion', activite: 'Restaurant', recompense: 'Dessert offert', fond: '#14532d', tampons: '#d9b27a', passages: 20, logo: null, offre: 'premium', periode: 'mensuel', qr: {unit: 1, pack5: 0, pack10: 0}};
   const v = VISITEUR();
   const {page, ctx, appels, erreurs} = await ouvrir({chemin: '/essai/?carte=19k93n5985n294gn', carte});
   await attendrePreparee(page);
-  verifier('carte préparée : compte seul, puis aperçu et Démarrer, sans SIRET', await parcours(page), {
-    etapes: ['1 Votre compte LOYNA'],
-    apercu: '2. Votre carte',
-    bouton: 'Démarrer mon essai gratuit',
-    reglages: [],
-    parrainage: false,
-    siret: false,
-  });
-  verifier('carte préparée : l’aperçu montre la carte', [await page.$eval('.es-apercu .cw-a-n', (e) => e.textContent), /Votre carte est prête/.test(await page.$eval('.pn-intro', (e) => e.textContent))], ['La Fusion', true]);
+  verifier('carte préparée : coordonnées d’abord, l’aperçu montre la carte', [await ecran(page), await page.$eval('.es-apercu .cw-a-n', (e) => e.textContent), !!(await page.$('.es-choix, #es-name, #es-reward'))], [{etape: 'Étape 1 sur 2', question: 'Votre carte est prête. À qui envoie-t-on l’accès ?'}, 'La Fusion', false]);
   if (DOSSIER) await page.screenshot({path: `${DOSSIER}/essai-carte-preparee.png`, fullPage: true});
-  await envoyer(page);
-  await pause(120);
-  verifier('carte préparée : contrôles du compte seulement, rien ne part', [await page.$$eval('.pn-err', (l) => l.map((e) => e.id.replace(/^es-|-err$/g, ''))), appels.posts.length], [['first_name', 'last_name', 'email', 'phone', 'password', 'cgv'], 0]);
-  await remplir(page, v, {carte: false});
+  await continuer(page);
+  verifier('carte préparée : coordonnées contrôlées, rien ne part', [await page.$$eval('.pn-err', (l) => l.map((e) => e.id.replace(/^es-|-err$/g, ''))), appels.posts.length], [['first_name', 'last_name', 'email', 'phone'], 0]);
+  await remplir(page, v);
+  verifier('carte préparée : dernier écran, Démarrer, sans parrainage', await page.evaluate(() => ({bouton: document.querySelector('.es-envoi').textContent.trim(), parrain: !!document.querySelector('.es-parrain, #es-referral')})), {bouton: 'Démarrer mon essai gratuit', parrain: false});
   await envoyer(page);
   await page.waitForSelector('.es-fin', {timeout: 20000});
   const c = appels.posts[0];
@@ -475,7 +523,7 @@ for (const [code, attendu] of [
   const carte = {nom: 'La Fusion', activite: 'Restaurant', recompense: 'Dessert offert', fond: '#14532d', tampons: '#d9b27a', passages: 10, logo: null, offre: 'starter', qr: {unit: 0, pack5: 0, pack10: 0}};
   const {page, ctx} = await ouvrir({chemin: '/essai/?carte=19k93n5985n294gn', carte, trial: () => ({status: 409, corps: erreur('TRIAL_ALREADY_USED', 'Déjà utilisé.')})});
   await attendrePreparee(page);
-  await remplir(page, VISITEUR(), {carte: false});
+  await remplir(page, VISITEUR());
   await envoyer(page);
   await pause(350);
   const r = await page.evaluate(() => ({t: document.querySelector('.pn-alert')?.textContent ?? '', l: document.querySelector('.pn-alert a')?.getAttribute('href') ?? null}));
@@ -487,7 +535,7 @@ for (const [code, attendu] of [
   const {page, ctx} = await ouvrir({chemin: '/essai/?carte=19k93n5985n294gn'});
   await attendreForm(page);
   await pause(300);
-  verifier('carte introuvable : parcours complet', (await parcours(page)).etapes, ['1 Votre carte', '2 Votre compte LOYNA']);
+  verifier('carte introuvable : parcours complet', (await ecran(page)).etape, 'Étape 1 sur 5');
   await ctx.close();
 }
 
@@ -507,84 +555,31 @@ for (const [code, attendu] of [
   await c2.close();
 }
 
-// 9 ter. Logo : refus en français, carré pour Google, peu visible signalé ; nom sans lettre refusé ; aperçu aux couleurs de la vraie carte
+// 9 ter. Aperçu aux couleurs de la vraie carte ; noms longs (plus d'étape logo depuis le 2026-11-07 : le logo se met dans l'espace client)
 {
-  const dir = fs.mkdtempSync(`${os.tmpdir()}/qa-essai-`);
-  const svg = (nom, corps) => {
-    const f = `${dir}/${nom}.svg`;
-    fs.writeFileSync(f, `<svg xmlns="http://www.w3.org/2000/svg" ${corps}</svg>`);
-    return f;
-  };
-  const {page, ctx, appels} = await ouvrir();
+  const {page, ctx} = await ouvrir();
   await attendreForm(page);
-  const choisir = async (f) => {
-    await (await page.$('input[type=file]')).uploadFile(f);
-    await pause(500);
-    return nbsp(await page.$eval('.es-logo', (e) => e.textContent));
-  };
-  // Fond uni retiré à l'envoi, et retour au fond d'origine
-  const coinDuLogo = () =>
-    page.evaluate(async () => {
-      const garde = JSON.parse(sessionStorage.getItem(Object.keys(sessionStorage).find((k) => /logo/i.test(k))));
-      const i = new Image();
-      i.src = `data:image/png;base64,${garde.logo_png}`;
-      await i.decode();
-      const c = document.createElement('canvas');
-      c.width = i.width;
-      c.height = i.height;
-      const x = c.getContext('2d');
-      x.drawImage(i, 0, 0);
-      return x.getImageData(5, 5, 1, 1).data[3];
-    });
-  await choisir(svg('fond', 'width="600" height="600"><rect width="600" height="600" fill="#fdfdfb"/><circle cx="300" cy="300" r="120" fill="#b8935a"/>'));
-  verifier('logo sur fond uni : fond retiré', await coinDuLogo(), 0);
-  verifier('logo sur fond uni : le commerçant est prévenu', /a été retiré/.test(await page.$eval('.es-logo-fond', (e) => e.textContent)), true);
-  await page.click('.es-logo-fond button');
-  await pause(500);
-  verifier('garder le fond d’origine : fond revenu', await coinDuLogo(), 255);
-  verifier('garder le fond d’origine : indiqué', /gardé/.test(await page.$eval('.es-logo-fond', (e) => e.textContent)), true);
-  await page.click('.es-logo .pn-link');
-  await pause(100);
-  verifier('SVG avec HTML : message en français', /ne peut pas être convertie/.test(await choisir(svg('html', 'viewBox="0 0 9 9"><foreignObject width="9" height="9"><div xmlns="http://www.w3.org/1999/xhtml">x</div></foreignObject>'))), true);
-  await choisir(svg('script', 'viewBox="0 0 400 40" onload="window.__pwn=1"><script>window.__pwn=1</script><rect width="400" height="40" fill="#fff"/>'));
-  verifier('SVG avec script : script non exécuté', await page.evaluate(() => window.__pwn ?? null), null);
-  const taille = await page.evaluate(async () => {
-    const g = JSON.parse(sessionStorage.getItem('loyna-config-logo'));
-    const lire = (b) => new Promise((ok) => {
-      const i = new Image();
-      i.onload = () => ok([i.naturalWidth, i.naturalHeight]);
-      i.src = `data:image/png;base64,${b}`;
-    });
-    return {logo: await lire(g.logo_png), icone: await lire(g.icon_png)};
-  });
-  verifier('logo large : carré pour Google, proportions gardées pour Apple', taille, {logo: [660, 660], icone: [320, 32]});
-  await pause(300);
-  await page.select('#es-activity', 'Café');
+  await choisirMetier(page, 'Café');
+  await champ(page, '#es-name', 'Le Comptoir');
+  await continuer(page);
   await page.evaluate(() => {
     const i = document.querySelector('input[type=color][aria-label="Couleur de carte personnalisée"]');
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, '#ffffff');
     i.dispatchEvent(new Event('input', {bubbles: true}));
   });
-  await pause(400);
-  verifier('logo blanc sur carte blanche : signalé', !!(await page.$('.es-logo-alerte')), true);
+  await pause(200);
   const couleurs = () => page.evaluate(() => getComputedStyle(document.querySelector('.es-apercu .cw')).getPropertyValue('--cw-texte'));
   verifier('fond blanc, tampons lisibles : texte dans leur couleur, comme la carte', await couleurs(), '#7a3d1c');
-  await page.select('#es-activity', 'Barbier');
-  await pause(80);
-  await page.$eval('#es-name', (e) => e.focus());
-  await page.keyboard.type('🍕🍕');
-  await envoyer(page);
-  await pause(150);
-  verifier('nom sans lettre : refusé, rien ne part', [/lettre de notre alphabet/.test(await page.$eval('#es-name-err', (e) => e.textContent)), appels.posts.length], [true, 0]);
-  await page.$eval('#es-name', (e) => e.select());
-  await page.keyboard.type("L'Été & Cie");
+  await retour(page);
+  await retour(page);
+  await choisirMetier(page, 'Barbier');
+  await champ(page, '#es-name', 'L’Été & Cie');
   await pause(100);
   verifier('barbier : cachets aux initiales de la carte', await page.$eval('.es-apercu .cw-sceau', (e) => e.textContent), 'EC');
-  // Noms longs : plus d'avertissement, le nom entier dans sa boîte, sur iPhone et sur Android, cadeau sur le dernier tampon
+  // Noms longs : le nom entier dans sa boîte, sur iPhone et sur Android, cadeau sur le dernier tampon
   verifier('dernier tampon : le cadeau', !!(await page.$('.es-apercu .cw-tampons span.fin svg')), true);
   for (const nom of ['Boulangerie Saint Antoine.', 'Coiffure et barbier du vieux port de Sète', 'Salon de coiffure et barbier du Grand Boulevard Saint Anto', 'A'.repeat(60)]) {
-    await page.$eval('#es-name', (e) => e.select());
-    await page.keyboard.type(nom);
+    await champ(page, '#es-name', nom);
     await pause(120);
     const mesure = () =>
       page.evaluate(() => {
@@ -606,13 +601,42 @@ for (const [code, attendu] of [
   await ctx.close();
 }
 
-// 10. Téléphone : pas de débordement, aperçu visible
-for (const w of [360, 390]) {
-  const {page, ctx} = await ouvrir({w, h: 800});
+// 10. Chaque écran, sur ordinateur et sur téléphone : pas de débordement ; sur téléphone, la carte dans l'écran (nom, récompense)
+for (const [w, h] of [[1366, 900], [390, 844], [360, 740]]) {
+  const {page, ctx} = await ouvrir({w, h});
   await attendreForm(page);
-  const r = await page.evaluate(() => ({debord: document.documentElement.scrollWidth - innerWidth, mini: !!document.querySelector('.es-mini .cw') && document.querySelector('.es-mini').getClientRects().length > 0}));
-  verifier(`${w} px : sans débordement, carte en haut du formulaire`, r, {debord: 0, mini: true});
-  if (DOSSIER) await page.screenshot({path: `${DOSSIER}/essai-${w}.png`, fullPage: true});
+  const v = VISITEUR();
+  const noms = ['1-metier', '2-nom', '3-recompense', '4-coordonnees', '5-mot-de-passe'];
+  const debords = [];
+  const minis = [];
+  const photo = async (i) => {
+    debords.push(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth));
+    minis.push(await page.evaluate(() => !!document.querySelector('.es-mini') && document.querySelector('.es-mini').getClientRects().length > 0));
+    if (DOSSIER) {
+      await page.evaluate(() => {
+        document.documentElement.style.scrollBehavior = 'auto';
+        scrollTo(0, 0); // ce que voit le commerçant en arrivant
+      });
+      await pause(150);
+      await page.screenshot({path: `${DOSSIER}/funnel-${w}-${noms[i]}.png`, fullPage: w < 980});
+    }
+  };
+  await photo(0);
+  await choisirMetier(page, 'Boulangerie');
+  await page.type('#es-name', v.commerce);
+  await photo(1);
+  await continuer(page);
+  await photo(2);
+  await continuer(page);
+  for (const [s, x] of [['#es-first_name', v.prenom], ['#es-last_name', v.nom], ['#es-email', v.email], ['#es-phone', v.tel]]) await champ(page, s, x);
+  await photo(3);
+  await continuer(page);
+  await champ(page, '#es-password', v.mdp);
+  await champ(page, '#es-password2', v.mdp);
+  await page.click('#es-cgv');
+  await photo(4);
+  verifier(`${w} px : aucun écran ne déborde`, debords, [0, 0, 0, 0, 0]);
+  verifier(`${w} px : carte dans l’écran (téléphone seulement)`, minis, w < 980 ? [false, true, true, false, false] : [false, false, false, false, false]);
   await ctx.close();
 }
 
