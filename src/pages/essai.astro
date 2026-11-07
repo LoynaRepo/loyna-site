@@ -304,6 +304,30 @@ const crumbs = [
       display: none;
     }
   }
+  /* Renvoi du lien, sur l'écran « Vérifiez votre boîte mail » */
+  .es-renvoi {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+  }
+  .es-renvoi p {
+    margin: 0;
+  }
+  .es-renvoi-b {
+    min-width: 260px;
+    min-height: 52px;
+  }
+  .es-renvoi-b:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .es-renvoi-ok {
+    color: #1f6b3a;
+    font-weight: 600;
+  }
   /* Funnel (2026-11-07) : une question par écran, l'aperçu du téléphone à droite sur ordinateur */
   .es-funnel {
     display: grid;

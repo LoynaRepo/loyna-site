@@ -438,18 +438,17 @@ export default function Essai() {
         <h2>Vérifiez votre boîte mail</h2>
         {reponse?.status === 'CONFIRM_EMAIL' && reponse.confirmation_sent === false ? (
           <p>
-            L’e-mail de confirmation n’a pas pu partir. Écrivez à <a href="mailto:contact@loyna.fr">contact@loyna.fr</a> depuis l’adresse <strong>{f.email.trim()}</strong> : nous vous l’enverrons.
+            L’e-mail d’activation n’a pas pu partir vers <strong>{f.email.trim()}</strong>. Réessayez avec le bouton ci-dessous, ou écrivez à <a href="mailto:contact@loyna.fr">contact@loyna.fr</a> depuis cette adresse : nous vous l’enverrons.
           </p>
         ) : (
           <>
             <p>
               Nous venons d’envoyer un lien à <strong>{f.email.trim()}</strong>. Ouvrez-le et choisissez votre mot de passe : votre carte <strong>{nomAffiche}</strong> est créée à ce moment-là, et votre mois d’essai commence.
             </p>
-            <p class="pn-muted">
-              Pensez à regarder dans les courriers indésirables. Lien expiré ou e-mail introuvable ? <a href="/espace-client/?oubli=1">Recevoir un nouveau lien</a>. Sans activation sous 7 jours, la demande est supprimée.
-            </p>
+            <p class="pn-muted">Pas dans votre boîte de réception ? Regardez dans les courriers indésirables (spam) et, sur Gmail, dans l’onglet « Promotions ». Sans activation sous 7 jours, la demande est supprimée.</p>
           </>
         )}
+        <Renvoi email={f.email.trim().toLowerCase()} />
       </div>
     );
 
@@ -809,6 +808,61 @@ export default function Essai() {
         <p class="pn-then">{PHRASES.essai}</p>
         <p class="pn-then">L’essai donne l’offre Starter complète : la relance et « Plus qu’un passage ! » sont actifs, l’anniversaire et l’avis Google s’activent en un réglage. À la fin, aucun prélèvement : la carte se met en pause tant que vous n’avez pas choisi votre offre.</p>
       </aside>
+    </div>
+  );
+}
+
+const ATTENTE_RENVOI = 60; // secondes entre deux renvois
+const MAX_RENVOIS = 3; // comme la limite du serveur (3 par heure par adresse)
+
+/**
+ * « Renvoyer le lien par e-mail » (Ewan, 2026-11-07) : trial {action: 'resend'} envoie un lien neuf, à usage unique. Le serveur répond pareil
+ * dans tous les cas et borne les renvois ; ici, un compte à rebours de 60 s après chaque envoi et 3 renvois au plus.
+ */
+function Renvoi({email}: {email: string}) {
+  const [envois, setEnvois] = useState(0);
+  const [attente, setAttente] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ok: boolean; texte: string} | null>(null);
+  useEffect(() => {
+    if (attente <= 0) return;
+    const t = setTimeout(() => setAttente((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [attente]);
+  const renvoyer = async () => {
+    if (busy || attente > 0 || envois >= MAX_RENVOIS) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      await publicEdge('trial', {body: {action: 'resend', email}});
+      setEnvois((n) => n + 1);
+      setAttente(ATTENTE_RENVOI);
+      setMsg({ok: true, texte: `Nouveau lien envoyé à ${email}. Seul le dernier lien reçu fonctionne.`});
+    } catch (err) {
+      setMsg({ok: false, texte: err instanceof Error && err.message ? err.message : 'L’envoi n’a pas abouti. Réessayez dans un instant.'});
+    } finally {
+      setBusy(false);
+    }
+  };
+  const fini = envois >= MAX_RENVOIS;
+  return (
+    <div class="es-renvoi">
+      <button type="button" class={`btn btn--gold es-renvoi-b ${busy ? 'is-loading' : ''}`} onClick={renvoyer} disabled={busy || attente > 0 || fini} aria-busy={busy || undefined}>
+        {busy ? 'Envoi en cours…' : attente > 0 ? `Renvoyer le lien (${attente} s)` : 'Renvoyer le lien par e-mail'}
+      </button>
+      {msg && (
+        <p class={msg.ok ? 'es-renvoi-ok' : 'pn-err'} role={msg.ok ? 'status' : 'alert'}>
+          {msg.texte}
+        </p>
+      )}
+      {fini && (
+        <p class="pn-muted pn-small">
+          Toujours rien ? Écrivez à <a href="mailto:contact@loyna.fr">contact@loyna.fr</a> : nous activons votre essai avec vous.
+        </p>
+      )}
+      <p class="pn-muted pn-small">
+        Mauvaise adresse ? Écrivez à <a href={`mailto:contact@loyna.fr?subject=${encodeURIComponent('Essai LOYNA : mauvaise adresse e-mail')}`}>contact@loyna.fr</a> avec la bonne adresse : nous corrigeons votre demande.
+      </p>
     </div>
   );
 }

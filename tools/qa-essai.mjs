@@ -436,7 +436,15 @@ for (const [nom, ouverture, titre] of [
     const r = document.querySelector('.es-fin').getBoundingClientRect();
     return r.top >= 0 && r.top < innerHeight && document.activeElement === document.querySelector('.es-fin');
   }), true);
-  if (DOSSIER) await page.screenshot({path: `${DOSSIER}/essai-confirmer.png`});
+  verifier('renvoi : vrai bouton, conseil spam et Promotions', [await page.$eval('.es-renvoi-b', (e) => e.textContent.trim()), /Promotions/.test(t)], ['Renvoyer le lien par e-mail', true]);
+  await page.click('.es-renvoi-b');
+  await page.waitForSelector('.es-renvoi-ok', {timeout: 10000});
+  const r = await page.evaluate(() => ({ok: document.querySelector('.es-renvoi-ok').textContent, b: document.querySelector('.es-renvoi-b').textContent.trim(), off: document.querySelector('.es-renvoi-b').disabled}));
+  verifier('renvoi : même circuit (trial resend, adresse saisie), confirmation, bouton bloqué avec compte à rebours', [appels.posts.at(-1), nbsp(r.ok).startsWith(`Nouveau lien envoyé à ${v.email}`), /^Renvoyer le lien \((60|59) s\)$/.test(r.b), r.off], [{action: 'resend', email: v.email}, true, true, true]);
+  await page.click('.es-renvoi-b').catch(() => {});
+  await pause(200);
+  verifier('renvoi : pas de second envoi pendant l’attente', appels.posts.filter((c) => c.action === 'resend').length, 1);
+  if (DOSSIER) await page.screenshot({path: `${DOSSIER}/essai-confirmer.png`, fullPage: true});
   await ctx.close();
 }
 
