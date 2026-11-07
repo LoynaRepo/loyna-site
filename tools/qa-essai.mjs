@@ -74,9 +74,6 @@ async function remplir(page, v) {
   await champ(page, '#es-last_name', v.nom);
   await champ(page, '#es-email', v.email);
   await champ(page, '#es-phone', v.tel);
-  await continuer(page);
-  await champ(page, '#es-password', v.mdp);
-  await champ(page, '#es-password2', v.mdp);
   if (!(await page.$eval('#es-cgv', (e) => e.checked))) await page.click('#es-cgv');
 }
 const envoyer = (page) => page.evaluate(() => document.querySelector('.es-envoi').click());
@@ -115,10 +112,15 @@ if (pile) {
   const lien = await fetch(`${ESSAI_URL}/auth/v1/admin/generate_link`, {
     method: 'POST',
     headers: {apikey: ESSAI_SERVICE, authorization: `Bearer ${ESSAI_SERVICE}`, 'content-type': 'application/json'},
-    body: JSON.stringify({type: 'signup', email: v.email, password: v.mdp}),
+    body: JSON.stringify({type: 'recovery', email: v.email}), // même lien que l'e-mail « Activez votre essai » (LOYNA_MAIL_DRY_RUN : pas d'envoi)
   }).then((r) => r.json());
   const jeton = lien.properties?.hashed_token ?? lien.hashed_token;
-  await page.goto(`${BASE}/espace-client/confirmer/?token_hash=${jeton}&type=signup`, {waitUntil: 'networkidle0', timeout: 90000});
+  await page.goto(`${BASE}/espace-client/mot-de-passe/?token_hash=${jeton}&type=recovery&essai=1`, {waitUntil: 'networkidle0', timeout: 90000});
+  await page.waitForSelector('input[autocomplete=new-password]', {timeout: 30000});
+  const [mdp1, mdp2] = await page.$$('input[autocomplete=new-password]');
+  await mdp1.type(v.mdp);
+  await mdp2.type(v.mdp);
+  await page.evaluate(() => document.querySelector('form button[type=submit]').click());
   // Dashboard retire ?bienvenue=1 de l'adresse dès qu'il l'a lu : on attend la page, pas le paramètre.
   await page.waitForFunction(() => location.pathname === '/espace-client/', {timeout: 30000});
   const [m] = await rest(`merchants?select=id,slug,status,subscription_plan,trial_started_at,trial_ends_at&name=eq.${encodeURIComponent(v.commerce)}`);
@@ -231,7 +233,7 @@ if (pile) {
 }
 
 // --- Réponses simulées -----------------------------------------------------------------------------------------------------
-async function ouvrir({w = 1280, h = 900, chemin = '/essai/', ouverture = {open: true}, trial, carte, recherche, avant} = {}) {
+async function ouvrir({w = 1280, h = 900, chemin = '/essai/', ouverture = {open: true}, trial, carte, recherche, avant, auth} = {}) {
   const ctx = await b.createBrowserContext();
   const page = await ctx.newPage();
   await page.setViewport({width: w, height: h, isMobile: w < 600, hasTouch: w < 600});
@@ -255,6 +257,7 @@ async function ouvrir({w = 1280, h = 900, chemin = '/essai/', ouverture = {open:
       const reponse = trial ? trial(appels.posts.at(-1)) : {status: 200, corps: {status: 'CONFIRM_EMAIL', confirmation_sent: true}};
       return json(r, reponse.status, reponse.corps);
     }
+    if (auth && u.includes('/auth/v1/')) return auth(r);
     if (u.includes('.supabase.co')) return r.abort(); // rien vers le produit
     if (u.includes('/espace-commercial/cartes.php')) return json(r, carte ? 200 : 404, carte ? {carte} : {});
     if (u.includes('recherche-entreprises.api.gouv.fr')) {
@@ -270,7 +273,7 @@ async function ouvrir({w = 1280, h = 900, chemin = '/essai/', ouverture = {open:
 }
 const attendreForm = (page) => page.waitForSelector('.es-choix', {timeout: 20000});
 // Carte préparée lue dans cartes.php : le funnel ne garde que les coordonnées et le mot de passe
-const attendrePreparee = (page) => page.waitForFunction(() => document.querySelector('.es-prog-n')?.textContent.replace(/\s+/g, ' ').trim() === 'Étape 1 sur 2', {timeout: 20000});
+const attendrePreparee = (page) => page.waitForFunction(() => document.querySelector('.es-envoi')?.textContent.trim() === 'Démarrer mon essai gratuit', {timeout: 20000});
 
 if (!OUVERT) {
   // TRIAL.open = false : la page dit que l'essai n'est pas ouvert, sans appeler le serveur
@@ -344,7 +347,7 @@ for (const [nom, ouverture, titre] of [
   await retour(page);
   await retour(page);
   await choisirMetier(page, 'Autre');
-  verifier('métier « Autre » : champ libre, on reste sur l’écran', [!!(await page.$('#es-activity-autre')), (await ecran(page)).etape], [true, 'Étape 1 sur 5']);
+  verifier('métier « Autre » : champ libre, on reste sur l’écran', [!!(await page.$('#es-activity-autre')), (await ecran(page)).etape], [true, 'Étape 1 sur 4']);
   await ctx.close();
 }
 
@@ -372,14 +375,13 @@ for (const [nom, ouverture, titre] of [
   await page.type('#es-reward', 'Retouche offerte');
   await continuer(page);
   await continuer(page);
-  verifier('coordonnées : tout est signalé, focus sur le prénom', [await page.$$eval('.pn-err', (l) => l.map((e) => e.id.replace(/^es-|-err$/g, ''))), await page.evaluate(() => document.activeElement?.id)], [['first_name', 'last_name', 'email', 'phone'], 'es-first_name']);
+  verifier('dernier écran : tout est signalé, focus sur le prénom, rien ne part', [await page.$$eval('.pn-err', (l) => l.map((e) => e.id.replace(/^es-|-err$/g, ''))), await page.evaluate(() => document.activeElement?.id), appels.posts.length], [['first_name', 'last_name', 'email', 'phone', 'cgv'], 'es-first_name', 0]);
   await remplir(page, VISITEUR());
   await page.click('#es-cgv');
-  await page.$eval('#es-password2', (e) => e.select());
-  await page.keyboard.type('Autre-mot-2');
   await envoyer(page);
   await pause(150);
-  verifier('dernier écran : mots de passe différents, CGV, rien ne part', [await page.$$eval('.pn-err', (l) => l.map((e) => e.id.replace(/^es-|-err$/g, ''))), appels.posts.length], [['password2', 'cgv'], 0]);
+  verifier('dernier écran : CGV non cochées, rien ne part', [await page.$$eval('.pn-err', (l) => l.map((e) => e.id.replace(/^es-|-err$/g, ''))), appels.posts.length], [['cgv'], 0]);
+  verifier('aucun champ mot de passe', !!(await page.$('input[type=password], #es-password')), false);
   await ctx.close();
 }
 
@@ -395,14 +397,11 @@ for (const [nom, ouverture, titre] of [
   vus.push(await ecran(page));
   await continuer(page);
   vus.push(await ecran(page));
-  await remplir(page, VISITEUR());
-  vus.push(await ecran(page));
-  verifier('/essai/ : les 5 écrans', vus, [
-    {etape: 'Étape 1 sur 5', question: 'Quel est votre commerce ?'},
-    {etape: 'Étape 2 sur 5', question: 'Comment s’appelle votre commerce ?'},
-    {etape: 'Étape 3 sur 5', question: 'Que gagnent vos clients fidèles ?'},
-    {etape: 'Étape 4 sur 5', question: 'Votre carte est prête. À qui envoie-t-on l’accès ?'},
-    {etape: 'Étape 5 sur 5', question: 'Dernière étape : votre mot de passe'},
+  verifier('/essai/ : les 4 écrans', vus, [
+    {etape: 'Étape 1 sur 4', question: 'Quel est votre commerce ?'},
+    {etape: 'Étape 2 sur 4', question: 'Comment s’appelle votre commerce ?'},
+    {etape: 'Étape 3 sur 4', question: 'Que gagnent vos clients fidèles ?'},
+    {etape: 'Étape 4 sur 4', question: 'Votre carte est prête. À qui envoie-t-on l’accès ?'},
   ]);
   verifier('dernier écran : bouton, parrainage replié, sans logo ni SIRET', await page.evaluate(() => ({bouton: document.querySelector('.es-envoi').textContent.trim(), parrain: !!document.querySelector('.es-parrain'), logo: !!document.querySelector('input[type=file]'), siret: /siret/i.test(document.querySelector('.es-funnel').innerHTML)})), {bouton: 'Essayer 1 mois gratuitement', parrain: true, logo: false, siret: false});
   verifier('/essai/ : 1 essai par personne annoncé (CGV 4.9)', nbsp(await page.$eval('.pn-cgv', (e) => e.textContent)).includes('1 essai par personne'), true);
@@ -424,7 +423,7 @@ for (const [nom, ouverture, titre] of [
   await envoyer(page);
   await page.waitForSelector('.es-fin', {timeout: 20000});
   const c = appels.posts[0];
-  verifier('corps : action, compte', [c.action, c.account], ['start', {email: v.email, password: v.mdp, first_name: v.prenom, last_name: v.nom, phone: v.tel}]);
+  verifier('corps : action, compte', [c.action, c.account], ['start', {email: v.email, first_name: v.prenom, last_name: v.nom, phone: v.tel}]);
   verifier('corps : commerce sans SIRET, carte', [c.business, c.card], [{name: v.commerce, activity: 'Boulangerie'}, {bg: '#7a3d1c', accent: '#f2c879', total: 10, reward: 'Viennoiserie offerte'}]);
   verifier('aucun appel à l’API des entreprises', appels.recherche, []);
   verifier('corps : parrainage normalisé, CGV, champ piège, pas de logo', [c.referral_code, c.cgv_version, c.website, 'logo_png' in c], ['LOYNA-ABC234', CGV, '', false]);
@@ -473,7 +472,6 @@ for (const [code, attendu] of [
   ['RATE_LIMITED', {zone: 'alerte', texte: 'réessayez dans une heure', lien: null}],
   ['INVALID_REQUEST', {zone: 'alerte', texte: 'Demande refusée', lien: null}],
   ['REFERRAL_INVALID', {zone: 'referral', texte: 'Code inconnu'}],
-  ['WEAK_PASSWORD', {zone: 'password', texte: 'trop faible'}],
   ['INVALID_PHONE', {zone: 'phone', texte: 'numéro de téléphone valide'}],
   ['INVALID_EMAIL', {zone: 'email', texte: 'Adresse refusée'}],
   ['TRIAL_CLOSED', {zone: 'fin', texte: 'n’est pas ouvert'}],
@@ -505,10 +503,10 @@ for (const [code, attendu] of [
   const v = VISITEUR();
   const {page, ctx, appels, erreurs} = await ouvrir({chemin: '/essai/?carte=19k93n5985n294gn', carte});
   await attendrePreparee(page);
-  verifier('carte préparée : coordonnées d’abord, l’aperçu montre la carte', [await ecran(page), await page.$eval('.es-apercu .cw-a-n', (e) => e.textContent), !!(await page.$('.es-choix, #es-name, #es-reward'))], [{etape: 'Étape 1 sur 2', question: 'Votre carte est prête. À qui envoie-t-on l’accès ?'}, 'La Fusion', false]);
+  verifier('carte préparée : coordonnées d’abord, l’aperçu montre la carte', [await ecran(page), await page.$eval('.es-apercu .cw-a-n', (e) => e.textContent), !!(await page.$('.es-choix, #es-name, #es-reward'))], [{etape: undefined, question: 'Votre carte est prête. À qui envoie-t-on l’accès ?'}, 'La Fusion', false]);
   if (DOSSIER) await page.screenshot({path: `${DOSSIER}/essai-carte-preparee.png`, fullPage: true});
   await continuer(page);
-  verifier('carte préparée : coordonnées contrôlées, rien ne part', [await page.$$eval('.pn-err', (l) => l.map((e) => e.id.replace(/^es-|-err$/g, ''))), appels.posts.length], [['first_name', 'last_name', 'email', 'phone'], 0]);
+  verifier('carte préparée : coordonnées et CGV contrôlées, rien ne part', [await page.$$eval('.pn-err', (l) => l.map((e) => e.id.replace(/^es-|-err$/g, ''))), appels.posts.length], [['first_name', 'last_name', 'email', 'phone', 'cgv'], 0]);
   await remplir(page, v);
   verifier('carte préparée : dernier écran, Démarrer, sans parrainage', await page.evaluate(() => ({bouton: document.querySelector('.es-envoi').textContent.trim(), parrain: !!document.querySelector('.es-parrain, #es-referral')})), {bouton: 'Démarrer mon essai gratuit', parrain: false});
   await envoyer(page);
@@ -535,7 +533,7 @@ for (const [code, attendu] of [
   const {page, ctx} = await ouvrir({chemin: '/essai/?carte=19k93n5985n294gn'});
   await attendreForm(page);
   await pause(300);
-  verifier('carte introuvable : parcours complet', (await ecran(page)).etape, 'Étape 1 sur 5');
+  verifier('carte introuvable : parcours complet', (await ecran(page)).etape, 'Étape 1 sur 4');
   await ctx.close();
 }
 
@@ -601,12 +599,43 @@ for (const [code, attendu] of [
   await ctx.close();
 }
 
+// 9 quater. Lien de l'e-mail « Activez votre essai » : la page fait choisir le mot de passe, active l'essai et ouvre l'espace client.
+//           Auth simulé : /verify (jeton à usage unique), PUT /user (mot de passe) ; rien ne part vers le produit.
+for (const [w, h] of [[1366, 900], [390, 844]]) {
+  const auth = [];
+  const utilisateur = {id: 'u1', aud: 'authenticated', role: 'authenticated', email: 'camille@example.com', email_confirmed_at: new Date().toISOString()};
+  const {page, ctx, appels, erreurs} = await ouvrir({
+    w,
+    h,
+    chemin: '/espace-client/mot-de-passe/?token_hash=jeton-essai-123456&type=recovery&essai=1',
+    trial: (corps) => (corps.action === 'activate' ? {status: 200, corps: {status: 'ACTIVATED', merchant_id: 'm1', slug: 'le-fournil', join_url: 'https://loyna.fr/join/le-fournil', trial_ends_at: '2026-12-07T10:00:00Z'}} : {status: 400, corps: erreur('INVALID_REQUEST', 'x')}),
+    auth: (r) => {
+      const chemin = new URL(r.url()).pathname;
+      auth.push(`${r.method()} ${chemin}`);
+      if (chemin.endsWith('/verify')) return json(r, 200, {access_token: 'a.b.c', refresh_token: 'r', token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, user: utilisateur});
+      if (chemin.endsWith('/user')) return json(r, 200, utilisateur);
+      return r.abort();
+    },
+  });
+  await page.waitForSelector('input[autocomplete=new-password]', {timeout: 20000});
+  verifier(`${w} px : page d'activation, titre et bouton de l'essai`, await page.evaluate(() => [document.querySelector('h1').textContent.trim(), document.querySelector('form button[type=submit]').textContent.trim(), location.search]), ['Choisissez votre mot de passe pour démarrer votre essai', 'Démarrer mon essai', '']);
+  const [mdp1, mdp2] = await page.$$('input[autocomplete=new-password]');
+  await mdp1.type('Essai-Lien2026');
+  await mdp2.type('Essai-Lien2026');
+  if (DOSSIER) await page.screenshot({path: `${DOSSIER}/activation-${w}.png`, fullPage: w < 980});
+  await page.evaluate(() => document.querySelector('form button[type=submit]').click());
+  await page.waitForFunction(() => location.pathname === '/espace-client/', {timeout: 20000});
+  verifier(`${w} px : jeton vérifié, mot de passe enregistré, essai activé, espace client`, [auth.filter((a) => /verify|PUT/.test(a)), appels.posts.map((c) => c.action)], [['POST /auth/v1/verify', 'PUT /auth/v1/user'], ['activate']]);
+  verifier(`${w} px : sans erreur de page`, erreurs, []);
+  await ctx.close();
+}
+
 // 10. Chaque écran, sur ordinateur et sur téléphone : pas de débordement ; sur téléphone, la carte dans l'écran (nom, récompense)
 for (const [w, h] of [[1366, 900], [390, 844], [360, 740]]) {
   const {page, ctx} = await ouvrir({w, h});
   await attendreForm(page);
   const v = VISITEUR();
-  const noms = ['1-metier', '2-nom', '3-recompense', '4-coordonnees', '5-mot-de-passe'];
+  const noms = ['1-metier', '2-nom', '3-recompense', '4-coordonnees'];
   const debords = [];
   const minis = [];
   const photo = async (i) => {
@@ -629,14 +658,10 @@ for (const [w, h] of [[1366, 900], [390, 844], [360, 740]]) {
   await photo(2);
   await continuer(page);
   for (const [s, x] of [['#es-first_name', v.prenom], ['#es-last_name', v.nom], ['#es-email', v.email], ['#es-phone', v.tel]]) await champ(page, s, x);
-  await photo(3);
-  await continuer(page);
-  await champ(page, '#es-password', v.mdp);
-  await champ(page, '#es-password2', v.mdp);
   await page.click('#es-cgv');
-  await photo(4);
-  verifier(`${w} px : aucun écran ne déborde`, debords, [0, 0, 0, 0, 0]);
-  verifier(`${w} px : carte dans l’écran (téléphone seulement)`, minis, w < 980 ? [false, true, true, false, false] : [false, false, false, false, false]);
+  await photo(3);
+  verifier(`${w} px : aucun écran ne déborde`, debords, [0, 0, 0, 0]);
+  verifier(`${w} px : carte dans l’écran (téléphone seulement)`, minis, w < 980 ? [false, true, true, false] : [false, false, false, false]);
   await ctx.close();
 }
 

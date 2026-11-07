@@ -268,6 +268,9 @@ function Login({logo, withSide = true}: {logo: string; withSide?: boolean}) {
             </p>
             <Forgot email={email} />
             <p>
+              <strong>Essai gratuit :</strong> pas reçu l’e-mail « Activez votre essai », ou lien expiré ? Saisissez ci-dessus l’adresse donnée à l’essai : le nouveau lien vous fait choisir votre mot de passe et démarre votre essai.
+            </p>
+            <p>
               <strong>Première connexion d’un employé :</strong> demandez à votre responsable votre lien d’accès, depuis le menu <em>Équipe</em>. Vous y choisirez vous-même votre mot de passe.
             </p>
             <p>

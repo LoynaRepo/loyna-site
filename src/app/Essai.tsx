@@ -13,7 +13,7 @@ import {frenchTypography} from './typo';
 import {logoToFiles} from './logo-png';
 import {CarteWallet, TelephoneWallet} from '../lib/CarteWallet';
 import {lireCartePreparee, MONTANT, RE_ID_CARTE} from '../lib/carte-preparee';
-import {CLE_LOGO, EMAIL_RE, REFERRAL_ERRORS, RULES, TELEPHONE_RE, lireLogoGarde, normalizeReferral, store, track, urlLogo, type LogoGarde} from '../lib/compte-regles';
+import {CLE_LOGO, EMAIL_RE, REFERRAL_ERRORS, TELEPHONE_RE, lireLogoGarde, normalizeReferral, store, track, urlLogo, type LogoGarde} from '../lib/compte-regles';
 
 type Etat = 'attente' | 'ouvert' | 'ferme' | 'confirmer' | 'active';
 type Raison = 'CLOSED' | 'FULL' | 'RESEAU';
@@ -129,13 +129,12 @@ function fichierDepuisDataUrl(dataUrl: string): File {
 }
 
 // Écrans du funnel et champs qu'ils contrôlent : une erreur du serveur ramène à l'écran de son champ.
-type Ecran = 'activite' | 'nom' | 'recompense' | 'contact' | 'compte';
+type Ecran = 'activite' | 'nom' | 'recompense' | 'contact';
 const CHAMPS: Record<Ecran, string[]> = {
   activite: ['activity'],
   nom: ['name'],
   recompense: ['reward'],
-  contact: ['first_name', 'last_name', 'email', 'phone'],
-  compte: ['password', 'password2', 'referral', 'cgv'],
+  contact: ['first_name', 'last_name', 'email', 'phone', 'referral', 'cgv'],
 };
 const ORDRE_CHAMPS = Object.values(CHAMPS).flat();
 
@@ -151,9 +150,6 @@ export default function Essai() {
   const [preparee, setPreparee] = useState(false);
   const [etape, setEtape] = useState(0);
   const [f, setF] = useState({first_name: '', last_name: '', email: '', phone: ''});
-  const [pw, setPw] = useState('');
-  const [pw2, setPw2] = useState('');
-  const [showPw, setShowPw] = useState(false);
   const [cgv, setCgv] = useState(false);
   const [website, setWebsite] = useState(''); // champ piège
   const [referral, setReferral] = useState(() => (new URLSearchParams(location.search).get('parrain') ?? '').trim().slice(0, 20));
@@ -166,7 +162,7 @@ export default function Essai() {
   const aFocaliser = useRef<string | null>(null);
 
   // Carte préparée : déjà réglée, il ne reste que le compte
-  const ecrans: Ecran[] = preparee ? ['contact', 'compte'] : ['activite', 'nom', 'recompense', 'contact', 'compte'];
+  const ecrans: Ecran[] = preparee ? ['contact'] : ['activite', 'nom', 'recompense', 'contact'];
   const ecran = ecrans[Math.min(etape, ecrans.length - 1)];
 
   useEffect(() => (racine.current ? frenchTypography(racine.current) : undefined), [etat, ecran]);
@@ -308,8 +304,6 @@ export default function Essai() {
     if (!f.last_name.trim()) e.last_name = 'Indiquez votre nom.';
     if (!EMAIL_RE.test(f.email.trim())) e.email = 'Indiquez une adresse e-mail valide.';
     if (!TELEPHONE_RE.test(f.phone.trim())) e.phone = 'Indiquez un numéro de téléphone valide.';
-    if (!RULES.every((r) => r.test(pw))) e.password = 'Le mot de passe ne respecte pas encore toutes les règles.';
-    else if (pw !== pw2) e.password2 = 'Les deux mots de passe sont différents.';
     if (referral.trim() && !normalizeReferral(referral)) e.referral = 'Code de parrainage inconnu ou expiré.';
     if (!cgv) e.cgv = 'Acceptez les conditions générales de vente pour continuer.';
     return e;
@@ -333,7 +327,7 @@ export default function Essai() {
   // « Continuer » : seulement les champs de cet écran ; au dernier, tout est revu puis envoyé
   const suivant = (ev?: Event) => {
     ev?.preventDefault();
-    if (ecran === 'compte') return submit();
+    if (ecran === 'contact') return submit();
     const tout = validate();
     const e = Object.fromEntries(CHAMPS[ecran].filter((k) => tout[k]).map((k) => [k, tout[k]]));
     setErrors((x) => ({...x, ...Object.fromEntries(CHAMPS[ecran].map((k) => [k, e[k] ?? '']))}));
@@ -352,7 +346,7 @@ export default function Essai() {
     const code = referral.trim() ? normalizeReferral(referral) : null;
     const body = {
       action: 'start',
-      account: {email: f.email.trim().toLowerCase(), password: pw, first_name: f.first_name.trim(), last_name: f.last_name.trim(), phone: f.phone.trim()},
+      account: {email: f.email.trim().toLowerCase(), first_name: f.first_name.trim(), last_name: f.last_name.trim(), phone: f.phone.trim()},
       business: {name: carte.name.trim(), activity: activiteCarte(carte)},
       card: carte.montant
         ? {bg: carte.bg, accent: carte.accent, mode: 'SPEND', total: carte.montant, reward: carte.reward.trim()}
@@ -372,7 +366,7 @@ export default function Essai() {
     } catch (err) {
       const c = err instanceof ApiError ? err.code : '';
       const message = MESSAGES[c] ?? (err instanceof Error && err.message ? err.message : 'L’opération n’a pas abouti. Réessayez dans un instant.');
-      const zone = REFERRAL_ERRORS.has(c) ? 'referral' : {WEAK_PASSWORD: 'password', INVALID_PHONE: 'phone', INVALID_EMAIL: 'email'}[c];
+      const zone = REFERRAL_ERRORS.has(c) ? 'referral' : {INVALID_PHONE: 'phone', INVALID_EMAIL: 'email'}[c];
       if (c === 'TRIAL_CLOSED' || c === 'TRIAL_FULL') {
         setRaison(c === 'TRIAL_FULL' ? 'FULL' : 'CLOSED');
         setEtat('ferme');
@@ -449,9 +443,11 @@ export default function Essai() {
         ) : (
           <>
             <p>
-              Nous venons d’envoyer un lien à <strong>{f.email.trim()}</strong>. Ouvrez-le pour confirmer votre adresse : votre carte <strong>{nomAffiche}</strong> est créée à ce moment-là, et votre mois d’essai commence.
+              Nous venons d’envoyer un lien à <strong>{f.email.trim()}</strong>. Ouvrez-le et choisissez votre mot de passe : votre carte <strong>{nomAffiche}</strong> est créée à ce moment-là, et votre mois d’essai commence.
             </p>
-            <p class="pn-muted">Pensez à regarder dans les courriers indésirables. Sans confirmation sous 7 jours, la demande est supprimée.</p>
+            <p class="pn-muted">
+              Pensez à regarder dans les courriers indésirables. Lien expiré ou e-mail introuvable ? <a href="/espace-client/?oubli=1">Recevoir un nouveau lien</a>. Sans activation sous 7 jours, la demande est supprimée.
+            </p>
           </>
         )}
       </div>
@@ -474,28 +470,30 @@ export default function Essai() {
     );
 
   // --- Funnel : une question par écran -------------------------------------------------------------------------------------------
-  const dernier = ecran === 'compte';
+  const dernier = ecran === 'contact';
   const miniCarte = ecran === 'nom' || ecran === 'recompense' || (preparee && dernier);
   return (
     <div ref={racine} class="es-funnel">
       <div class="es-q">
-        <div class="es-prog">
-          <div class="es-prog-l">
-            {etape > 0 ? (
-              <button type="button" class="es-retour" onClick={retour}>
-                <span aria-hidden="true">←</span> Retour
-              </button>
-            ) : (
-              <span />
-            )}
-            <span class="es-prog-n">
-              Étape {etape + 1} sur {ecrans.length}
-            </span>
+        {ecrans.length > 1 && (
+          <div class="es-prog">
+            <div class="es-prog-l">
+              {etape > 0 ? (
+                <button type="button" class="es-retour" onClick={retour}>
+                  <span aria-hidden="true">←</span> Retour
+                </button>
+              ) : (
+                <span />
+              )}
+              <span class="es-prog-n">
+                Étape {etape + 1} sur {ecrans.length}
+              </span>
+            </div>
+            <div class="es-barre" role="progressbar" aria-label="Avancement" aria-valuemin={1} aria-valuemax={ecrans.length} aria-valuenow={etape + 1}>
+              <span style={{width: `${((etape + 1) / ecrans.length) * 100}%`}} />
+            </div>
           </div>
-          <div class="es-barre" role="progressbar" aria-label="Avancement" aria-valuemin={1} aria-valuemax={ecrans.length} aria-valuenow={etape + 1}>
-            <span style={{width: `${((etape + 1) / ecrans.length) * 100}%`}} />
-          </div>
-        </div>
+        )}
 
         <form class="pn es-form" onSubmit={suivant} noValidate>
           {/* --- Métier : un clic choisit et passe à la suite ---- */}
@@ -672,7 +670,8 @@ export default function Essai() {
           {ecran === 'contact' && (
             <>
               <h2 tabIndex={-1}>Votre carte est prête. À qui envoie-t-on l’accès ?</h2>
-              <p class="es-sous">Pour créer votre espace client et vous envoyer le lien de confirmation.</p>
+              <p class="es-sous">Vous recevez un e-mail pour choisir votre mot de passe : votre carte est créée à ce moment-là.</p>
+              {miniCarte && <MiniCarte {...propsCarte} />}
               <div class="pn-row">
                 <div class="field">
                   <label for="es-first_name">Prénom</label>
@@ -695,74 +694,6 @@ export default function Essai() {
                 <input type="tel" autocomplete="tel" inputMode="tel" maxLength={30} required {...fieldProps('phone')} />
                 {err('phone')}
               </div>
-              <button type="submit" class="btn btn--gold es-go">
-                Continuer
-              </button>
-            </>
-          )}
-
-          {/* --- Mot de passe, conditions, envoi ---- */}
-          {dernier && (
-            <>
-              <h2 tabIndex={-1}>Dernière étape : votre mot de passe</h2>
-              <p class="es-sous">Il protège votre espace client. Vous recevez ensuite un e-mail pour confirmer votre adresse : votre carte est créée à ce moment-là.</p>
-              {miniCarte && <MiniCarte {...propsCarte} />}
-              <div class="field">
-                <label for="es-password">Mot de passe</label>
-                <span class="pn-pw">
-                  <input
-                    id="es-password"
-                    data-premier
-                    type={showPw ? 'text' : 'password'}
-                    autocomplete="new-password"
-                    maxLength={72}
-                    required
-                    value={pw}
-                    onInput={(e) => {
-                      setPw((e.target as HTMLInputElement).value);
-                      if (errors.password) setErrors((x) => ({...x, password: ''}));
-                    }}
-                    aria-invalid={errors.password ? true : undefined}
-                    aria-describedby={`es-pw-rules${errors.password ? ' es-password-err' : ''}`}
-                  />
-                  <button type="button" class="pn-eye" onClick={() => setShowPw(!showPw)} aria-pressed={showPw}>
-                    {showPw ? 'Masquer' : 'Afficher'}
-                  </button>
-                </span>
-                {err('password')}
-              </div>
-              <ul class="pn-rules" id="es-pw-rules" aria-label="Règles du mot de passe">
-                {RULES.map((r) => (
-                  <li class={r.test(pw) ? 'ok' : ''}>
-                    <span aria-hidden="true">{r.test(pw) ? '✓' : '•'}</span> {r.label}
-                    <span class="sr-only">{r.test(pw) ? ' : respectée' : ' : à respecter'}</span>
-                  </li>
-                ))}
-              </ul>
-              <div class="field">
-                <label for="es-password2">Confirmez le mot de passe</label>
-                <input
-                  id="es-password2"
-                  type={showPw ? 'text' : 'password'}
-                  autocomplete="new-password"
-                  maxLength={72}
-                  required
-                  value={pw2}
-                  onInput={(e) => {
-                    setPw2((e.target as HTMLInputElement).value);
-                    if (errors.password2) setErrors((x) => ({...x, password2: ''}));
-                  }}
-                  aria-invalid={errors.password2 ? true : undefined}
-                  aria-describedby={errors.password2 ? 'es-password2-err' : undefined}
-                />
-                {err('password2')}
-              </div>
-              <p class="pn-muted pn-small">
-                Déjà un compte, sans commerce ? Indiquez son adresse et son mot de passe. Mot de passe oublié ?{' '}
-                <a href="/espace-client/?oubli=1" target="_blank" rel="noopener">
-                  Recevoir un lien
-                </a>
-              </p>
               {!preparee &&
                 (voirParrain ? (
                   <div class="pn-ref">

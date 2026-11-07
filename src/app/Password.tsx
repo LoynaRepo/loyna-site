@@ -2,6 +2,9 @@
 // Lien ?token_hash=…&type=recovery (depuis le 2026-10-27) : la page vérifie le jeton (verifyOtp), ce qui ouvre la
 // session. Ancien lien (jetons après #, via /set-password) : Supabase Auth ouvre la session à partir de l'adresse.
 // Il ne reste qu'à enregistrer le mot de passe.
+// Essai demandé sans mot de passe (2026-11-07) : le lien de l'e-mail « Activez votre essai » (&essai=1) arrive ici ; le mot de passe
+// enregistré, `trial {action: 'activate'}` crée le commerce et mène à /espace-client/?bienvenue=1. Un lien redemandé par « mot de passe
+// oublié » (sans &essai=1) active aussi l'essai en attente : NONE pour tout autre compte.
 import {useEffect, useState} from 'preact/hooks';
 import {linkError, supabaseBackend, verifyRecoveryLink} from './backend';
 import {Icon} from './icons';
@@ -24,6 +27,7 @@ export default function Password({logo}: {logo: string}) {
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [essai] = useState(() => new URLSearchParams(location.search).has('essai'));
 
   useEffect(() => {
     const err = linkError();
@@ -74,6 +78,9 @@ export default function Password({logo}: {logo: string}) {
     setBusy(true);
     try {
       await api.updatePassword(pw);
+      // Essai en attente : il démarre maintenant. Refus ou panne : l'espace client réessaie à l'ouverture, le mot de passe reste enregistré.
+      const t = await api.edge<{status: string}>('trial', {action: 'activate'}).catch(() => null);
+      if (t?.status === 'ACTIVATED') return location.replace('/espace-client/?bienvenue=1');
       setState('done');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Enregistrement impossible.');
@@ -109,8 +116,8 @@ export default function Password({logo}: {logo: string}) {
         )}
         {state === 'ready' && (
           <form class="form" onSubmit={submit}>
-            <p class="eyebrow">LOYNA Business</p>
-            <h1>Choisissez votre mot de passe</h1>
+            <p class="eyebrow">{essai ? 'Votre essai gratuit' : 'LOYNA Business'}</p>
+            <h1>{essai ? 'Choisissez votre mot de passe pour démarrer votre essai' : 'Choisissez votre mot de passe'}</h1>
             {email && (
               <p class="muted">
                 Compte : <strong>{email}</strong>
@@ -142,7 +149,7 @@ export default function Password({logo}: {logo: string}) {
               </p>
             )}
             <Btn type="submit" kind="gold" block busy={busy} disabled={!ok} icon="lock">
-              Enregistrer mon mot de passe
+              {essai ? 'Démarrer mon essai' : 'Enregistrer mon mot de passe'}
             </Btn>
           </form>
         )}
