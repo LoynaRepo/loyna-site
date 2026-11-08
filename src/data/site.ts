@@ -350,14 +350,17 @@ export const PLANS: Plan[] = [
 
 // Programme partenaires (apporteurs d'affaires, page /devenir-partenaire/), conditions de la grille du 2026-10-31 :
 // commission unique par commerce, selon son offre, avec ou sans engagement : environ 2 mensualités, toujours moins que ce
-// que le client a déjà payé quand elle devient due. Acquise au 3e paiement mensuel réellement encaissé.
-// Virement sous 30 jours après la facture ou la note de commission ; recommandation confirmée sous 2 jours ouvrés et
+// que le client a déjà payé quand elle devient due. Due au 1er paiement encaissé si le commerce s'engage 12 mois (avis sous 7
+// jours, virement sous 15 jours, reprise si l'engagement s'arrête avant le 3e paiement), sinon au 3e paiement mensuel
+// (décision du 2026-11-08, contrat articles 3.2, 3.5 et 4). Sans engagement : virement sous 30 jours après la facture ou la note ; recommandation confirmée sous 2 jours ouvrés et
 // réservée 90 jours ; contrat résiliable avec 1 mois de préavis.
 export const PARTENAIRES = {
   commission: {starter: 60, pro: 100},
   reserveJours: 90,
   confirmationJoursOuvres: 2,
   virementJours: 30,
+  engageAvisJours: 7,
+  engageVirementJours: 15,
   preavisMois: 1,
 };
 

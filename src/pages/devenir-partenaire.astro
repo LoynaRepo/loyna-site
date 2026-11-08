@@ -19,12 +19,16 @@ const maj = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 const montants = Object.values(P.commission);
 const fourchette = `de ${euro(Math.min(...montants))} à ${euro(Math.max(...montants))}`;
 
-// Quand la commission est acquise : la même règle pour tous, avec ou sans engagement.
-const QUAND = 'acquise au 3e paiement mensuel réellement encaissé du commerce';
+// Quand la commission est due (contrat d'apporteur, articles 3.2, 3.5 et 4, version du 2026-11-08) : dès le 1er paiement
+// si le commerce s'engage 12 mois, sinon au 3e paiement mensuel ; reprise si l'engagement s'arrête avant le 3e paiement.
+const QUAND_ENGAGE = 'due dès le 1er paiement encaissé du commerce';
+const QUAND_SANS = 'acquise au 3e paiement mensuel réellement encaissé du commerce';
+const QUAND = `${QUAND_ENGAGE} s’il s’engage ${ENGAGEMENT.months} mois, sinon ${QUAND_SANS}`;
+const REPRISE = `Payée au 1er paiement d’un engagement, elle est reprise si l’abonnement s’arrête, ou si un paiement est remboursé, contesté ou impayé plus de 45 jours, avant le 3e paiement du commerce.`;
 const SANS_PAIEMENT = TRIAL.open
   ? 'Le mois d’essai et le mois offert du parrainage ne comptent pas comme des paiements.'
   : 'Le mois offert du parrainage ne compte pas comme un paiement.';
-const AUCUN_VERSEMENT = 'Aucun versement si l’abonnement a pris fin ou si un paiement a été contesté avant le 3e paiement.';
+const AUCUN_VERSEMENT = 'Aucune commission si l’abonnement a pris fin, ou si un paiement a été remboursé ou contesté, avant qu’elle soit due.';
 
 const steps = [
   {
@@ -40,11 +44,11 @@ const steps = [
   {
     icon: 'banknote',
     title: 'Vous touchez votre commission',
-    text: `Au 3e paiement mensuel du commerce, vous touchez ${fourchette} selon l’offre qu’il prend, une seule fois, par virement.`,
+    text: `Vous touchez ${fourchette} selon l’offre qu’il prend, une seule fois, par virement : dès son 1er paiement s’il s’engage ${ENGAGEMENT.months} mois, sinon à son 3e paiement mensuel.`,
   },
 ];
 
-// Une carte par offre : le montant ne dépend pas de l'engagement.
+// Une carte par offre : le montant ne dépend pas de l'engagement, seul le moment où elle est due en dépend.
 const starter = PLANS.find((p) => p.id === 'starter')!;
 const pro = PLANS.find((p) => p.id === 'pro')!;
 const avecEngagement = `avec ${ENGAGEMENT.months} mois d’engagement`;
@@ -54,7 +58,7 @@ const cas = [starter, pro].map((p) => ({
   offre: p.badge,
   prix: p.monthly,
   precision: ` ou ${euro(p.engaged)} ${avecEngagement}`,
-  quand: `Avec ou sans engagement : ${QUAND}.`,
+  quand: `Avec ${ENGAGEMENT.months} mois d’engagement : ${QUAND_ENGAGE}. Sans engagement : ${QUAND_SANS}.`,
 }));
 
 const profils = [
@@ -86,7 +90,7 @@ const faq = [
   },
   {
     q: 'Combien et quand suis-je payé ?',
-    a: `${PHRASES.commission} Une seule commission par commerce. Elle est ${QUAND}, avec ou sans engagement. ${SANS_PAIEMENT} ${AUCUN_VERSEMENT} Au début de chaque mois, LOYNA vous envoie un relevé, et le virement part dans les ${P.virementJours} jours qui suivent la réception de votre facture (professionnel) ou de votre note de commission (particulier).`,
+    a: `${PHRASES.commission} Une seule commission par commerce. Elle est ${QUAND}. ${SANS_PAIEMENT} ${AUCUN_VERSEMENT} ${REPRISE} Avec engagement, LOYNA vous envoie un avis sous ${P.engageAvisJours} jours et le virement part dans les ${P.engageVirementJours} jours qui suivent la réception de votre facture (professionnel) ou de votre note de commission (particulier). Sans engagement, vous recevez un relevé au début de chaque mois et le virement part dans les ${P.virementJours} jours.`,
   },
   {
     q: 'Et si le commerce connaît déjà LOYNA ?',
@@ -211,11 +215,11 @@ const faqLd = {
       <div class="card com-when">
         <h3>Quand est-elle versée&nbsp;?</h3>
         <ul class="checks">
-          <li>Avec ou sans engagement&nbsp;: elle est {QUAND}.</li>
+          <li>Avec {ENGAGEMENT.months}&nbsp;mois d’engagement&nbsp;: elle est {QUAND_ENGAGE}. Avis sous {P.engageAvisJours}&nbsp;jours, virement dans les {P.engageVirementJours}&nbsp;jours qui suivent la réception de votre facture ou de votre note de commission.</li>
+          <li>Sans engagement&nbsp;: elle est {QUAND_SANS}. Relevé au début de chaque mois, virement dans les {P.virementJours}&nbsp;jours qui suivent la réception de votre facture (professionnel) ou de votre note de commission (particulier).</li>
+          <li>{REPRISE}</li>
           <li>{SANS_PAIEMENT}</li>
           <li>{AUCUN_VERSEMENT}</li>
-          <li>Au début de chaque mois, LOYNA vous envoie un relevé de vos commissions.</li>
-          <li>Virement dans les {P.virementJours}&nbsp;jours qui suivent la réception de votre facture (professionnel) ou de votre note de commission (particulier).</li>
         </ul>
         <p class="com-note">Le détail des offres&nbsp;: <a href="/tarifs/">voir les tarifs</a>.</p>
       </div>
