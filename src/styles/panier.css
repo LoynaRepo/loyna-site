@@ -12,7 +12,7 @@
   padding: 20px;
   border-radius: 22px;
   background: #16151a;
-  color: #f8f4ec;
+  color: #EEF0F2;
 }
 @media (min-width: 640px) {
   .pn-prep {
@@ -26,7 +26,7 @@
   font-size: 10.5px;
 }
 .pn-prep .eyebrow {
-  color: #e6c27a;
+  color: #A487FF;
 }
 .pn-prep h2 {
   margin: 4px 0 10px;
@@ -39,7 +39,7 @@
   color: #c9c3b7;
 }
 .pn-prep .pn-link {
-  color: #e6c27a;
+  color: #A487FF;
 }
 .pn-prep-sys {
   display: inline-flex;
@@ -60,8 +60,8 @@
   cursor: pointer;
 }
 .pn-prep-sys button.on {
-  background: #f8f4ec;
-  color: #121216;
+  background: #EEF0F2;
+  color: #111316;
 }
 .pn-wait {
   padding: 48px 16px;
@@ -116,7 +116,7 @@
   height: 32px;
   border-radius: 50%;
   background: var(--ink);
-  color: #faf7f0;
+  color: #E9ECEF;
   font-size: 0.95rem;
   flex-shrink: 0;
 }
@@ -157,12 +157,12 @@
   padding: 12px 16px;
   border-radius: 14px;
   background: var(--gold-soft);
-  border: 1px solid rgba(201, 150, 63, 0.35);
+  border: 1px solid rgba(123, 77, 255, 0.35);
   color: var(--ink);
   font-weight: 600;
 }
 .pn-essai {
-  color: #f0d49a;
+  color: #C2AEFF;
   font-weight: 600;
 }
 
@@ -188,7 +188,7 @@
 }
 .pn-period label.on {
   background: var(--ink);
-  color: #faf7f0;
+  color: #E9ECEF;
 }
 .pn-period input,
 .pn-plan input {
@@ -208,7 +208,7 @@
   padding: 3px 8px;
   border-radius: 999px;
   background: var(--gold-soft);
-  color: #6b4a14;
+  color: #4B25C9;
 }
 .pn-plans {
   display: grid;
@@ -249,7 +249,7 @@
   display: grid;
   place-items: center;
   background: var(--ink);
-  color: #faf7f0;
+  color: #E9ECEF;
   font-size: 0.8rem;
   font-weight: 800;
 }
@@ -272,7 +272,7 @@
   padding: 4px 8px;
   border-radius: 999px;
   background: var(--gold-soft);
-  color: #6b4a14;
+  color: #4B25C9;
 }
 .pn-plan-price {
   font-size: 1.45rem;
@@ -323,13 +323,13 @@
   letter-spacing: 0.04em;
 }
 .pn-ref input:focus-visible {
-  outline: 3px solid rgba(201, 150, 63, 0.45);
+  outline: 3px solid rgba(123, 77, 255, 0.45);
   outline-offset: 1px;
   border-color: var(--gold);
 }
 .pn-ref input[aria-invalid='true'] {
   border-color: #b3261e;
-  background: #fff7f6;
+  background: #FBF7F7;
 }
 .pn-ref .pn-err {
   margin: 0;
@@ -351,7 +351,7 @@
   background: #fff;
 }
 .pn-qr-row.on {
-  border-color: rgba(201, 150, 63, 0.6);
+  border-color: rgba(123, 77, 255, 0.6);
   background: #fffaf0;
 }
 .pn-qr-t {
@@ -448,13 +448,13 @@
   font: inherit;
 }
 .pn .field input:focus-visible {
-  outline: 3px solid rgba(201, 150, 63, 0.45);
+  outline: 3px solid rgba(123, 77, 255, 0.45);
   outline-offset: 1px;
   border-color: var(--gold);
 }
 .pn .field input[aria-invalid='true'] {
   border-color: #b3261e;
-  background: #fff7f6;
+  background: #FBF7F7;
 }
 .pn-err {
   margin: 6px 0 0;
@@ -560,13 +560,13 @@
   padding: clamp(20px, 3vw, 28px);
   border-radius: var(--radius-lg);
   background: var(--ink);
-  color: #e9e5dc;
+  color: #DDE1E6;
   box-shadow: var(--shadow-lg);
 }
 .pn-sum h2 {
   margin: 0;
   font-size: 1.3rem;
-  color: #faf7f0;
+  color: #E9ECEF;
 }
 .pn-lines {
   margin: 0;
@@ -585,22 +585,22 @@
 }
 .pn-lines dt small {
   font-size: 0.82rem;
-  color: #b9b3a7;
+  color: #A9B0B8;
 }
 .pn-lines dd {
   margin: 0;
   font-weight: 700;
   white-space: nowrap;
-  color: #faf7f0;
+  color: #E9ECEF;
 }
 .pn-lines s {
-  color: #b9b3a7;
+  color: #A9B0B8;
   font-weight: 500;
 }
 .pn-total {
   margin: 0;
   padding-top: 14px;
-  border-top: 1px solid rgba(250, 247, 240, 0.16);
+  border-top: 1px solid rgba(233, 236, 239, 0.16);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -613,13 +613,13 @@
   font-size: 1.9rem;
   letter-spacing: -0.03em;
   white-space: nowrap;
-  color: #faf7f0;
+  color: #E9ECEF;
 }
 .pn-then,
 .pn-vat {
   margin: 0;
   font-size: 0.88rem;
-  color: #b9b3a7;
+  color: #A9B0B8;
 }
 .pn-alert {
   display: grid;
@@ -642,8 +642,8 @@
   gap: 12px;
   padding: 14px;
   border-radius: 14px;
-  background: rgba(250, 247, 240, 0.06);
-  border: 1px solid rgba(230, 194, 122, 0.4);
+  background: rgba(233, 236, 239, 0.06);
+  border: 1px solid rgba(164, 135, 255, 0.4);
 }
 .pn-fallback p {
   margin: 0;
@@ -653,10 +653,10 @@
   outline-offset: 2px;
 }
 .pn-sum .pn-muted {
-  color: #b9b3a7;
+  color: #A9B0B8;
 }
 .pn-sum a:not(.btn) {
-  color: #f0d49a;
+  color: #C2AEFF;
 }
 .pn-sum .btn {
   white-space: normal;

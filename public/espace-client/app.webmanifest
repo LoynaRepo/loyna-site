@@ -6,8 +6,8 @@
   "start_url": "/espace-client/#/scanner",
   "scope": "/espace-client/",
   "display": "standalone",
-  "background_color": "#16151a",
-  "theme_color": "#121216",
+  "background_color": "#111316",
+  "theme_color": "#111316",
   "icons": [
     {
       "src": "/icon-192.png",

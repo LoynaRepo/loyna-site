@@ -1,4 +1,4 @@
-/* LOYNA — charte du site : noir, or et crème chaud, beaucoup d'air. */
+/* LOYNA — charte du site (Ewan, 09/11/2026) : 60 % #E9ECEF, 30 % #111316, 10 % #7B4DFF (tools/palette.py). */
 @import '@fontsource-variable/plus-jakarta-sans/wght.css';
 
 /* Police de secours aux métriques proches : évite les sauts de mise en page au chargement */
@@ -12,24 +12,24 @@
 }
 
 :root {
-  --ink: #121216;
-  --ink-2: #1c1b21;
-  --text: #1d1c22;
-  --muted: #5d5850;
-  --line: #e3d7c2;
-  --bg: #f7f1e6;
-  --bg-alt: #ede2cf;
-  --card: #fffdf8;
-  --ink-3: #26231d;
-  --gold: #c9963f;
-  --gold-strong: #7a5418;
-  --gold-soft: #f3e3c3;
-  --grad-gold: linear-gradient(135deg, #e6c27a 0%, #c9963f 55%, #a87530 100%);
+  --ink: #111316;
+  --ink-2: #181B1F;
+  --text: #111316;
+  --muted: #5B6168;
+  --line: #CDD2D8;
+  --bg: #E9ECEF;
+  --bg-alt: #DDE1E6;
+  --card: #F7F8FA;
+  --ink-3: #1F2328;
+  --gold: #7B4DFF;
+  --gold-strong: #5A2FE0;
+  --gold-soft: #E4DCFF;
+  --grad-gold: linear-gradient(135deg, #A487FF 0%, #7B4DFF 55%, #5A2FE0 100%);
   --green: #1f9d5c;
   --radius: 20px;
   --radius-lg: 30px;
-  --shadow: 0 1px 2px rgba(18, 18, 22, 0.04), 0 14px 36px rgba(18, 18, 22, 0.07);
-  --shadow-lg: 0 2px 4px rgba(18, 18, 22, 0.05), 0 30px 70px rgba(18, 18, 22, 0.12);
+  --shadow: 0 1px 2px rgba(17, 19, 22, 0.04), 0 14px 36px rgba(17, 19, 22, 0.07);
+  --shadow-lg: 0 2px 4px rgba(17, 19, 22, 0.05), 0 30px 70px rgba(17, 19, 22, 0.12);
   --container: 1180px;
   --font: 'Plus Jakarta Sans Variable', 'Jakarta Fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --section: clamp(54px, 10vw, 136px); /* téléphone : sections plus serrées */
@@ -139,27 +139,27 @@ p {
 /* Fond sable avec halo doré discret */
 .section--warm {
   background:
-    radial-gradient(60% 50% at 0% 0%, rgba(230, 194, 122, 0.28), transparent 70%),
-    radial-gradient(50% 45% at 100% 100%, rgba(201, 150, 63, 0.18), transparent 70%),
+    radial-gradient(60% 50% at 0% 0%, rgba(164, 135, 255, 0.28), transparent 70%),
+    radial-gradient(50% 45% at 100% 100%, rgba(123, 77, 255, 0.18), transparent 70%),
     var(--bg-alt);
 }
 .section--dark {
   background:
-    radial-gradient(55% 60% at 85% 0%, rgba(230, 194, 122, 0.16), transparent 70%),
-    radial-gradient(45% 50% at 0% 100%, rgba(201, 150, 63, 0.1), transparent 70%),
+    radial-gradient(55% 60% at 85% 0%, rgba(164, 135, 255, 0.16), transparent 70%),
+    radial-gradient(45% 50% at 0% 100%, rgba(123, 77, 255, 0.1), transparent 70%),
     var(--ink);
-  color: #e9e5dc;
+  color: #DDE1E6;
 }
 .section--dark .lead,
 .section--dark p {
-  color: #c9c2b4;
+  color: #B8BEC6;
 }
 .section--dark a:not(.btn) {
-  color: #e6c27a;
+  color: #A487FF;
 }
 .section--dark h2,
 .section--dark h3 {
-  color: #faf7f0;
+  color: #E9ECEF;
 }
 .section-head {
   max-width: 760px;
@@ -171,7 +171,7 @@ p {
   font-size: 1.15rem;
 }
 .section--dark .section-head p {
-  color: #b9b3a7;
+  color: #A9B0B8;
 }
 .eyebrow {
   display: inline-flex;
@@ -186,7 +186,7 @@ p {
 }
 .section--dark .eyebrow,
 .section--dark .section-head .eyebrow {
-  color: #e6c27a;
+  color: #A487FF;
 }
 .lead {
   font-size: clamp(1.1rem, 1.6vw, 1.3rem);
@@ -228,8 +228,8 @@ p {
 }
 .btn--primary {
   background: var(--ink);
-  color: #faf7f0;
-  box-shadow: 0 8px 22px rgba(18, 18, 22, 0.18);
+  color: #E9ECEF;
+  box-shadow: 0 8px 22px rgba(17, 19, 22, 0.18);
 }
 .btn--primary:hover {
   color: #fff;
@@ -238,7 +238,7 @@ p {
 .btn--gold {
   background: var(--grad-gold);
   color: var(--ink);
-  box-shadow: 0 10px 26px rgba(201, 150, 63, 0.35);
+  box-shadow: 0 10px 26px rgba(123, 77, 255, 0.35);
 }
 .btn--gold:hover {
   color: var(--ink);
@@ -253,8 +253,8 @@ p {
   color: var(--ink);
 }
 .section--dark .btn--ghost {
-  color: #faf7f0;
-  border-color: rgba(250, 247, 240, 0.25);
+  color: #E9ECEF;
+  border-color: rgba(233, 236, 239, 0.25);
 }
 .btn--block {
   width: 100%;
@@ -296,11 +296,11 @@ p {
 }
 .section--dark .card {
   background: var(--ink-2);
-  border-color: rgba(250, 247, 240, 0.08);
+  border-color: rgba(233, 236, 239, 0.08);
   box-shadow: none;
 }
 .section--dark .card p {
-  color: #b9b3a7;
+  color: #A9B0B8;
 }
 .icon {
   width: 52px;
@@ -316,8 +316,8 @@ p {
   height: 26px;
 }
 .section--dark .icon {
-  background: rgba(230, 194, 122, 0.12);
-  color: #e6c27a;
+  background: rgba(164, 135, 255, 0.12);
+  color: #A487FF;
 }
 
 /* Listes à coches */
@@ -378,7 +378,7 @@ p {
   padding: clamp(56px, 8vw, 104px) 0 clamp(40px, 6vw, 72px);
   text-align: center;
   background:
-    radial-gradient(50% 80% at 50% 0%, rgba(230, 194, 122, 0.3), transparent 70%),
+    radial-gradient(50% 80% at 50% 0%, rgba(164, 135, 255, 0.3), transparent 70%),
     linear-gradient(180deg, var(--bg-alt), var(--bg));
   border-bottom: 1px solid var(--line);
   margin-bottom: clamp(32px, 5vw, 64px);
@@ -493,16 +493,16 @@ p {
 /* Bandeau d'appel à l'action */
 .cta-band {
   border-radius: clamp(28px, 4vw, 44px);
-  background: var(--ink) radial-gradient(circle at 85% 0%, rgba(230, 194, 122, 0.25), transparent 55%);
-  color: #e9e5dc;
+  background: var(--ink) radial-gradient(circle at 85% 0%, rgba(164, 135, 255, 0.25), transparent 55%);
+  color: #DDE1E6;
   padding: clamp(40px, 6vw, 80px);
   text-align: center;
 }
 .cta-band h2 {
-  color: #faf7f0;
+  color: #E9ECEF;
 }
 .cta-band p {
-  color: #b9b3a7;
+  color: #A9B0B8;
   max-width: 620px;
   margin: 0 auto 28px;
   font-size: 1.15rem;
@@ -511,15 +511,15 @@ p {
   justify-content: center;
 }
 .cta-band .btn--ghost {
-  color: #faf7f0;
-  border-color: rgba(250, 247, 240, 0.25);
+  color: #E9ECEF;
+  border-color: rgba(233, 236, 239, 0.25);
 }
 .cta-band .cta-alt {
   margin: 22px auto 0;
   font-size: 1rem;
 }
 .cta-band .cta-alt a {
-  color: #e6c27a;
+  color: #A487FF;
   font-weight: 700;
 }
 
@@ -608,7 +608,7 @@ p {
 /* Erreurs de formulaire : signalées champ par champ après saisie ou tentative d'envoi */
 .field :is(input, textarea, select):user-invalid {
   border-color: #b3261e;
-  background: #fff7f6;
+  background: #FBF7F7;
 }
 .field .err {
   display: none;

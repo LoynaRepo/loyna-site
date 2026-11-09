@@ -29,10 +29,10 @@
   align-items: flex-start;
   margin: 0;
   font-size: 0.86rem;
-  color: #b9b3a7;
+  color: #A9B0B8;
 }
 .cp-login-note .ic {
-  color: #e6c27a;
+  color: #A487FF;
   margin-top: 1px;
 }
 .cp-login .login-main {
@@ -59,15 +59,15 @@
   cursor: default;
 }
 .cp-side-ic {
-  background: rgba(230, 194, 122, 0.14);
-  color: #e6c27a;
+  background: rgba(164, 135, 255, 0.14);
+  color: #A487FF;
 }
 .cp-fictif {
   margin: -6px 0 0;
   padding: 6px 12px;
   border-radius: 10px;
-  background: rgba(230, 194, 122, 0.14);
-  color: #f0d49a;
+  background: rgba(164, 135, 255, 0.14);
+  color: #C2AEFF;
   font-size: 0.8rem;
   font-weight: 700;
 }
@@ -358,7 +358,7 @@ button.cp-kpi:hover {
   cursor: pointer;
 }
 .cp-ligne:hover td {
-  background: #fbf6ec;
+  background: #EEF0F2;
 }
 .cp-nom a {
   font-weight: 750;
@@ -587,13 +587,13 @@ button.cp-kpi:hover {
 
 /* --- Fiche ------------------------------------------------------------------------------------- */
 .cp-entete .eyebrow {
-  color: #e6c27a;
+  color: #A487FF;
 }
 .cp-entete-action {
   margin: 0 0 16px;
   font-size: 1.25rem;
   font-weight: 750;
-  color: #faf7f0;
+  color: #E9ECEF;
   line-height: 1.3;
 }
 .cp-entete-action small {
@@ -602,12 +602,12 @@ button.cp-kpi:hover {
   color: #cfc8ba;
 }
 .pnl--dark .cp-btn-clair {
-  color: #faf7f0;
-  border-color: rgba(250, 247, 240, 0.25);
+  color: #E9ECEF;
+  border-color: rgba(233, 236, 239, 0.25);
 }
 .pnl--dark .cp-btn-clair:hover {
   color: #fff;
-  border-color: #e6c27a;
+  border-color: #A487FF;
 }
 .cp-dl {
   display: grid;
@@ -775,7 +775,7 @@ button.cp-kpi:hover {
   display: grid;
   place-items: center;
   background: var(--ink);
-  color: #f0d49a;
+  color: #C2AEFF;
   font-weight: 800;
   font-size: 0.88rem;
 }
@@ -853,17 +853,17 @@ button.cp-kpi:hover {
   align-items: flex-start;
   padding: 16px 18px;
   border-radius: 20px;
-  color: #faf7f0;
+  color: #E9ECEF;
   background:
-    radial-gradient(70% 120% at 100% 0%, rgba(230, 194, 122, 0.3), transparent 70%),
+    radial-gradient(70% 120% at 100% 0%, rgba(164, 135, 255, 0.3), transparent 70%),
     var(--ink);
 }
 .cp-offre > .ic {
-  color: #e6c27a;
+  color: #A487FF;
   margin-top: 2px;
 }
 .cp-offre strong {
-  color: #faf7f0;
+  color: #E9ECEF;
 }
 .cp-offre p {
   margin: 4px 0 0;
@@ -1312,7 +1312,7 @@ button.cp-kpi:hover {
 .cp-notes-ajout textarea:focus {
   outline: none;
   border-color: var(--gold);
-  box-shadow: 0 0 0 4px rgba(201, 150, 63, 0.18);
+  box-shadow: 0 0 0 4px rgba(123, 77, 255, 0.18);
 }
 .cp-notes-a {
   display: flex;
@@ -1693,7 +1693,7 @@ button.cp-kpi:hover {
 .cl-parcours li.courant .cl-pt {
   border-color: var(--gold);
   color: var(--gold-strong);
-  box-shadow: 0 0 0 4px rgba(201, 150, 63, 0.18);
+  box-shadow: 0 0 0 4px rgba(123, 77, 255, 0.18);
 }
 .cl-parcours li.na .cl-pt {
   border-style: dashed;
@@ -1773,7 +1773,7 @@ button.cp-kpi:hover {
 .cl-champ:focus {
   outline: none;
   border-color: var(--gold);
-  box-shadow: 0 0 0 4px rgba(201, 150, 63, 0.18);
+  box-shadow: 0 0 0 4px rgba(123, 77, 255, 0.18);
 }
 .cl-couleurs {
   display: flex;
@@ -1967,7 +1967,7 @@ button.cp-kpi:hover {
   max-width: 260px;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(18, 18, 22, 0.08);
+  box-shadow: 0 0 0 1px rgba(17, 19, 22, 0.08);
 }
 .cl-demo-qr svg {
   display: block;
@@ -2049,13 +2049,13 @@ button.cp-kpi:hover {
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
 }
 .pc-pastille.on {
-  outline: 3px solid #121216;
+  outline: 3px solid #111316;
   outline-offset: 2px;
 }
 .pc-sep {
   width: 1px;
   height: 24px;
-  background: rgba(18, 18, 22, 0.15);
+  background: rgba(17, 19, 22, 0.15);
 }
 .pc-libre {
   position: relative;
@@ -2086,7 +2086,7 @@ button.cp-kpi:hover {
   display: inline-flex;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(18, 18, 22, 0.07);
+  background: rgba(17, 19, 22, 0.07);
 }
 .pc-periode button,
 .pc-sys button {
@@ -2101,8 +2101,8 @@ button.cp-kpi:hover {
 }
 .pc-periode button.on,
 .pc-sys button.on {
-  background: #121216;
-  color: #f8f4ec;
+  background: #111316;
+  color: #EEF0F2;
 }
 @media (max-width: 520px) {
   .pc-periode {
@@ -2132,14 +2132,14 @@ button.cp-kpi:hover {
   text-align: left;
   padding: 14px;
   border-radius: 16px;
-  border: 2px solid rgba(18, 18, 22, 0.12);
+  border: 2px solid rgba(17, 19, 22, 0.12);
   background: #fff;
   font: inherit;
   color: inherit;
   cursor: pointer;
 }
 .pc-offre.on {
-  border-color: #c9963f;
+  border-color: #7B4DFF;
   background: #fdf7ea;
 }
 .pc-offre-p {
@@ -2171,7 +2171,7 @@ button.cp-kpi:hover {
   gap: 12px;
   padding: 8px 12px;
   border-radius: 12px;
-  background: rgba(18, 18, 22, 0.04);
+  background: rgba(17, 19, 22, 0.04);
 }
 .pc-qr > div.on {
   background: #fdf7ea;
@@ -2188,7 +2188,7 @@ button.cp-kpi:hover {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid rgba(18, 18, 22, 0.2);
+  border: 1px solid rgba(17, 19, 22, 0.2);
   background: #fff;
   font-size: 1.2rem;
   line-height: 1;
@@ -2209,14 +2209,14 @@ button.cp-kpi:hover {
   padding: 16px;
   border-radius: 22px;
   background: #16151a;
-  color: #f8f4ec;
+  color: #EEF0F2;
 }
 .pc-apercu .pc-sys {
   background: rgba(255, 255, 255, 0.1);
 }
 .pc-apercu .pc-sys button.on {
-  background: #f8f4ec;
-  color: #121216;
+  background: #EEF0F2;
+  color: #111316;
 }
 .pc-apercu .cw-tel {
   width: 262px;
@@ -2233,7 +2233,7 @@ button.cp-kpi:hover {
 }
 .pc-faits input {
   width: 100%;
-  accent-color: #c9963f;
+  accent-color: #7B4DFF;
 }
 .pc-recap {
   margin: 0;
@@ -2257,7 +2257,7 @@ button.cp-kpi:hover {
 }
 .pc-recap .pc-total {
   padding-top: 10px;
-  border-top: 1px solid rgba(18, 18, 22, 0.12);
+  border-top: 1px solid rgba(17, 19, 22, 0.12);
   font-size: 1.1rem;
   font-weight: 800;
 }
@@ -2275,7 +2275,7 @@ button.cp-kpi:hover {
   margin: 0 0 12px;
   padding: 10px 12px;
   border-radius: 12px;
-  background: rgba(18, 18, 22, 0.05);
+  background: rgba(17, 19, 22, 0.05);
   font-weight: 600;
   overflow-wrap: anywhere;
 }
@@ -2312,7 +2312,7 @@ button.cp-kpi:hover {
   gap: 12px;
   padding: 10px 12px;
   border-radius: 12px;
-  background: rgba(18, 18, 22, 0.04);
+  background: rgba(17, 19, 22, 0.04);
 }
 .pc-liste li.on {
   background: #fdf7ea;

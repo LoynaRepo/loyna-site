@@ -203,8 +203,8 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
       {
         name: nom,
         activity: champ('activite') || 'Carte de fidélité',
-        bg: /^#[0-9a-f]{6}$/i.test(champ('fond')) ? champ('fond') : '#1f1c17',
-        accent: /^#[0-9a-f]{6}$/i.test(champ('accent')) ? champ('accent') : '#d9b27a',
+        bg: /^#[0-9a-f]{6}$/i.test(champ('fond')) ? champ('fond') : '#1A1D21',
+        accent: /^#[0-9a-f]{6}$/i.test(champ('accent')) ? champ('accent') : '#9471FF',
         total,
         reward: champ('recompense') || 'Votre récompense',
       },
@@ -405,7 +405,7 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
     padding: 16px 18px;
     border-radius: 18px;
     background: var(--gold-soft);
-    border: 1px solid rgba(201, 150, 63, 0.35);
+    border: 1px solid rgba(123, 77, 255, 0.35);
   }
   .suite[hidden],
   .compte[hidden],
@@ -544,7 +544,7 @@ const noms = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
   }
   .sw:focus-visible,
   .custom:focus-within {
-    outline: 3px solid rgba(201, 150, 63, 0.55);
+    outline: 3px solid rgba(123, 77, 255, 0.55);
     outline-offset: 3px;
   }
   .custom {

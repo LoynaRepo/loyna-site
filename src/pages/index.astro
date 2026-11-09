@@ -17,7 +17,6 @@ import MiniConfigurateur from '../components/MiniConfigurateur.astro';
 import Confiance from '../components/Confiance.astro';
 import {getFaq, getSectors, getSettings} from '../lib/builder';
 import {APPEL, MARKETING_INTERVAL_HOURS, MISE_EN_SERVICE_APRES, PHRASES, PLANS, SITE, TRIAL, offerActive} from '../data/site';
-import mark from '../assets/logo-mark.svg?raw';
 
 const settings = await getSettings();
 const sectors = await getSectors();
@@ -26,7 +25,7 @@ const faq = (await getFaq()).slice(0, 6);
 const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const heroTitleHtml = esc(settings.heroTitle).replace(/\*(.+?)\*/g, '<span class="gold-text">$1</span>');
 // Symbole LOYNA en filigrane des sections sombres (couleur donnée par .filigrane)
-const filigrane = mark.replace(/<defs>.*<\/defs>/s, '').replace(/fill="url\(#g\)"/, '').replace('<svg', '<svg aria-hidden="true"');
+const filigrane = '<svg aria-hidden="true" viewBox="0 0 640 572"><defs><mask id="fil-accueil" style="mask-type:alpha"><image href="/marque/silhouette.png" width="640" height="572"/></mask></defs><rect width="640" height="572" fill="currentColor" mask="url(#fil-accueil)"/></svg>';
 
 const chiffres = [
   {n: '0', unite: 'application', texte: 'à télécharger pour vos clients : la carte s’ajoute à Apple Wallet ou Google Wallet en un geste.'},
@@ -163,7 +162,7 @@ const softwareLd = {
         <li class="etape apparait">
           <div class="ill ill-1" aria-hidden="true">
             <WalletCard name="Le Fournil d’Albane" activity="Boulangerie" bg="#7a3d1c" accent="#f2c879" filled={3} total={10} reward="Viennoiserie offerte" qr={false} width={250} />
-            <span class="ill-pts"><i style="--c:#7a3d1c"></i><i style="--c:#14532d"></i><i style="--c:#1e3a5f"></i><i style="--c:#121216"></i></span>
+            <span class="ill-pts"><i style="--c:#7a3d1c"></i><i style="--c:#14532d"></i><i style="--c:#1e3a5f"></i><i style="--c:#111316"></i></span>
           </div>
           <span class="etape-n" data-n="01" aria-hidden="true"></span>
           <h3>Vous créez votre carte</h3>
@@ -553,20 +552,20 @@ const softwareLd = {
   .stat {
     margin: 0;
     padding-left: 14px;
-    border-left: 1px solid rgba(230, 194, 122, 0.3);
+    border-left: 1px solid rgba(164, 135, 255, 0.3);
   }
   .stat dt {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    color: #faf7f0;
+    color: #E9ECEF;
   }
   .stat dt b {
     font-size: clamp(3rem, 7vw, 5.2rem);
     font-weight: 800;
     letter-spacing: -0.05em;
     line-height: 1;
-    background: linear-gradient(100deg, #f0d49a, #c9963f);
+    background: linear-gradient(100deg, #C2AEFF, #7B4DFF);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -578,7 +577,7 @@ const softwareLd = {
   }
   .stat dd {
     margin: 10px 0 0;
-    color: #c9c2b4;
+    color: #B8BEC6;
     font-size: clamp(0.92rem, 1.3vw, 1.02rem);
     line-height: 1.5;
   }
@@ -596,7 +595,7 @@ const softwareLd = {
     gap: 8px;
     padding: 7px 14px;
     border-radius: 999px;
-    border: 1px solid rgba(230, 194, 122, 0.24);
+    border: 1px solid rgba(164, 135, 255, 0.24);
     color: #d9d2c4;
     font-size: 0.87rem;
     font-weight: 600;
@@ -604,7 +603,7 @@ const softwareLd = {
   }
   .garanties :global(svg) {
     flex: none;
-    color: #e6c27a;
+    color: #A487FF;
   }
 
   /* --- Constat ---------------------------------------------------------------------------------- */
@@ -708,7 +707,7 @@ const softwareLd = {
   .ill-1 :global(.wcard) {
     --w: min(250px, 72cqw) !important;
     translate: -12px 0;
-    box-shadow: 0 16px 30px rgba(18, 18, 22, 0.26);
+    box-shadow: 0 16px 30px rgba(17, 19, 22, 0.26);
   }
   .ill-pts {
     position: absolute;
@@ -720,7 +719,7 @@ const softwareLd = {
     padding: 7px;
     border-radius: 999px;
     background: var(--card);
-    box-shadow: 0 8px 18px rgba(18, 18, 22, 0.14);
+    box-shadow: 0 8px 18px rgba(17, 19, 22, 0.14);
   }
   .ill-pts i {
     display: block;
@@ -741,7 +740,7 @@ const softwareLd = {
     padding: 9px 9px 7px;
     border-radius: 16px;
     background: #fff;
-    box-shadow: 0 12px 26px rgba(18, 18, 22, 0.16);
+    box-shadow: 0 12px 26px rgba(17, 19, 22, 0.16);
   }
   .ill-qr small {
     font-size: 0.66rem;
@@ -762,7 +761,7 @@ const softwareLd = {
     padding: 8px 11px;
     border-radius: 12px;
     background: var(--ink);
-    color: #faf7f0;
+    color: #E9ECEF;
     font-size: 0.72rem;
     font-weight: 700;
     line-height: 1.2;
@@ -774,7 +773,7 @@ const softwareLd = {
   }
   .ill-ajout :global(svg) {
     flex: none;
-    color: #c9963f;
+    color: #7B4DFF;
   }
   .ill-3 {
     align-content: center;
@@ -873,7 +872,7 @@ const softwareLd = {
     margin: 0 0 12px;
   }
   .atout-texte {
-    color: #4f4a42;
+    color: #4A5057;
     font-size: clamp(1.02rem, 1.4vw, 1.12rem);
     line-height: 1.55;
     margin: 0 0 16px;
@@ -915,8 +914,8 @@ const softwareLd = {
   }
   .visuel-coupe :global(.phone) {
     box-shadow:
-      0 0 0 1px rgba(18, 18, 22, 0.08),
-      0 12px 30px rgba(18, 18, 22, 0.2);
+      0 0 0 1px rgba(17, 19, 22, 0.08),
+      0 12px 30px rgba(17, 19, 22, 0.2);
   }
   .atout-legende {
     margin: 8px 0 0;
@@ -941,7 +940,7 @@ const softwareLd = {
     border-radius: 999px;
     background: var(--card);
     border: 1px solid var(--filet);
-    box-shadow: 0 14px 30px rgba(18, 18, 22, 0.18);
+    box-shadow: 0 14px 30px rgba(17, 19, 22, 0.18);
     font-size: 0.86rem;
     font-weight: 700;
     color: var(--ink);
@@ -965,7 +964,7 @@ const softwareLd = {
   }
   .pastille-prox span {
     background: var(--ink);
-    color: #e6c27a;
+    color: #A487FF;
   }
   .carte-action {
     display: flex;
@@ -976,7 +975,7 @@ const softwareLd = {
     margin-top: clamp(44px, 6vw, 88px);
     padding: clamp(22px, 3.4vw, 40px) clamp(22px, 4vw, 48px);
     border-radius: var(--radius-lg);
-    border: 1px solid #dccfb8;
+    border: 1px solid #C9CED5;
     background: var(--card);
     box-shadow: var(--shadow-lg);
   }
@@ -1026,7 +1025,7 @@ const softwareLd = {
     border-radius: 22px;
     border: 1px solid var(--filet);
     background: var(--bg);
-    color: #4f4a42;
+    color: #4A5057;
     font-weight: 600;
     font-size: 0.97rem;
     line-height: 1.5;
@@ -1130,10 +1129,10 @@ const softwareLd = {
     padding: 0;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    border: 1px solid rgba(250, 247, 240, 0.12);
+    border: 1px solid rgba(233, 236, 239, 0.12);
     border-radius: 28px;
     overflow: hidden;
-    background: rgba(250, 247, 240, 0.12);
+    background: rgba(233, 236, 239, 0.12);
     gap: 1px;
   }
   .f-grille li {
@@ -1157,13 +1156,13 @@ const softwareLd = {
   .f-grille h3 {
     margin: 2px 26px 4px 0;
     font-size: 1.08rem;
-    color: #faf7f0;
+    color: #E9ECEF;
   }
   .f-grille p {
     margin: 0;
     font-size: 0.95rem;
     line-height: 1.5;
-    color: #b9b3a7;
+    color: #A9B0B8;
   }
   .f-n {
     position: absolute;
@@ -1172,10 +1171,10 @@ const softwareLd = {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.74rem;
     letter-spacing: 0.04em;
-    color: #8f887c;
+    color: #868C93;
   }
   .fonctions .mid-cta {
-    color: #e6c27a;
+    color: #A487FF;
   }
 
   /* --- Tarifs ------------------------------------------------------------------------------------ */
@@ -1244,7 +1243,7 @@ const softwareLd = {
   .repere {
     padding: 0 18px;
     border-radius: 20px;
-    border: 1px solid #dccfb8;
+    border: 1px solid #C9CED5;
     background: var(--card);
   }
   .repere h3 {

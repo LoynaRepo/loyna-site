@@ -303,7 +303,7 @@ const more = [
   const fcForm = document.getElementById('fc-form') as HTMLFormElement | null;
   if (carte && fcForm) {
     const nom = fcForm.querySelector<HTMLInputElement>('#fc-name')!;
-    let d: CarteDemo = {name: 'Maison Lumière', activity: 'Coiffure', bg: '#1f1c17', accent: '#d9b27a', total: 10, reward: 'Brushing offert'};
+    let d: CarteDemo = {name: 'Maison Lumière', activity: 'Coiffure', bg: '#1A1D21', accent: '#9471FF', total: 10, reward: 'Brushing offert'};
     nom.addEventListener('input', () => {
       d = {...d, name: nom.value.trim() || 'Votre commerce'};
       appliquerCarte(carte, d, false);
@@ -389,7 +389,7 @@ const more = [
   @media (min-width: 901px) {
     .f-hero {
       background:
-        radial-gradient(40% 44% at 80% 48%, rgba(230, 194, 122, 0.42), transparent 72%),
+        radial-gradient(40% 44% at 80% 48%, rgba(164, 135, 255, 0.42), transparent 72%),
         var(--bg);
     }
   }
@@ -453,10 +453,10 @@ const more = [
   .f-tab[aria-selected='true'] {
     background: var(--ink);
     border-color: var(--ink);
-    color: #faf7f0;
+    color: #E9ECEF;
   }
   .f-tab[aria-selected='true'] :global(svg) {
-    color: #e6c27a;
+    color: #A487FF;
   }
   .f-tab:focus-visible {
     outline: 3px solid var(--gold);
@@ -478,7 +478,7 @@ const more = [
     grid-area: panel;
     margin-top: 22px;
     padding-left: 16px;
-    border-left: 3px solid #c9963f;
+    border-left: 3px solid #7B4DFF;
     min-height: 118px;
   }
   .f-title {
@@ -513,9 +513,9 @@ const more = [
     justify-self: center;
     border-radius: 32px;
     background:
-      radial-gradient(70% 60% at 50% 40%, rgba(230, 194, 122, 0.28), transparent 70%),
+      radial-gradient(70% 60% at 50% 40%, rgba(164, 135, 255, 0.28), transparent 70%),
       #0d0c10;
-    border: 1px solid rgba(230, 194, 122, 0.22);
+    border: 1px solid rgba(164, 135, 255, 0.22);
     box-shadow: 0 40px 90px rgba(0, 0, 0, 0.5);
     overflow: hidden;
   }
@@ -572,17 +572,17 @@ const more = [
     min-height: 48px;
     padding: 10px 14px;
     border-radius: 12px;
-    border: 1px solid rgba(250, 247, 240, 0.2);
-    background: rgba(18, 18, 22, 0.7);
-    color: #faf7f0;
+    border: 1px solid rgba(233, 236, 239, 0.2);
+    background: rgba(17, 19, 22, 0.7);
+    color: #E9ECEF;
     font: inherit;
   }
   .fc-form input[type='text']::placeholder {
-    color: #8f887c;
+    color: #868C93;
   }
   .fc-form input[type='text']:focus {
-    outline: 3px solid rgba(230, 194, 122, 0.45);
-    border-color: #e6c27a;
+    outline: 3px solid rgba(164, 135, 255, 0.45);
+    border-color: #A487FF;
   }
   .f-count {
     position: absolute;
@@ -590,12 +590,12 @@ const more = [
     bottom: 14px;
     padding: 4px 10px;
     border-radius: 999px;
-    background: rgba(18, 18, 22, 0.7);
-    color: #c9c2b4;
+    background: rgba(17, 19, 22, 0.7);
+    color: #B8BEC6;
     font-size: 0.82rem;
   }
   .f-count b {
-    color: #e6c27a;
+    color: #A487FF;
   }
   @keyframes fprog {
     from {

@@ -1,38 +1,33 @@
 ---
-// Logo officiel LOYNA vectorisé (symbole doré + mot), intégré au HTML.
-import mark from '../assets/logo-mark.svg?raw';
-import word from '../assets/logo-word.svg?raw';
+// Logo LOYNA (nouveau logo du 09/11/2026 : icône 3D nacrée + mot « Loyna » en Poppins ExtraBold), images dans public/marque/.
+// L’ancien logo vectoriel doré (src/assets/logo-mark.svg, logo-word.svg) ne sert plus que dans la page visuel-carte (image des mails).
 interface Props {
   height?: number;
   tone?: 'dark' | 'light';
   withWord?: boolean;
 }
 const {height = 34, tone = 'dark', withWord = true} = Astro.props;
-const color = tone === 'dark' ? '#141414' : '#F8F4EC';
-// identifiant de dégradé propre à chaque logo (plusieurs logos par page)
-const uid = 'lg' + Math.random().toString(36).slice(2, 8);
-const markSvg = mark.replace('id="g"', `id="${uid}"`).replace('url(#g)', `url(#${uid})`).replace('<svg', '<svg aria-hidden="true"');
-const wordSvg = word.replace('<svg', '<svg role="img" aria-label="LOYNA"');
+const mot = tone === 'dark' ? '/marque/mot-nuit.png' : '/marque/mot-blanc.png';
 ---
 
-<span class="logo" style={`--h:${height}px;color:${color}`}>
-  <span class="mark" set:html={markSvg} />
-  {withWord ? <span class="word" set:html={wordSvg} /> : <span class="visually-hidden">LOYNA</span>}
+<span class="logo" style={`--h:${height}px`}>
+  <img class="mark" src="/marque/icone-192.png" alt="" width="192" height="192" />
+  {withWord ? <img class="word" src={mot} alt="LOYNA" /> : <span class="visually-hidden">LOYNA</span>}
 </span>
 
 <style>
   .logo {
     display: inline-flex;
     align-items: center;
-    gap: calc(var(--h) * 0.32);
+    gap: calc(var(--h) * 0.22);
     height: var(--h);
   }
-  .mark :global(svg) {
-    height: var(--h);
-    width: var(--h);
+  .mark {
+    height: calc(var(--h) * 1.25);
+    width: auto;
   }
-  .word :global(svg) {
-    height: calc(var(--h) * 0.48);
+  .word {
+    height: calc(var(--h) * 0.62);
     width: auto;
   }
 </style>

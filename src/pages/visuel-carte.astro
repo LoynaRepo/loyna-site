@@ -10,13 +10,9 @@
 import Base from '../layouts/Base.astro';
 import Phone from '../components/Phone.astro';
 import WalletCard from '../components/WalletCard.astro';
-import mark from '../assets/logo-mark.svg?raw';
-import word from '../assets/logo-word.svg?raw';
 import {visuelActivite} from '../data/site';
 
 const d = visuelActivite('Coiffure');
-const markSvg = mark.replace('id="g"', 'id="lg-vc"').replace('url(#g)', 'url(#lg-vc)').replace('<svg', '<svg aria-hidden="true"');
-const wordSvg = word.replace('<svg', '<svg role="img" aria-label="LOYNA"');
 ---
 
 <Base bare noindex nofollow title="Visuel de carte de fidélité · LOYNA" description="Aperçu d'une carte de fidélité LOYNA aux couleurs d'un commerce.">
@@ -24,7 +20,7 @@ const wordSvg = word.replace('<svg', '<svg role="img" aria-label="LOYNA"');
   <div class="vc" id="vc" style={`--amb:${d.ambiance};--amb2:${d.ambiance2};--t:${d.texte};--acc:${d.tampons}`}>
     <div class="vc-halo" aria-hidden="true"></div>
     <div class="vc-g">
-      <span class="vc-logo"><span class="mark" set:html={markSvg} /><span class="word" set:html={wordSvg} /></span>
+      <span class="vc-logo"><img class="mark" src="/marque/icone-192.png" alt="" width="192" height="192" /><span class="word" role="img" aria-label="LOYNA"></span></span>
       <div class="vc-titre">
         <p class="vc-sur" id="vc-sur">{d.nom}</p>
         <p class="vc-pre">La carte de fidélité de</p>
@@ -188,13 +184,18 @@ const wordSvg = word.replace('<svg', '<svg role="img" aria-label="LOYNA"');
     gap: 10px;
     height: 34px;
   }
-  .vc-logo .mark :global(svg) {
-    width: 34px;
-    height: 34px;
+  .vc-logo .mark {
+    width: 40px;
+    height: 40px;
   }
-  .vc-logo .word :global(svg) {
-    height: 16px;
-    width: auto;
+  /* Mot « Loyna » teinté par la couleur de texte de la carte */
+  .vc-logo .word {
+    display: block;
+    height: 20px;
+    aspect-ratio: 372 / 96;
+    background: currentColor;
+    -webkit-mask: url(/marque/mot-blanc.png) center / contain no-repeat;
+    mask: url(/marque/mot-blanc.png) center / contain no-repeat;
   }
   .vc-titre {
     align-self: center;

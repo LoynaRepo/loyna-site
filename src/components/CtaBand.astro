@@ -1,6 +1,5 @@
 ---
 import Icon from './Icon.astro';
-import mark from '../assets/logo-mark.svg?raw';
 import {APPEL, PHRASES, TRIAL} from '../data/site';
 interface Props {
   title?: string;
@@ -14,7 +13,7 @@ const {
   text = TRIAL.open ? PHRASES.essai : 'Créez l’aperçu de votre carte en quelques secondes, puis choisissez votre offre. Votre carte est prête sous 24 h.',
 } = Astro.props;
 // Symbole en filigrane, sans son dégradé : teinté par .filigrane
-const filigrane = mark.replace(/<defs>.*<\/defs>/s, '').replace(/fill="url\(#g\)"/, '').replace('<svg', '<svg aria-hidden="true"');
+const filigrane = '<svg aria-hidden="true" viewBox="0 0 640 572"><defs><mask id="fil-cta" style="mask-type:alpha"><image href="/marque/silhouette.png" width="640" height="572"/></mask></defs><rect width="640" height="572" fill="currentColor" mask="url(#fil-cta)"/></svg>';
 ---
 
 <section class="section cta-section" aria-label="Passer à l'action">
