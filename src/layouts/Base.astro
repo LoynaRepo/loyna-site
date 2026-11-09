@@ -63,11 +63,11 @@ const gaId = (settings.ga4Id || SITE.ga4Id || '').trim();
     <meta name="theme-color" content={props.bare ? '#111316' : '#E9ECEF'} />
     <meta name="format-detection" content="telephone=no" />
     <!-- Logo dans les résultats Google : icône carrée d'un multiple de 48 px (2026-10-29). favicon.ico contient 16, 32 et 48 px. -->
-    <link rel="icon" href="/favicon.ico" sizes="48x48" />
-    <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href={props.manifest ?? '/site.webmanifest'} />
+    <link rel="icon" href="/favicon.ico?v=20261109" sizes="48x48" />
+    <link rel="icon" href="/icon-192.png?v=20261109" type="image/png" sizes="192x192" />
+    <link rel="icon" href="/favicon.svg?v=20261109" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20261109" />
+    <link rel="manifest" href={(props.manifest ?? '/site.webmanifest') + '?v=20261109'} />
     {props.manifest && <meta name="apple-mobile-web-app-capable" content="yes" />}
     {props.manifest && <meta name="apple-mobile-web-app-title" content="LOYNA Business" />}
     <link rel="alternate" type="application/rss+xml" title="Blog LOYNA" href="/rss.xml" />
