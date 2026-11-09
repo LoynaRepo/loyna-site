@@ -1,7 +1,7 @@
 /* Pages publiques des cartes : inscription (/join/<commerce>) et préférences (/preferences). */
 body {
   background:
-    radial-gradient(70% 100% at 50% 0%, rgba(230, 194, 122, 0.22), transparent 70%) top center / 100% 520px no-repeat,
+    radial-gradient(70% 100% at 50% 0%, rgba(164, 135, 255, 0.22), transparent 70%) top center / 100% 520px no-repeat,
     var(--bg);
 }
 .j {
@@ -136,8 +136,8 @@ body {
 }
 .j-ref {
   background: var(--gold-soft);
-  border: 1px solid #e8cf9c;
-  color: #5a3d10;
+  border: 1px solid #CFC2FF;
+  color: #3A1FA0;
 }
 .j-full .ic,
 .j-ref .ic {
@@ -171,7 +171,7 @@ body {
 }
 .wallet-btn:hover {
   color: #fff;
-  background: #1c1b21;
+  background: #181B1F;
 }
 .wallet-btn span:not(.ic) {
   display: grid;

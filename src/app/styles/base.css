@@ -9,21 +9,24 @@
   height: 100%;
 }
 
-/* Logo (symbole doré + mot) */
+/* Logo (icône LOYNA + mot « Loyna », src/lib/logo-html.ts) : le mot est un masque de la couleur du texte */
 .app-logo {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: calc(var(--h, 30px) * 0.24);
   height: var(--h, 30px);
-  color: #f8f4ec;
+  color: #FFFFFF;
 }
-.app-logo .mark svg {
-  height: var(--h, 30px);
-  width: var(--h, 30px);
-}
-.app-logo .word svg {
-  height: calc(var(--h, 30px) * 0.48);
+.app-logo .mark {
+  display: block;
+  height: calc(var(--h, 30px) * 1.2);
   width: auto;
+}
+.app-logo .word {
+  display: block;
+  height: calc(var(--h, 30px) * 0.68);
+  aspect-ratio: 372 / 96;
+  background: currentColor;
 }
 
 /* Boutons */
@@ -56,7 +59,7 @@
 }
 .b--primary {
   background: var(--ink);
-  color: #faf7f0;
+  color: #E9ECEF;
 }
 .b--primary:hover:not(:disabled) {
   background: #000;
@@ -65,7 +68,7 @@
 .b--gold {
   background: var(--grad-gold);
   color: var(--ink);
-  box-shadow: 0 8px 22px rgba(201, 150, 63, 0.32);
+  box-shadow: 0 8px 22px rgba(123, 77, 255, 0.32);
 }
 .b--gold:hover {
   color: var(--ink);
@@ -209,7 +212,7 @@
 .sel-sm:focus {
   outline: none;
   border-color: var(--gold);
-  box-shadow: 0 0 0 4px rgba(201, 150, 63, 0.18);
+  box-shadow: 0 0 0 4px rgba(123, 77, 255, 0.18);
 }
 .fld.has-err input {
   border-color: #b3261e;
@@ -326,7 +329,7 @@
   width: 46px;
   height: 28px;
   border-radius: 99px;
-  background: #d9cfbd;
+  background: #C9CED5;
   position: relative;
   flex-shrink: 0;
   transition: background 0.18s ease;
@@ -348,7 +351,7 @@
 }
 .tgl input:checked + .tgl-s::after {
   transform: translateX(18px);
-  background: #e6c27a;
+  background: #A487FF;
 }
 .tgl input:focus-visible + .tgl-s {
   outline: 3px solid var(--gold);
@@ -369,7 +372,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  border: 3px solid rgba(201, 150, 63, 0.25);
+  border: 3px solid rgba(123, 77, 255, 0.25);
   border-top-color: var(--gold);
   animation: spin 0.8s linear infinite;
   display: inline-block;
@@ -385,8 +388,8 @@
   gap: 28px;
   padding: 32px 16px;
   background:
-    radial-gradient(60% 50% at 80% 0%, rgba(230, 194, 122, 0.22), transparent 70%),
-    radial-gradient(50% 40% at 0% 100%, rgba(201, 150, 63, 0.12), transparent 70%),
+    radial-gradient(60% 50% at 80% 0%, rgba(164, 135, 255, 0.22), transparent 70%),
+    radial-gradient(50% 40% at 0% 100%, rgba(123, 77, 255, 0.12), transparent 70%),
     var(--bg);
 }
 .center-logo {
@@ -394,7 +397,7 @@
   text-decoration: none;
 }
 .center-logo .app-logo {
-  color: #141414;
+  color: #111316;
 }
 .center-card {
   width: min(100%, 480px);
@@ -469,7 +472,7 @@
     radial-gradient(circle at 88% 0%, color-mix(in srgb, var(--fg) 14%, transparent), transparent 58%),
     linear-gradient(160deg, color-mix(in srgb, #fff 6%, transparent), transparent 60%);
   box-shadow:
-    0 18px 40px rgba(18, 18, 22, 0.25),
+    0 18px 40px rgba(17, 19, 22, 0.25),
     inset 0 0 0 1px color-mix(in srgb, var(--fg) 16%, transparent);
   line-height: 1.2;
 }
