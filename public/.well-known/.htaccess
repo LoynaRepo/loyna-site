@@ -1,0 +1,4 @@
+# Liens universels de l'application iPhone Loyna : Apple exige application/json, sans redirection
+<Files "apple-app-site-association">
+  ForceType application/json
+</Files>

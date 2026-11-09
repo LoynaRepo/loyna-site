@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["YWH4956S6G.fr.loyna"],
+        "components": [
+          {"/": "/espace-client/mot-de-passe/*", "comment": "Choisir mon mot de passe (activation, employé, mot de passe oublié)"},
+          {"/": "/espace-client/confirmer/*", "comment": "Confirmer mon adresse (compte du panier)"},
+          {"/": "/espace-client/guide/*", "exclude": true, "comment": "Guide : reste sur le site"},
+          {"/": "/espace-client/demo/*", "exclude": true, "comment": "Démonstration : reste sur le site"},
+          {"/": "/espace-client/", "comment": "Espace client"}
+        ]
+      }
+    ]
+  }
+}
