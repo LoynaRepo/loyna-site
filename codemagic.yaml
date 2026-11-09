@@ -4,7 +4,7 @@
 # 00 Ordres/Application iPhone LOYNA - état et étapes.md
 #
 # Valeurs d'Ewan (09/11/2026) :
-#   - clé API App Store Connect dans Codemagic (Team settings → Team integrations → Developer Portal) : « LOYNA »
+#   - clé API App Store Connect dans Codemagic (Team settings → Team integrations → Developer Portal) : « Loyna »
 #   - identifiant de l'app (bundle ID) : fr.loyna
 #   - Apple ID de l'app dans App Store Connect : 6832469142
 #   - Team ID Apple : YWH4956S6G
@@ -16,7 +16,7 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
     integrations:
-      app_store_connect: LOYNA # nom de la clé API dans Codemagic
+      app_store_connect: Loyna # nom exact de la clé API dans Codemagic (majuscules comprises)
     environment:
       ios_signing:
         distribution_type: app_store
