@@ -67,5 +67,5 @@ workflows:
           failure: true
       app_store_connect:
         auth: integration
-        submit_to_testflight: true # testeurs internes (Ewan, Sofiane) : disponible dès le traitement par Apple
+        submit_to_testflight: false # pas de bêta externe : le build arrive seul dans TestFlight pour les testeurs internes (Ewan, Sofiane), sans examen Apple
         submit_to_app_store: false # la soumission à l'examen d'Apple se fait à la main par Ewan
