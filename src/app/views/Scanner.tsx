@@ -2,8 +2,11 @@
 // Le serveur renvoie un bloc `display` prêt à afficher : aucune règle métier n'est calculée ici.
 // Carte en pause (essai terminé, impayé, abonnement terminé, suspension) : écran bloqué, caméra jamais ouverte ; le serveur
 // refuse de toute façon (MERCHANT_INACTIVE, rien n'est écrit).
+// Application mobile (native()) : scanner natif ML Kit, caméra affichée derrière la page (classe native-scan, styles de
+// mobile/web/native.css), vibration au résultat ; sur loyna.fr, caméra du navigateur comme avant.
 import {useEffect, useRef, useState} from 'preact/hooks';
 import {Icon} from '../icons';
+import {native} from '../native';
 import {api, can, go, loadService, readOnly, servicePaused, toastError} from '../state';
 import {Btn} from '../ui';
 import {uuid} from '../util';
@@ -89,6 +92,8 @@ function LiveScanner() {
   const resultAt = useRef(0);
   const audio = useRef<AudioContext | null>(null);
   const wasLive = useRef(false);
+  const nativeOn = useRef(false); // scanner natif de l'application en marche
+  const app = native();
 
   const [cam, setCam] = useState<Cam>('idle');
   const [busy, setBusy] = useState(false);
@@ -128,17 +133,25 @@ function LiveScanner() {
 
   // Démarrage automatique si la caméra est déjà autorisée ; arrêt en quittant la page.
   useEffect(() => {
-    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+    if (app) {
+      app.scanner
+        .permission()
+        .then((p) => {
+          if (p === 'granted') start();
+        })
+        .catch(() => {});
+    } else if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
       setCam(window.isSecureContext ? 'unavailable' : 'insecure');
       return;
+    } else {
+      (navigator.permissions as any)
+        ?.query({name: 'camera'})
+        .then((p: PermissionStatus) => p.state === 'granted' && start())
+        .catch(() => {});
     }
-    (navigator.permissions as any)
-      ?.query({name: 'camera'})
-      .then((p: PermissionStatus) => p.state === 'granted' && start())
-      .catch(() => {});
     const onVis = () => {
       if (document.hidden) {
-        wasLive.current = !!stream.current;
+        wasLive.current = !!stream.current || nativeOn.current;
         stop();
       } else if (wasLive.current) start();
     };
@@ -150,13 +163,14 @@ function LiveScanner() {
   }, []);
 
   async function start() {
-    if (stream.current) return;
+    if (stream.current || nativeOn.current) return;
     setCam('starting');
     try {
       audio.current ??= new (window.AudioContext || (window as any).webkitAudioContext)();
     } catch {
       /* son indisponible */
     }
+    if (app && (await startNative())) return;
     try {
       const s = await navigator.mediaDevices.getUserMedia({audio: false, video: {facingMode: {ideal: 'environment'}, width: {ideal: 1280}, height: {ideal: 720}}});
       stream.current = s;
@@ -185,7 +199,35 @@ function LiveScanner() {
     }
   }
 
+  /** Scanner natif : true s'il tourne ; false pour retomber sur la caméra du navigateur (WKWebView sait aussi la lire). */
+  async function startNative(): Promise<boolean> {
+    try {
+      if (!(await app!.scanner.supported())) return false;
+      let p = await app!.scanner.permission();
+      if (p !== 'granted') p = await app!.scanner.request();
+      if (p !== 'granted') {
+        setCam('denied');
+        return true;
+      }
+      const r = await app!.scanner.start((value) => onCode(value));
+      nativeOn.current = true;
+      document.documentElement.classList.add('native-scan');
+      setTorch(r.torch ? false : null);
+      setCam('live');
+      return true;
+    } catch {
+      nativeOn.current = false;
+      document.documentElement.classList.remove('native-scan');
+      return false;
+    }
+  }
+
   function stop() {
+    if (nativeOn.current) {
+      nativeOn.current = false;
+      document.documentElement.classList.remove('native-scan');
+      app?.scanner.stop().catch(() => {});
+    }
     clearTimeout(timer.current);
     stream.current?.getTracks().forEach((t) => t.stop());
     stream.current = null;
@@ -285,9 +327,10 @@ function LiveScanner() {
 
   function feedback(d: Display) {
     try {
-      if (d.vibrate && navigator.vibrate) navigator.vibrate(d.vibrate);
+      if (app) app.haptic(d.tone);
+      else if (d.vibrate && navigator.vibrate) navigator.vibrate(d.vibrate);
     } catch {
-      /* vibration indisponible (iPhone) */
+      /* vibration indisponible (iPhone, sur le site) */
     }
     if (!sound || !audio.current) return;
     const ctx = audio.current;
@@ -347,6 +390,16 @@ function LiveScanner() {
   }
 
   async function toggleTorch() {
+    if (nativeOn.current) {
+      if (torch === null) return;
+      try {
+        await app!.scanner.torch(!torch);
+        setTorch(!torch);
+      } catch {
+        setTorch(null);
+      }
+      return;
+    }
     const track = stream.current?.getVideoTracks()[0];
     if (!track || torch === null) return;
     try {
@@ -387,7 +440,7 @@ function LiveScanner() {
       </div>
 
       <div class="scan-grid">
-        <div class={`viewfinder ${live ? 'is-live' : ''} ${busy ? 'is-busy' : ''} ${paused ? 'is-paused' : ''}`}>
+        <div class={`viewfinder ${live ? 'is-live' : ''} ${live && nativeOn.current ? 'is-native' : ''} ${busy ? 'is-busy' : ''} ${paused ? 'is-paused' : ''}`}>
           <video ref={video} muted playsInline aria-label="Image de la caméra" />
           {live && (
             <div class="vf-frame" aria-hidden="true">
@@ -410,10 +463,26 @@ function LiveScanner() {
                 <>
                   <Icon name="camera-off" size={34} />
                   <strong>Accès à la caméra refusé</strong>
-                  <p>Autorisez la caméra pour loyna.fr dans les réglages du navigateur (icône à gauche de l’adresse), puis réessayez.</p>
-                  <Btn kind="gold" icon="refresh-cw" onClick={start}>
-                    Réessayer
-                  </Btn>
+                  {app ? (
+                    <>
+                      <p>Autorisez la caméra pour LOYNA Business dans les réglages du téléphone, puis revenez ici.</p>
+                      <div class="btn-row">
+                        <Btn kind="gold" icon="settings" onClick={() => app.scanner.openSettings().catch(() => {})}>
+                          Ouvrir les réglages
+                        </Btn>
+                        <Btn kind="ghost" icon="refresh-cw" onClick={start}>
+                          Réessayer
+                        </Btn>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p>Autorisez la caméra pour loyna.fr dans les réglages du navigateur (icône à gauche de l’adresse), puis réessayez.</p>
+                      <Btn kind="gold" icon="refresh-cw" onClick={start}>
+                        Réessayer
+                      </Btn>
+                    </>
+                  )}
                 </>
               ) : cam === 'unavailable' ? (
                 <>

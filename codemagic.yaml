@@ -1,0 +1,71 @@
+# Codemagic : compilation de l'application iPhone « Loyna » sans Mac, signature et envoi sur TestFlight.
+# Projet Capacitor : mobile/ (espace client de src/app/ embarqué). Le site loyna.fr n'est ni construit ni publié ici.
+# Dépôt : https://github.com/LoynaRepo/loyna-site (privé). Compte rendu et étapes : coffre « Loyna Prospection »,
+# 00 Ordres/Application iPhone LOYNA - état et étapes.md
+#
+# Valeurs d'Ewan (09/11/2026) :
+#   - clé API App Store Connect dans Codemagic (Team settings → Team integrations → Developer Portal) : « LOYNA »
+#   - identifiant de l'app (bundle ID) : fr.loyna
+#   - Apple ID de l'app dans App Store Connect : 6832469142
+#   - Team ID Apple : YWH4956S6G
+# Aucun secret dans ce fichier : clé API, certificat et profil sont déposés par Ewan dans Codemagic.
+
+workflows:
+  ios-testflight:
+    name: Loyna iPhone → TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: LOYNA # nom de la clé API dans Codemagic
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: fr.loyna
+      vars:
+        APP_STORE_APPLE_ID: 6832469142 # Apple ID de l'app dans App Store Connect
+        TEAM_ID_APPLE: YWH4956S6G # Team ID Apple
+        BUNDLE_ID: fr.loyna
+        XCODE_WORKSPACE: mobile/ios/App/App.xcworkspace
+        XCODE_PROJECT: mobile/ios/App/App.xcodeproj
+        XCODE_SCHEME: App
+      node: 22
+      xcode: latest
+      cocoapods: default
+    # Pas de déclenchement automatique : chaque compilation se lance à la main (bouton « Start new build »)
+    scripts:
+      - name: Dépendances du site (code partagé src/app)
+        script: npm ci
+      - name: Dépendances de l'application
+        script: cd mobile && npm ci
+      - name: Contrôle des types
+        script: cd mobile && npm run check
+      - name: Espace client embarqué (mobile/dist)
+        script: cd mobile && npm run build
+      - name: Capacitor (copie dans le projet iOS, pod install)
+        script: cd mobile && npx cap sync ios
+      - name: Équipe Apple dans le projet
+        script: |
+          sed -i '' "s/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Automatic; DEVELOPMENT_TEAM = $TEAM_ID_APPLE;/" "$XCODE_PROJECT/project.pbxproj"
+      - name: Profils de signature
+        script: xcode-project use-profiles --project "$XCODE_PROJECT"
+      - name: Numéro de build (dernier build TestFlight + 1)
+        script: |
+          DERNIER=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          cd mobile/ios/App && agvtool new-version -all $((DERNIER + 1))
+      - name: Compilation de l'application (.ipa)
+        script: xcode-project build-ipa --workspace "$XCODE_WORKSPACE" --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    publishing:
+      email:
+        recipients:
+          - contact@loyna.fr
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true # testeurs internes (Ewan, Sofiane) : disponible dès le traitement par Apple
+        submit_to_app_store: false # la soumission à l'examen d'Apple se fait à la main par Ewan

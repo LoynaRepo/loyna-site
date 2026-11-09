@@ -7,6 +7,7 @@ import {publicEdge} from './http';
 import {Btn, Field, ServiceBanner, Spinner, Toasts} from './ui';
 import {frenchTypography} from './util';
 import {Commande} from './Commande';
+import {appPref, isNativeApp, noPurchaseUI, PREF_CAISSE} from './native';
 
 // Écrans chargés à la demande : le téléphone ne télécharge que la page ouverte (le scanner en premier).
 type ViewComp = (props: any) => any;
@@ -21,7 +22,10 @@ const LOADERS: Record<string, () => Promise<ViewComp>> = {
   rapport: () => import('./views/Rapport').then((m) => m.Rapport),
   equipe: () => import('./views/Equipe').then((m) => m.Equipe),
   reglages: () => import('./views/Reglages').then((m) => m.Reglages),
-  abonnement: () => import('./views/Abonnement').then((m) => m.Abonnement),
+  // Application mobile : abonnement en lecture seule, sans aucun lien de paiement (règle 3.1.1 d'Apple)
+  abonnement: () => (noPurchaseUI() ? import('./views/AbonnementApp').then((m) => m.AbonnementApp) : import('./views/Abonnement').then((m) => m.Abonnement)),
+  // Application mobile seulement : Face ID, mode caisse, notifications, suppression du compte
+  appareil: () => import('./views/Appareil').then((m) => m.Appareil),
   boutique: () => import('./views/Boutique').then((m) => m.Boutique),
   operateur: () => import('./views/Operateur').then((m) => m.Operateur),
 };
@@ -59,6 +63,8 @@ const NAV: NavItem[] = [
   // Opérateur LOYNA (platform_admins, vérifié par le serveur) : commandes à traiter et création des commerces ;
   // pendant une consultation, retour par « Quitter » dans le bandeau
   {view: 'operateur', label: 'Opérateur', icon: 'shield-check', show: () => isOperator() && !readOnly()},
+  // Application mobile (iPhone, Android) : réglages du téléphone et du compte, pour tous les profils (employés compris)
+  {view: 'appareil', label: 'Mon compte', icon: 'smartphone', show: () => isNativeApp() && !readOnly()},
 ];
 
 /** Un logo par emplacement : chaque copie reçoit son propre identifiant de dégradé. */
@@ -67,6 +73,8 @@ function logoFor(logo: string, where: string): string {
 }
 
 function defaultView(): string {
+  // Application mobile, « mode caisse » choisi sur ce téléphone : ouverture directe sur le scanner
+  if (isNativeApp() && appPref(PREF_CAISSE) && can('scan.validate')) return 'scanner';
   return can('analytics.read') ? 'accueil' : can('scan.validate') ? 'scanner' : (NAV.find((n) => n.show())?.view ?? 'accueil');
 }
 
@@ -267,9 +275,11 @@ function Login({logo, withSide = true}: {logo: string; withSide?: boolean}) {
               <strong>Mot de passe oublié :</strong> saisissez l’adresse de votre compte, vous recevez un lien pour en choisir un nouveau.
             </p>
             <Forgot email={email} />
+            {!isNativeApp() && (
             <p>
               <strong>Essai gratuit :</strong> pas reçu l’e-mail « Activez votre essai », ou lien expiré ? Saisissez ci-dessus l’adresse donnée à l’essai : le nouveau lien vous fait choisir votre mot de passe et démarre votre essai.
             </p>
+            )}
             <p>
               <strong>Première connexion d’un employé :</strong> demandez à votre responsable votre lien d’accès, depuis le menu <em>Équipe</em>. Vous y choisirez vous-même votre mot de passe.
             </p>
@@ -279,9 +289,11 @@ function Login({logo, withSide = true}: {logo: string; withSide?: boolean}) {
           </div>
         )}
       </form>
-      <p class="login-foot">
-        <a href="/espace-client/demo/">Découvrir LOYNA Business en démonstration →</a>
-      </p>
+      {!isNativeApp() && (
+        <p class="login-foot">
+          <a href="/espace-client/demo/">Découvrir LOYNA Business en démonstration →</a>
+        </p>
+      )}
       <p class="login-foot">
         Vous êtes client d’un commerce ? Vos préférences de messages se gèrent depuis le lien « Mes préférences » au dos de votre carte, dans votre Wallet.
       </p>
@@ -307,14 +319,16 @@ function Login({logo, withSide = true}: {logo: string; withSide?: boolean}) {
             </li>
           </ul>
         </div>
-        <a class="login-portal" href={PORTAL} rel="nofollow">
-          <Icon name="credit-card" />
-          <span>
-            <strong>Abonnement et factures</strong>
-            <small>Portail sécurisé Stripe : factures, carte bancaire, résiliation</small>
-          </span>
-          <Icon name="arrow-right" size={18} />
-        </a>
+        {!noPurchaseUI() && (
+          <a class="login-portal" href={PORTAL} rel="nofollow">
+            <Icon name="credit-card" />
+            <span>
+              <strong>Abonnement et factures</strong>
+              <small>Portail sécurisé Stripe : factures, carte bancaire, résiliation</small>
+            </span>
+            <Icon name="arrow-right" size={18} />
+          </a>
+        )}
       </aside>
       {form}
     </div>
@@ -645,10 +659,12 @@ function Shell({logo}: {logo: string}) {
               <Icon name="circle-help" />
               Guide de démarrage
             </a>
-            <a href="/">
-              <Icon name="external-link" />
-              Retour au site loyna.fr
-            </a>
+            {!isNativeApp() && (
+              <a href="/">
+                <Icon name="external-link" />
+                Retour au site loyna.fr
+              </a>
+            )}
             <button type="button" onClick={logout}>
               <Icon name="log-out" />
               {api.demo ? 'Quitter la démo' : `Se déconnecter (${m.display_name})`}

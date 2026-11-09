@@ -4,6 +4,7 @@ import {useEffect, useRef, useState} from 'preact/hooks';
 import {Icon} from './icons';
 import {api, can, choisirUrl, lockLabel, merchant, portalUrl, readOnly, service, session, toast, toasts, type ServiceState} from './state';
 import {copy, dayLong, num, qrSvg} from './util';
+import {MANAGED_OUTSIDE, noPurchaseUI} from './native';
 
 type BtnKind = 'primary' | 'gold' | 'ghost' | 'danger' | 'quiet';
 export function Btn(props: {
@@ -263,6 +264,8 @@ export function serviceNotice(s: ServiceState | null | undefined): {text: string
   // Démonstration : pas de panier relié à un commerce fictif
   // Le panier rattache l'abonnement à ce commerce : checkout-create le réserve à son propriétaire
   const panier = (label: string, plan = 'starter') => ({label, href: api.demo ? '/tarifs/' : choisirUrl(m.merchant_id, plan), ownerOnly: true});
+  // Application mobile : aucun bouton ni appel à payer (règle 3.1.1 d'Apple), une information neutre
+  if (s.state === 'GRACE' && noPurchaseUI()) return {text: `Votre dernier paiement n’est pas passé : votre carte sera mise en pause le ${dayLong(s.stop_at)} si la facture reste impayée. ${MANAGED_OUTSIDE}`, tone: 'amber'};
   if (s.state === 'GRACE') return {text: `Votre paiement n’est pas passé. Réglez votre facture avant le ${dayLong(s.stop_at)}, sinon votre carte sera mise en pause.`, tone: 'amber', button: pay};
   if (s.state === 'SUSPENDED_MANUAL') return {text: 'Votre compte est suspendu par LOYNA. Écrivez à contact@loyna.fr.', tone: 'red'};
   if (s.state !== 'STOPPED') return null;
@@ -280,7 +283,7 @@ export function serviceNotice(s: ServiceState | null | undefined): {text: string
 export function ServiceBanner() {
   const n = serviceNotice(service.value);
   if (!n) return null;
-  const action = n.button && can('settings.manage') && !readOnly() && (!n.button.ownerOnly || merchant.value?.role === 'OWNER') ? n.button : null;
+  const action = n.button && !noPurchaseUI() && can('settings.manage') && !readOnly() && (!n.button.ownerOnly || merchant.value?.role === 'OWNER') ? n.button : null;
   const MAIL = 'contact@loyna.fr';
   return (
     <div class={`banner banner--${n.tone}`} role="status">

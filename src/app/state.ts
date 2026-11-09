@@ -1,6 +1,7 @@
 // État partagé de LOYNA Business : session, commerce choisi, offre, navigation, messages.
 import {effect, signal} from '@preact/signals';
 import {ApiError, readOnlyBackend, supabaseBackend, type Backend} from './backend';
+import {isNativeApp} from './native';
 
 export interface Membership {
   staff_id: string;
@@ -53,10 +54,11 @@ export function canSee(permission: string): boolean {
 /**
  * Opérateur LOYNA (table platform_admins), d'après le serveur (my_staff_context) : affiche l'onglet « Opérateur ».
  * Simple affichage : chaque appel de cet écran est refusé par le serveur à un autre compte. Jamais dans la
- * démonstration publique (en développement seulement, avec ?demo&operateur).
+ * démonstration publique (en développement seulement, avec ?demo&operateur). Jamais dans l'application mobile : l'écran
+ * Opérateur reste sur le site.
  */
 export function isOperator(): boolean {
-  return staffCtx.value?.is_platform_admin === true && (!api.demo || import.meta.env.DEV);
+  return staffCtx.value?.is_platform_admin === true && (!api.demo || import.meta.env.DEV) && !isNativeApp();
 }
 export function feature(name: string): boolean {
   return merchant.value?.features?.[name]?.enabled === true;

@@ -6,6 +6,7 @@
 // La commande part par e-mail à LOYNA, qui fabrique et livre. Propriétaire seulement, carte active (essai compris).
 import {useEffect, useState} from 'preact/hooks';
 import {QR_AVIS, QR_VERRE, euro} from '../../data/site';
+import {native} from '../native';
 import {Icon} from '../icons';
 import {api, loadService, merchant, readOnly, toast} from '../state';
 import {Btn, Field, PageHead, Panel, useBusy, useLoad} from '../ui';
@@ -152,6 +153,9 @@ export function Boutique() {
         const r = await api.edge<{status: string; url?: string}>('qr-order', body);
         if (r.status === 'OK' && r.url) {
           if (api.demo) return toast('Démonstration : la commande ouvrirait ici la page de paiement sécurisée Stripe.', 'info');
+          // Application mobile : page de paiement Stripe dans le navigateur intégré (objets physiques, règle 3.1.5 d'Apple)
+          const app = native();
+          if (app) return void (await app.openUrl(r.url));
           location.href = r.url;
           return;
         }

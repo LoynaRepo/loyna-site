@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["web/**/*", "vite.config.ts", "capacitor.config.ts"]
+}

@@ -10,6 +10,7 @@ import {Icon} from '../icons';
 import {api, can, feature, includedIn, loadUsage, merchant, planLabel, readOnly, service, servicePaused, toast, type PlanUsage} from '../state';
 import {Btn, ErrorBox, Kpi, LinkBox, Panel, Segmented, Spinner, UsageMeter, useLoad} from '../ui';
 import {copy, date, dayLong, joinUrl, mondayLabel, num} from '../util';
+import {noPurchaseUI} from '../native';
 
 interface Period {
   visits: number;
@@ -199,7 +200,7 @@ export function Dashboard() {
 
       {usage.data && !paused && <QuotaAlerts u={usage.data} />}
 
-      {can('settings.manage') && <ParrainageAccueil />}
+      {can('settings.manage') && !noPurchaseUI() && <ParrainageAccueil />}
 
       {k.error ? (
         <ErrorBox error={k.error} retry={k.reload} />

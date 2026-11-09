@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Liens universels : https://loyna.fr/espace-client/... ouvre l'application (fichier apple-app-site-association
+	     préparé dans mobile/liens-universels/, à publier sur le site). Capacité « Associated Domains » à cocher sur
+	     l'identifiant fr.loyna dans le compte Apple Developer. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:loyna.fr</string>
+	</array>
+	<!-- Notifications : ajouter ici, le jour où PUSH_ENABLED passe à true (mobile/web/config.ts),
+	     <key>aps-environment</key><string>production</string>
+	     et cocher « Push Notifications » sur l'identifiant. -->
+</dict>
+</plist>

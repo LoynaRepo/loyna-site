@@ -1,5 +1,6 @@
 // Petits outils d'affichage (français) pour LOYNA Business et les pages publiques.
 import qrcode from 'qrcode-generator';
+import {native} from './native';
 
 const nf = new Intl.NumberFormat('fr-FR');
 // Séparateur des milliers : espace insécable normale (l'espace fine d'Intl est presque invisible avec la police
@@ -90,6 +91,9 @@ export function qrSvg(text: string, color = '#121216', margin = 2): string {
 
 export function download(name: string, content: string | Blob, type = 'application/json') {
   const blob = content instanceof Blob ? content : new Blob([content], {type});
+  // Application mobile : la vue web ne télécharge pas ; le fichier passe par la feuille de partage du téléphone
+  const app = native();
+  if (app) return void app.shareFile(name, blob).catch(() => {});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = name;

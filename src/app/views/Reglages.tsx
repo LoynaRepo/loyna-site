@@ -13,6 +13,7 @@ import {LOGO_ACCEPT, logoToFiles} from '../logo-png';
 import {api, feature, featureLimit, lowestPlanAbove, maxAnyPlan, merchant, staffCtx, toast, toastError} from '../state';
 import {Badge, Btn, CardPreview, ErrorBox, Field, LinkBox, LockBadge, Modal, PageHead, Panel, ReadOnlyZone, Segmented, Spinner, Toggle, useBusy, useLoad} from '../ui';
 import {contrast, download, joinUrl, qrSvg} from '../util';
+import {isNativeApp} from '../native';
 
 interface Merchant {
   id: string;
@@ -753,9 +754,12 @@ function Poster({slug, name}: {slug: string; name: string}) {
       <span id="r-affiche" class="anchor-t" />
       <LinkBox url={url} />
       <div class="btn-row">
-        <Btn kind="primary" icon="download" onClick={print}>
-          Imprimer l’affiche (A4)
-        </Btn>
+        {/* application mobile : pas d'impression depuis la vue web, le QR code se partage (feuille de partage) */}
+        {!isNativeApp() && (
+          <Btn kind="primary" icon="download" onClick={print}>
+            Imprimer l’affiche (A4)
+          </Btn>
+        )}
         <Btn kind="ghost" icon="qr-code" onClick={() => download(`qr-inscription-${slug}.svg`, qrSvg(url), 'image/svg+xml')}>
           Télécharger le QR code (SVG)
         </Btn>

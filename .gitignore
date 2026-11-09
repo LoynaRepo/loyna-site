@@ -11,3 +11,17 @@ out/
 public/espace-commercial/donnees.enc
 tools/commercial/exemple-suivi.json
 __pycache__/
+
+# Application mobile (mobile/) et dépôt privé GitHub pour Codemagic : aucune clé, aucun certificat, aucune dépendance
+*.p8
+*.p12
+*.pem
+*.key
+*.cer
+*.mobileprovision
+*.keystore
+*.jks
+google-services.json
+GoogleService-Info.plist
+mobile/dist/
+mobile/android/

@@ -7,6 +7,7 @@ import {Icon} from './icons';
 import {api, planLabel} from './state';
 import {Badge, Btn, Spinner} from './ui';
 import {date} from './util';
+import {noPurchaseUI} from './native';
 
 interface OrderItem {
   lookup_key: string | null;
@@ -82,9 +83,11 @@ export function Commande({email, portal, onSignOut}: {email: string; portal: str
         </p>
         <p class="muted small">Vous venez de payer ? Votre commande apparaît ici quelques instants après le paiement : rechargez la page.</p>
         <div class="btn-row">
-          <Btn kind="gold" href="/tarifs/" icon="arrow-right">
-            Voir les offres
-          </Btn>
+          {!noPurchaseUI() && (
+            <Btn kind="gold" href="/tarifs/" icon="arrow-right">
+              Voir les offres
+            </Btn>
+          )}
           <Btn kind="ghost" icon="refresh-cw" onClick={load}>
             Recharger
           </Btn>
@@ -180,9 +183,11 @@ export function Commande({email, portal, onSignOut}: {email: string; portal: str
             Envoyer logo et couleurs
           </Btn>
         )}
-        <Btn kind="ghost" href={portal} icon="credit-card">
-          Abonnement et factures
-        </Btn>
+        {!noPurchaseUI() && (
+          <Btn kind="ghost" href={portal} icon="credit-card">
+            Abonnement et factures
+          </Btn>
+        )}
       </div>
       <Btn kind="quiet" icon="log-out" onClick={onSignOut}>
         Se déconnecter

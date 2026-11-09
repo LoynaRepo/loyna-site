@@ -3,6 +3,7 @@
 // Functions. Toute la logique métier (points, récompenses, quotas, permissions) reste côté serveur.
 import {createClient, isAuthRetryableFetchError, type SupabaseClient} from '@supabase/supabase-js';
 import {ApiError, FUNCTIONS_URL, SUPABASE_KEY, SUPABASE_URL, send} from './http';
+import {native} from './native';
 
 export {ApiError, SUPABASE_URL};
 
@@ -111,8 +112,12 @@ function authMessage(raw: string): string {
 
 let client: SupabaseClient | null = null;
 function sb(): SupabaseClient {
+  // Application mobile : session dans le trousseau de l'iPhone (Keystore sur Android), jamais dans l'adresse ; site : inchangé
+  const app = native();
   client ??= createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: {persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit', storageKey: 'loyna-business-auth'},
+    auth: app
+      ? {persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: 'implicit', storageKey: 'loyna-business-auth', storage: app.authStorage}
+      : {persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit', storageKey: 'loyna-business-auth'},
   });
   return client;
 }
