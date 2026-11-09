@@ -24,8 +24,9 @@
 }
 .app-logo .word {
   display: block;
-  height: calc(var(--h, 30px) * 0.68);
-  aspect-ratio: 372 / 96;
+  height: calc(var(--h, 30px) * 0.795);
+  aspect-ratio: 398 / 120;
+  transform: translateY(7.2%); /* jambage du y sous la ligne */
   background: currentColor;
 }
 

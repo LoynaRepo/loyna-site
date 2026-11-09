@@ -55,7 +55,7 @@ def og(slug, title, subtitle, eyebrow="Carte de fidélité digitale"):
     # logo + textes
     ic = ICONE.resize((round(84 * ICONE.width / ICONE.height), 84), Image.LANCZOS)
     im.paste(ic, (66, 57), ic)
-    mot = MOT.resize((round(40 * MOT.width / MOT.height), 40), Image.LANCZOS)
+    mot = MOT.resize((round(47 * MOT.width / MOT.height), 47), Image.LANCZOS)  # 47 px : y complet, lettres à 40 px comme avant
     im.paste(mot, (66 + ic.width + 16, 79), mot)
     d.text((72, 176), eyebrow.upper(), font=font(22, 750), fill=ACCENT)
     ft = font(58 if len(title) < 48 else 50, 800)
